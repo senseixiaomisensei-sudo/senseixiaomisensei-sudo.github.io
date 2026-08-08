@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PostPrep 文案长度检查器：按平台目标查看字符、英文词数和行数。">
+  <title>文案长度检查 | PostPrep</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { canvas: "#F7F9FA", surface: "#FFFFFF", ink: "#1F2933", muted: "#667085", line: "#E5E7EB", brand: "#0F766E", brandDark: "#115E59", brandSoft: "#CCFBF1", coral: "#C2410C" } } } };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="length" data-title-key="length.title">
+  <div id="site-header"></div>
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="max-w-3xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="length.eyebrow">TEXT LENGTH CHECKER</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="length.title">文案长度检查</h1>
+      <p class="mt-3 text-base leading-7 text-muted" data-i18n="length.intro">选择发布位置，贴入文案，实时查看适配情况。</p>
+    </header>
+
+    <div class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
+      <section class="rounded-lg border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div>
+          <label class="text-sm font-bold" data-i18n="length.platformLabel">选择发布位置</label>
+          <div id="preset-list" class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Publishing platforms"></div>
+        </div>
+
+        <div class="mt-7">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <label for="length-input" class="text-sm font-bold" data-i18n="length.textLabel">你的文案</label>
+              <p class="mt-1 text-xs text-muted" data-i18n="length.settingsNote">字符统计按用户可见字符计算；表情符号、换行和各平台的实际计数方式可能不同。</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" data-copy-from="length-input" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-regular fa-copy" aria-hidden="true"></i><span data-i18n="shared.copy">复制</span></button>
+              <button id="length-clear" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink transition hover:border-rose-300 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-eraser" aria-hidden="true"></i><span data-i18n="shared.clear">清空</span></button>
+            </div>
+          </div>
+          <textarea id="length-input" class="mt-3 min-h-64 w-full resize-y rounded-lg border-line bg-white px-4 py-3 text-base leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="length.textPlaceholder" placeholder="在这里粘贴标题或文案..."></textarea>
+        </div>
+
+        <div class="mt-5 grid grid-cols-3 gap-3">
+          <div class="rounded-lg border border-line bg-canvas p-4">
+            <p class="text-xs font-semibold text-muted" data-i18n="length.characters">字符</p>
+            <p id="character-count" class="mt-2 text-2xl font-black tabular-nums">0</p>
+          </div>
+          <div class="rounded-lg border border-line bg-canvas p-4">
+            <p class="text-xs font-semibold text-muted" data-i18n="length.englishWords">英文词数</p>
+            <p id="word-count" class="mt-2 text-2xl font-black tabular-nums">0</p>
+          </div>
+          <div class="rounded-lg border border-line bg-canvas p-4">
+            <p class="text-xs font-semibold text-muted" data-i18n="length.lines">行数</p>
+            <p id="line-count" class="mt-2 text-2xl font-black tabular-nums">0</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="rounded-lg border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-i18n="length.currentTarget">当前目标</p>
+            <p id="target-meta" class="mt-2 text-lg font-black">小红书 · 笔记标题</p>
+          </div>
+          <div class="rounded-lg bg-teal-50 px-3 py-2 text-right">
+            <p id="target-kind" class="text-[11px] font-bold uppercase tracking-wide text-brand">建议目标</p>
+            <p id="current-target" class="mt-1 text-2xl font-black tabular-nums text-brand">20</p>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <label for="custom-limit" class="text-sm font-bold" data-i18n="length.customLabel">自定义上限</label>
+          <div class="mt-2 flex gap-2">
+            <input id="custom-limit" type="number" min="1" inputmode="numeric" class="min-w-0 flex-1 rounded-lg border-line px-3 py-2 text-sm shadow-sm focus:border-brand focus:ring-brand" aria-describedby="custom-limit-hint">
+            <button id="reset-limit" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i><span data-i18n="length.resetLimit">恢复平台目标</span></button>
+          </div>
+          <p id="custom-limit-hint" class="mt-2 text-xs leading-5 text-muted" data-i18n="length.customHint">留空时使用当前平台目标</p>
+        </div>
+
+        <div class="mt-7">
+          <div class="flex items-center justify-between gap-3 text-xs font-semibold text-muted">
+            <span data-i18n="length.currentTarget">当前目标</span>
+            <span id="verified-date">最后核对 2026-08-06</span>
+          </div>
+          <div class="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100" aria-hidden="true"><div id="length-progress" class="h-full w-0 rounded-full bg-zinc-400 transition-[width] duration-200"></div></div>
+        </div>
+
+        <div id="length-status" class="mt-7 flex gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-zinc-800" role="status" aria-live="polite">
+          <i class="fa-solid fa-circle-info mt-0.5 text-brand" aria-hidden="true"></i>
+          <div>
+            <p id="length-status-title" class="text-sm font-bold">等待输入</p>
+            <p id="length-status-body" class="mt-1 text-xs leading-5">贴入文案后开始检查</p>
+          </div>
+        </div>
+
+        <div class="mt-6 border-t border-line pt-5">
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-muted" data-i18n="length.source">规则说明</p>
+          <p id="source-text" class="mt-2 text-sm leading-6 text-muted">没有可引用的官方上限；请在发布页再次确认。</p>
+          <a id="source-link" class="mt-2 hidden inline-flex items-center gap-2 text-sm font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark" href="#" target="_blank" rel="noopener noreferrer"><span data-i18n="length.openSource">查看来源</span><i class="fa-solid fa-arrow-up-right-from-square text-xs" aria-hidden="true"></i></a>
+        </div>
+
+        <div class="mt-6 border-t border-line pt-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-black" data-i18n="cloud.lengthTitle">发布建议</p>
+              <p class="mt-1 text-xs leading-5 text-muted" data-i18n="cloud.lengthHint">根据所选发布位置，给出简短调整方向。</p>
+            </div>
+            <button id="length-cloud-action" type="button" class="cloud-action-button inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-lightbulb" aria-hidden="true"></i><span data-i18n="cloud.lengthAction">深度建议</span></button>
+          </div>
+          <div id="length-cloud-result" class="cloud-result mt-4 rounded-lg bg-canvas p-4" hidden role="status" aria-live="polite">
+            <p id="length-cloud-output" class="text-sm leading-6 text-ink"></p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
+  <script src="assets/postprep.js"></script>
+</body>
+</html>

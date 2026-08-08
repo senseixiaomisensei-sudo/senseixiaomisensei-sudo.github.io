@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PostPrep 隐私说明：所有当前工具都在浏览器中本地处理。">
+  <title>隐私说明 | PostPrep</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { canvas: "#F7F9FA", surface: "#FFFFFF", ink: "#1F2933", muted: "#667085", line: "#E5E7EB", brand: "#0F766E", brandDark: "#115E59", brandSoft: "#CCFBF1", coral: "#C2410C" } } } };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="privacy" data-title-key="privacy.title">
+  <div id="site-header"></div>
+  <main class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="border-b border-line pb-8">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="privacy.eyebrow">PRIVACY</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="privacy.title">隐私说明</h1>
+      <p class="mt-3 text-base leading-7 text-muted" data-i18n="privacy.intro">所有当前工具都在浏览器中本地处理；不会上传你粘贴的文案。</p>
+    </header>
+    <div class="divide-y divide-line">
+      <section class="py-8">
+        <h2 class="text-xl font-black" data-i18n="privacy.localTitle">基础工具不会上传</h2>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.localBody">长度检查、标签整理和排版整理都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。</p>
+      </section>
+      <section id="cloud" class="py-8">
+        <h2 class="text-xl font-black" data-i18n="privacy.cloudTitle">深度处理暂未开放</h2>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.cloudBody">当前 GitHub Pages 版本只提供浏览器内的基础工具，不会向 PostPrep 服务器发送草稿。未来若启用云端深度处理，会先在此说明数据流向与可用选择。</p>
+      </section>
+      <section class="py-8">
+        <h2 class="text-xl font-black" data-i18n="privacy.servicesTitle">第三方静态资源</h2>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">为了加载页面样式、图标和首页图片，你的浏览器会向 Tailwind CDN、Font Awesome CDN 与 Unsplash 请求资源。这些请求不包含你在工具内粘贴的文案。</p>
+      </section>
+      <section class="py-8">
+        <h2 class="text-xl font-black" data-i18n="privacy.adsTitle">广告与统计</h2>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.adsBody">当前版本没有广告、统计代码或追踪像素。未来若接入广告联盟，会先更新本页面，说明 Cookie、广告个性化与可用的选择方式。</p>
+      </section>
+      <section class="py-8">
+        <h2 class="text-xl font-black" data-i18n="privacy.controlTitle">你的选择</h2>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.controlBody">你可以随时清空输入框、关闭页面或清除浏览器的本地站点数据。语言偏好仅保存在当前浏览器的 localStorage 中。</p>
+      </section>
+    </div>
+    <a href="index.html" class="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span data-i18n="privacy.back">返回首页</span></a>
+  </main>
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
+  <script src="assets/postprep.js"></script>
+</body>
+</html>

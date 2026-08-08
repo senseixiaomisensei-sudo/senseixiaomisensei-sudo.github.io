@@ -1,0 +1,136 @@
+:root {
+  --motion-fast: 160ms;
+  --motion-base: 220ms;
+  --motion-enter: 520ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes postprep-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes postprep-soft-refresh {
+  from {
+    opacity: 0.82;
+    transform: translate3d(0, 2px, 0) scale(0.997);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes postprep-processing-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(0, -1px, 0) scale(1.015);
+  }
+}
+
+#site-header > header,
+main > *,
+#site-footer > footer {
+  animation: postprep-fade-up var(--motion-enter) var(--motion-ease) backwards;
+}
+
+main > :nth-child(2) { animation-delay: 70ms; }
+main > :nth-child(3) { animation-delay: 140ms; }
+main > :nth-child(4) { animation-delay: 210ms; }
+#site-footer > footer { animation-delay: 160ms; }
+
+#mobile-navigation:not(.hidden) {
+  animation: postprep-fade-up var(--motion-base) var(--motion-ease) both;
+}
+
+main {
+  transition: opacity 110ms ease, transform var(--motion-fast) var(--motion-ease);
+}
+
+main.is-content-switching {
+  opacity: 0;
+  transform: translate3d(0, 4px, 0);
+}
+
+button,
+a[class*="rounded"],
+label.cursor-pointer {
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: center;
+  transition-property: transform, opacity, color, background-color, border-color, box-shadow;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--motion-spring);
+}
+
+button:not(:disabled):active,
+a[class*="rounded"]:active,
+label.cursor-pointer:active {
+  transform: translate3d(0, 0, 0) scale(0.965);
+  transition-duration: 90ms;
+}
+
+textarea,
+input,
+select {
+  transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+}
+
+body[data-page="home"] main article {
+  transition: transform var(--motion-base) var(--motion-ease),
+              border-color var(--motion-base) ease,
+              box-shadow var(--motion-base) ease;
+}
+
+.is-updating {
+  animation: postprep-soft-refresh var(--motion-base) var(--motion-ease);
+}
+
+.cloud-action-button.is-loading > i {
+  animation: postprep-processing-breathe 1.45s ease-in-out infinite;
+}
+
+.cloud-result:not([hidden]) {
+  animation: postprep-fade-up var(--motion-base) var(--motion-ease) both;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover,
+  a[class*="rounded"]:hover,
+  label.cursor-pointer:hover {
+    transform: translate3d(0, -1px, 0) scale(1.02);
+  }
+
+  body[data-page="home"] main article:hover {
+    transform: translate3d(0, 0, 0) scale(1.02);
+  }
+
+  button:not(:disabled):active,
+  a[class*="rounded"]:active,
+  label.cursor-pointer:active {
+    transform: translate3d(0, 0, 0) scale(0.965);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

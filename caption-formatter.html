@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PostPrep 文案排版整理器：去除隐形字符、修整空格并合并多余空行。">
+  <title>文案排版整理 | PostPrep</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { canvas: "#F7F9FA", surface: "#FFFFFF", ink: "#1F2933", muted: "#667085", line: "#E5E7EB", brand: "#0F766E", brandDark: "#115E59", brandSoft: "#CCFBF1", coral: "#C2410C" } } } };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="formatter" data-title-key="formatter.title">
+  <div id="site-header"></div>
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="max-w-3xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="formatter.eyebrow">CAPTION FORMATTER</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="formatter.title">文案排版整理</h1>
+      <p class="mt-3 text-base leading-7 text-muted" data-i18n="formatter.intro">保留原文内容，只清理影响发布的空白与隐藏字符。</p>
+    </header>
+
+    <div class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(270px,0.42fr)]">
+      <section class="rounded-lg border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div class="grid gap-6 lg:grid-cols-2">
+          <div>
+            <div class="flex items-end justify-between gap-3">
+              <div>
+                <label for="formatter-input" class="text-sm font-bold" data-i18n="formatter.inputLabel">原始文案</label>
+                <p class="mt-1 text-xs leading-5 text-muted" data-i18n="formatter.preserved">原文始终保留在左侧输入框</p>
+              </div>
+              <button id="formatter-clear" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink transition hover:border-rose-300 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-eraser" aria-hidden="true"></i><span data-i18n="shared.clear">清空</span></button>
+            </div>
+            <textarea id="formatter-input" class="mt-4 min-h-80 w-full resize-y rounded-lg border-line px-4 py-3 text-base leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="formatter.inputPlaceholder" placeholder="在这里粘贴文案..."></textarea>
+          </div>
+          <div>
+            <div class="flex items-end justify-between gap-3">
+              <div>
+                <label for="formatter-output" class="text-sm font-bold" data-i18n="formatter.outputLabel">整理后的文案</label>
+                <p id="formatter-changes" class="mt-1 text-xs leading-5 text-muted" data-i18n="formatter.noChanges">没有需要整理的内容</p>
+              </div>
+              <button type="button" data-copy-from="formatter-output" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-copy" aria-hidden="true"></i><span data-i18n="shared.copy">复制</span></button>
+            </div>
+            <textarea id="formatter-output" readonly class="mt-4 min-h-80 w-full resize-y rounded-lg border-line bg-canvas px-4 py-3 text-base leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="formatter.outputPlaceholder" placeholder="整理结果会显示在这里"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <aside class="rounded-lg border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div class="flex items-center gap-3">
+          <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 text-rose-700"><i class="fa-solid fa-sliders" aria-hidden="true"></i></span>
+          <h2 class="text-lg font-black" data-i18n="formatter.title">文案排版整理</h2>
+        </div>
+        <div class="mt-7 space-y-4">
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-line p-3 transition hover:border-brand">
+            <input id="remove-invisible" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-zinc-300 text-brand focus:ring-brand" checked>
+            <span class="text-sm font-semibold leading-6" data-i18n="formatter.removeInvisible">移除常见隐形字符</span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-line p-3 transition hover:border-brand">
+            <input id="trim-lines" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-zinc-300 text-brand focus:ring-brand" checked>
+            <span class="text-sm font-semibold leading-6" data-i18n="formatter.trimLines">修整每行首尾空格</span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-line p-3 transition hover:border-brand">
+            <input id="collapse-blank" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-zinc-300 text-brand focus:ring-brand" checked>
+            <span class="text-sm font-semibold leading-6" data-i18n="formatter.collapseBlank">合并多余空行</span>
+          </label>
+        </div>
+        <div class="mt-7 border-t border-line pt-6">
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-muted" data-i18n="formatter.changes">本次整理</p>
+          <dl class="mt-4 space-y-3 text-sm">
+            <div class="flex items-center justify-between gap-3"><dt class="text-muted" data-i18n="formatter.removedInvisible">移除隐形字符</dt><dd id="invisible-count" class="font-black tabular-nums text-brand">0</dd></div>
+            <div class="flex items-center justify-between gap-3"><dt class="text-muted" data-i18n="formatter.collapsedBlank">合并空行</dt><dd id="blank-count" class="font-black tabular-nums text-brand">0</dd></div>
+          </dl>
+        </div>
+        <div class="mt-7 border-t border-line pt-6">
+          <p class="text-sm font-black" data-i18n="cloud.formatterTitle">润色预览</p>
+          <p class="mt-1 text-xs leading-5 text-muted" data-i18n="cloud.formatterHint">保持原意，调整语句与节奏。</p>
+          <button id="formatter-cloud-action" type="button" class="cloud-action-button mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-feather-pointed" aria-hidden="true"></i><span data-i18n="cloud.formatterAction">深度润色</span></button>
+          <div id="formatter-cloud-result" class="cloud-result mt-4" hidden>
+            <textarea id="formatter-cloud-output" readonly class="min-h-48 w-full resize-y rounded-lg border border-line bg-canvas px-3 py-2 text-sm leading-6 text-ink shadow-sm focus:border-brand focus:ring-brand" data-i18n-aria-label="cloud.formatterTitle" aria-label="润色预览"></textarea>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button id="formatter-cloud-apply" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-check" aria-hidden="true"></i><span data-i18n="cloud.apply">采用结果</span></button>
+              <button id="formatter-cloud-restore" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45" disabled><i class="fa-solid fa-rotate-left" aria-hidden="true"></i><span data-i18n="cloud.restore">恢复原文</span></button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
+  <script src="assets/postprep.js"></script>
+</body>
+</html>

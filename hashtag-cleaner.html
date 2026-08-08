@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PostPrep 标签整理器：统一 # 格式、去重并复制干净结果。">
+  <title>标签整理 | PostPrep</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { canvas: "#F7F9FA", surface: "#FFFFFF", ink: "#1F2933", muted: "#667085", line: "#E5E7EB", brand: "#0F766E", brandDark: "#115E59", brandSoft: "#CCFBF1", coral: "#C2410C" } } } };
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="hashtags" data-title-key="hashtags.title">
+  <div id="site-header"></div>
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="max-w-3xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="hashtags.eyebrow">HASHTAG CLEANER</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="hashtags.title">标签整理</h1>
+      <p class="mt-3 text-base leading-7 text-muted" data-i18n="hashtags.intro">把零散标签处理成干净、可直接粘贴的一行。</p>
+    </header>
+
+    <div class="mt-10 grid gap-6 lg:grid-cols-2">
+      <section class="rounded-lg border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <label for="hashtag-input" class="text-sm font-bold" data-i18n="hashtags.inputLabel">原始标签</label>
+            <p class="mt-1 text-xs leading-5 text-muted" data-i18n="hashtags.inputHint">支持半角 / 全角 #，自动去重。</p>
+          </div>
+          <button id="hashtag-clear" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink transition hover:border-rose-300 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-eraser" aria-hidden="true"></i><span data-i18n="shared.clear">清空</span></button>
+        </div>
+        <textarea id="hashtag-input" class="mt-4 min-h-72 w-full resize-y rounded-lg border-line px-4 py-3 text-base leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="hashtags.inputPlaceholder" placeholder="一行一个，或用空格、逗号分隔"></textarea>
+      </section>
+
+      <section class="rounded-lg border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div class="flex items-end justify-between gap-3">
+          <div>
+            <label for="hashtag-output" class="text-sm font-bold" data-i18n="hashtags.outputLabel">整理结果</label>
+            <p class="mt-1 text-xs leading-5 text-muted" data-i18n="hashtags.outputHint">标签按第一次出现的顺序保留。</p>
+          </div>
+          <button type="button" data-copy-from="hashtag-output" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand px-3 py-2 text-sm font-bold text-white transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-copy" aria-hidden="true"></i><span data-i18n="shared.copy">复制</span></button>
+        </div>
+        <textarea id="hashtag-output" readonly class="mt-4 min-h-72 w-full resize-y rounded-lg border-line bg-canvas px-4 py-3 text-base leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="hashtags.outputPlaceholder" placeholder="整理后的标签会显示在这里"></textarea>
+        <div class="mt-5 border-t border-line pt-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-sm font-black" data-i18n="cloud.hashtagTitle">补充标签</p>
+              <p class="mt-1 text-xs leading-5 text-muted" data-i18n="cloud.hashtagHint">提取贴近原文的精简标签。</p>
+            </div>
+            <button id="hashtag-cloud-action" type="button" class="cloud-action-button inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span data-i18n="cloud.hashtagAction">深度整理</span></button>
+          </div>
+          <div id="hashtag-cloud-result" class="cloud-result mt-4" hidden>
+            <textarea id="hashtag-cloud-output" readonly class="min-h-24 w-full resize-y rounded-lg border border-line bg-canvas px-3 py-2 text-sm leading-6 text-ink shadow-sm focus:border-brand focus:ring-brand" data-i18n-aria-label="cloud.hashtagTitle" aria-label="补充标签"></textarea>
+            <button type="button" data-copy-from="hashtag-cloud-output" class="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-regular fa-copy" aria-hidden="true"></i><span data-i18n="cloud.copySuggestion">复制建议</span></button>
+          </div>
+        </div>
+        <div class="mt-5 flex items-center justify-between border-t border-line pt-5">
+          <span class="text-sm font-semibold text-muted" data-i18n="hashtags.count">标签数量</span>
+          <span id="hashtag-count" class="text-2xl font-black tabular-nums text-brand">0</span>
+        </div>
+      </section>
+    </div>
+  </main>
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
+  <script src="assets/postprep.js"></script>
+</body>
+</html>
