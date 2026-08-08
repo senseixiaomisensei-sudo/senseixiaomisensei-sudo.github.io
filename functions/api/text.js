@@ -18,7 +18,7 @@ const PLATFORM_NAMES = Object.freeze({
 });
 
 const PLATFORM_GUIDANCE = Object.freeze({
-  xiaohongshu: "Lead with a useful, specific first-person note. Keep the tone warm, grounded, and easy to save or discuss.",
+  xiaohongshu: "Use a useful, specific diary-note style only when the seed provides first-person facts. Otherwise frame it as a plan, prompt, or general note. Keep the tone warm, grounded, and easy to save or discuss.",
   douyin: "Open with a clear hook. Keep sentences short, spoken, and direct.",
   wechat: "Use an accurate, structured, and restrained editorial tone. Avoid exaggerated calls to action.",
   tiktok: "Open with an immediate hook and keep the caption compact, conversational, and easy to scan.",
@@ -131,13 +131,13 @@ function promptFor(action, draft, body) {
 
     if (body.generationKind === "hashtags") {
       return {
-        system: shared + "Generate exactly three to five concise, accurate, non-duplicated hashtags for the selected platform. " + platformGuidance + " Never claim a tag is trending or add unrelated reach-bait. Return only hashtags separated by single spaces, each beginning with #.",
+        system: shared + "Generate exactly three to five concise, accurate, non-duplicated hashtags for the selected platform. " + platformGuidance + " Never claim a tag is trending or add unrelated reach-bait. After the leading #, use only letters, numbers, underscores, or hyphens; do not use emoji or other punctuation. Return only hashtags separated by single spaces.",
         user: "Publishing platform: " + platformName + "\nPlatform direction: " + platformGuidance + "\n\n<SEED>\n" + draft + "\n</SEED>",
       };
     }
 
     return {
-      system: shared + "Create one ready-to-paste caption from the supplied topic, title, seed phrase, or tags. " + platformGuidance + " Preserve supplied facts, do not invent experience or results, and do not include a heading, explanation, or markdown fence. Include a restrained call to action only when it naturally fits the platform.",
+      system: shared + "Create one ready-to-paste caption from the supplied topic, title, seed phrase, or tags. " + platformGuidance + " Preserve supplied facts, do not invent experience or results, and do not imply that the user has visited, used, purchased, achieved, or observed something unless the seed explicitly says so. Do not include a heading, explanation, or markdown fence. Include a restrained call to action only when it naturally fits the platform.",
       user: "Publishing platform: " + platformName + "\nPlatform direction: " + platformGuidance + "\n\n<SEED>\n" + draft + "\n</SEED>",
     };
   }
