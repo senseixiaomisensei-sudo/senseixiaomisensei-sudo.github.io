@@ -4,7 +4,7 @@ const POLISH_MODEL = "agnes-2.0-flash";
 const MAX_BODY_BYTES = 24000;
 const MAX_DRAFT_CHARS = 16000;
 const REQUEST_TIMEOUT_MS = 25000;
-const PUBLIC_SITE_ORIGINS = Object.freeze([
+const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
   "https://senseixiaomisensei-sudo.github.io",
 ]);
 
@@ -51,7 +51,32 @@ const ACTIONS = Object.freeze({
   }),
 });
 
-function responseHeaders(request) {
+function normalizedHttpOrigin(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    return url.protocol === "https:" || url.protocol === "http:" ? url.origin : "";
+  } catch {
+    return "";
+  }
+}
+
+function publicSiteOrigins(env) {
+  const configured = env && typeof env.ALLOWED_ORIGINS === "string" ? env.ALLOWED_ORIGINS : "";
+  const extraOrigins = configured
+    .split(",")
+    .map(normalizedHttpOrigin)
+    .filter(Boolean);
+  return new Set([...DEFAULT_PUBLIC_SITE_ORIGINS, ...extraOrigins]);
+}
+
+function isAllowedOrigin(request, env) {
+  const origin = request.headers.get("Origin");
+  if (!origin) return true;
+  const requestOrigin = new URL(request.url).origin;
+  return origin === requestOrigin || publicSiteOrigins(env).has(origin);
+}
+
+function responseHeaders(request, env) {
   const headers = {
     "Cache-Control": "no-store",
     "Content-Type": "application/json; charset=UTF-8",
@@ -59,27 +84,25 @@ function responseHeaders(request) {
     Vary: "Origin",
   };
   const origin = request.headers.get("Origin");
-  const requestOrigin = new URL(request.url).origin;
-  if (origin && (origin === requestOrigin || PUBLIC_SITE_ORIGINS.includes(origin))) {
+  if (origin && isAllowedOrigin(request, env)) {
     headers["Access-Control-Allow-Origin"] = origin;
   }
   return headers;
 }
 
-function json(request, body, status = 200) {
+function json(request, body, status = 200, env) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: responseHeaders(request),
+    headers: responseHeaders(request, env),
   });
 }
 
-function failure(request, status, code, message, details = {}) {
-  return json(request, { code, message, details }, status);
+function failure(request, status, code, message, details = {}, env) {
+  return json(request, { code, message, details }, status, env);
 }
 
-function sameOrigin(request) {
-  const origin = request.headers.get("Origin");
-  return !origin || origin === new URL(request.url).origin || PUBLIC_SITE_ORIGINS.includes(origin);
+function sameOrigin(request, env) {
+  return isAllowedOrigin(request, env);
 }
 
 function contentFromUpstream(payload) {
@@ -205,11 +228,11 @@ export async function onRequest(context) {
   const method = request.method.toUpperCase();
 
   if (method === "OPTIONS") {
-    if (!sameOrigin(request)) return failure(request, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed");
+    if (!sameOrigin(request, env)) return failure(request, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed", {}, env);
     return new Response(null, {
       status: 204,
       headers: {
-        ...responseHeaders(request),
+        ...responseHeaders(request, env),
         Allow: "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -218,56 +241,56 @@ export async function onRequest(context) {
     });
   }
 
-  if (method !== "POST") return failure(request, 405, "METHOD_NOT_ALLOWED", "Use POST for text processing", { allowed: ["POST"] });
-  if (!sameOrigin(request)) return failure(request, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed");
+  if (method !== "POST") return failure(request, 405, "METHOD_NOT_ALLOWED", "Use POST for text processing", { allowed: ["POST"] }, env);
+  if (!sameOrigin(request, env)) return failure(request, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed", {}, env);
 
   const contentType = request.headers.get("Content-Type") || "";
   if (!contentType.toLowerCase().startsWith("application/json")) {
-    return failure(request, 415, "UNSUPPORTED_MEDIA_TYPE", "Send a JSON request", { expected: "application/json" });
+    return failure(request, 415, "UNSUPPORTED_MEDIA_TYPE", "Send a JSON request", { expected: "application/json" }, env);
   }
 
   const declaredLength = Number.parseInt(request.headers.get("Content-Length") || "", 10);
   if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
-    return failure(request, 413, "REQUEST_TOO_LARGE", "The request is too large", { maxBytes: MAX_BODY_BYTES });
+    return failure(request, 413, "REQUEST_TOO_LARGE", "The request is too large", { maxBytes: MAX_BODY_BYTES }, env);
   }
 
   let body;
   try {
     const bytes = await request.arrayBuffer();
     if (bytes.byteLength > MAX_BODY_BYTES) {
-      return failure(request, 413, "REQUEST_TOO_LARGE", "The request is too large", { maxBytes: MAX_BODY_BYTES });
+      return failure(request, 413, "REQUEST_TOO_LARGE", "The request is too large", { maxBytes: MAX_BODY_BYTES }, env);
     }
     body = JSON.parse(new TextDecoder().decode(bytes));
   } catch {
-    return failure(request, 400, "INVALID_JSON", "The request body is not valid JSON");
+    return failure(request, 400, "INVALID_JSON", "The request body is not valid JSON", {}, env);
   }
 
   const action = typeof body.action === "string" ? body.action.trim() : "";
   const draft = typeof body.draft === "string" ? body.draft.trim() : "";
   if (!Object.prototype.hasOwnProperty.call(ACTIONS, action)) {
-    return failure(request, 400, "INVALID_ACTION", "This processing action is not available", { allowed: Object.keys(ACTIONS) });
+    return failure(request, 400, "INVALID_ACTION", "This processing action is not available", { allowed: Object.keys(ACTIONS) }, env);
   }
-  if (!draft) return failure(request, 400, "EMPTY_DRAFT", "Paste some text before starting");
+  if (!draft) return failure(request, 400, "EMPTY_DRAFT", "Paste some text before starting", {}, env);
   if (draft.length > MAX_DRAFT_CHARS) {
-    return failure(request, 413, "DRAFT_TOO_LARGE", "The text is too long for one request", { maxCharacters: MAX_DRAFT_CHARS });
+    return failure(request, 413, "DRAFT_TOO_LARGE", "The text is too long for one request", { maxCharacters: MAX_DRAFT_CHARS }, env);
   }
 
   if (action === "length" || action === "generate") {
     if (typeof body.platform !== "string" || !Object.prototype.hasOwnProperty.call(PLATFORM_NAMES, body.platform)) {
-      return failure(request, 400, "INVALID_PLATFORM", "Choose a supported publishing field", { allowed: Object.keys(PLATFORM_NAMES) });
+      return failure(request, 400, "INVALID_PLATFORM", "Choose a supported publishing field", { allowed: Object.keys(PLATFORM_NAMES) }, env);
     }
   }
 
   if (action === "length") {
     const limit = Number(body.limit);
     if (!Number.isInteger(limit) || limit < 1 || limit > 100000) {
-      return failure(request, 400, "INVALID_LIMIT", "Choose a valid character target", { min: 1, max: 100000 });
+      return failure(request, 400, "INVALID_LIMIT", "Choose a valid character target", { min: 1, max: 100000 }, env);
     }
   }
 
   if (action === "generate") {
     if (typeof body.generationKind !== "string" || !GENERATION_KINDS.includes(body.generationKind)) {
-      return failure(request, 400, "INVALID_GENERATION_KIND", "Choose a supported generation type", { allowed: GENERATION_KINDS });
+      return failure(request, 400, "INVALID_GENERATION_KIND", "Choose a supported generation type", { allowed: GENERATION_KINDS }, env);
     }
   }
 
@@ -275,6 +298,6 @@ export async function onRequest(context) {
     ...ACTIONS[action],
     ...promptFor(action, draft, body),
   });
-  if (result.error) return failure(request, result.error.status, result.error.code, result.error.message, result.error.details);
-  return json(request, { ok: true, content: result.content });
+  if (result.error) return failure(request, result.error.status, result.error.code, result.error.message, result.error.details, env);
+  return json(request, { ok: true, content: result.content }, 200, env);
 }
