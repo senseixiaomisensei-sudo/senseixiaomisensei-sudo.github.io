@@ -3,7 +3,12 @@
 
   const LANGUAGE_KEY = "postprep-language";
   const VERIFIED_DATE = "2026-08-06";
-  const CLOUD_TEXT_ENDPOINT = "/api/text";
+  const CONFIGURED_CLOUD_TEXT_ENDPOINT = typeof globalThis.POSTPREP_API_ENDPOINT === "string"
+    ? globalThis.POSTPREP_API_ENDPOINT.trim()
+    : "";
+  const CLOUD_TEXT_ENDPOINT = CONFIGURED_CLOUD_TEXT_ENDPOINT || "/api/text";
+  const IS_GITHUB_PAGES_HOST = typeof window !== "undefined"
+    && window.location.hostname.toLowerCase().endsWith(".github.io");
 
   const translations = {
     zh: {
@@ -23,12 +28,12 @@
         copied: "已复制到剪贴板",
         copyFallback: "请手动复制结果",
         nothingToCopy: "还没有可复制的内容",
-        privacyShort: "所有工具均在当前浏览器中处理；不会上传你的草稿。",
+        privacyShort: "基础工具在本机处理；云端深度处理需主动点击并由服务端代理。",
       },
       home: {
         eyebrow: "FOR CREATOR WORKFLOWS",
         title: "发布前，把文案收拾得更利落。",
-        intro: "一个轻量、双语、无需登录的创作者工具站。当前功能全部在浏览器中完成。",
+        intro: "一个轻量、双语、无需登录的创作者工具站。基础整理留在浏览器，云端深度处理只在部署启用且你主动点击时工作。",
         openTools: "打开工具",
         toolHeading: "从你的草稿开始",
         lengthTitle: "文案长度检查",
@@ -39,7 +44,7 @@
         formatBody: "清掉多余空行与隐形字符，保留你的原意。",
         open: "打开",
         privacyHeading: "文案留在你手边",
-        privacyBody: "所有工具只在当前网页中计算和整理文字；不会上传你的草稿。",
+        privacyBody: "基础工具只在当前网页中计算和整理文字；云端深度处理只有在部署启用且你主动点击时才发送当前文案。",
         noteOne: "中英界面，一键切换",
         noteTwo: "手机与电脑都能使用",
         noteThree: "第一版不含广告或统计代码",
@@ -127,11 +132,11 @@
       privacy: {
         eyebrow: "PRIVACY",
         title: "隐私说明",
-        intro: "所有当前工具都在浏览器中本地处理；不会上传你粘贴的文案。",
+        intro: "基础工具在浏览器中本地处理；云端深度处理仅在部署启用且你主动点击后调用。",
         localTitle: "基础工具不会上传",
         localBody: "长度检查、标签整理和排版整理都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。",
-        cloudTitle: "深度处理暂未开放",
-        cloudBody: "当前 GitHub Pages 版本只提供浏览器内的基础工具，不会向 PostPrep 服务器发送草稿。未来若启用云端深度处理，会先在此说明数据流向与可用选择。",
+        cloudTitle: "云端深度处理（按部署配置）",
+        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理或深度润色后，只会发送当前文案来生成结果；未启用时按钮会提示暂不可用。",
         servicesTitle: "第三方静态资源",
         servicesBody: "为了加载页面样式、图标和首页图片，你的浏览器会向 Tailwind CDN、Font Awesome CDN 与 Unsplash 请求资源。这些请求不包含你在工具内粘贴的文案。",
         adsTitle: "广告与统计",
@@ -172,12 +177,12 @@
         copied: "Copied to clipboard",
         copyFallback: "Select and copy the result manually",
         nothingToCopy: "There is nothing to copy yet",
-        privacyShort: "All current tools run in this browser; your draft is not uploaded.",
+        privacyShort: "Basic tools run locally; optional deep processing uses a server-side proxy.",
       },
       home: {
         eyebrow: "FOR CREATOR WORKFLOWS",
         title: "Tidy the draft before it goes live.",
-        intro: "A lightweight bilingual toolkit for creator publishing. All current tools run in your browser.",
+        intro: "A lightweight bilingual toolkit for creator publishing. Basic cleanup stays local; optional deep processing runs only when enabled and chosen.",
         openTools: "Open tools",
         toolHeading: "Start with your draft",
         lengthTitle: "Length checker",
@@ -188,7 +193,7 @@
         formatBody: "Remove extra blank lines and invisible characters without changing your message.",
         open: "Open",
         privacyHeading: "Keep your draft close",
-        privacyBody: "All tools calculate and clean text in this page; your draft is not uploaded.",
+        privacyBody: "Basic tools calculate and clean text in this page; optional deep processing sends the current draft only after you choose it and the deployment enables it.",
         noteOne: "Chinese and English interface",
         noteTwo: "Comfortable on mobile and desktop",
         noteThree: "No ads or analytics in v1",
@@ -276,11 +281,11 @@
       privacy: {
         eyebrow: "PRIVACY",
         title: "Privacy",
-        intro: "All current tools run in this browser; the text you paste is not uploaded.",
+        intro: "Basic tools run in this browser; optional deep processing is available only when the deployment enables it and you choose it.",
         localTitle: "Basic tools stay local",
         localBody: "Length checking, hashtag cleaning, and caption formatting run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
-        cloudTitle: "Deep processing is not enabled",
-        cloudBody: "This GitHub Pages version provides browser-only basic tools and does not send drafts to a PostPrep server. If cloud processing is enabled later, this page will explain the data flow and available choices first.",
+        cloudTitle: "Optional deep processing",
+        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, or Deep polish, only the current draft is sent for a result; otherwise the button reports that the feature is unavailable.",
         servicesTitle: "Third-party static resources",
         servicesBody: "Your browser requests page styling, icons, and the homepage photo from Tailwind CDN, Font Awesome CDN, and Unsplash. Those requests do not contain the draft you paste into a tool.",
         adsTitle: "Ads and analytics",
@@ -796,7 +801,7 @@
           cloudResult.hidden = false;
           animateChanged(cloudOutput, content);
         } catch (error) {
-          showToast(error && error.code === "CLOUD_UNAVAILABLE_LOCAL" ? t("cloud.unavailable") : t("cloud.networkError"));
+          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
         } finally {
           setCloudBusy(cloudAction, false);
         }
@@ -896,7 +901,7 @@
           cloudResult.hidden = false;
           animateChanged(cloudOutput, cloudOutput.value);
         } catch (error) {
-          showToast(error && error.code === "CLOUD_UNAVAILABLE_LOCAL" ? t("cloud.unavailable") : t("cloud.networkError"));
+          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
         } finally {
           setCloudBusy(cloudAction, false);
         }
@@ -959,8 +964,12 @@
     button.setAttribute("aria-busy", String(busy));
   }
 
+  function isCloudUnavailable(error) {
+    return Boolean(error && ["CLOUD_UNAVAILABLE_LOCAL", "MISSING_SERVER_SECRET", "ORIGIN_NOT_ALLOWED"].includes(error.code));
+  }
+
   async function requestCloudText(action, draft, metadata) {
-    if (window.location.protocol === "file:" || window.location.hostname.toLowerCase().endsWith(".github.io")) {
+    if (window.location.protocol === "file:" || (IS_GITHUB_PAGES_HOST && !CONFIGURED_CLOUD_TEXT_ENDPOINT)) {
       const unavailable = new Error("Cloud processing is unavailable in this static deployment");
       unavailable.code = "CLOUD_UNAVAILABLE_LOCAL";
       throw unavailable;
@@ -990,6 +999,9 @@
       if (!response.ok) {
         const error = new Error(payload && typeof payload.message === "string" ? payload.message : "Cloud request failed");
         error.code = payload && typeof payload.code === "string" ? payload.code : "CLOUD_REQUEST_FAILED";
+        if ((response.status === 404 || response.status === 405) && !CONFIGURED_CLOUD_TEXT_ENDPOINT) {
+          error.code = "CLOUD_UNAVAILABLE_LOCAL";
+        }
         throw error;
       }
 
@@ -1095,7 +1107,7 @@
           cloudResult.hidden = false;
           animateChanged(cloudOutput, content);
         } catch (error) {
-          showToast(error && error.code === "CLOUD_UNAVAILABLE_LOCAL" ? t("cloud.unavailable") : t("cloud.networkError"));
+          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
         } finally {
           setCloudBusy(cloudAction, false);
         }

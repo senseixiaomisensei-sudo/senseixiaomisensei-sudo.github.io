@@ -13,8 +13,17 @@ python -m http.server 8000
 # 打开 http://localhost:8000/
 ```
 
-## GitHub Pages 版本
+## 部署结构
 
-`main` 分支根目录即为 GitHub Pages 发布源。长度检查、标签整理和排版整理都在浏览器内完成。
+GitHub Pages 负责公开静态页面；`functions/api/text.js` 是独立的 Cloudflare Pages Function 代理。代理只从运行环境的 `AGNES_API_KEY` 密钥读取 Agnes 凭据，前端永远不会保存或发送密钥。
 
-仓库中保留的 `functions/api/text.js` 是 Cloudflare Pages 函数源码；GitHub Pages 不会执行它，因此当前线上版本不会把草稿上传到云端，深度处理按钮会明确提示未配置。
+完成 Cloudflare 登录后，可按下面的顺序创建/发布代理：
+
+```bash
+npx wrangler login
+npx wrangler pages project create postprep --production-branch main
+npx wrangler pages secret put AGNES_API_KEY --project-name postprep
+npx wrangler pages deploy . --project-name postprep --branch main
+```
+
+部署完成后，把 Cloudflare Pages 地址填入 `assets/postprep-config.js` 的 `POSTPREP_API_ENDPOINT`（只填公开的 `/api/text` 地址，不填密钥），再推送 GitHub Pages 前端。`functions/api/text.js` 已限制请求来源为本站域名，并统一返回结构化错误。

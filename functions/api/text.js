@@ -4,6 +4,9 @@ const POLISH_MODEL = "Agnes-2.0-Flash";
 const MAX_BODY_BYTES = 24000;
 const MAX_DRAFT_CHARS = 16000;
 const REQUEST_TIMEOUT_MS = 25000;
+const PUBLIC_SITE_ORIGINS = Object.freeze([
+  "https://senseixiaomisensei-sudo.github.io",
+]);
 
 const PLATFORM_NAMES = Object.freeze({
   xiaohongshu: "Xiaohongshu",
@@ -40,7 +43,8 @@ function responseHeaders(request) {
     Vary: "Origin",
   };
   const origin = request.headers.get("Origin");
-  if (origin && origin === new URL(request.url).origin) {
+  const requestOrigin = new URL(request.url).origin;
+  if (origin && (origin === requestOrigin || PUBLIC_SITE_ORIGINS.includes(origin))) {
     headers["Access-Control-Allow-Origin"] = origin;
   }
   return headers;
@@ -59,7 +63,7 @@ function failure(request, status, code, message, details = {}) {
 
 function sameOrigin(request) {
   const origin = request.headers.get("Origin");
-  return !origin || origin === new URL(request.url).origin;
+  return !origin || origin === new URL(request.url).origin || PUBLIC_SITE_ORIGINS.includes(origin);
 }
 
 function contentFromUpstream(payload) {
@@ -174,6 +178,7 @@ export async function onRequest(context) {
         Allow: "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Max-Age": "600",
       },
     });
   }
