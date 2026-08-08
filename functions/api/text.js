@@ -1,5 +1,5 @@
 const AGNES_API_URL = "https://apihub.agnes-ai.com/v1/chat/completions";
-const FAST_MODEL = "agnes-1.5-flash";
+const FAST_MODEL = "agnes-2.0-flash";
 const POLISH_MODEL = "agnes-2.0-flash";
 const MAX_BODY_BYTES = 24000;
 const MAX_DRAFT_CHARS = 16000;
