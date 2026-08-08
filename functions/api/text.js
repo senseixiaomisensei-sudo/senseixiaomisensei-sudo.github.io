@@ -46,8 +46,8 @@ const ACTIONS = Object.freeze({
   }),
   generate: Object.freeze({
     model: POLISH_MODEL,
-    temperature: 0.65,
-    maxTokens: 900,
+    temperature: 0.5,
+    maxTokens: 700,
   }),
 });
 
@@ -137,7 +137,7 @@ function promptFor(action, draft, body) {
     }
 
     return {
-      system: shared + "Create one ready-to-paste caption from the supplied topic, title, seed phrase, or tags. " + platformGuidance + " Preserve supplied facts, do not invent experience or results, and do not imply that the user has visited, used, purchased, achieved, or observed something unless the seed explicitly says so. Do not include a heading, explanation, or markdown fence. Include a restrained call to action only when it naturally fits the platform.",
+      system: shared + "Create one ready-to-paste caption from the supplied topic, title, seed phrase, or tags. " + platformGuidance + " Use only facts and specific details present in the seed. If the seed is brief or describes a plan, keep the copy generic and preserve its plan or future tense; do not add weather, dates, named places, prices, products, outcomes, recommendations, or first-person experiences that the seed does not provide. Do not include a heading, explanation, or markdown fence. Include a restrained call to action only when it naturally fits the platform.",
       user: "Publishing platform: " + platformName + "\nPlatform direction: " + platformGuidance + "\n\n<SEED>\n" + draft + "\n</SEED>",
     };
   }
