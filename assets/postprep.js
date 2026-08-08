@@ -18,6 +18,7 @@
         length: "长度检查",
         hashtags: "标签整理",
         formatter: "排版整理",
+        generator: "灵感生成",
         privacy: "隐私",
         language: "EN",
         languageLabel: "切换至 English",
@@ -28,7 +29,7 @@
         copied: "已复制到剪贴板",
         copyFallback: "请手动复制结果",
         nothingToCopy: "还没有可复制的内容",
-        privacyShort: "基础工具在本机处理；云端深度处理需主动点击并由服务端代理。",
+        privacyShort: "基础工具在本机处理；生成或深度处理需主动点击并由服务端代理。",
       },
       home: {
         eyebrow: "FOR CREATOR WORKFLOWS",
@@ -42,9 +43,11 @@
         tagBody: "统一 # 格式、去重并整理成可直接粘贴的一行。",
         formatTitle: "文案排版整理",
         formatBody: "清掉多余空行与隐形字符，保留你的原意。",
+        generatorTitle: "按平台生成文案",
+        generatorBody: "输入一句主题、标题或标签，按平台生成可直接编辑的文案或标签。",
         open: "打开",
         privacyHeading: "文案留在你手边",
-        privacyBody: "基础工具只在当前网页中计算和整理文字；云端深度处理只有在部署启用且你主动点击时才发送当前文案。",
+        privacyBody: "基础工具只在当前网页中计算和整理文字；云端生成或深度处理只有在部署启用且你主动点击时才发送当前主题或文案。",
         noteOne: "中英界面，一键切换",
         noteTwo: "手机与电脑都能使用",
         noteThree: "第一版不含广告或统计代码",
@@ -107,6 +110,27 @@
         collapsedBlank: "合并空行",
         noChanges: "没有需要整理的内容",
       },
+      generator: {
+        eyebrow: "PLATFORM CONTENT GENERATOR",
+        title: "按平台生成文案",
+        intro: "输入一句主题、标题或几个标签，选择发布平台和要生成的内容，就能得到可继续编辑的初稿。",
+        platformLabel: "发布位置",
+        typeLabel: "生成内容",
+        caption: "生成文案",
+        hashtags: "生成标签",
+        inputLabel: "你想写什么",
+        inputHint: "一句标题、主题、卖点或 1–3 个标签即可；生成前请确认事实准确。",
+        inputPlaceholder: "例如：周末去江苏看初雪",
+        generate: "开始生成",
+        clear: "清空主题",
+        resultLabel: "生成结果",
+        resultHint: "结果会结合所选平台的表达方式；发布前请按实际情况调整。",
+        resultPlaceholder: "选择平台并输入主题后，点击开始生成",
+        selected: "当前选择",
+        processing: "正在生成，请稍候…",
+        empty: "先输入一个主题、标题或标签",
+        noResult: "还没有可复制的生成结果",
+      },
       cloud: {
         lengthTitle: "发布建议",
         lengthHint: "根据所选发布位置，给出简短调整方向。",
@@ -132,11 +156,11 @@
       privacy: {
         eyebrow: "PRIVACY",
         title: "隐私说明",
-        intro: "基础工具在浏览器中本地处理；云端深度处理仅在部署启用且你主动点击后调用。",
+        intro: "基础工具在浏览器中本地处理；云端生成或深度处理仅在部署启用且你主动点击后调用。",
         localTitle: "基础工具不会上传",
         localBody: "长度检查、标签整理和排版整理都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。",
         cloudTitle: "云端深度处理（按部署配置）",
-        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理或深度润色后，只会发送当前文案来生成结果；未启用时按钮会提示暂不可用。",
+        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色或按平台生成后，只会发送当前主题或文案来生成结果；未启用时按钮会提示暂不可用。",
         servicesTitle: "第三方静态资源",
         servicesBody: "为了加载页面样式、图标和首页图片，你的浏览器会向 Tailwind CDN、Font Awesome CDN 与 Unsplash 请求资源。这些请求不包含你在工具内粘贴的文案。",
         adsTitle: "广告与统计",
@@ -167,6 +191,7 @@
         length: "Length check",
         hashtags: "Hashtags",
         formatter: "Formatter",
+        generator: "Generator",
         privacy: "Privacy",
         language: "中文",
         languageLabel: "Switch to Chinese",
@@ -177,7 +202,7 @@
         copied: "Copied to clipboard",
         copyFallback: "Select and copy the result manually",
         nothingToCopy: "There is nothing to copy yet",
-        privacyShort: "Basic tools run locally; optional deep processing uses a server-side proxy.",
+        privacyShort: "Basic tools run locally; optional generation and deep processing use a server-side proxy.",
       },
       home: {
         eyebrow: "FOR CREATOR WORKFLOWS",
@@ -191,9 +216,11 @@
         tagBody: "Normalize # formatting, remove duplicates, and prepare one clean line.",
         formatTitle: "Caption formatter",
         formatBody: "Remove extra blank lines and invisible characters without changing your message.",
+        generatorTitle: "Platform copy generator",
+        generatorBody: "Start with a topic, title, or tags and generate editable platform-ready copy or hashtags.",
         open: "Open",
         privacyHeading: "Keep your draft close",
-        privacyBody: "Basic tools calculate and clean text in this page; optional deep processing sends the current draft only after you choose it and the deployment enables it.",
+        privacyBody: "Basic tools calculate and clean text in this page; optional generation or deep processing sends the current topic or draft only after you choose it and the deployment enables it.",
         noteOne: "Chinese and English interface",
         noteTwo: "Comfortable on mobile and desktop",
         noteThree: "No ads or analytics in v1",
@@ -256,6 +283,27 @@
         collapsedBlank: "Extra blank lines collapsed",
         noChanges: "Nothing needed cleanup",
       },
+      generator: {
+        eyebrow: "PLATFORM CONTENT GENERATOR",
+        title: "Platform copy generator",
+        intro: "Enter a topic, title, or a few tags, choose a publishing platform and output type, then get an editable first draft.",
+        platformLabel: "Publishing platform",
+        typeLabel: "Generate",
+        caption: "Caption",
+        hashtags: "Hashtags",
+        inputLabel: "What do you want to write about?",
+        inputHint: "A title, topic, value point, or 1–3 tags is enough. Check facts before publishing.",
+        inputPlaceholder: "Example: A weekend trip to see the first snow in Jiangsu",
+        generate: "Generate",
+        clear: "Clear topic",
+        resultLabel: "Generated result",
+        resultHint: "The result follows the selected platform. Review and adjust it before publishing.",
+        resultPlaceholder: "Choose a platform, enter a topic, then generate",
+        selected: "Selected",
+        processing: "Generating…",
+        empty: "Enter a topic, title, or tags first",
+        noResult: "There is no generated result to copy yet",
+      },
       cloud: {
         lengthTitle: "Publishing suggestion",
         lengthHint: "Get a short adjustment direction for the selected publishing field.",
@@ -281,11 +329,11 @@
       privacy: {
         eyebrow: "PRIVACY",
         title: "Privacy",
-        intro: "Basic tools run in this browser; optional deep processing is available only when the deployment enables it and you choose it.",
+        intro: "Basic tools run in this browser; optional generation or deep processing is available only when the deployment enables it and you choose it.",
         localTitle: "Basic tools stay local",
         localBody: "Length checking, hashtag cleaning, and caption formatting run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
         cloudTitle: "Optional deep processing",
-        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, or Deep polish, only the current draft is sent for a result; otherwise the button reports that the feature is unavailable.",
+        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, or platform generation, only the current topic or draft is sent for a result; otherwise the button reports that the feature is unavailable.",
         servicesTitle: "Third-party static resources",
         servicesBody: "Your browser requests page styling, icons, and the homepage photo from Tailwind CDN, Font Awesome CDN, and Unsplash. Those requests do not contain the draft you paste into a tool.",
         adsTitle: "Ads and analytics",
@@ -527,6 +575,7 @@
       { id: "length", href: "length-checker.html", label: "shared.length" },
       { id: "hashtags", href: "hashtag-cleaner.html", label: "shared.hashtags" },
       { id: "formatter", href: "caption-formatter.html", label: "shared.formatter" },
+      { id: "generator", href: "idea-generator.html", label: "shared.generator" },
     ];
 
     const linkMarkup = links.map((link) => {
@@ -1149,6 +1198,126 @@
     update();
   }
 
+  function initGenerator() {
+    const input = document.getElementById("generator-input");
+    if (!input) return;
+
+    const platformList = document.getElementById("generator-platform-list");
+    const typeList = document.getElementById("generator-type-list");
+    const selectedMeta = document.getElementById("generator-selected-meta");
+    const output = document.getElementById("generator-output");
+    const generateButton = document.getElementById("generator-action");
+    const generateLabel = document.getElementById("generator-action-label");
+    const clearButton = document.getElementById("generator-clear");
+    let selectedPresetId = PLATFORM_PRESETS[0].id;
+    let generationKind = "caption";
+
+    function selectedPreset() {
+      return PLATFORM_PRESETS.find((preset) => preset.id === selectedPresetId) || PLATFORM_PRESETS[0];
+    }
+
+    function updateSelection() {
+      const preset = selectedPreset();
+      selectedMeta.textContent = t(preset.labelKey) + " · " + t("generator." + generationKind);
+      output.placeholder = t("generator.resultPlaceholder");
+      animateChanged(selectedMeta, selectedMeta.textContent);
+    }
+
+    function clearResult() {
+      output.value = "";
+      animateChanged(output, "");
+    }
+
+    function renderPlatformButtons() {
+      platformList.innerHTML = PLATFORM_PRESETS.map((preset) => {
+        const selected = preset.id === selectedPresetId;
+        const selectedClasses = "border-brand bg-brand text-white shadow-sm";
+        const defaultClasses = "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50";
+        return '<button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ' + (selected ? selectedClasses : defaultClasses) + '" data-generator-platform="' + preset.id + '" aria-pressed="' + selected + '"><i class="fa-solid ' + preset.icon + '" aria-hidden="true"></i><span>' + t(preset.labelKey) + "</span></button>";
+      }).join("");
+
+      platformList.querySelectorAll("[data-generator-platform]").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedPresetId = button.dataset.generatorPlatform;
+          clearResult();
+          renderPlatformButtons();
+          updateSelection();
+        });
+      });
+    }
+
+    function renderGenerationKinds() {
+      const kinds = ["caption", "hashtags"];
+      typeList.innerHTML = kinds.map((kind) => {
+        const selected = kind === generationKind;
+        const selectedClasses = "border-brand bg-teal-50 text-brand";
+        const defaultClasses = "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50";
+        const icon = kind === "caption" ? "fa-pen-nib" : "fa-hashtag";
+        return '<button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ' + (selected ? selectedClasses : defaultClasses) + '" data-generator-kind="' + kind + '" aria-pressed="' + selected + '"><i class="fa-solid ' + icon + '" aria-hidden="true"></i><span>' + t("generator." + kind) + "</span></button>";
+      }).join("");
+
+      typeList.querySelectorAll("[data-generator-kind]").forEach((button) => {
+        button.addEventListener("click", () => {
+          generationKind = button.dataset.generatorKind;
+          clearResult();
+          renderGenerationKinds();
+          updateSelection();
+        });
+      });
+    }
+
+    function setGeneratorBusy(busy) {
+      setCloudBusy(generateButton, busy);
+      generateLabel.textContent = busy ? t("generator.processing") : t("generator.generate");
+    }
+
+    input.addEventListener("input", clearResult);
+
+    clearButton.addEventListener("click", () => {
+      input.value = "";
+      clearResult();
+      input.focus();
+    });
+
+    generateButton.addEventListener("click", async () => {
+      const seed = input.value.trim();
+      if (!seed) {
+        showToast(t("generator.empty"));
+        input.focus();
+        return;
+      }
+
+      setGeneratorBusy(true);
+      try {
+        const content = await requestCloudText("generate", seed, {
+          platform: selectedPresetId,
+          generationKind,
+        });
+        const result = generationKind === "hashtags"
+          ? cleanHashtags(content).slice(0, 5).join(" ")
+          : content;
+        if (!result) throw new Error("No usable generated content");
+        output.value = result;
+        animateChanged(output, result);
+      } catch (error) {
+        showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+      } finally {
+        setGeneratorBusy(false);
+      }
+    });
+
+    document.addEventListener("postprep:languagechange", () => {
+      renderPlatformButtons();
+      renderGenerationKinds();
+      updateSelection();
+      setGeneratorBusy(generateButton.disabled);
+    });
+
+    renderPlatformButtons();
+    renderGenerationKinds();
+    updateSelection();
+  }
+
   globalThis.PostPrep = Object.freeze({
     PLATFORM_PRESETS,
     countVisibleCharacters,
@@ -1163,5 +1332,6 @@
     initLengthChecker();
     initHashtagCleaner();
     initFormatter();
+    initGenerator();
   });
 })();
