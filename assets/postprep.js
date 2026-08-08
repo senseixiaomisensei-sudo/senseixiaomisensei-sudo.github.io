@@ -989,6 +989,7 @@
         body: JSON.stringify({
           action,
           draft,
+          language: currentLanguage,
           ...(metadata || {}),
         }),
         signal: controller ? controller.signal : undefined,
