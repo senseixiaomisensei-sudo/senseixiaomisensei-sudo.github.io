@@ -30,6 +30,7 @@
         copyFallback: "请手动复制结果",
         nothingToCopy: "还没有可复制的内容",
         privacyShort: "基础工具在本机处理；生成或深度处理需主动点击并由服务端代理。",
+        adLabel: "广告",
       },
       home: {
         eyebrow: "FOR CREATOR WORKFLOWS",
@@ -50,7 +51,7 @@
         privacyBody: "基础工具只在当前网页中计算和整理文字；云端生成或深度处理只有在部署启用且你主动点击时才发送当前主题或文案。",
         noteOne: "中英界面，一键切换",
         noteTwo: "手机与电脑都能使用",
-        noteThree: "第一版不含广告或统计代码",
+        noteThree: "广告位仅在完成配置后显示",
       },
       length: {
         eyebrow: "TEXT LENGTH CHECKER",
@@ -162,9 +163,10 @@
         cloudTitle: "云端深度处理（按部署配置）",
         cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色或按平台生成后，只会发送当前主题或文案来生成结果；未启用时按钮会提示暂不可用。",
         servicesTitle: "第三方静态资源",
-        servicesBody: "为了加载页面样式、图标和首页图片，你的浏览器会向 Tailwind CDN、Font Awesome CDN 与 Unsplash 请求资源。这些请求不包含你在工具内粘贴的文案。",
+        servicesBody: "页面样式、图标和首页图片使用仓库内置资源；广告位启用后，浏览器还会按广告代码向 Adsterra 请求广告内容。这些请求不包含你在工具内粘贴的文案。",
         adsTitle: "广告与统计",
-        adsBody: "当前版本没有广告、统计代码或追踪像素。未来若接入广告联盟，会先更新本页面，说明 Cookie、广告个性化与可用的选择方式。",
+        adsBody: "广告位只有在站点配置了 Adsterra 代码后才会加载。Adsterra 及其合作方可能根据设备、浏览器和访问情况处理数据，并使用 Cookie 或进行个性化展示；具体范围以其政策为准。PostPrep 不会把工具输入主动传给广告脚本。",
+        cookiesLink: "查看 Adsterra Cookie 政策",
         controlTitle: "你的选择",
         controlBody: "你可以随时清空输入框、关闭页面或清除浏览器的本地站点数据。只有语言偏好保存在当前浏览器的 localStorage 中。",
         back: "返回首页",
@@ -203,6 +205,7 @@
         copyFallback: "Select and copy the result manually",
         nothingToCopy: "There is nothing to copy yet",
         privacyShort: "Basic tools run locally; optional generation and deep processing use a server-side proxy.",
+        adLabel: "Advertisement",
       },
       home: {
         eyebrow: "FOR CREATOR WORKFLOWS",
@@ -223,7 +226,7 @@
         privacyBody: "Basic tools calculate and clean text in this page; optional generation or deep processing sends the current topic or draft only after you choose it and the deployment enables it.",
         noteOne: "Chinese and English interface",
         noteTwo: "Comfortable on mobile and desktop",
-        noteThree: "No ads or analytics in v1",
+        noteThree: "Ads appear only after configuration",
       },
       length: {
         eyebrow: "TEXT LENGTH CHECKER",
@@ -335,9 +338,10 @@
         cloudTitle: "Optional deep processing",
         cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, or platform generation, only the current topic or draft is sent for a result; otherwise the button reports that the feature is unavailable.",
         servicesTitle: "Third-party static resources",
-        servicesBody: "Your browser requests page styling, icons, and the homepage photo from Tailwind CDN, Font Awesome CDN, and Unsplash. Those requests do not contain the draft you paste into a tool.",
+        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site; when configured, ad slots also request content from Adsterra using the supplied ad code. Those requests do not contain the draft you paste into a tool.",
         adsTitle: "Ads and analytics",
-        adsBody: "This release has no ads, analytics, or tracking pixels. If an ad network is added later, this page will be updated first with Cookie and ad-personalization details.",
+        adsBody: "Ad slots load only after Adsterra code is configured. Adsterra and its partners may process device, browser, and visit information and may use cookies or personalized delivery; see their policies for the current scope. PostPrep does not intentionally send tool inputs to the ad script.",
+        cookiesLink: "Read Adsterra's Cookie Policy",
         controlTitle: "Your control",
         controlBody: "You can clear any input, close the page, or erase local site data at any time. Only your language preference is stored in this browser's localStorage.",
         back: "Back to home",
@@ -1212,6 +1216,15 @@
     let selectedPresetId = PLATFORM_PRESETS[0].id;
     let generationKind = "caption";
 
+    function announceGeneratorResult(hasResult) {
+      document.dispatchEvent(new CustomEvent("postprep:generatorresult", {
+        detail: {
+          hasResult: Boolean(hasResult),
+          generationKind: generationKind === "hashtags" ? "hashtags" : "caption",
+        },
+      }));
+    }
+
     function selectedPreset() {
       return PLATFORM_PRESETS.find((preset) => preset.id === selectedPresetId) || PLATFORM_PRESETS[0];
     }
@@ -1226,6 +1239,7 @@
     function clearResult() {
       output.value = "";
       animateChanged(output, "");
+      announceGeneratorResult(false);
     }
 
     function renderPlatformButtons() {
@@ -1287,6 +1301,7 @@
         return;
       }
 
+      announceGeneratorResult(false);
       setGeneratorBusy(true);
       try {
         const content = await requestCloudText("generate", seed, {
@@ -1299,6 +1314,7 @@
         if (!result) throw new Error("No usable generated content");
         output.value = result;
         animateChanged(output, result);
+        announceGeneratorResult(true);
       } catch (error) {
         showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
       } finally {
