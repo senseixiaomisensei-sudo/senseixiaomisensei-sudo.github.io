@@ -1,6 +1,3 @@
-Exit code: 0
-Wall time: 0.7 seconds
-Output:
 const AD_CONFIG = Object.freeze({
   bannerDesktop: String.raw`<script>
   atOptions = {
