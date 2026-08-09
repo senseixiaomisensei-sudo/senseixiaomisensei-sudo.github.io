@@ -18,6 +18,7 @@ const AD_CONFIG = Object.freeze({
   "use strict";
 
   const PLACEHOLDER_PATTERN = /(?:YOUR_ADSTERRA_|PASTE_|REPLACE_|INSERT_)/i;
+  const SCRIPT_FAILURE_GRACE_MS = 3000;
   const state = {
     topMode: "",
     topMount: 0,
@@ -53,6 +54,19 @@ const AD_CONFIG = Object.freeze({
     if (clear) slot.replaceChildren();
   }
 
+  function slotHasRenderedContent(slot) {
+    const content = slot?.querySelector("[data-ad-content]");
+    if (!content) return false;
+    return Boolean(content.querySelector("iframe, img, video, object, embed, a, [data-ad-rendered], [id^=\"container-\"] > *"));
+  }
+
+  function scheduleFailureCheck(slot, mountId) {
+    window.setTimeout(() => {
+      if (!slot || slot.dataset.adMount !== String(mountId)) return;
+      if (!slotHasRenderedContent(slot)) hideSlot(slot);
+    }, SCRIPT_FAILURE_GRACE_MS);
+  }
+
   function createSlotContent(slot) {
     slot.replaceChildren();
     const label = document.createElement("span");
@@ -82,7 +96,7 @@ const AD_CONFIG = Object.freeze({
     }
     script.textContent = source.textContent || "";
     script.addEventListener("error", () => {
-      if (slot.dataset.adMount === String(mountId)) hideSlot(slot);
+      scheduleFailureCheck(slot, mountId);
     }, { once: true });
     return script;
   }
@@ -111,7 +125,7 @@ const AD_CONFIG = Object.freeze({
     let runtimeFailed = false;
     const onRuntimeError = () => {
       runtimeFailed = true;
-      if (slot.dataset.adMount === String(mountId)) hideSlot(slot);
+      if (slot.dataset.adMount === String(mountId)) scheduleFailureCheck(slot, mountId);
     };
     window.addEventListener("error", onRuntimeError, true);
     try {
@@ -122,10 +136,12 @@ const AD_CONFIG = Object.freeze({
       window.removeEventListener("error", onRuntimeError, true);
     }
 
-    if (runtimeFailed || slot.dataset.adMount !== String(mountId)) {
+    if (slot.dataset.adMount !== String(mountId)) {
       hideSlot(slot);
       return false;
     }
+
+    if (runtimeFailed) scheduleFailureCheck(slot, mountId);
 
     if (slot.dataset.adState !== "loading") {
       hideSlot(slot);
