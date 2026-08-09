@@ -8,9 +8,11 @@
   <link rel="stylesheet" href="assets/postprep-tailwind.css">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css">
+  <link rel="stylesheet" href="assets/postprep-ads.css">
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="generator" data-title-key="generator.title">
   <div id="site-header"></div>
+  <div id="postprep-ad-top" class="postprep-ad-slot postprep-ad-slot--top" data-ad-slot="banner-top" role="complementary" aria-label="广告" hidden></div>
   <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
     <header class="max-w-3xl">
       <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="generator.eyebrow">PLATFORM CONTENT GENERATOR</p>
@@ -61,6 +63,7 @@
             <button type="button" data-copy-from="generator-output" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-regular fa-copy" aria-hidden="true"></i><span data-i18n="shared.copy">复制</span></button>
           </div>
           <textarea id="generator-output" readonly class="mt-3 min-h-80 w-full resize-y rounded-lg border border-line bg-canvas px-4 py-3 text-base leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="generator.resultPlaceholder" placeholder="选择平台并输入主题后，点击开始生成" aria-live="polite"></textarea>
+          <div id="postprep-ad-native" class="postprep-ad-slot postprep-ad-slot--native" data-ad-slot="native-result" role="complementary" aria-label="广告" hidden></div>
         </div>
       </section>
     </div>
@@ -69,5 +72,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js"></script>
   <script src="assets/postprep.js"></script>
+  <script src="assets/postprep-ads.js"></script>
 </body>
 </html>

@@ -3,14 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="PostPrep 隐私说明：所有当前工具都在浏览器中本地处理。">
+  <meta name="description" content="PostPrep 隐私说明：基础工具在浏览器中本地处理，广告仅按配置加载。">
   <title>隐私说明 | PostPrep</title>
   <link rel="stylesheet" href="assets/postprep-tailwind.css">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css">
+  <link rel="stylesheet" href="assets/postprep-ads.css">
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="privacy" data-title-key="privacy.title">
   <div id="site-header"></div>
+  <div id="postprep-ad-top" class="postprep-ad-slot postprep-ad-slot--top" data-ad-slot="banner-top" role="complementary" aria-label="广告" hidden></div>
   <main class="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
     <header class="border-b border-line pb-8">
       <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="privacy.eyebrow">PRIVACY</p>
@@ -28,11 +30,12 @@
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.servicesTitle">第三方静态资源</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">为了加载页面样式、图标和首页图片，你的浏览器会向 Tailwind CDN、Font Awesome CDN 与 Unsplash 请求资源。这些请求不包含你在工具内粘贴的文案。</p>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">页面样式、图标和首页图片使用仓库内置资源；广告位启用后，浏览器还会按广告代码向 Adsterra 请求广告内容。这些请求不包含你在工具内粘贴的文案。</p>
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.adsTitle">广告与统计</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.adsBody">当前版本没有广告、统计代码或追踪像素。未来若接入广告联盟，会先更新本页面，说明 Cookie、广告个性化与可用的选择方式。</p>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.adsBody">广告位只有在站点配置了 Adsterra 代码后才会加载。Adsterra 及其合作方可能根据设备、浏览器和访问情况处理数据，并使用 Cookie 或进行个性化展示；具体范围以其政策为准。PostPrep 不会把工具输入主动传给广告脚本。</p>
+        <a class="mt-3 inline-flex text-sm font-semibold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark" href="https://adsterra.com/cookies/" target="_blank" rel="noopener noreferrer" data-i18n="privacy.cookiesLink">查看 Adsterra Cookie 政策</a>
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.controlTitle">你的选择</h2>
@@ -45,5 +48,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js"></script>
   <script src="assets/postprep.js"></script>
+  <script src="assets/postprep-ads.js"></script>
 </body>
 </html>

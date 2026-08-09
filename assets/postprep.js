@@ -30,6 +30,7 @@
         copyFallback: "è¯·æ‰‹åŠ¨å¤åˆ¶ç»“æžœ",
         nothingToCopy: "è¿˜æ²¡æœ‰å¯å¤åˆ¶çš„å†…å®¹",
         privacyShort: "åŸºç¡€å·¥å…·åœ¨æœ¬æœºå¤„ç†ï¼›ç”Ÿæˆæˆ–æ·±åº¦å¤„ç†éœ€ä¸»åŠ¨ç‚¹å‡»å¹¶ç”±æœåŠ¡ç«¯ä»£ç†ã€‚",
+        adLabel: "å¹¿å‘Š",
       },
       home: {
         eyebrow: "FOR CREATOR WORKFLOWS",
@@ -50,7 +51,7 @@
         privacyBody: "åŸºç¡€å·¥å…·åªåœ¨å½“å‰ç½‘é¡µä¸­è®¡ç®—å’Œæ•´ç†æ–‡å­—ï¼›äº‘ç«¯ç”Ÿæˆæˆ–æ·±åº¦å¤„ç†åªæœ‰åœ¨éƒ¨ç½²å¯ç”¨ä¸”ä½ ä¸»åŠ¨ç‚¹å‡»æ—¶æ‰å‘é€å½“å‰ä¸»é¢˜æˆ–æ–‡æ¡ˆã€‚",
         noteOne: "ä¸­è‹±ç•Œé¢ï¼Œä¸€é”®åˆ‡æ¢",
         noteTwo: "æ‰‹æœºä¸Žç”µè„‘éƒ½èƒ½ä½¿ç”¨",
-        noteThree: "ç¬¬ä¸€ç‰ˆä¸å«å¹¿å‘Šæˆ–ç»Ÿè®¡ä»£ç ",
+        noteThree: "å¹¿å‘Šä½ä»…åœ¨å®Œæˆé…ç½®åŽæ˜¾ç¤º",
       },
       length: {
         eyebrow: "TEXT LENGTH CHECKER",
@@ -162,9 +163,10 @@
         cloudTitle: "äº‘ç«¯æ·±åº¦å¤„ç†ï¼ˆæŒ‰éƒ¨ç½²é…ç½®ï¼‰",
         cloudBody: "åŸºç¡€å·¥å…·ä¸ä¼šä¸Šä¼ è‰ç¨¿ã€‚è‹¥å½“å‰éƒ¨ç½²å¯ç”¨äº†æœåŠ¡ç«¯ä»£ç†ï¼Œç‚¹å‡»æ·±åº¦å»ºè®®ã€æ·±åº¦æ•´ç†ã€æ·±åº¦æ¶¦è‰²æˆ–æŒ‰å¹³å°ç”ŸæˆåŽï¼Œåªä¼šå‘é€å½“å‰ä¸»é¢˜æˆ–æ–‡æ¡ˆæ¥ç”Ÿæˆç»“æžœï¼›æœªå¯ç”¨æ—¶æŒ‰é’®ä¼šæç¤ºæš‚ä¸å¯ç”¨ã€‚",
         servicesTitle: "ç¬¬ä¸‰æ–¹é™æ€èµ„æº",
-        servicesBody: "ä¸ºäº†åŠ è½½é¡µé¢æ ·å¼ã€å›¾æ ‡å’Œé¦–é¡µå›¾ç‰‡ï¼Œä½ çš„æµè§ˆå™¨ä¼šå‘ Tailwind CDNã€Font Awesome CDN ä¸Ž Unsplash è¯·æ±‚èµ„æºã€‚è¿™äº›è¯·æ±‚ä¸åŒ…å«ä½ åœ¨å·¥å…·å†…ç²˜è´´çš„æ–‡æ¡ˆã€‚",
+        servicesBody: "é¡µé¢æ ·å¼ã€å›¾æ ‡å’Œé¦–é¡µå›¾ç‰‡ä½¿ç”¨ä»“åº“å†…ç½®èµ„æºï¼›å¹¿å‘Šä½å¯ç”¨åŽï¼Œæµè§ˆå™¨è¿˜ä¼šæŒ‰å¹¿å‘Šä»£ç å‘ Adsterra è¯·æ±‚å¹¿å‘Šå†…å®¹ã€‚è¿™äº›è¯·æ±‚ä¸åŒ…å«ä½ åœ¨å·¥å…·å†…ç²˜è´´çš„æ–‡æ¡ˆã€‚",
         adsTitle: "å¹¿å‘Šä¸Žç»Ÿè®¡",
-        adsBody: "å½“å‰ç‰ˆæœ¬æ²¡æœ‰å¹¿å‘Šã€ç»Ÿè®¡ä»£ç æˆ–è¿½è¸ªåƒç´ ã€‚æœªæ¥è‹¥æŽ¥å…¥å¹¿å‘Šè”ç›Ÿï¼Œä¼šå…ˆæ›´æ–°æœ¬é¡µé¢ï¼Œè¯´æ˜Ž Cookieã€å¹¿å‘Šä¸ªæ€§åŒ–ä¸Žå¯ç”¨çš„é€‰æ‹©æ–¹å¼ã€‚",
+        adsBody: "å¹¿å‘Šä½åªæœ‰åœ¨ç«™ç‚¹é…ç½®äº† Adsterra ä»£ç åŽæ‰ä¼šåŠ è½½ã€‚Adsterra åŠå…¶åˆä½œæ–¹å¯èƒ½æ ¹æ®è®¾å¤‡ã€æµè§ˆå™¨å’Œè®¿é—®æƒ…å†µå¤„ç†æ•°æ®ï¼Œå¹¶ä½¿ç”¨ Cookie æˆ–è¿›è¡Œä¸ªæ€§åŒ–å±•ç¤ºï¼›å…·ä½“èŒƒå›´ä»¥å…¶æ”¿ç­–ä¸ºå‡†ã€‚PostPrep ä¸ä¼šæŠŠå·¥å…·è¾“å…¥ä¸»åŠ¨ä¼ ç»™å¹¿å‘Šè„šæœ¬ã€‚",
+        cookiesLink: "æŸ¥çœ‹ Adsterra Cookie æ”¿ç­–",
         controlTitle: "ä½ çš„é€‰æ‹©",
         controlBody: "ä½ å¯ä»¥éšæ—¶æ¸…ç©ºè¾“å…¥æ¡†ã€å…³é—­é¡µé¢æˆ–æ¸…é™¤æµè§ˆå™¨çš„æœ¬åœ°ç«™ç‚¹æ•°æ®ã€‚åªæœ‰è¯­è¨€åå¥½ä¿å­˜åœ¨å½“å‰æµè§ˆå™¨çš„ localStorage ä¸­ã€‚",
         back: "è¿”å›žé¦–é¡µ",
@@ -203,6 +205,7 @@
         copyFallback: "Select and copy the result manually",
         nothingToCopy: "There is nothing to copy yet",
         privacyShort: "Basic tools run locally; optional generation and deep processing use a server-side proxy.",
+        adLabel: "Advertisement",
       },
       home: {
         eyebrow: "FOR CREATOR WORKFLOWS",
@@ -223,7 +226,7 @@
         privacyBody: "Basic tools calculate and clean text in this page; optional generation or deep processing sends the current topic or draft only after you choose it and the deployment enables it.",
         noteOne: "Chinese and English interface",
         noteTwo: "Comfortable on mobile and desktop",
-        noteThree: "No ads or analytics in v1",
+        noteThree: "Ads appear only after configuration",
       },
       length: {
         eyebrow: "TEXT LENGTH CHECKER",
@@ -293,1045 +296,300 @@
         hashtags: "Hashtags",
         inputLabel: "What do you want to write about?",
         inputHint: "A title, topic, value point, or 1â€“3 tags is enough. Check facts before publishing.",
-        inputPlaceholder: "Example: A weekend trip to see the first snow in Jiangsu",
-        generate: "Generate",
-        clear: "Clear topic",
-        resultLabel: "Generated result",
-        resultHint: "The result follows the selected platform. Review and adjust it before publishing.",
-        resultPlaceholder: "Choose a platform, enter a topic, then generate",
-        selected: "Selected",
-        processing: "Generatingâ€¦",
-        empty: "Enter a topic, title, or tags first",
-        noResult: "There is no generated result to copy yet",
-      },
-      cloud: {
-        lengthTitle: "Publishing suggestion",
-        lengthHint: "Get a short adjustment direction for the selected publishing field.",
-        lengthAction: "Deep suggestion",
-        hashtagTitle: "Suggested tags",
-        hashtagHint: "Extract a focused set of tags from your text.",
-        hashtagAction: "Deep cleanup",
-        formatterTitle: "Polish preview",
-        formatterHint: "Keep the original intent while smoothing phrasing and rhythm.",
-        formatterAction: "Deep polish",
-        copySuggestion: "Copy suggestion",
-        apply: "Use result",
-        restore: "Restore original",
-        processing: "Working on itâ€¦",
-        empty: "Paste some text before starting",
-        networkError: "The service is not responding. Please try again later.",
-        unavailable: "Deep processing is not configured; the basic tools still work.",
-        resultNote: "Review the result before publishing.",
-        applied: "Processing result applied",
-        restored: "Text from before processing restored",
-        noResult: "There is no result to use yet",
-      },
-      privacy: {
-        eyebrow: "PRIVACY",
-        title: "Privacy",
-        intro: "Basic tools run in this browser; optional generation or deep processing is available only when the deployment enables it and you choose it.",
-        localTitle: "Basic tools stay local",
-        localBody: "Length checking, hashtag cleaning, and caption formatting run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
-        cloudTitle: "Optional deep processing",
-        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, or platform generation, only the current topic or draft is sent for a result; otherwise the button reports that the feature is unavailable.",
-        servicesTitle: "Third-party static resources",
-        servicesBody: "Your browser requests page styling, icons, and the homepage photo from Tailwind CDN, Font Awesome CDN, and Unsplash. Those requests do not contain the draft you paste into a tool.",
-        adsTitle: "Ads and analytics",
-        adsBody: "This release has no ads, analytics, or tracking pixels. If an ad network is added later, this page will be updated first with Cookie and ad-personalization details.",
-        controlTitle: "Your control",
-        controlBody: "You can clear any input, close the page, or erase local site data at any time. Only your language preference is stored in this browser's localStorage.",
-        back: "Back to home",
-      },
-      platform: {
-        xiaohongshu: "Xiaohongshu",
-        douyin: "Douyin",
-        wechat: "WeChat OA",
-        tiktok: "TikTok",
-        instagram: "Instagram",
-        youtube: "YouTube",
-        xiaohongshuField: "Post title",
-        douyinField: "Video caption",
-        wechatField: "Article title",
-        tiktokField: "Video caption",
-        instagramField: "Post caption",
-        youtubeField: "Video title",
-      },
-    },
-  };
-
-  const PLATFORM_PRESETS = [
-    {
-      id: "xiaohongshu",
-      icon: "fa-book-open",
-      labelKey: "platform.xiaohongshu",
-      fieldKey: "platform.xiaohongshuField",
-      limit: 20,
-      ruleType: "suggested",
-      lastVerified: VERIFIED_DATE,
-      sourceUrl: "",
-      sourceKey: "length.sourceUnavailable",
-    },
-    {
-      id: "douyin",
-      icon: "fa-play",
-      labelKey: "platform.douyin",
-      fieldKey: "platform.douyinField",
-      limit: 55,
-      ruleType: "suggested",
-      lastVerified: VERIFIED_DATE,
-      sourceUrl: "",
-      sourceKey: "length.sourceUnavailable",
-    },
-    {
-      id: "wechat",
-      icon: "fa-comment-dots",
-      labelKey: "platform.wechat",
-      fieldKey: "platform.wechatField",
-      limit: 64,
-      ruleType: "suggested",
-      lastVerified: VERIFIED_DATE,
-      sourceUrl: "",
-      sourceKey: "length.sourceUnavailable",
-    },
-    {
-      id: "tiktok",
-      icon: "fa-music",
-      labelKey: "platform.tiktok",
-      fieldKey: "platform.tiktokField",
-      limit: 4000,
-      ruleType: "suggested",
-      lastVerified: VERIFIED_DATE,
-      sourceUrl: "",
-      sourceKey: "length.sourceUnavailable",
-    },
-    {
-      id: "instagram",
-      icon: "fa-camera",
-      labelKey: "platform.instagram",
-      fieldKey: "platform.instagramField",
-      limit: 2200,
-      ruleType: "suggested",
-      lastVerified: VERIFIED_DATE,
-      sourceUrl: "",
-      sourceKey: "length.sourceUnavailable",
-    },
-    {
-      id: "youtube",
-      icon: "fa-circle-play",
-      labelKey: "platform.youtube",
-      fieldKey: "platform.youtubeField",
-      limit: 100,
-      ruleType: "official",
-      lastVerified: VERIFIED_DATE,
-      sourceUrl: "https://support.google.com/youtube/answer/57407?hl=en",
-      sourceKey: "length.officialHint",
-    },
-  ];
-
-  let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "zh";
-
-  function lookup(object, path) {
-    return path.split(".").reduce((value, key) => (value ? value[key] : undefined), object);
-  }
-
-  function t(path) {
-    const value = lookup(translations[currentLanguage], path);
-    return value === undefined ? path : value;
-  }
-
-  function applyTranslations() {
-    document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
-
-    document.querySelectorAll("[data-i18n]").forEach((element) => {
-      element.textContent = t(element.dataset.i18n);
-    });
-
-    document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
-      element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
-    });
-
-    document.querySelectorAll("[data-i18n-title]").forEach((element) => {
-      element.setAttribute("title", t(element.dataset.i18nTitle));
-    });
-
-    document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
-      element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
-    });
-
-    document.querySelectorAll("[data-i18n-alt]").forEach((element) => {
-      element.setAttribute("alt", t(element.dataset.i18nAlt));
-    });
-
-    const titleKey = document.body.dataset.titleKey;
-    if (titleKey) {
-      document.title = t(titleKey) + " | PostPrep";
-    }
-  }
-
-  function showToast(message) {
-    const toast = document.getElementById("toast");
-    if (!toast) return;
-
-    toast.textContent = message;
-    toast.classList.remove("translate-y-3", "opacity-0");
-    toast.classList.add("translate-y-0", "opacity-100");
-
-    window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => {
-      toast.classList.remove("translate-y-0", "opacity-100");
-      toast.classList.add("translate-y-3", "opacity-0");
-    }, 2600);
-  }
-
-  const reducedMotionQuery = window.matchMedia
-    ? window.matchMedia("(prefers-reduced-motion: reduce)")
-    : { matches: false };
-  const motionValues = new WeakMap();
-  const motionFrames = new WeakMap();
-
-  function animateChanged(element, value) {
-    if (!element) return;
-
-    const nextValue = String(value);
-    if (!motionValues.has(element)) {
-      motionValues.set(element, nextValue);
-      return;
-    }
-    if (motionValues.get(element) === nextValue) return;
-
-    motionValues.set(element, nextValue);
-    if (reducedMotionQuery.matches) return;
-
-    element.classList.remove("is-updating");
-    const previousFrame = motionFrames.get(element);
-    if (previousFrame) window.cancelAnimationFrame(previousFrame);
-
-    const frame = window.requestAnimationFrame(() => {
-      element.classList.add("is-updating");
-      motionFrames.delete(element);
-    });
-    motionFrames.set(element, frame);
-  }
-
-  function switchLanguageWithMotion() {
-    const main = document.querySelector("main");
-    const applyLanguage = () => {
-      currentLanguage = currentLanguage === "zh" ? "en" : "zh";
-      localStorage.setItem(LANGUAGE_KEY, currentLanguage);
-      applyTranslations();
-      document.dispatchEvent(new CustomEvent("postprep:languagechange"));
-    };
-
-    if (!main || reducedMotionQuery.matches) {
-      applyLanguage();
-      return;
-    }
-    if (main.dataset.motionBusy === "true") return;
-
-    main.dataset.motionBusy = "true";
-    main.classList.add("is-content-switching");
-    window.setTimeout(() => {
-      applyLanguage();
-      window.requestAnimationFrame(() => {
-        main.classList.remove("is-content-switching");
-        window.setTimeout(() => {
-          delete main.dataset.motionBusy;
-        }, 180);
-      });
-    }, 110);
-  }
-
-  async function copyText(value) {
-    if (!value || !value.trim()) {
-      showToast(t("shared.nothingToCopy"));
-      return;
-    }
-
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(value);
-      } else {
-        const helper = document.createElement("textarea");
-        helper.value = value;
-        helper.setAttribute("readonly", "");
-        helper.className = "fixed -left-full top-0 opacity-0";
-        document.body.appendChild(helper);
-        helper.select();
-        document.execCommand("copy");
-        helper.remove();
-      }
-      showToast(t("shared.copied"));
-    } catch {
-      showToast(t("shared.copyFallback"));
-    }
-  }
-
-  function renderSharedLayout() {
-    const page = document.body.dataset.page || "home";
-    const header = document.getElementById("site-header");
-    const footer = document.getElementById("site-footer");
-    const links = [
-      { id: "home", href: "index.html", label: "shared.home" },
-      { id: "length", href: "length-checker.html", label: "shared.length" },
-      { id: "hashtags", href: "hashtag-cleaner.html", label: "shared.hashtags" },
-      { id: "formatter", href: "caption-formatter.html", label: "shared.formatter" },
-      { id: "generator", href: "idea-generator.html", label: "shared.generator" },
-    ];
-
-    const linkMarkup = links.map((link) => {
-      const active = page === link.id;
-      const activeClasses = "bg-teal-50 text-brand";
-      const defaultClasses = "text-muted hover:bg-zinc-50 hover:text-ink";
-      return '<a href="' + link.href + '" class="block rounded-lg px-3 py-2 text-sm font-semibold transition ' + (active ? activeClasses : defaultClasses) + '" ' + (active ? 'aria-current="page"' : "") + '><span data-i18n="' + link.label + '">' + t(link.label) + "</span></a>";
-    }).join("");
-
-    if (header) {
-      header.innerHTML = '<header class="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">' +
-        '<div class="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">' +
-          '<a class="flex min-w-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" href="index.html">' +
-            '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-sm"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span>' +
-            '<span class="min-w-0"><span class="block truncate text-sm font-black tracking-wide text-ink">PostPrep</span><span class="block truncate text-xs text-muted" data-i18n="shared.tagline">' + t("shared.tagline") + "</span></span>" +
-          "</a>" +
-          '<nav class="hidden items-center gap-1 md:flex" aria-label="Primary navigation">' + linkMarkup + "</nav>" +
-          '<div class="flex items-center gap-2">' +
-            '<button type="button" data-language-toggle class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-i18n-title="shared.languageLabel" data-i18n-aria-label="shared.languageLabel" title="' + t("shared.languageLabel") + '" aria-label="' + t("shared.languageLabel") + '">' +
-              '<i class="fa-solid fa-language text-brand" aria-hidden="true"></i><span data-i18n="shared.language">' + t("shared.language") + "</span>" +
-            "</button>" +
-            '<button type="button" data-menu-toggle class="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 md:hidden" aria-expanded="false" aria-controls="mobile-navigation" aria-label="' + t("shared.menu") + '" title="' + t("shared.menu") + '"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>' +
-          "</div>" +
-        "</div>" +
-        '<nav id="mobile-navigation" class="hidden border-t border-line bg-white px-4 py-3 md:hidden" aria-label="Mobile navigation">' + linkMarkup + "</nav>" +
-      "</header>";
-    }
-
-    if (footer) {
-      footer.innerHTML = '<footer class="border-t border-line bg-white">' +
-        '<div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">' +
-          '<p class="max-w-xl" data-i18n="shared.privacyShort">' + t("shared.privacyShort") + "</p>" +
-          '<a href="privacy.html" class="inline-flex items-center gap-2 font-semibold text-ink underline decoration-zinc-300 underline-offset-4 hover:text-brand" data-i18n="shared.privacy">' + t("shared.privacy") + "</a>" +
-        "</div>" +
-      "</footer>";
-    }
-  }
-
-  function initCommon() {
-    renderSharedLayout();
-    applyTranslations();
-
-    const languageToggle = document.querySelector("[data-language-toggle]");
-    if (languageToggle) {
-      languageToggle.addEventListener("click", switchLanguageWithMotion);
-    }
-
-    const menuToggle = document.querySelector("[data-menu-toggle]");
-    const mobileNavigation = document.getElementById("mobile-navigation");
-    if (menuToggle && mobileNavigation) {
-      menuToggle.addEventListener("click", () => {
-        const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
-        menuToggle.setAttribute("aria-expanded", String(!isOpen));
-        mobileNavigation.classList.toggle("hidden", isOpen);
-        const icon = menuToggle.querySelector("i");
-        if (icon) {
-          icon.className = isOpen ? "fa-solid fa-bars" : "fa-solid fa-xmark";
-        }
-        menuToggle.setAttribute("aria-label", isOpen ? t("shared.menu") : t("shared.closeMenu"));
-      });
-    }
-
-    document.querySelectorAll("[data-copy-from]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const source = document.getElementById(button.dataset.copyFrom);
-        copyText(source ? source.value : "");
-      });
-    });
-  }
-
-  function countVisibleCharacters(value) {
-    if (!value) return 0;
-    if (window.Intl && Intl.Segmenter) {
-      return [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value)].length;
-    }
-    return Array.from(value).length;
-  }
-
-  function countEnglishWords(value) {
-    if (!value) return 0;
-    return (value.match(/[A-Za-z]+(?:['â€™-][A-Za-z]+)*/g) || []).length;
-  }
-
-  function countLines(value) {
-    return value.trim().length ? value.split(/\r\n|\r|\n/u).length : 0;
-  }
-
-  function initLengthChecker() {
-    const input = document.getElementById("length-input");
-    if (!input) return;
-
-    const presetRoot = document.getElementById("preset-list");
-    const customLimit = document.getElementById("custom-limit");
-    const resetLimit = document.getElementById("reset-limit");
-    const countCharacters = document.getElementById("character-count");
-    const countWords = document.getElementById("word-count");
-    const countLinesElement = document.getElementById("line-count");
-    const currentTarget = document.getElementById("current-target");
-    const targetMeta = document.getElementById("target-meta");
-    const targetKind = document.getElementById("target-kind");
-    const sourceText = document.getElementById("source-text");
-    const sourceLink = document.getElementById("source-link");
-    const verified = document.getElementById("verified-date");
-    const status = document.getElementById("length-status");
-    const statusTitle = document.getElementById("length-status-title");
-    const statusBody = document.getElementById("length-status-body");
-    const progress = document.getElementById("length-progress");
-    const cloudAction = document.getElementById("length-cloud-action");
-    const cloudResult = document.getElementById("length-cloud-result");
-    const cloudOutput = document.getElementById("length-cloud-output");
-
-    let selectedPresetId = PLATFORM_PRESETS[0].id;
-
-    function selectedPreset() {
-      return PLATFORM_PRESETS.find((preset) => preset.id === selectedPresetId) || PLATFORM_PRESETS[0];
-    }
-
-    function activeLimit() {
-      const customValue = Number.parseInt(customLimit.value, 10);
-      return Number.isFinite(customValue) && customValue > 0 ? customValue : selectedPreset().limit;
-    }
-
-    function clearCloudResult() {
-      if (!cloudResult || !cloudOutput) return;
-      cloudResult.hidden = true;
-      cloudOutput.textContent = "";
-    }
-
-    function renderPresetButtons() {
-      presetRoot.innerHTML = PLATFORM_PRESETS.map((preset) => {
-        const selected = preset.id === selectedPresetId;
-        const selectedClasses = "border-brand bg-brand text-white shadow-sm";
-        const defaultClasses = "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50";
-        return '<button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ' + (selected ? selectedClasses : defaultClasses) + '" data-preset-id="' + preset.id + '" aria-pressed="' + selected + '"><i class="fa-solid ' + preset.icon + '" aria-hidden="true"></i><span>' + t(preset.labelKey) + "</span></button>";
-      }).join("");
-      animateChanged(presetRoot, selectedPresetId + "|" + currentLanguage);
-
-      presetRoot.querySelectorAll("[data-preset-id]").forEach((button) => {
-        button.addEventListener("click", () => {
-          selectedPresetId = button.dataset.presetId;
-          customLimit.value = "";
-          renderPresetButtons();
-          clearCloudResult();
-          update();
-        });
-      });
-    }
-
-    function updatePresetInformation(limit) {
-      const preset = selectedPreset();
-      currentTarget.textContent = String(limit);
-      targetMeta.textContent = t(preset.labelKey) + " Â· " + t(preset.fieldKey);
-      targetKind.textContent = t("length." + preset.ruleType);
-      verified.textContent = t("length.update") + " " + preset.lastVerified;
-      sourceText.textContent = t(preset.sourceKey);
-      sourceLink.classList.toggle("hidden", !preset.sourceUrl);
-      animateChanged(targetMeta, targetMeta.textContent);
-      animateChanged(targetKind, targetKind.textContent);
-      animateChanged(verified, verified.textContent);
-      animateChanged(sourceText, sourceText.textContent);
-
-      if (preset.sourceUrl) {
-        sourceLink.href = preset.sourceUrl;
-        sourceLink.textContent = t("length.openSource");
-      }
-    }
-
-    function statusStyle(kind) {
-      const styles = {
-        ready: {
-          classes: "border-zinc-200 bg-zinc-50 text-zinc-800",
-          icon: "fa-circle-info",
-          title: t("length.noText"),
-          body: t("length.ready"),
-        },
-        good: {
-          classes: "border-emerald-200 bg-emerald-50 text-emerald-900",
-          icon: "fa-circle-check",
-          title: t("length.good"),
-          body: t("length.settingsNote"),
-        },
-        near: {
-          classes: "border-amber-200 bg-amber-50 text-amber-950",
-          icon: "fa-triangle-exclamation",
-          title: t("length.near"),
-          body: t("length.settingsNote"),
-        },
-        over: {
-          classes: "border-rose-200 bg-rose-50 text-rose-950",
-          icon: "fa-circle-exclamation",
-          title: t("length.over"),
-          body: t("length.settingsNote"),
-        },
-      };
-      return styles[kind];
-    }
-
-    function update() {
-      const value = input.value;
-      const limit = activeLimit();
-      const characters = countVisibleCharacters(value);
-      const words = countEnglishWords(value);
-      const lines = countLines(value);
-
-      countCharacters.textContent = String(characters);
-      countWords.textContent = String(words);
-      countLinesElement.textContent = String(lines);
-      updatePresetInformation(limit);
-      animateChanged(countCharacters, characters);
-      animateChanged(countWords, words);
-      animateChanged(countLinesElement, lines);
-      animateChanged(currentTarget, limit);
-
-      let kind = "ready";
-      if (characters > 0 && characters > limit) {
-        kind = "over";
-      } else if (characters > 0 && characters / limit >= 0.75) {
-        kind = "near";
-      } else if (characters > 0) {
-        kind = "good";
-      }
-
-      const style = statusStyle(kind);
-      status.className = "mt-7 flex gap-3 rounded-lg border p-4 " + style.classes;
-      statusTitle.innerHTML = '<i class="fa-solid ' + style.icon + ' mr-2" aria-hidden="true"></i>' + style.title;
-      statusBody.textContent = style.body;
-      animateChanged(status, kind + "|" + currentLanguage);
-
-      const ratio = limit > 0 ? Math.min(characters / limit, 1) : 0;
-      progress.style.width = String(Math.round(ratio * 100)) + "%";
-      progress.className = "h-full rounded-full transition-[width] duration-200 " + (kind === "over" ? "bg-rose-600" : kind === "near" ? "bg-amber-500" : kind === "good" ? "bg-emerald-600" : "bg-zinc-400");
-    }
-
-    input.addEventListener("input", () => {
-      clearCloudResult();
-      update();
-    });
-    customLimit.addEventListener("input", () => {
-      clearCloudResult();
-      update();
-    });
-    resetLimit.addEventListener("click", () => {
-      customLimit.value = "";
-      clearCloudResult();
-      update();
-    });
-
-    document.getElementById("length-clear").addEventListener("click", () => {
-      input.value = "";
-      customLimit.value = "";
-      input.focus();
-      clearCloudResult();
-      update();
-    });
-
-    if (cloudAction && cloudResult && cloudOutput) {
-      cloudAction.addEventListener("click", async () => {
-        const draft = input.value.trim();
-        if (!draft) {
-          showToast(t("cloud.empty"));
-          input.focus();
-          return;
-        }
-
-        setCloudBusy(cloudAction, true);
-        try {
-          const content = await requestCloudText("length", draft, {
-            platform: selectedPreset().id,
-            limit: activeLimit(),
-          });
-          cloudOutput.textContent = content;
-          cloudResult.hidden = false;
-          animateChanged(cloudOutput, content);
-        } catch (error) {
-          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
-        } finally {
-          setCloudBusy(cloudAction, false);
-        }
-      });
-    }
-
-    document.addEventListener("postprep:languagechange", () => {
-      renderPresetButtons();
-      update();
-    });
-
-    renderPresetButtons();
-    update();
-  }
-
-  function normalizeHashtag(rawToken) {
-    const normalized = rawToken
-      .normalize("NFKC")
-      .trim()
-      .replace(/^[#ï¼ƒ]+/u, "")
-      .replace(/[#ï¼ƒ]+$/u, "")
-      .replace(/[ï¼Œ,;ï¼›|ã€]+$/u, "")
-      .replace(/\s+/gu, "");
-
-    const safe = normalized.replace(/[^\p{L}\p{N}_-]/gu, "");
-    return safe.length ? safe : "";
-  }
-
-  function cleanHashtags(value) {
-    const candidates = value.replace(/[#ï¼ƒ]/gu, " #").split(/[\s,ï¼Œ;ï¼›|ã€]+/u);
-    const seen = new Set();
-    const tags = [];
-
-    candidates.forEach((candidate) => {
-      const tag = normalizeHashtag(candidate);
-      const fingerprint = tag.toLocaleLowerCase();
-      if (tag && !seen.has(fingerprint)) {
-        seen.add(fingerprint);
-        tags.push("#" + tag);
-      }
-    });
-
-    return tags;
-  }
-
-  function initHashtagCleaner() {
-    const input = document.getElementById("hashtag-input");
-    if (!input) return;
-
-    const output = document.getElementById("hashtag-output");
-    const count = document.getElementById("hashtag-count");
-    const cloudAction = document.getElementById("hashtag-cloud-action");
-    const cloudResult = document.getElementById("hashtag-cloud-result");
-    const cloudOutput = document.getElementById("hashtag-cloud-output");
-
-    function update() {
-      const tags = cleanHashtags(input.value);
-      output.value = tags.join(" ");
-      count.textContent = String(tags.length);
-      animateChanged(output, output.value);
-      animateChanged(count, tags.length);
-    }
-
-    function clearCloudResult() {
-      if (!cloudResult || !cloudOutput) return;
-      cloudResult.hidden = true;
-      cloudOutput.value = "";
-    }
-
-    input.addEventListener("input", () => {
-      clearCloudResult();
-      update();
-    });
-    document.getElementById("hashtag-clear").addEventListener("click", () => {
-      input.value = "";
-      output.value = "";
-      count.textContent = "0";
-      clearCloudResult();
-      input.focus();
-    });
-
-    if (cloudAction && cloudResult && cloudOutput) {
-      cloudAction.addEventListener("click", async () => {
-        const draft = input.value.trim();
-        if (!draft) {
-          showToast(t("cloud.empty"));
-          input.focus();
-          return;
-        }
-
-        setCloudBusy(cloudAction, true);
-        try {
-          const content = await requestCloudText("hashtags", draft);
-          const tags = cleanHashtags(content).slice(0, 5);
-          if (!tags.length) throw new Error("No usable cloud tags");
-          cloudOutput.value = tags.join(" ");
-          cloudResult.hidden = false;
-          animateChanged(cloudOutput, cloudOutput.value);
-        } catch (error) {
-          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
-        } finally {
-          setCloudBusy(cloudAction, false);
-        }
-      });
-    }
-
-    update();
-  }
-
-  function countInvisibleCharacters(value) {
-    return (value.match(/[\u200B\uFEFF\u2060\u00AD]/gu) || []).length;
-  }
-
-  function formatCaption(value, settings) {
-    const source = value.replace(/\r\n?|\n/gu, "\n");
-    const invisibleBefore = countInvisibleCharacters(source);
-    let result = source;
-    let collapsed = 0;
-
-    if (settings.removeInvisible) {
-      result = result.replace(/[\u200B\uFEFF\u2060\u00AD]/gu, "");
-    }
-
-    if (settings.trimLines) {
-      result = result
-        .split("\n")
-        .map((line) => line.replace(/^[\t ]+|[\t ]+$/gu, ""))
-        .join("\n");
-    }
-
-    if (settings.collapseBlank) {
-      const beforeBlankLines = (result.match(/\n{3,}/gu) || []).length;
-      result = result.replace(/\n{3,}/gu, "\n\n");
-      collapsed = beforeBlankLines;
-    }
-
-    if (settings.trimLines) {
-      result = result.replace(/^\n+|\n+$/gu, "");
-    }
-
-    return {
-      result,
-      invisibleRemoved: settings.removeInvisible ? invisibleBefore : 0,
-      collapsed,
-    };
-  }
-
-  function stripCodeFence(value) {
-    return String(value || "")
-      .trim()
-      .replace(/^```[\w-]*\s*/u, "")
-      .replace(/\s*```$/u, "")
-      .trim();
-  }
-
-  function setCloudBusy(button, busy) {
-    if (!button) return;
-    button.disabled = busy;
-    button.classList.toggle("is-loading", busy);
-    button.setAttribute("aria-busy", String(busy));
-  }
-
-  function isCloudUnavailable(error) {
-    return Boolean(error && ["CLOUD_UNAVAILABLE_LOCAL", "MISSING_SERVER_SECRET", "ORIGIN_NOT_ALLOWED"].includes(error.code));
-  }
-
-  async function requestCloudText(action, draft, metadata) {
-    if (window.location.protocol === "file:" || (IS_GITHUB_PAGES_HOST && !CONFIGURED_CLOUD_TEXT_ENDPOINT)) {
-      const unavailable = new Error("Cloud processing is unavailable in this static deployment");
-      unavailable.code = "CLOUD_UNAVAILABLE_LOCAL";
-      throw unavailable;
-    }
-
-    const controller = typeof AbortController === "function" ? new AbortController() : null;
-    const timeoutId = controller
-      ? window.setTimeout(() => controller.abort(), 30000)
-      : null;
-
-    try {
-      const response = await fetch(CLOUD_TEXT_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action,
-          draft,
-          language: currentLanguage,
-          ...(metadata || {}),
-        }),
-        signal: controller ? controller.signal : undefined,
-      });
-
-      const payload = await response.json().catch(() => null);
-      const content = payload && typeof payload.content === "string" ? stripCodeFence(payload.content) : "";
-      if (!response.ok) {
-        const error = new Error(payload && typeof payload.message === "string" ? payload.message : "Cloud request failed");
-        error.code = payload && typeof payload.code === "string" ? payload.code : "CLOUD_REQUEST_FAILED";
-        if ((response.status === 404 || response.status === 405) && !CONFIGURED_CLOUD_TEXT_ENDPOINT) {
-          error.code = "CLOUD_UNAVAILABLE_LOCAL";
-        }
-        throw error;
-      }
-
-      if (!content) {
-        const error = new Error("Empty cloud response");
-        error.code = "EMPTY_CLOUD_RESPONSE";
-        throw error;
-      }
-      return content;
-    } catch (error) {
-      if (error && error.name === "AbortError") {
-        error.code = "CLOUD_TIMEOUT";
-      }
-      throw error;
-    } finally {
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
-    }
-  }
-
-  function initFormatter() {
-    const input = document.getElementById("formatter-input");
-    if (!input) return;
-
-    const output = document.getElementById("formatter-output");
-    const invisibleCount = document.getElementById("invisible-count");
-    const blankCount = document.getElementById("blank-count");
-    const changesMessage = document.getElementById("formatter-changes");
-    const settings = {
-      removeInvisible: document.getElementById("remove-invisible"),
-      trimLines: document.getElementById("trim-lines"),
-      collapseBlank: document.getElementById("collapse-blank"),
-    };
-    const cloudAction = document.getElementById("formatter-cloud-action");
-    const cloudResult = document.getElementById("formatter-cloud-result");
-    const cloudOutput = document.getElementById("formatter-cloud-output");
-    const cloudApply = document.getElementById("formatter-cloud-apply");
-    const cloudRestore = document.getElementById("formatter-cloud-restore");
-    let pendingCloudText = "";
-    let previousCloudText = null;
-    let preserveCloudPreview = false;
-
-    function update() {
-      const formatted = formatCaption(input.value, {
-        removeInvisible: settings.removeInvisible.checked,
-        trimLines: settings.trimLines.checked,
-        collapseBlank: settings.collapseBlank.checked,
-      });
-
-      output.value = formatted.result;
-      invisibleCount.textContent = String(formatted.invisibleRemoved);
-      blankCount.textContent = String(formatted.collapsed);
-      animateChanged(output, formatted.result);
-      animateChanged(invisibleCount, formatted.invisibleRemoved);
-      animateChanged(blankCount, formatted.collapsed);
-
-      if (!input.value.trim() || (!formatted.invisibleRemoved && !formatted.collapsed && formatted.result === input.value)) {
-        changesMessage.textContent = t("formatter.noChanges");
-      } else {
-        changesMessage.textContent = t("formatter.changes");
-      }
-      animateChanged(changesMessage, changesMessage.textContent);
-    }
-
-    function clearCloudResult() {
-      pendingCloudText = "";
-      if (cloudResult) cloudResult.hidden = true;
-      if (cloudOutput) cloudOutput.value = "";
-      if (cloudRestore && !preserveCloudPreview) {
-        previousCloudText = null;
-        cloudRestore.disabled = true;
-      }
-    }
-
-    input.addEventListener("input", () => {
-      update();
-      if (!preserveCloudPreview) clearCloudResult();
-    });
-    Object.values(settings).forEach((checkbox) => checkbox.addEventListener("change", update));
-
-    document.getElementById("formatter-clear").addEventListener("click", () => {
-      input.value = "";
-      output.value = "";
-      previousCloudText = null;
-      clearCloudResult();
-      input.focus();
-      update();
-    });
-
-    if (cloudAction && cloudResult && cloudOutput && cloudApply && cloudRestore) {
-      cloudAction.addEventListener("click", async () => {
-        const draft = input.value.trim();
-        if (!draft) {
-          showToast(t("cloud.empty"));
-          input.focus();
-          return;
-        }
-
-        setCloudBusy(cloudAction, true);
-        try {
-          const content = await requestCloudText("polish", draft);
-          pendingCloudText = content;
-          cloudOutput.value = content;
-          cloudResult.hidden = false;
-          animateChanged(cloudOutput, content);
-        } catch (error) {
-          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
-        } finally {
-          setCloudBusy(cloudAction, false);
-        }
-      });
-
-      cloudApply.addEventListener("click", () => {
-        if (!pendingCloudText) {
-          showToast(t("cloud.noResult"));
-          return;
-        }
-        previousCloudText = input.value;
-        preserveCloudPreview = true;
-        input.value = pendingCloudText;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        preserveCloudPreview = false;
-        pendingCloudText = "";
-        cloudResult.hidden = true;
-        cloudOutput.value = "";
-        cloudRestore.disabled = false;
-        input.focus();
-        showToast(t("cloud.applied"));
-      });
-
-      cloudRestore.addEventListener("click", () => {
-        if (previousCloudText === null) return;
-        preserveCloudPreview = true;
-        input.value = previousCloudText;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        preserveCloudPreview = false;
-        previousCloudText = null;
-        cloudRestore.disabled = true;
-        input.focus();
-        showToast(t("cloud.restored"));
-      });
-    }
-
-    document.addEventListener("postprep:languagechange", update);
-    update();
-  }
-
-  function initGenerator() {
-    const input = document.getElementById("generator-input");
-    if (!input) return;
-
-    const platformList = document.getElementById("generator-platform-list");
-    const typeList = document.getElementById("generator-type-list");
-    const selectedMeta = document.getElementById("generator-selected-meta");
-    const output = document.getElementById("generator-output");
-    const generateButton = document.getElementById("generator-action");
-    const generateLabel = document.getElementById("generator-action-label");
-    const clearButton = document.getElementById("generator-clear");
-    let selectedPresetId = PLATFORM_PRESETS[0].id;
-    let generationKind = "caption";
-
-    function selectedPreset() {
-      return PLATFORM_PRESETS.find((preset) => preset.id === selectedPresetId) || PLATFORM_PRESETS[0];
-    }
-
-    function updateSelection() {
-      const preset = selectedPreset();
-      selectedMeta.textContent = t(preset.labelKey) + " Â· " + t("generator." + generationKind);
-      output.placeholder = t("generator.resultPlaceholder");
-      animateChanged(selectedMeta, selectedMeta.textContent);
-    }
-
-    function clearResult() {
-      output.value = "";
-      animateChanged(output, "");
-    }
-
-    function renderPlatformButtons() {
-      platformList.innerHTML = PLATFORM_PRESETS.map((preset) => {
-        const selected = preset.id === selectedPresetId;
-        const selectedClasses = "border-brand bg-brand text-white shadow-sm";
-        const defaultClasses = "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50";
-        return '<button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ' + (selected ? selectedClasses : defaultClasses) + '" data-generator-platform="' + preset.id + '" aria-pressed="' + selected + '"><i class="fa-solid ' + preset.icon + '" aria-hidden="true"></i><span>' + t(preset.labelKey) + "</span></button>";
-      }).join("");
-
-      platformList.querySelectorAll("[data-generator-platform]").forEach((button) => {
-        button.addEventListener("click", () => {
-          selectedPresetId = button.dataset.generatorPlatform;
-          clearResult();
-          renderPlatformButtons();
-          updateSelection();
-        });
-      });
-    }
-
-    function renderGenerationKinds() {
-      const kinds = ["caption", "hashtags"];
-      typeList.innerHTML = kinds.map((kind) => {
-        const selected = kind === generationKind;
-        const selectedClasses = "border-brand bg-teal-50 text-brand";
-        const defaultClasses = "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50";
-        const icon = kind === "caption" ? "fa-pen-nib" : "fa-hashtag";
-        return '<button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ' + (selected ? selectedClasses : defaultClasses) + '" data-generator-kind="' + kind + '" aria-pressed="' + selected + '"><i class="fa-solid ' + icon + '" aria-hidden="true"></i><span>' + t("generator." + kind) + "</span></button>";
-      }).join("");
-
-      typeList.querySelectorAll("[data-generator-kind]").forEach((button) => {
-        button.addEventListener("click", () => {
-          generationKind = button.dataset.generatorKind;
-          clearResult();
-          renderGenerationKinds();
-          updateSelection();
-        });
-      });
-    }
-
-    function setGeneratorBusy(busy) {
-      setCloudBusy(generateButton, busy);
-      generateLabel.textContent = busy ? t("generator.processing") : t("generator.generate");
-    }
-
-    input.addEventListener("input", clearResult);
-
-    clearButton.addEventListener("click", () => {
-      input.value = "";
-      clearResult();
-      input.focus();
-    });
-
-    generateButton.addEventListener("click", async () => {
-      const seed = input.value.trim();
-      if (!seed) {
-        showToast(t("generator.empty"));
-        input.focus();
-        return;
-      }
-
-      setGeneratorBusy(true);
-      try {
-        const content = await requestCloudText("generate", seed, {
-          platform: selectedPresetId,
-          generationKind,
-        });
-        const result = generationKind === "hashtags"
-          ? cleanHashtags(content).slice(0, 5).join(" ")
-          : content;
-        if (!result) throw new Error("No usable generated content");
-        output.value = result;
-        animateChanged(output, result);
-      } catch (error) {
-        showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
-      } finally {
-        setGeneratorBusy(false);
-      }
-    });
-
-    document.addEventListener("postprep:languagechange", () => {
-      renderPlatformButtons();
-      renderGenerationKinds();
-      updateSelection();
-      setGeneratorBusy(generateButton.disabled);
-    });
-
-    renderPlatformButtons();
-    renderGenerationKinds();
-    updateSelection();
-  }
-
-  globalThis.PostPrep = Object.freeze({
-    PLATFORM_PRESETS,
-    countVisibleCharacters,
-    countEnglishWords,
-    countLines,
-    cleanHashtags,
-    formatCaption,
-  });
-
-  document.addEventListener("DOMContentLoaded", () => {
-    initCommon();
-    initLengthChecker();
-    initHashtagCleaner();
-    initFormatter();
-    initGenerator();
-  });
-})();
+        inputPlaceholder: "Example: A weekend trip to sóŸu¶‰žËkºwµç]HŒŽÂˆÛX\ÛÝY™\Ý[
+
+NÂˆ[œ]™›ØÝ\Ê
+NÂˆJNÂ‚ˆYˆ
+ÛÝYXÝ[Ûˆ	‰ˆÛÝY™\Ý[	‰ˆÛÝYÝ]]
+HÂˆÛÝYXÝ[Û‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹\Þ[˜È
+
+HOˆÂˆÛÛœÝ˜YH[œ]˜[YKš[J
+NÂˆYˆ
+Y˜Y
+HÂˆÚÝÕØ\Ý
+
+˜ÛÝY™[\HŠJNÂˆ[œ]™›ØÝ\Ê
+NÂˆ™]\›ŽÂˆB‚ˆÙ]ÛÝY\ÞJÛÝYXÝ[Û‹YJNÂˆžHÂˆÛÛœÝÛÛ[H]ØZ]™\]Y\ÝÛÝY^
+š\ÚYÜÈ‹˜Y
+NÂˆÛÛœÝYÜÈHÛX[’\ÚYÜÊÛÛ[
+KœÛXÙJJNÂˆYˆ
+]YÜË›[™Ý
+H›ÝÈ™]È\œ›ÜŠ“›È\ØX›HÛÝYYÜÈŠNÂˆÛÝYÝ]]˜[YHHYÜËš›Ú[ŠˆŠNÂˆÛÝY™\Ý[šY[ˆH˜[ÙNÂˆ[š[X]PÚ[™ÙY
+ÛÝYÝ]]ÛÝYÝ]]˜[YJNÂˆHØ]Ú
+\œ›ÜŠHÂˆÚÝÕØ\Ý
+\ÐÛÝY[˜]˜Z[X›J\œ›ÜŠHÈ
+˜ÛÝY[˜]˜Z[X›HŠHˆ
+˜ÛÝY›™]ÛÜšÑ\œ›ÜˆŠJNÂˆHš[˜[HÂˆÙ]ÛÝY\ÞJÛÝYXÝ[Û‹˜[ÙJNÂˆBˆJNÂˆB‚ˆ\]J
+NÂˆB‚ˆ[˜Ý[ÛˆÛÝ[[š\ÚX›PÚ\˜XÝ\œÊ˜[YJHÂˆ™]\›ˆ
+˜[YK›X]Ú
+Ö×LŒ—Q‘Q‘—LŒŒLQKÙÝJH×JK›[™ÝÂˆB‚ˆ[˜Ý[Ûˆ›Ü›X]Ø\[ÛŠ˜[YKÙ][™ÜÊHÂˆÛÛœÝÛÝ\˜ÙHH˜[YKœ™\XÙJ×—ß‹ÙÝK—ˆŠNÂˆÛÛœÝ[š\ÚX›P™Y›Ü™HHÛÝ[[š\ÚX›PÚ\˜XÝ\œÊÛÝ\˜ÙJNÂˆ]™\Ý[HÛÝ\˜ÙNÂˆ]ÛÛ\ÙYHÂ‚ˆYˆ
+Ù][™ÜËœ™[[Ý™R[š\ÚX›JHÂˆ™\Ý[H™\Ý[œ™\XÙJÖ×LŒ—Q‘Q‘—LŒŒLQKÙÝKˆŠNÂˆB‚ˆYˆ
+Ù][™ÜËš[S[™\ÊHÂˆ™\Ý[H™\Ý[ˆœÜ]
+—ˆŠBˆ›X\
+
+[™JHOˆ[™Kœ™\XÙJ×–×Jß×JÉÙÝKˆŠJBˆš›Ú[Š—ˆŠNÂˆB‚ˆYˆ
+Ù][™ÜË˜ÛÛ\ÙP›[šÊHÂˆÛÛœÝ™Y›Ü™P›[šÓ[™\ÈH
+™\Ý[›X]Ú
+×žÌËKÙÝJH×JK›[™ÝÂˆ™\Ý[H™\Ý[œ™\XÙJ×žÌËKÙÝK——ˆŠNÂˆÛÛ\ÙYH™Y›Ü™P›[šÓ[™\ÎÂˆB‚ˆYˆ
+Ù][™ÜËš[S[™\ÊHÂˆ™\Ý[H™\Ý[œ™\XÙJ×—ŠßŠÉÙÝKˆŠNÂˆB‚ˆ™]\›ˆÂˆ™\Ý[ˆ[š\ÚX›T™[[Ý™YˆÙ][™ÜËœ™[[Ý™R[š\ÚX›HÈ[š\ÚX›P™Y›Ü™HˆˆÛÛ\ÙYˆNÂˆB‚ˆ[˜Ý[ÛˆÝš\ÛÙQ™[˜ÙJ˜[YJHÂˆ™]\›ˆÝš[™Ê˜[YHˆŠBˆš[J
+Bˆœ™\XÙJ×˜×ËWJ—Ê‹ÝKˆŠBˆœ™\XÙJ×Ê˜	ÝKˆŠBˆš[J
+NÂˆB‚ˆ[˜Ý[ÛˆÙ]ÛÝY\ÞJ]Û‹\ÞJHÂˆYˆ
+X]ÛŠH™]\›ŽÂˆ]Û‹™\ØX›YH\ÞNÂˆ]Û‹˜Û\ÜÓ\ÝÙÙÛJš\Ë[ØY[™È‹\ÞJNÂˆ]Û‹œÙ]]šX]J˜\šXKX\ÞH‹Ýš[™Ê\ÞJJNÂˆB‚ˆ[˜Ý[Ûˆ\ÐÛÝY[˜]˜Z[X›J\œ›ÜŠHÂˆ™]\›ˆ›ÛÛX[Š\œ›Üˆ	‰ˆÈÓÕQÕSURSP“WÓÐÐS‹“RTÔÒS‘×ÔÑT•‘T—ÔÑPÔ‘U‹“Ô’QÒS—Ó“ÕÐSÕÑQ—Kš[˜ÛY\Ê\œ›Ü‹˜ÛÙJJNÂˆB‚ˆ\Þ[˜È[˜Ý[Ûˆ™\]Y\ÝÛÝY^
+XÝ[Û‹˜YY]Y]JHÂˆYˆ
+Ú[™ÝË›ØØ][Û‹œ›ÝØÛÛOOH™š[Nˆˆ
+T×ÑÒUP—ÔQÑT×ÒÔÕ	‰ˆPÓÓ‘’QÕT‘QÐÓÕQÕVÑS‘ÒS•
+JHÂˆÛÛœÝ[˜]˜Z[X›HH™]È\œ›ÜŠÛÝY›ØÙ\ÜÚ[™È\È[˜]˜Z[X›H[ˆ\ÈÝ]XÈ\Þ[Y[ŠNÂˆ[˜]˜Z[X›K˜ÛÙHHÓÕQÕSURSP“WÓÐÐSŽÂˆ›ÝÈ[˜]˜Z[X›NÂˆB‚ˆÛÛœÝÛÛ›Û\ˆH\[ÙˆX›ÜÛÛ›Û\ˆOOH™[˜Ý[ÛˆˆÈ™]ÈX›ÜÛÛ›Û\Š
+Hˆ[ÂˆÛÛœÝ[Y[Ý]YHÛÛ›Û\‚ˆÈÚ[™ÝËœÙ][Y[Ý]
+
+
+HOˆÛÛ›Û\‹˜X›Ü
+
+KÌ
+Bˆˆ[Â‚ˆžHÂˆÛÛœÝ™\ÜÛœÙHH]ØZ]™]Ú
+ÓÕQÕVÑS‘ÒS•ÂˆY]Ùˆ”ÔÕ‹ˆXY\œÎˆÂˆÛÛ[U\HŽˆ˜\XØ][Û‹ÚœÛÛˆ‹ˆKˆ›ÙNˆ”ÓÓ‹œÝš[™ÚYžJÂˆXÝ[Û‹ˆ˜Yˆ[™ÝXYÙNˆÝ\œ™[[™ÝXYÙKˆ‹‹ŠY]Y]HßJKˆJKˆÚYÛ˜[ˆÛÛ›Û\ˆÈÛÛ›Û\‹œÚYÛ˜[ˆ[™Yš[™YˆJNÂ‚ˆÛÛœÝ^[ØYH]ØZ]™\ÜÛœÙKšœÛÛŠ
+K˜Ø]Ú
+
+
+HOˆ[
+NÂˆÛÛœÝÛÛ[H^[ØY	‰ˆ\[Ùˆ^[ØY˜ÛÛ[OOHœÝš[™ÈˆÈÝš\ÛÙQ™[˜ÙJ^[ØY˜ÛÛ[
+HˆˆŽÂˆYˆ
+\™\ÜÛœÙK›ÚÊHÂˆÛÛœÝ\œ›ÜˆH™]È\œ›ÜŠ^[ØY	‰ˆ\[Ùˆ^[ØY›Y\ÜØYÙHOOHœÝš[™ÈˆÈ^[ØY›Y\ÜØYÙHˆÛÝY™\]Y\Ý˜Z[YŠNÂˆ\œ›Ü‹˜ÛÙHH^[ØY	‰ˆ\[Ùˆ^[ØY˜ÛÙHOOHœÝš[™ÈˆÈ^[ØY˜ÛÙHˆÓÕQÔ‘TUQTÕÑRSQŽÂˆYˆ
+
+™\ÜÛœÙKœÝ]\ÈOOH™\ÜÛœÙKœÝ]\ÈOOHJH	‰ˆPÓÓ‘’QÕT‘QÐÓÕQÕVÑS‘ÒS•
+HÂˆ\œ›Ü‹˜ÛÙHHÓÕQÕSURSP“WÓÐÐSŽÂˆBˆ›ÝÈ\œ›ÜŽÂˆB‚ˆYˆ
+XÛÛ[
+HÂˆÛÛœÝ\œ›ÜˆH™]È\œ›ÜŠ‘[\HÛÝY™\ÜÛœÙHŠNÂˆ\œ›Ü‹˜ÛÙHH‘STWÐÓÕQÔ‘TÔÓ”ÑHŽÂˆ›ÝÈ\œ›ÜŽÂˆBˆ™]\›ˆÛÛ[ÂˆHØ]Ú
+\œ›ÜŠHÂˆYˆ
+\œ›Üˆ	‰ˆ\œ›Ü‹›˜[YHOOHX›Ü\œ›ÜˆŠHÂˆ\œ›Ü‹˜ÛÙHHÓÕQÕSQSÕUŽÂˆBˆ›ÝÈ\œ›ÜŽÂˆHš[˜[HÂˆYˆ
+[Y[Ý]YOOH[
+HÚ[™ÝË˜ÛX\•[Y[Ý]
+[Y[Ý]Y
+NÂˆBˆB‚ˆ[˜Ý[Ûˆ[š]›Ü›X]\Š
+HÂˆÛÛœÝ[œ]HØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹Z[œ]ŠNÂˆYˆ
+Z[œ]
+H™]\›ŽÂ‚ˆÛÛœÝÝ]]HØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹[Ý]]ŠNÂˆÛÛœÝ[š\ÚX›PÛÝ[HØÝ[Y[™Ù][[Y[žRY
+š[š\ÚX›KXÛÝ[ŠNÂˆÛÛœÝ›[šÐÛÝ[HØÝ[Y[™Ù][[Y[žRY
+˜›[šËXÛÝ[ŠNÂˆÛÛœÝÚ[™Ù\ÓY\ÜØYÙHHØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹XÚ[™Ù\ÈŠNÂˆÛÛœÝÙ][™ÜÈHÂˆ™[[Ý™R[š\ÚX›NˆØÝ[Y[™Ù][[Y[žRY
+œ™[[Ý™KZ[š\ÚX›HŠKˆš[S[™\ÎˆØÝ[Y[™Ù][[Y[žRY
+š[K[[™\ÈŠKˆÛÛ\ÙP›[šÎˆØÝ[Y[™Ù][[Y[žRY
+˜ÛÛ\ÙKX›[šÈŠKˆNÂˆÛÛœÝÛÝYXÝ[ÛˆHØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹XÛÝYXXÝ[ÛˆŠNÂˆÛÛœÝÛÝY™\Ý[HØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹XÛÝY\™\Ý[ŠNÂˆÛÛœÝÛÝYÝ]]HØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹XÛÝY[Ý]]ŠNÂˆÛÛœÝÛÝY\HHØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹XÛÝYX\HŠNÂˆÛÛœÝÛÝY™\ÝÜ™HHØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹XÛÝY\™\ÝÜ™HŠNÂˆ][™[™ÐÛÝY^HˆŽÂˆ]™]š[Ý\ÐÛÝY^H[Âˆ]™\Ù\™PÛÝY™]šY]ÈH˜[ÙNÂ‚ˆ[˜Ý[Ûˆ\]J
+HÂˆÛÛœÝ›Ü›X]YH›Ü›X]Ø\[ÛŠ[œ]˜[YKÂˆ™[[Ý™R[š\ÚX›NˆÙ][™ÜËœ™[[Ý™R[š\ÚX›K˜ÚXÚÙYˆš[S[™\ÎˆÙ][™ÜËš[S[™\Ë˜ÚXÚÙYˆÛÛ\ÙP›[šÎˆÙ][™ÜË˜ÛÛ\ÙP›[šË˜ÚXÚÙYˆJNÂ‚ˆÝ]]˜[YHH›Ü›X]Yœ™\Ý[Âˆ[š\ÚX›PÛÝ[^ÛÛ[HÝš[™Ê›Ü›X]Yš[š\ÚX›T™[[Ý™Y
+NÂˆ›[šÐÛÝ[^ÛÛ[HÝš[™Ê›Ü›X]Y˜ÛÛ\ÙY
+NÂˆ[š[X]PÚ[™ÙY
+Ý]]›Ü›X]Yœ™\Ý[
+NÂˆ[š[X]PÚ[™ÙY
+[š\ÚX›PÛÝ[›Ü›X]Yš[š\ÚX›T™[[Ý™Y
+NÂˆ[š[X]PÚ[™ÙY
+›[šÐÛÝ[›Ü›X]Y˜ÛÛ\ÙY
+NÂ‚ˆYˆ
+Z[œ]˜[YKš[J
+H
+Y›Ü›X]Yš[š\ÚX›T™[[Ý™Y	‰ˆY›Ü›X]Y˜ÛÛ\ÙY	‰ˆ›Ü›X]Yœ™\Ý[OOH[œ]˜[YJJHÂˆÚ[™Ù\ÓY\ÜØYÙK^ÛÛ[H
+™›Ü›X]\‹››ÐÚ[™Ù\ÈŠNÂˆH[ÙHÂˆÚ[™Ù\ÓY\ÜØYÙK^ÛÛ[H
+™›Ü›X]\‹˜Ú[™Ù\ÈŠNÂˆBˆ[š[X]PÚ[™ÙY
+Ú[™Ù\ÓY\ÜØYÙKÚ[™Ù\ÓY\ÜØYÙK^ÛÛ[
+NÂˆB‚ˆ[˜Ý[ÛˆÛX\ÛÝY™\Ý[
+
+HÂˆ[™[™ÐÛÝY^HˆŽÂˆYˆ
+ÛÝY™\Ý[
+HÛÝY™\Ý[šY[ˆHYNÂˆYˆ
+ÛÝYÝ]]
+HÛÝYÝ]]˜[YHHˆŽÂˆYˆ
+ÛÝY™\ÝÜ™H	‰ˆ\™\Ù\™PÛÝY™]šY]ÊHÂˆ™]š[Ý\ÐÛÝY^H[ÂˆÛÝY™\ÝÜ™K™\ØX›YHYNÂˆBˆB‚ˆ[œ]˜Y]™[\Ý[™\Šš[œ]‹
+
+HOˆÂˆ\]J
+NÂˆYˆ
+\™\Ù\™PÛÝY™]šY]ÊHÛX\ÛÝY™\Ý[
+
+NÂˆJNÂˆØš™XÝ˜[Y\ÊÙ][™ÜÊK™›Ü‘XXÚ
+
+ÚXÚØ›Þ
+HOˆÚXÚØ›Þ˜Y]™[\Ý[™\Š˜Ú[™ÙH‹\]JJNÂ‚ˆØÝ[Y[™Ù][[Y[žRY
+™›Ü›X]\‹XÛX\ˆŠK˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆ[œ]˜[YHHˆŽÂˆÝ]]˜[YHHˆŽÂˆ™]š[Ý\ÐÛÝY^H[ÂˆÛX\ÛÝY™\Ý[
+
+NÂˆ[œ]™›ØÝ\Ê
+NÂˆ\]J
+NÂˆJNÂ‚ˆYˆ
+ÛÝYXÝ[Ûˆ	‰ˆÛÝY™\Ý[	‰ˆÛÝYÝ]]	‰ˆÛÝY\H	‰ˆÛÝY™\ÝÜ™JHÂˆÛÝYXÝ[Û‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹\Þ[˜È
+
+HOˆÂˆÛÛœÝ˜YH[œ]˜[YKš[J
+NÂˆYˆ
+Y˜Y
+HÂˆÚÝÕØ\Ý
+
+˜ÛÝY™[\HŠJNÂˆ[œ]™›ØÝ\Ê
+NÂˆ™]\›ŽÂˆB‚ˆÙ]ÛÝY\ÞJÛÝYXÝ[Û‹YJNÂˆžHÂˆÛÛœÝÛÛ[H]ØZ]™\]Y\ÝÛÝY^
+œÛ\Ú‹˜Y
+NÂˆ[™[™ÐÛÝY^HÛÛ[ÂˆÛÝYÝ]]˜[YHHÛÛ[ÂˆÛÝY™\Ý[šY[ˆH˜[ÙNÂˆ[š[X]PÚ[™ÙY
+ÛÝYÝ]]ÛÛ[
+NÂˆHØ]Ú
+\œ›ÜŠHÂˆÚÝÕØ\Ý
+\ÐÛÝY[˜]˜Z[X›J\œ›ÜŠHÈ
+˜ÛÝY[˜]˜Z[X›HŠHˆ
+˜ÛÝY›™]ÛÜšÑ\œ›ÜˆŠJNÂˆHš[˜[HÂˆÙ]ÛÝY\ÞJÛÝYXÝ[Û‹˜[ÙJNÂˆBˆJNÂ‚ˆÛÝY\K˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆYˆ
+\[™[™ÐÛÝY^
+HÂˆÚÝÕØ\Ý
+
+˜ÛÝY››Ô™\Ý[ŠJNÂˆ™]\›ŽÂˆBˆ™]š[Ý\ÐÛÝY^H[œ]˜[YNÂˆ™\Ù\™PÛÝY™]šY]ÈHYNÂˆ[œ]˜[YHH[™[™ÐÛÝY^Âˆ[œ]™\Ü]Ú]™[
+™]È]™[
+š[œ]‹ÈX˜›\ÎˆYHJJNÂˆ™\Ù\™PÛÝY™]šY]ÈH˜[ÙNÂˆ[™[™ÐÛÝY^HˆŽÂˆÛÝY™\Ý[šY[ˆHYNÂˆÛÝYÝ]]˜[YHHˆŽÂˆÛÝY™\ÝÜ™K™\ØX›YH˜[ÙNÂˆ[œ]™›ØÝ\Ê
+NÂˆÚÝÕØ\Ý
+
+˜ÛÝY˜\YYŠJNÂˆJNÂ‚ˆÛÝY™\ÝÜ™K˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆYˆ
+™]š[Ý\ÐÛÝY^OOH[
+H™]\›ŽÂˆ™\Ù\™PÛÝY™]šY]ÈHYNÂˆ[œ]˜[YHH™]š[Ý\ÐÛÝY^Âˆ[œ]™\Ü]Ú]™[
+™]È]™[
+š[œ]‹ÈX˜›\ÎˆYHJJNÂˆ™\Ù\™PÛÝY™]šY]ÈH˜[ÙNÂˆ™]š[Ý\ÐÛÝY^H[ÂˆÛÝY™\ÝÜ™K™\ØX›YHYNÂˆ[œ]™›ØÝ\Ê
+NÂˆÚÝÕØ\Ý
+
+˜ÛÝYœ™\ÝÜ™YŠJNÂˆJNÂˆB‚ˆØÝ[Y[˜Y]™[\Ý[™\ŠœÜÝ™\›[™ÝXYÙXÚ[™ÙH‹\]JNÂˆ\]J
+NÂˆB‚ˆ[˜Ý[Ûˆ[š]Ù[™\˜]ÜŠ
+HÂˆÛÛœÝ[œ]HØÝ[Y[™Ù][[Y[žRY
+™Ù[™\˜]Ü‹Z[œ]ŠNÂˆYˆ
+Z[œ]
+H™]\›ŽÂ‚ˆÛÛœÝ]›Ü›S\ÝHØÝ[Y[™Ù][[Y[žRY
+™Ù[™\˜]Ü‹\]›Ü›K[\ÝŠNÂˆÛÛœÝ\S\ÝHØÝ[Y[™Ù][[Y[žRY
+™Ù[™\˜]Ü‹]\K[\ÝŠNÂˆÛÛœÝÙ[XÝYY]HHØÝ[Y[™Ù][[Y[žRY
+™Ù[™\˜]Ü‹\Ù[XÝY[Y]HŠNÂˆÛÛœÝÝ]]HØÝ[Y[™Ù][[Y[žRY
+™Ù[™\˜]Ü‹[Ý]]ŠNÂˆÛÛœÝÙ[™\˜]P]ÛˆHØÝ[Y[™Ù][[Y[žRY
+™Ù[™\˜]Ü‹XXÝ[ÛˆŠNÂˆÛÛœÝÙ[™\˜]SX™[HØÝ[Y[™Ù][[Y[žRY
+™Ù[™\˜]Ü‹XXÝ[Û‹[X™[ŠNÂˆÛÛœÝÛX\]ÛˆHØÝ[Y[™Ù][[Y[žRY
+™Ù[™\˜]Ü‹XÛX\ˆŠNÂˆ]Ù[XÝY™\Ù]YHU“Ô“WÔ‘TÑUÖÌKšYÂˆ]Ù[™\˜][Û’Ú[™H˜Ø\[ÛˆŽÂ‚ˆ[˜Ý[Ûˆ[››Ý[˜ÙQÙ[™\˜]Ü”™\Ý[
+\Ô™\Ý[
+HÂˆØÝ[Y[™\Ü]Ú]™[
+™]ÈÝ\ÝÛQ]™[
+œÜÝ™\™Ù[™\˜]Üœ™\Ý[‹Âˆ]Z[ˆÂˆ\Ô™\Ý[ˆ›ÛÛX[Š\Ô™\Ý[
+KˆÙ[™\˜][Û’Ú[™ˆÙ[™\˜][Û’Ú[™OOHš\ÚYÜÈˆÈš\ÚYÜÈˆˆ˜Ø\[Ûˆ‹ˆKˆJJNÂˆB‚ˆ[˜Ý[ÛˆÙ[XÝY™\Ù]
+
+HÂˆ™]\›ˆU“Ô“WÔ‘TÑUË™š[™
+
+™\Ù]
+HOˆ™\Ù]šYOOHÙ[XÝY™\Ù]Y
+HU“Ô“WÔ‘TÑUÖÌNÂˆB‚ˆ[˜Ý[Ûˆ\]TÙ[XÝ[ÛŠ
+HÂˆÛÛœÝ™\Ù]HÙ[XÝY™\Ù]
+
+NÂˆÙ[XÝYY]K^ÛÛ[H
+™\Ù]›X™[Ù^JH
+Èˆ0­Èˆ
+È
+™Ù[™\˜]Ü‹ˆˆ
+ÈÙ[™\˜][Û’Ú[™
+NÂˆÝ]]œXÙZÛ\ˆH
+™Ù[™\˜]Ü‹œ™\Ý[XÙZÛ\ˆŠNÂˆ[š[X]PÚ[™ÙY
+Ù[XÝYY]KÙ[XÝYY]K^ÛÛ[
+NÂˆB‚ˆ[˜Ý[ÛˆÛX\”™\Ý[
+
+HÂˆÝ]]˜[YHHˆŽÂˆ[š[X]PÚ[™ÙY
+Ý]]ˆŠNÂˆ[››Ý[˜ÙQÙ[™\˜]Ü”™\Ý[
+˜[ÙJNÂˆB‚ˆ[˜Ý[Ûˆ™[™\”]›Ü›P]ÛœÊ
+HÂˆ]›Ü›S\Ýš[›™\’SHU“Ô“WÔ‘TÑUË›X\
+
+™\Ù]
+HOˆÂˆÛÛœÝÙ[XÝYH™\Ù]šYOOHÙ[XÝY™\Ù]YÂˆÛÛœÝÙ[XÝYÛ\ÜÙ\ÈH˜›Ü™\‹Xœ˜[™™ËXœ˜[™^]Ú]HÚYÝË\ÛHŽÂˆÛÛœÝY˜][Û\ÜÙ\ÈH˜›Ü™\‹^š[˜ËLŒ™Ë]Ú]H^Z[šÈÝ™\Ž˜›Ü™\‹Xœ˜[™Ý™\Ž˜™Ë]X[MLŽÂˆ™]\›ˆ	Ï]Ûˆ\OH˜]ÛˆˆÛ\ÜÏHš[›[™KY›^Z[‹ZLL][\ËXÙ[\ˆØ\Lˆ›Ý[™Y[È›Ü™\ˆLÈKLˆ^\ÛH›Û\Ù[ZX›Û˜[œÚ][Ûˆ›ØÝ\Î›Ý][™K[›Û™H›ØÝ\Îœš[™ËLˆ›ØÝ\Îœš[™ËXœ˜[™›ØÝ\Îœš[™Ë[Ù™œÙ]Lˆ	È
+È
+Ù[XÝYÈÙ[XÝYÛ\ÜÙ\ÈˆY˜][Û\ÜÙ\ÊH
+È	Èˆ]KYÙ[™\˜]Ü‹\]›Ü›OH‰È
+È™\Ù]šY
+È	Èˆ\šXK\™\ÜÙYH‰È
+ÈÙ[XÝY
+È	ÈHÛ\ÜÏH™˜K\ÛÛY	È
+È™\Ù]šXÛÛˆ
+È	Èˆ\šXKZY[HYHÚOÜ[‰È
+È
+™\Ù]›X™[Ù^JH
+ÈÜÜ[Ø]ÛˆŽÂˆJKš›Ú[ŠˆŠNÂ‚ˆ]›Ü›S\Ýœ]Y\žTÙ[XÝÜ[
+–Ù]KYÙ[™\˜]Ü‹\]›Ü›WHŠK™›Ü‘XXÚ
+
+]ÛŠHOˆÂˆ]Û‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆÙ[XÝY™\Ù]YH]Û‹™]\Ù]™Ù[™\˜]Ü”]›Ü›NÂˆÛX\”™\Ý[
+
+NÂˆ™[™\”]›Ü›P]ÛœÊ
+NÂˆ\]TÙ[XÝ[ÛŠ
+NÂˆJNÂˆJNÂˆB‚ˆ[˜Ý[Ûˆ™[™\‘Ù[™\˜][Û’Ú[™Ê
+HÂˆÛÛœÝÚ[™ÈHÈ˜Ø\[Ûˆ‹š\ÚYÜÈ—NÂˆ\S\Ýš[›™\’SHÚ[™Ë›X\
+
+Ú[™
+HOˆÂˆÛÛœÝÙ[XÝYHÚ[™OOHÙ[™\˜][Û’Ú[™ÂˆÛÛœÝÙ[XÝYÛ\ÜÙ\ÈH˜›Ü™\‹Xœ˜[™™Ë]X[ML^Xœ˜[™ŽÂˆÛÛœÝY˜][Û\ÜÙ\ÈH˜›Ü™\‹^š[˜ËLŒ™Ë]Ú]H^Z[šÈÝ™\Ž˜›Ü™\‹Xœ˜[™Ý™\Ž˜™Ë]X[MLŽÂˆÛÛœÝXÛÛˆHÚ[™OOH˜Ø\[ÛˆˆÈ™˜K\[‹[šXˆˆˆ™˜KZ\ÚYÈŽÂˆ™]\›ˆ	Ï]Ûˆ\OH˜]ÛˆˆÛ\ÜÏHš[›[™KY›^Z[‹ZLL][\ËXÙ[\ˆØ\Lˆ›Ý[™Y[È›Ü™\ˆLÈKLˆ^\ÛH›Û\Ù[ZX›Û˜[œÚ][Ûˆ›ØÝ\Î›Ý][™K[›Û™H›ØÝ\Îœš[™ËLˆ›ØÝ\Îœš[™ËXœ˜[™›ØÝ\Îœš[™Ë[Ù™œÙ]Lˆ	È
+È
+Ù[XÝYÈÙ[XÝYÛ\ÜÙ\ÈˆY˜][Û\ÜÙ\ÊH
+È	Èˆ]KYÙ[™\˜]Ü‹ZÚ[™H‰È
+ÈÚ[™
+È	Èˆ\šXK\™\ÜÙYH‰È
+ÈÙ[XÝY
+È	ÈHÛ\ÜÏH™˜K\ÛÛY	È
+ÈXÛÛˆ
+È	Èˆ\šXKZY[HYHÚOÜ[‰È
+È
+™Ù[™\˜]Ü‹ˆˆ
+ÈÚ[™
+H
+ÈÜÜ[Ø]ÛˆŽÂˆJKš›Ú[ŠˆŠNÂ‚ˆ\S\Ýœ]Y\žTÙ[XÝÜ[
+–Ù]KYÙ[™\˜]Ü‹ZÚ[™HŠK™›Ü‘XXÚ
+
+]ÛŠHOˆÂˆ]Û‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆÙ[™\˜][Û’Ú[™H]Û‹™]\Ù]™Ù[™\˜]Ü’Ú[™ÂˆÛX\”™\Ý[
+
+NÂˆ™[™\‘Ù[™\˜][Û’Ú[™Ê
+NÂˆ\]TÙ[XÝ[ÛŠ
+NÂˆJNÂˆJNÂˆB‚ˆ[˜Ý[ÛˆÙ]Ù[™\˜]Ü\ÞJ\ÞJHÂˆÙ]ÛÝY\ÞJÙ[™\˜]P]Û‹\ÞJNÂˆÙ[™\˜]SX™[^ÛÛ[H\ÞHÈ
+™Ù[™\˜]Ü‹œ›ØÙ\ÜÚ[™ÈŠHˆ
+™Ù[™\˜]Ü‹™Ù[™\˜]HŠNÂˆB‚ˆ[œ]˜Y]™[\Ý[™\Šš[œ]‹ÛX\”™\Ý[
+NÂ‚ˆÛX\]Û‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹
+
+HOˆÂˆ[œ]˜[YHHˆŽÂˆÛX\”™\Ý[
+
+NÂˆ[œ]™›ØÝ\Ê
+NÂˆJNÂ‚ˆÙ[™\˜]P]Û‹˜Y]™[\Ý[™\Š˜ÛXÚÈ‹\Þ[˜È
+
+HOˆÂˆÛÛœÝÙYYH[œ]˜[YKš[J
+NÂˆYˆ
+\ÙYY
+HÂˆÚÝÕØ\Ý
+
+™Ù[™\˜]Ü‹™[\HŠJNÂˆ[œ]™›ØÝ\Ê
+NÂˆ™]\›ŽÂˆB‚ˆ[››Ý[˜ÙQÙ[™\˜]Ü”™\Ý[
+˜[ÙJNÂˆÙ]Ù[™\˜]Ü\ÞJYJNÂˆžHÂˆÛÛœÝÛÛ[H]ØZ]™\]Y\ÝÛÝY^
+™Ù[™\˜]H‹ÙYYÂˆ]›Ü›NˆÙ[XÝY™\Ù]YˆÙ[™\˜][Û’Ú[™ˆJNÂˆÛÛœÝ™\Ý[HÙ[™\˜][Û’Ú[™OOHš\ÚYÜÈ‚ˆÈÛX[’\ÚYÜÊÛÛ[
+KœÛXÙJJKš›Ú[ŠˆŠBˆˆÛÛ[ÂˆYˆ
+\™\Ý[
+H›ÝÈ™]È\œ›ÜŠ“›È\ØX›HÙ[™\˜]YÛÛ[ŠNÂˆÝ]]˜[YHH™\Ý[Âˆ[š[X]PÚ[™ÙY
+Ý]]™\Ý[
+NÂˆ[››Ý[˜ÙQÙ[™\˜]Ü”™\Ý[
+YJNÂˆHØ]Ú
+\œ›ÜŠHÂˆÚÝÕØ\Ý
+\ÐÛÝY[˜]˜Z[X›J\œ›ÜŠHÈ
+˜ÛÝY[˜]˜Z[X›HŠHˆ
+˜ÛÝY›™]ÛÜšÑ\œ›ÜˆŠJNÂˆHš[˜[HÂˆÙ]Ù[™\˜]Ü\ÞJ˜[ÙJNÂˆBˆJNÂ‚ˆØÝ[Y[˜Y]™[\Ý[™\ŠœÜÝ™\›[™ÝXYÙXÚ[™ÙH‹
+
+HOˆÂˆ™[™\”]›Ü›P]ÛœÊ
+NÂˆ™[™\‘Ù[™\˜][Û’Ú[™Ê
+NÂˆ\]TÙ[XÝ[ÛŠ
+NÂˆÙ]Ù[™\˜]Ü\ÞJÙ[™\˜]P]Û‹™\ØX›Y
+NÂˆJNÂ‚ˆ™[™\”]›Ü›P]ÛœÊ
+NÂˆ™[™\‘Ù[™\˜][Û’Ú[™Ê
+NÂˆ\]TÙ[XÝ[ÛŠ
+NÂˆB‚ˆÛØ˜[\Ë”ÜÝ™\HØš™XÝ™œ™Y^™JÂˆU“Ô“WÔ‘TÑUËˆÛÝ[š\ÚX›PÚ\˜XÝ\œËˆÛÝ[[™Û\ÚÛÜ™ËˆÛÝ[[™\ËˆÛX[’\ÚYÜËˆ›Ü›X]Ø\[Û‹ˆJNÂ‚ˆØÝ[Y[˜Y]™[\Ý[™\Š‘ÓPÛÛ[ØYY‹
+
+HOˆÂˆ[š]ÛÛ[[ÛŠ
+NÂˆ[š][™ÝÚXÚÙ\Š
+NÂˆ[š]\ÚYÐÛX[™\Š
+NÂˆ[š]›Ü›X]\Š
+NÂˆ[š]Ù[™\˜]ÜŠ
+NÂˆJNÂŸJJ
+NÂ
