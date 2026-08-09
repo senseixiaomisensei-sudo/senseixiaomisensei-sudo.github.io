@@ -1,7 +1,17 @@
 const AD_CONFIG = Object.freeze({
-  bannerDesktop: String.raw`YOUR_ADSTERRA_DESKTOP_BANNER_CODE`,
+  bannerDesktop: String.raw`<script>
+  atOptions = {
+    'key' : '73b6058b10d20b5d847bbcb6ceccbed2',
+    'format' : 'iframe',
+    'height' : 90,
+    'width' : 728,
+    'params' : {}
+  };
+</script>
+<script src="https://www.highperformanceformat.com/73b6058b10d20b5d847bbcb6ceccbed2/invoke.js"></script>`,
   bannerMobile: String.raw`YOUR_ADSTERRA_MOBILE_BANNER_CODE`,
-  native: String.raw`YOUR_ADSTERRA_NATIVE_BANNER_CODE`,
+  native: String.raw`<script async="async" data-cfasync="false" src="https://pl30761022.effectivecpmnetwork.com/b5fb385b745ea02ae696e7748d26b35f/invoke.js"></script>
+<div id="container-b5fb385b745ea02ae696e7748d26b35f"></div>`,
 });
 
 (() => {
