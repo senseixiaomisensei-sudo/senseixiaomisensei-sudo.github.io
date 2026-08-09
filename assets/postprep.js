@@ -296,300 +296,1058 @@
         hashtags: "Hashtags",
         inputLabel: "What do you want to write about?",
         inputHint: "A title, topic, value point, or 1â€“3 tags is enough. Check facts before publishing.",
-        inputPlaceholder: "Example: A weekend trip to sóŸu¶‰Ëkºwµç]HŒÂˆÛX\ÛİY™\İ[
+        inputPlaceholder: "Example: A weekend trip to see the first snow in Jiangsu",
+        generate: "Generate",
+        clear: "Clear topic",
+        resultLabel: "Generated result",
+        resultHint: "The result follows the selected platform. Review and adjust it before publishing.",
+        resultPlaceholder: "Choose a platform, enter a topic, then generate",
+        selected: "Selected",
+        processing: "Generatingâ€¦",
+        empty: "Enter a topic, title, or tags first",
+        noResult: "There is no generated result to copy yet",
+      },
+      cloud: {
+        lengthTitle: "Publishing suggestion",
+        lengthHint: "Get a short adjustment direction for the selected publishing field.",
+        lengthAction: "Deep suggestion",
+        hashtagTitle: "Suggested tags",
+        hashtagHint: "Extract a focused set of tags from your text.",
+        hashtagAction: "Deep cleanup",
+        formatterTitle: "Polish preview",
+        formatterHint: "Keep the original intent while smoothing phrasing and rhythm.",
+        formatterAction: "Deep polish",
+        copySuggestion: "Copy suggestion",
+        apply: "Use result",
+        restore: "Restore original",
+        processing: "Working on itâ€¦",
+        empty: "Paste some text before starting",
+        networkError: "The service is not responding. Please try again later.",
+        unavailable: "Deep processing is not configured; the basic tools still work.",
+        resultNote: "Review the result before publishing.",
+        applied: "Processing result applied",
+        restored: "Text from before processing restored",
+        noResult: "There is no result to use yet",
+      },
+      privacy: {
+        eyebrow: "PRIVACY",
+        title: "Privacy",
+        intro: "Basic tools run in this browser; optional generation or deep processing is available only when the deployment enables it and you choose it.",
+        localTitle: "Basic tools stay local",
+        localBody: "Length checking, hashtag cleaning, and caption formatting run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
+        cloudTitle: "Optional deep processing",
+        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, or platform generation, only the current topic or draft is sent for a result; otherwise the button reports that the feature is unavailable.",
+        servicesTitle: "Third-party static resources",
+        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site; when configured, ad slots also request content from Adsterra using the supplied ad code. Those requests do not contain the draft you paste into a tool.",
+        adsTitle: "Ads and analytics",
+        adsBody: "Ad slots load only after Adsterra code is configured. Adsterra and its partners may process device, browser, and visit information and may use cookies or personalized delivery; see their policies for the current scope. PostPrep does not intentionally send tool inputs to the ad script.",
+        cookiesLink: "Read Adsterra's Cookie Policy",
+        controlTitle: "Your control",
+        controlBody: "You can clear any input, close the page, or erase local site data at any time. Only your language preference is stored in this browser's localStorage.",
+        back: "Back to home",
+      },
+      platform: {
+        xiaohongshu: "Xiaohongshu",
+        douyin: "Douyin",
+        wechat: "WeChat OA",
+        tiktok: "TikTok",
+        instagram: "Instagram",
+        youtube: "YouTube",
+        xiaohongshuField: "Post title",
+        douyinField: "Video caption",
+        wechatField: "Article title",
+        tiktokField: "Video caption",
+        instagramField: "Post caption",
+        youtubeField: "Video title",
+      },
+    },
+  };
 
-NÂˆ[œ]™›Øİ\Ê
-NÂˆJNÂ‚ˆYˆ
-ÛİYXİ[Ûˆ	‰ˆÛİY™\İ[	‰ˆÛİYİ]]
-HÂˆÛİYXİ[Û‹˜Y]™[\İ[™\Š˜ÛXÚÈ‹\Ş[˜È
+  const PLATFORM_PRESETS = [
+    {
+      id: "xiaohongshu",
+      icon: "fa-book-open",
+      labelKey: "platform.xiaohongshu",
+      fieldKey: "platform.xiaohongshuField",
+      limit: 20,
+      ruleType: "suggested",
+      lastVerified: VERIFIED_DATE,
+      sourceUrl: "",
+      sourceKey: "length.sourceUnavailable",
+    },
+    {
+      id: "douyin",
+      icon: "fa-play",
+      labelKey: "platform.douyin",
+      fieldKey: "platform.douyinField",
+      limit: 55,
+      ruleType: "suggested",
+      lastVerified: VERIFIED_DATE,
+      sourceUrl: "",
+      sourceKey: "length.sourceUnavailable",
+    },
+    {
+      id: "wechat",
+      icon: "fa-comment-dots",
+      labelKey: "platform.wechat",
+      fieldKey: "platform.wechatField",
+      limit: 64,
+      ruleType: "suggested",
+      lastVerified: VERIFIED_DATE,
+      sourceUrl: "",
+      sourceKey: "length.sourceUnavailable",
+    },
+    {
+      id: "tiktok",
+      icon: "fa-music",
+      labelKey: "platform.tiktok",
+      fieldKey: "platform.tiktokField",
+      limit: 4000,
+      ruleType: "suggested",
+      lastVerified: VERIFIED_DATE,
+      sourceUrl: "",
+      sourceKey: "length.sourceUnavailable",
+    },
+    {
+      id: "instagram",
+      icon: "fa-camera",
+      labelKey: "platform.instagram",
+      fieldKey: "platform.instagramField",
+      limit: 2200,
+      ruleType: "suggested",
+      lastVerified: VERIFIED_DATE,
+      sourceUrl: "",
+      sourceKey: "length.sourceUnavailable",
+    },
+    {
+      id: "youtube",
+      icon: "fa-circle-play",
+      labelKey: "platform.youtube",
+      fieldKey: "platform.youtubeField",
+      limit: 100,
+      ruleType: "official",
+      lastVerified: VERIFIED_DATE,
+      sourceUrl: "https://support.google.com/youtube/answer/57407?hl=en",
+      sourceKey: "length.officialHint",
+    },
+  ];
 
-HOˆÂˆÛÛœİ˜YH[œ]˜[YKš[J
-NÂˆYˆ
-Y˜Y
-HÂˆÚİÕØ\İ
-
-˜ÛİY™[\HŠJNÂˆ[œ]™›Øİ\Ê
-NÂˆ™]\›ÂˆB‚ˆÙ]ÛİY\ŞJÛİYXİ[Û‹YJNÂˆHÂˆÛÛœİÛÛ[H]ØZ]™\]Y\İÛİY^
-š\ÚYÜÈ‹˜Y
-NÂˆÛÛœİYÜÈHÛX[’\ÚYÜÊÛÛ[
-KœÛXÙJJNÂˆYˆ
-]YÜË›[™İ
-H›İÈ™]È\œ›ÜŠ“›È\ØX›HÛİYYÜÈŠNÂˆÛİYİ]]˜[YHHYÜËš›Ú[ŠˆŠNÂˆÛİY™\İ[šY[ˆH˜[ÙNÂˆ[š[X]PÚ[™ÙY
-ÛİYİ]]ÛİYİ]]˜[YJNÂˆHØ]Ú
-\œ›ÜŠHÂˆÚİÕØ\İ
-\ĞÛİY[˜]˜Z[X›J\œ›ÜŠHÈ
-˜ÛİY[˜]˜Z[X›HŠHˆ
-˜ÛİY›™]ÛÜšÑ\œ›ÜˆŠJNÂˆHš[˜[HÂˆÙ]ÛİY\ŞJÛİYXİ[Û‹˜[ÙJNÂˆBˆJNÂˆB‚ˆ\]J
-NÂˆB‚ˆ[˜İ[ÛˆÛİ[[š\ÚX›PÚ\˜Xİ\œÊ˜[YJHÂˆ™]\›ˆ
-˜[YK›X]Ú
-Ö×LŒ—Q‘Q‘—LŒŒLQKÙİJH×JK›[™İÂˆB‚ˆ[˜İ[Ûˆ›Ü›X]Ø\[ÛŠ˜[YKÙ][™ÜÊHÂˆÛÛœİÛİ\˜ÙHH˜[YKœ™\XÙJ×—ß‹ÙİK—ˆŠNÂˆÛÛœİ[š\ÚX›P™Y›Ü™HHÛİ[[š\ÚX›PÚ\˜Xİ\œÊÛİ\˜ÙJNÂˆ]™\İ[HÛİ\˜ÙNÂˆ]ÛÛ\ÙYHÂ‚ˆYˆ
-Ù][™ÜËœ™[[İ™R[š\ÚX›JHÂˆ™\İ[H™\İ[œ™\XÙJÖ×LŒ—Q‘Q‘—LŒŒLQKÙİKˆŠNÂˆB‚ˆYˆ
-Ù][™ÜËš[S[™\ÊHÂˆ™\İ[H™\İ[ˆœÜ]
-—ˆŠBˆ›X\
+  let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "zh";
 
-[™JHOˆ[™Kœ™\XÙJ×–×Jß×JÉÙİKˆŠJBˆš›Ú[Š—ˆŠNÂˆB‚ˆYˆ
-Ù][™ÜË˜ÛÛ\ÙP›[šÊHÂˆÛÛœİ™Y›Ü™P›[šÓ[™\ÈH
-™\İ[›X]Ú
-×ÌËKÙİJH×JK›[™İÂˆ™\İ[H™\İ[œ™\XÙJ×ÌËKÙİK——ˆŠNÂˆÛÛ\ÙYH™Y›Ü™P›[šÓ[™\ÎÂˆB‚ˆYˆ
-Ù][™ÜËš[S[™\ÊHÂˆ™\İ[H™\İ[œ™\XÙJ×—ŠßŠÉÙİKˆŠNÂˆB‚ˆ™]\›ˆÂˆ™\İ[ˆ[š\ÚX›T™[[İ™YˆÙ][™ÜËœ™[[İ™R[š\ÚX›HÈ[š\ÚX›P™Y›Ü™HˆˆÛÛ\ÙYˆNÂˆB‚ˆ[˜İ[Ûˆİš\ÛÙQ™[˜ÙJ˜[YJHÂˆ™]\›ˆİš[™Ê˜[YHˆŠBˆš[J
-Bˆœ™\XÙJ×˜×ËWJ—Ê‹İKˆŠBˆœ™\XÙJ×Ê˜	İKˆŠBˆš[J
-NÂˆB‚ˆ[˜İ[ÛˆÙ]ÛİY\ŞJ]Û‹\ŞJHÂˆYˆ
-X]ÛŠH™]\›Âˆ]Û‹™\ØX›YH\ŞNÂˆ]Û‹˜Û\ÜÓ\İÙÙÛJš\Ë[ØY[™È‹\ŞJNÂˆ]Û‹œÙ]]šX]J˜\šXKX\ŞH‹İš[™Ê\ŞJJNÂˆB‚ˆ[˜İ[Ûˆ\ĞÛİY[˜]˜Z[X›J\œ›ÜŠHÂˆ™]\›ˆ›ÛÛX[Š\œ›Üˆ	‰ˆÈÓÕQÕSURSP“WÓĞĞS‹“RTÔÒS‘×ÔÑT•‘T—ÔÑPÔ‘U‹“Ô’QÒS—Ó“ÕĞSÕÑQ—Kš[˜ÛY\Ê\œ›Ü‹˜ÛÙJJNÂˆB‚ˆ\Ş[˜È[˜İ[Ûˆ™\]Y\İÛİY^
-Xİ[Û‹˜YY]Y]JHÂˆYˆ
-Ú[™İË›ØØ][Û‹œ›İØÛÛOOH™š[Nˆˆ
-T×ÑÒUP—ÔQÑT×ÒÔÕ	‰ˆPÓÓ‘’QÕT‘QĞÓÕQÕVÑS‘ÒS•
-JHÂˆÛÛœİ[˜]˜Z[X›HH™]È\œ›ÜŠÛİY›ØÙ\ÜÚ[™È\È[˜]˜Z[X›H[ˆ\Èİ]XÈ\Ş[Y[ŠNÂˆ[˜]˜Z[X›K˜ÛÙHHÓÕQÕSURSP“WÓĞĞSÂˆ›İÈ[˜]˜Z[X›NÂˆB‚ˆÛÛœİÛÛ›Û\ˆH\[ÙˆX›ÜÛÛ›Û\ˆOOH™[˜İ[ÛˆˆÈ™]ÈX›ÜÛÛ›Û\Š
-Hˆ[ÂˆÛÛœİ[Y[İ]YHÛÛ›Û\‚ˆÈÚ[™İËœÙ][Y[İ]
+  function lookup(object, path) {
+    return path.split(".").reduce((value, key) => (value ? value[key] : undefined), object);
+  }
 
+  function t(path) {
+    const value = lookup(translations[currentLanguage], path);
+    return value === undefined ? path : value;
+  }
 
-HOˆÛÛ›Û\‹˜X›Ü
+  function applyTranslations() {
+    document.documentElement.lang = currentLanguage === "zh" ? "zh-CN" : "en";
 
-KÌ
-Bˆˆ[Â‚ˆHÂˆÛÛœİ™\ÜÛœÙHH]ØZ]™]Ú
-ÓÕQÕVÑS‘ÒS•ÂˆY]Ùˆ”ÔÕ‹ˆXY\œÎˆÂˆÛÛ[U\Hˆ˜\XØ][Û‹ÚœÛÛˆ‹ˆKˆ›ÙNˆ”ÓÓ‹œİš[™ÚYJÂˆXİ[Û‹ˆ˜Yˆ[™İXYÙNˆİ\œ™[[™İXYÙKˆ‹‹ŠY]Y]HßJKˆJKˆÚYÛ˜[ˆÛÛ›Û\ˆÈÛÛ›Û\‹œÚYÛ˜[ˆ[™Yš[™YˆJNÂ‚ˆÛÛœİ^[ØYH]ØZ]™\ÜÛœÙKšœÛÛŠ
-K˜Ø]Ú
+    document.querySelectorAll("[data-i18n]").forEach((element) => {
+      element.textContent = t(element.dataset.i18n);
+    });
 
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+      element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+    });
 
-HOˆ[
-NÂˆÛÛœİÛÛ[H^[ØY	‰ˆ\[Ùˆ^[ØY˜ÛÛ[OOHœİš[™ÈˆÈİš\ÛÙQ™[˜ÙJ^[ØY˜ÛÛ[
-HˆˆÂˆYˆ
-\™\ÜÛœÙK›ÚÊHÂˆÛÛœİ\œ›ÜˆH™]È\œ›ÜŠ^[ØY	‰ˆ\[Ùˆ^[ØY›Y\ÜØYÙHOOHœİš[™ÈˆÈ^[ØY›Y\ÜØYÙHˆÛİY™\]Y\İ˜Z[YŠNÂˆ\œ›Ü‹˜ÛÙHH^[ØY	‰ˆ\[Ùˆ^[ØY˜ÛÙHOOHœİš[™ÈˆÈ^[ØY˜ÛÙHˆÓÕQÔ‘TUQTÕÑRSQÂˆYˆ
+    document.querySelectorAll("[data-i18n-title]").forEach((element) => {
+      element.setAttribute("title", t(element.dataset.i18nTitle));
+    });
 
-™\ÜÛœÙKœİ]\ÈOOH™\ÜÛœÙKœİ]\ÈOOHJH	‰ˆPÓÓ‘’QÕT‘QĞÓÕQÕVÑS‘ÒS•
-HÂˆ\œ›Ü‹˜ÛÙHHÓÕQÕSURSP“WÓĞĞSÂˆBˆ›İÈ\œ›ÜÂˆB‚ˆYˆ
-XÛÛ[
-HÂˆÛÛœİ\œ›ÜˆH™]È\œ›ÜŠ‘[\HÛİY™\ÜÛœÙHŠNÂˆ\œ›Ü‹˜ÛÙHH‘STWĞÓÕQÔ‘TÔÓ”ÑHÂˆ›İÈ\œ›ÜÂˆBˆ™]\›ˆÛÛ[ÂˆHØ]Ú
-\œ›ÜŠHÂˆYˆ
-\œ›Üˆ	‰ˆ\œ›Ü‹›˜[YHOOHX›Ü\œ›ÜˆŠHÂˆ\œ›Ü‹˜ÛÙHHÓÕQÕSQSÕUÂˆBˆ›İÈ\œ›ÜÂˆHš[˜[HÂˆYˆ
-[Y[İ]YOOH[
-HÚ[™İË˜ÛX\•[Y[İ]
-[Y[İ]Y
-NÂˆBˆB‚ˆ[˜İ[Ûˆ[š]›Ü›X]\Š
-HÂˆÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹Z[œ]ŠNÂˆYˆ
-Z[œ]
-H™]\›Â‚ˆÛÛœİİ]]HØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹[İ]]ŠNÂˆÛÛœİ[š\ÚX›PÛİ[HØİ[Y[™Ù][[Y[RY
-š[š\ÚX›KXÛİ[ŠNÂˆÛÛœİ›[šĞÛİ[HØİ[Y[™Ù][[Y[RY
-˜›[šËXÛİ[ŠNÂˆÛÛœİÚ[™Ù\ÓY\ÜØYÙHHØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹XÚ[™Ù\ÈŠNÂˆÛÛœİÙ][™ÜÈHÂˆ™[[İ™R[š\ÚX›NˆØİ[Y[™Ù][[Y[RY
-œ™[[İ™KZ[š\ÚX›HŠKˆš[S[™\ÎˆØİ[Y[™Ù][[Y[RY
-š[K[[™\ÈŠKˆÛÛ\ÙP›[šÎˆØİ[Y[™Ù][[Y[RY
-˜ÛÛ\ÙKX›[šÈŠKˆNÂˆÛÛœİÛİYXİ[ÛˆHØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹XÛİYXXİ[ÛˆŠNÂˆÛÛœİÛİY™\İ[HØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹XÛİY\™\İ[ŠNÂˆÛÛœİÛİYİ]]HØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹XÛİY[İ]]ŠNÂˆÛÛœİÛİY\HHØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹XÛİYX\HŠNÂˆÛÛœİÛİY™\İÜ™HHØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹XÛİY\™\İÜ™HŠNÂˆ][™[™ĞÛİY^HˆÂˆ]™]š[İ\ĞÛİY^H[Âˆ]™\Ù\™PÛİY™]šY]ÈH˜[ÙNÂ‚ˆ[˜İ[Ûˆ\]J
-HÂˆÛÛœİ›Ü›X]YH›Ü›X]Ø\[ÛŠ[œ]˜[YKÂˆ™[[İ™R[š\ÚX›NˆÙ][™ÜËœ™[[İ™R[š\ÚX›K˜ÚXÚÙYˆš[S[™\ÎˆÙ][™ÜËš[S[™\Ë˜ÚXÚÙYˆÛÛ\ÙP›[šÎˆÙ][™ÜË˜ÛÛ\ÙP›[šË˜ÚXÚÙYˆJNÂ‚ˆİ]]˜[YHH›Ü›X]Yœ™\İ[Âˆ[š\ÚX›PÛİ[^ÛÛ[Hİš[™Ê›Ü›X]Yš[š\ÚX›T™[[İ™Y
-NÂˆ›[šĞÛİ[^ÛÛ[Hİš[™Ê›Ü›X]Y˜ÛÛ\ÙY
-NÂˆ[š[X]PÚ[™ÙY
-İ]]›Ü›X]Yœ™\İ[
-NÂˆ[š[X]PÚ[™ÙY
-[š\ÚX›PÛİ[›Ü›X]Yš[š\ÚX›T™[[İ™Y
-NÂˆ[š[X]PÚ[™ÙY
-›[šĞÛİ[›Ü›X]Y˜ÛÛ\ÙY
-NÂ‚ˆYˆ
-Z[œ]˜[YKš[J
-H
-Y›Ü›X]Yš[š\ÚX›T™[[İ™Y	‰ˆY›Ü›X]Y˜ÛÛ\ÙY	‰ˆ›Ü›X]Yœ™\İ[OOH[œ]˜[YJJHÂˆÚ[™Ù\ÓY\ÜØYÙK^ÛÛ[H
-™›Ü›X]\‹››ĞÚ[™Ù\ÈŠNÂˆH[ÙHÂˆÚ[™Ù\ÓY\ÜØYÙK^ÛÛ[H
-™›Ü›X]\‹˜Ú[™Ù\ÈŠNÂˆBˆ[š[X]PÚ[™ÙY
-Ú[™Ù\ÓY\ÜØYÙKÚ[™Ù\ÓY\ÜØYÙK^ÛÛ[
-NÂˆB‚ˆ[˜İ[ÛˆÛX\ÛİY™\İ[
+    document.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+      element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+    });
 
-HÂˆ[™[™ĞÛİY^HˆÂˆYˆ
-ÛİY™\İ[
-HÛİY™\İ[šY[ˆHYNÂˆYˆ
-ÛİYİ]]
-HÛİYİ]]˜[YHHˆÂˆYˆ
-ÛİY™\İÜ™H	‰ˆ\™\Ù\™PÛİY™]šY]ÊHÂˆ™]š[İ\ĞÛİY^H[ÂˆÛİY™\İÜ™K™\ØX›YHYNÂˆBˆB‚ˆ[œ]˜Y]™[\İ[™\Šš[œ]‹
+    document.querySelectorAll("[data-i18n-alt]").forEach((element) => {
+      element.setAttribute("alt", t(element.dataset.i18nAlt));
+    });
 
-HOˆÂˆ\]J
-NÂˆYˆ
-\™\Ù\™PÛİY™]šY]ÊHÛX\ÛİY™\İ[
+    const titleKey = document.body.dataset.titleKey;
+    if (titleKey) {
+      document.title = t(titleKey) + " | PostPrep";
+    }
+  }
 
-NÂˆJNÂˆØš™Xİ˜[Y\ÊÙ][™ÜÊK™›Ü‘XXÚ
+  function showToast(message) {
+    const toast = document.getElementById("toast");
+    if (!toast) return;
 
-ÚXÚØ›Ş
-HOˆÚXÚØ›Ş˜Y]™[\İ[™\Š˜Ú[™ÙH‹\]JJNÂ‚ˆØİ[Y[™Ù][[Y[RY
-™›Ü›X]\‹XÛX\ˆŠK˜Y]™[\İ[™\Š˜ÛXÚÈ‹
+    toast.textContent = message;
+    toast.classList.remove("translate-y-3", "opacity-0");
+    toast.classList.add("translate-y-0", "opacity-100");
 
-HOˆÂˆ[œ]˜[YHHˆÂˆİ]]˜[YHHˆÂˆ™]š[İ\ĞÛİY^H[ÂˆÛX\ÛİY™\İ[
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => {
+      toast.classList.remove("translate-y-0", "opacity-100");
+      toast.classList.add("translate-y-3", "opacity-0");
+    }, 2600);
+  }
 
-NÂˆ[œ]™›Øİ\Ê
-NÂˆ\]J
-NÂˆJNÂ‚ˆYˆ
-ÛİYXİ[Ûˆ	‰ˆÛİY™\İ[	‰ˆÛİYİ]]	‰ˆÛİY\H	‰ˆÛİY™\İÜ™JHÂˆÛİYXİ[Û‹˜Y]™[\İ[™\Š˜ÛXÚÈ‹\Ş[˜È
+  const reducedMotionQuery = window.matchMedia
+    ? window.matchMedia("(prefers-reduced-motion: reduce)")
+    : { matches: false };
+  const motionValues = new WeakMap();
+  const motionFrames = new WeakMap();
 
-HOˆÂˆÛÛœİ˜YH[œ]˜[YKš[J
-NÂˆYˆ
-Y˜Y
-HÂˆÚİÕØ\İ
-
-˜ÛİY™[\HŠJNÂˆ[œ]™›Øİ\Ê
-NÂˆ™]\›ÂˆB‚ˆÙ]ÛİY\ŞJÛİYXİ[Û‹YJNÂˆHÂˆÛÛœİÛÛ[H]ØZ]™\]Y\İÛİY^
-œÛ\Ú‹˜Y
-NÂˆ[™[™ĞÛİY^HÛÛ[ÂˆÛİYİ]]˜[YHHÛÛ[ÂˆÛİY™\İ[šY[ˆH˜[ÙNÂˆ[š[X]PÚ[™ÙY
-ÛİYİ]]ÛÛ[
-NÂˆHØ]Ú
-\œ›ÜŠHÂˆÚİÕØ\İ
-\ĞÛİY[˜]˜Z[X›J\œ›ÜŠHÈ
-˜ÛİY[˜]˜Z[X›HŠHˆ
-˜ÛİY›™]ÛÜšÑ\œ›ÜˆŠJNÂˆHš[˜[HÂˆÙ]ÛİY\ŞJÛİYXİ[Û‹˜[ÙJNÂˆBˆJNÂ‚ˆÛİY\K˜Y]™[\İ[™\Š˜ÛXÚÈ‹
+  function animateChanged(element, value) {
+    if (!element) return;
 
-HOˆÂˆYˆ
-\[™[™ĞÛİY^
-HÂˆÚİÕØ\İ
-
-˜ÛİY››Ô™\İ[ŠJNÂˆ™]\›ÂˆBˆ™]š[İ\ĞÛİY^H[œ]˜[YNÂˆ™\Ù\™PÛİY™]šY]ÈHYNÂˆ[œ]˜[YHH[™[™ĞÛİY^Âˆ[œ]™\Ü]Ú]™[
-™]È]™[
-š[œ]‹ÈX˜›\ÎˆYHJJNÂˆ™\Ù\™PÛİY™]šY]ÈH˜[ÙNÂˆ[™[™ĞÛİY^HˆÂˆÛİY™\İ[šY[ˆHYNÂˆÛİYİ]]˜[YHHˆÂˆÛİY™\İÜ™K™\ØX›YH˜[ÙNÂˆ[œ]™›Øİ\Ê
-NÂˆÚİÕØ\İ
-
-˜ÛİY˜\YYŠJNÂˆJNÂ‚ˆÛİY™\İÜ™K˜Y]™[\İ[™\Š˜ÛXÚÈ‹
+    const nextValue = String(value);
+    if (!motionValues.has(element)) {
+      motionValues.set(element, nextValue);
+      return;
+    }
+    if (motionValues.get(element) === nextValue) return;
 
-HOˆÂˆYˆ
-™]š[İ\ĞÛİY^OOH[
-H™]\›Âˆ™\Ù\™PÛİY™]šY]ÈHYNÂˆ[œ]˜[YHH™]š[İ\ĞÛİY^Âˆ[œ]™\Ü]Ú]™[
-™]È]™[
-š[œ]‹ÈX˜›\ÎˆYHJJNÂˆ™\Ù\™PÛİY™]šY]ÈH˜[ÙNÂˆ™]š[İ\ĞÛİY^H[ÂˆÛİY™\İÜ™K™\ØX›YHYNÂˆ[œ]™›Øİ\Ê
-NÂˆÚİÕØ\İ
-
-˜ÛİYœ™\İÜ™YŠJNÂˆJNÂˆB‚ˆØİ[Y[˜Y]™[\İ[™\ŠœÜİ™\›[™İXYÙXÚ[™ÙH‹\]JNÂˆ\]J
-NÂˆB‚ˆ[˜İ[Ûˆ[š]Ù[™\˜]ÜŠ
-HÂˆÛÛœİ[œ]HØİ[Y[™Ù][[Y[RY
-™Ù[™\˜]Ü‹Z[œ]ŠNÂˆYˆ
-Z[œ]
-H™]\›Â‚ˆÛÛœİ]›Ü›S\İHØİ[Y[™Ù][[Y[RY
-™Ù[™\˜]Ü‹\]›Ü›K[\İŠNÂˆÛÛœİ\S\İHØİ[Y[™Ù][[Y[RY
-™Ù[™\˜]Ü‹]\K[\İŠNÂˆÛÛœİÙ[XİYY]HHØİ[Y[™Ù][[Y[RY
-™Ù[™\˜]Ü‹\Ù[XİY[Y]HŠNÂˆÛÛœİİ]]HØİ[Y[™Ù][[Y[RY
-™Ù[™\˜]Ü‹[İ]]ŠNÂˆÛÛœİÙ[™\˜]P]ÛˆHØİ[Y[™Ù][[Y[RY
-™Ù[™\˜]Ü‹XXİ[ÛˆŠNÂˆÛÛœİÙ[™\˜]SX™[HØİ[Y[™Ù][[Y[RY
-™Ù[™\˜]Ü‹XXİ[Û‹[X™[ŠNÂˆÛÛœİÛX\]ÛˆHØİ[Y[™Ù][[Y[RY
-™Ù[™\˜]Ü‹XÛX\ˆŠNÂˆ]Ù[XİY™\Ù]YHU“Ô“WÔ‘TÑUÖÌKšYÂˆ]Ù[™\˜][Û’Ú[™H˜Ø\[ÛˆÂ‚ˆ[˜İ[Ûˆ[››İ[˜ÙQÙ[™\˜]Ü”™\İ[
-\Ô™\İ[
-HÂˆØİ[Y[™\Ü]Ú]™[
-™]Èİ\İÛQ]™[
-œÜİ™\™Ù[™\˜]Üœ™\İ[‹Âˆ]Z[ˆÂˆ\Ô™\İ[ˆ›ÛÛX[Š\Ô™\İ[
-KˆÙ[™\˜][Û’Ú[™ˆÙ[™\˜][Û’Ú[™OOHš\ÚYÜÈˆÈš\ÚYÜÈˆˆ˜Ø\[Ûˆ‹ˆKˆJJNÂˆB‚ˆ[˜İ[ÛˆÙ[XİY™\Ù]
+    motionValues.set(element, nextValue);
+    if (reducedMotionQuery.matches) return;
 
-HÂˆ™]\›ˆU“Ô“WÔ‘TÑUË™š[™
+    element.classList.remove("is-updating");
+    const previousFrame = motionFrames.get(element);
+    if (previousFrame) window.cancelAnimationFrame(previousFrame);
 
-™\Ù]
-HOˆ™\Ù]šYOOHÙ[XİY™\Ù]Y
-HU“Ô“WÔ‘TÑUÖÌNÂˆB‚ˆ[˜İ[Ûˆ\]TÙ[Xİ[ÛŠ
-HÂˆÛÛœİ™\Ù]HÙ[XİY™\Ù]
+    const frame = window.requestAnimationFrame(() => {
+      element.classList.add("is-updating");
+      motionFrames.delete(element);
+    });
+    motionFrames.set(element, frame);
+  }
 
-NÂˆÙ[XİYY]K^ÛÛ[H
-™\Ù]›X™[Ù^JH
-Èˆ0­Èˆ
-È
-™Ù[™\˜]Ü‹ˆˆ
-ÈÙ[™\˜][Û’Ú[™
-NÂˆİ]]œXÙZÛ\ˆH
-™Ù[™\˜]Ü‹œ™\İ[XÙZÛ\ˆŠNÂˆ[š[X]PÚ[™ÙY
-Ù[XİYY]KÙ[XİYY]K^ÛÛ[
-NÂˆB‚ˆ[˜İ[ÛˆÛX\”™\İ[
+  function switchLanguageWithMotion() {
+    const main = document.querySelector("main");
+    const applyLanguage = () => {
+      currentLanguage = currentLanguage === "zh" ? "en" : "zh";
+      localStorage.setItem(LANGUAGE_KEY, currentLanguage);
+      applyTranslations();
+      document.dispatchEvent(new CustomEvent("postprep:languagechange"));
+    };
 
-HÂˆİ]]˜[YHHˆÂˆ[š[X]PÚ[™ÙY
-İ]]ˆŠNÂˆ[››İ[˜ÙQÙ[™\˜]Ü”™\İ[
-˜[ÙJNÂˆB‚ˆ[˜İ[Ûˆ™[™\”]›Ü›P]ÛœÊ
-HÂˆ]›Ü›S\İš[›™\’SHU“Ô“WÔ‘TÑUË›X\
+    if (!main || reducedMotionQuery.matches) {
+      applyLanguage();
+      return;
+    }
+    if (main.dataset.motionBusy === "true") return;
 
-™\Ù]
-HOˆÂˆÛÛœİÙ[XİYH™\Ù]šYOOHÙ[XİY™\Ù]YÂˆÛÛœİÙ[XİYÛ\ÜÙ\ÈH˜›Ü™\‹Xœ˜[™™ËXœ˜[™^]Ú]HÚYİË\ÛHÂˆÛÛœİY˜][Û\ÜÙ\ÈH˜›Ü™\‹^š[˜ËLŒ™Ë]Ú]H^Z[šÈİ™\˜›Ü™\‹Xœ˜[™İ™\˜™Ë]X[MLÂˆ™]\›ˆ	Ï]Ûˆ\OH˜]ÛˆˆÛ\ÜÏHš[›[™KY›^Z[‹ZLL][\ËXÙ[\ˆØ\Lˆ›İ[™Y[È›Ü™\ˆLÈKLˆ^\ÛH›Û\Ù[ZX›Û˜[œÚ][Ûˆ›Øİ\Î›İ][™K[›Û™H›Øİ\Îœš[™ËLˆ›Øİ\Îœš[™ËXœ˜[™›Øİ\Îœš[™Ë[Ù™œÙ]Lˆ	È
-È
-Ù[XİYÈÙ[XİYÛ\ÜÙ\ÈˆY˜][Û\ÜÙ\ÊH
-È	Èˆ]KYÙ[™\˜]Ü‹\]›Ü›OH‰È
-È™\Ù]šY
-È	Èˆ\šXK\™\ÜÙYH‰È
-ÈÙ[XİY
-È	ÈHÛ\ÜÏH™˜K\ÛÛY	È
-È™\Ù]šXÛÛˆ
-È	Èˆ\šXKZY[HYHÚOÜ[‰È
-È
-™\Ù]›X™[Ù^JH
-ÈÜÜ[Ø]ÛˆÂˆJKš›Ú[ŠˆŠNÂ‚ˆ]›Ü›S\İœ]Y\TÙ[XİÜ[
-–Ù]KYÙ[™\˜]Ü‹\]›Ü›WHŠK™›Ü‘XXÚ
+    main.dataset.motionBusy = "true";
+    main.classList.add("is-content-switching");
+    window.setTimeout(() => {
+      applyLanguage();
+      window.requestAnimationFrame(() => {
+        main.classList.remove("is-content-switching");
+        window.setTimeout(() => {
+          delete main.dataset.motionBusy;
+        }, 180);
+      });
+    }, 110);
+  }
 
-]ÛŠHOˆÂˆ]Û‹˜Y]™[\İ[™\Š˜ÛXÚÈ‹
+  async function copyText(value) {
+    if (!value || !value.trim()) {
+      showToast(t("shared.nothingToCopy"));
+      return;
+    }
 
-HOˆÂˆÙ[XİY™\Ù]YH]Û‹™]\Ù]™Ù[™\˜]Ü”]›Ü›NÂˆÛX\”™\İ[
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const helper = document.createElement("textarea");
+        helper.value = value;
+        helper.setAttribute("readonly", "");
+        helper.className = "fixed -left-full top-0 opacity-0";
+        document.body.appendChild(helper);
+        helper.select();
+        document.execCommand("copy");
+        helper.remove();
+      }
+      showToast(t("shared.copied"));
+    } catch {
+      showToast(t("shared.copyFallback"));
+    }
+  }
 
-NÂˆ™[™\”]›Ü›P]ÛœÊ
-NÂˆ\]TÙ[Xİ[ÛŠ
-NÂˆJNÂˆJNÂˆB‚ˆ[˜İ[Ûˆ™[™\‘Ù[™\˜][Û’Ú[™Ê
-HÂˆÛÛœİÚ[™ÈHÈ˜Ø\[Ûˆ‹š\ÚYÜÈ—NÂˆ\S\İš[›™\’SHÚ[™Ë›X\
+  function renderSharedLayout() {
+    const page = document.body.dataset.page || "home";
+    const header = document.getElementById("site-header");
+    const footer = document.getElementById("site-footer");
+    const links = [
+      { id: "home", href: "index.html", label: "shared.home" },
+      { id: "length", href: "length-checker.html", label: "shared.length" },
+      { id: "hashtags", href: "hashtag-cleaner.html", label: "shared.hashtags" },
+      { id: "formatter", href: "caption-formatter.html", label: "shared.formatter" },
+      { id: "generator", href: "idea-generator.html", label: "shared.generator" },
+    ];
 
-Ú[™
-HOˆÂˆÛÛœİÙ[XİYHÚ[™OOHÙ[™\˜][Û’Ú[™ÂˆÛÛœİÙ[XİYÛ\ÜÙ\ÈH˜›Ü™\‹Xœ˜[™™Ë]X[ML^Xœ˜[™ÂˆÛÛœİY˜][Û\ÜÙ\ÈH˜›Ü™\‹^š[˜ËLŒ™Ë]Ú]H^Z[šÈİ™\˜›Ü™\‹Xœ˜[™İ™\˜™Ë]X[MLÂˆÛÛœİXÛÛˆHÚ[™OOH˜Ø\[ÛˆˆÈ™˜K\[‹[šXˆˆˆ™˜KZ\ÚYÈÂˆ™]\›ˆ	Ï]Ûˆ\OH˜]ÛˆˆÛ\ÜÏHš[›[™KY›^Z[‹ZLL][\ËXÙ[\ˆØ\Lˆ›İ[™Y[È›Ü™\ˆLÈKLˆ^\ÛH›Û\Ù[ZX›Û˜[œÚ][Ûˆ›Øİ\Î›İ][™K[›Û™H›Øİ\Îœš[™ËLˆ›Øİ\Îœš[™ËXœ˜[™›Øİ\Îœš[™Ë[Ù™œÙ]Lˆ	È
-È
-Ù[XİYÈÙ[XİYÛ\ÜÙ\ÈˆY˜][Û\ÜÙ\ÊH
-È	Èˆ]KYÙ[™\˜]Ü‹ZÚ[™H‰È
-ÈÚ[™
-È	Èˆ\šXK\™\ÜÙYH‰È
-ÈÙ[XİY
-È	ÈHÛ\ÜÏH™˜K\ÛÛY	È
-ÈXÛÛˆ
-È	Èˆ\šXKZY[HYHÚOÜ[‰È
-È
-™Ù[™\˜]Ü‹ˆˆ
-ÈÚ[™
-H
-ÈÜÜ[Ø]ÛˆÂˆJKš›Ú[ŠˆŠNÂ‚ˆ\S\İœ]Y\TÙ[XİÜ[
-–Ù]KYÙ[™\˜]Ü‹ZÚ[™HŠK™›Ü‘XXÚ
+    const linkMarkup = links.map((link) => {
+      const active = page === link.id;
+      const activeClasses = "bg-teal-50 text-brand";
+      const defaultClasses = "text-muted hover:bg-zinc-50 hover:text-ink";
+      return '<a href="' + link.href + '" class="block rounded-lg px-3 py-2 text-sm font-semibold transition ' + (active ? activeClasses : defaultClasses) + '" ' + (active ? 'aria-current="page"' : "") + '><span data-i18n="' + link.label + '">' + t(link.label) + "</span></a>";
+    }).join("");
 
-]ÛŠHOˆÂˆ]Û‹˜Y]™[\İ[™\Š˜ÛXÚÈ‹
+    if (header) {
+      header.innerHTML = '<header class="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">' +
+        '<div class="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">' +
+          '<a class="flex min-w-0 items-center gap-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" href="index.html">' +
+            '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-sm"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span>' +
+            '<span class="min-w-0"><span class="block truncate text-sm font-black tracking-wide text-ink">PostPrep</span><span class="block truncate text-xs text-muted" data-i18n="shared.tagline">' + t("shared.tagline") + "</span></span>" +
+          "</a>" +
+          '<nav class="hidden items-center gap-1 md:flex" aria-label="Primary navigation">' + linkMarkup + "</nav>" +
+          '<div class="flex items-center gap-2">' +
+            '<button type="button" data-language-toggle class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-i18n-title="shared.languageLabel" data-i18n-aria-label="shared.languageLabel" title="' + t("shared.languageLabel") + '" aria-label="' + t("shared.languageLabel") + '">' +
+              '<i class="fa-solid fa-language text-brand" aria-hidden="true"></i><span data-i18n="shared.language">' + t("shared.language") + "</span>" +
+            "</button>" +
+            '<button type="button" data-menu-toggle class="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 md:hidden" aria-expanded="false" aria-controls="mobile-navigation" aria-label="' + t("shared.menu") + '" title="' + t("shared.menu") + '"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>' +
+          "</div>" +
+        "</div>" +
+        '<nav id="mobile-navigation" class="hidden border-t border-line bg-white px-4 py-3 md:hidden" aria-label="Mobile navigation">' + linkMarkup + "</nav>" +
+      "</header>";
+    }
 
-HOˆÂˆÙ[™\˜][Û’Ú[™H]Û‹™]\Ù]™Ù[™\˜]Ü’Ú[™ÂˆÛX\”™\İ[
+    if (footer) {
+      footer.innerHTML = '<footer class="border-t border-line bg-white">' +
+        '<div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">' +
+          '<p class="max-w-xl" data-i18n="shared.privacyShort">' + t("shared.privacyShort") + "</p>" +
+          '<a href="privacy.html" class="inline-flex items-center gap-2 font-semibold text-ink underline decoration-zinc-300 underline-offset-4 hover:text-brand" data-i18n="shared.privacy">' + t("shared.privacy") + "</a>" +
+        "</div>" +
+      "</footer>";
+    }
+  }
 
-NÂˆ™[™\‘Ù[™\˜][Û’Ú[™Ê
-NÂˆ\]TÙ[Xİ[ÛŠ
-NÂˆJNÂˆJNÂˆB‚ˆ[˜İ[ÛˆÙ]Ù[™\˜]Ü\ŞJ\ŞJHÂˆÙ]ÛİY\ŞJÙ[™\˜]P]Û‹\ŞJNÂˆÙ[™\˜]SX™[^ÛÛ[H\ŞHÈ
-™Ù[™\˜]Ü‹œ›ØÙ\ÜÚ[™ÈŠHˆ
-™Ù[™\˜]Ü‹™Ù[™\˜]HŠNÂˆB‚ˆ[œ]˜Y]™[\İ[™\Šš[œ]‹ÛX\”™\İ[
-NÂ‚ˆÛX\]Û‹˜Y]™[\İ[™\Š˜ÛXÚÈ‹
+  function initCommon() {
+    renderSharedLayout();
+    applyTranslations();
 
-HOˆÂˆ[œ]˜[YHHˆÂˆÛX\”™\İ[
+    const languageToggle = document.querySelector("[data-language-toggle]");
+    if (languageToggle) {
+      languageToggle.addEventListener("click", switchLanguageWithMotion);
+    }
 
-NÂˆ[œ]™›Øİ\Ê
-NÂˆJNÂ‚ˆÙ[™\˜]P]Û‹˜Y]™[\İ[™\Š˜ÛXÚÈ‹\Ş[˜È
+    const menuToggle = document.querySelector("[data-menu-toggle]");
+    const mobileNavigation = document.getElementById("mobile-navigation");
+    if (menuToggle && mobileNavigation) {
+      menuToggle.addEventListener("click", () => {
+        const isOpen = menuToggle.getAttribute("aria-expanded") === "true";
+        menuToggle.setAttribute("aria-expanded", String(!isOpen));
+        mobileNavigation.classList.toggle("hidden", isOpen);
+        const icon = menuToggle.querySelector("i");
+        if (icon) {
+          icon.className = isOpen ? "fa-solid fa-bars" : "fa-solid fa-xmark";
+        }
+        menuToggle.setAttribute("aria-label", isOpen ? t("shared.menu") : t("shared.closeMenu"));
+      });
+    }
 
-HOˆÂˆÛÛœİÙYYH[œ]˜[YKš[J
-NÂˆYˆ
-\ÙYY
-HÂˆÚİÕØ\İ
-
-™Ù[™\˜]Ü‹™[\HŠJNÂˆ[œ]™›Øİ\Ê
-NÂˆ™]\›ÂˆB‚ˆ[››İ[˜ÙQÙ[™\˜]Ü”™\İ[
-˜[ÙJNÂˆÙ]Ù[™\˜]Ü\ŞJYJNÂˆHÂˆÛÛœİÛÛ[H]ØZ]™\]Y\İÛİY^
-™Ù[™\˜]H‹ÙYYÂˆ]›Ü›NˆÙ[XİY™\Ù]YˆÙ[™\˜][Û’Ú[™ˆJNÂˆÛÛœİ™\İ[HÙ[™\˜][Û’Ú[™OOHš\ÚYÜÈ‚ˆÈÛX[’\ÚYÜÊÛÛ[
-KœÛXÙJJKš›Ú[ŠˆŠBˆˆÛÛ[ÂˆYˆ
-\™\İ[
-H›İÈ™]È\œ›ÜŠ“›È\ØX›HÙ[™\˜]YÛÛ[ŠNÂˆİ]]˜[YHH™\İ[Âˆ[š[X]PÚ[™ÙY
-İ]]™\İ[
-NÂˆ[››İ[˜ÙQÙ[™\˜]Ü”™\İ[
-YJNÂˆHØ]Ú
-\œ›ÜŠHÂˆÚİÕØ\İ
-\ĞÛİY[˜]˜Z[X›J\œ›ÜŠHÈ
-˜ÛİY[˜]˜Z[X›HŠHˆ
-˜ÛİY›™]ÛÜšÑ\œ›ÜˆŠJNÂˆHš[˜[HÂˆÙ]Ù[™\˜]Ü\ŞJ˜[ÙJNÂˆBˆJNÂ‚ˆØİ[Y[˜Y]™[\İ[™\ŠœÜİ™\›[™İXYÙXÚ[™ÙH‹
+    document.querySelectorAll("[data-copy-from]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const source = document.getElementById(button.dataset.copyFrom);
+        copyText(source ? source.value : "");
+      });
+    });
+  }
 
-HOˆÂˆ™[™\”]›Ü›P]ÛœÊ
-NÂˆ™[™\‘Ù[™\˜][Û’Ú[™Ê
-NÂˆ\]TÙ[Xİ[ÛŠ
-NÂˆÙ]Ù[™\˜]Ü\ŞJÙ[™\˜]P]Û‹™\ØX›Y
-NÂˆJNÂ‚ˆ™[™\”]›Ü›P]ÛœÊ
-NÂˆ™[™\‘Ù[™\˜][Û’Ú[™Ê
-NÂˆ\]TÙ[Xİ[ÛŠ
-NÂˆB‚ˆÛØ˜[\Ë”Üİ™\HØš™Xİ™œ™Y^™JÂˆU“Ô“WÔ‘TÑUËˆÛİ[š\ÚX›PÚ\˜Xİ\œËˆÛİ[[™Û\ÚÛÜ™ËˆÛİ[[™\ËˆÛX[’\ÚYÜËˆ›Ü›X]Ø\[Û‹ˆJNÂ‚ˆØİ[Y[˜Y]™[\İ[™\Š‘ÓPÛÛ[ØYY‹
+  function countVisibleCharacters(value) {
+    if (!value) return 0;
+    if (window.Intl && Intl.Segmenter) {
+      return [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value)].length;
+    }
+    return Array.from(value).length;
+  }
 
-HOˆÂˆ[š]ÛÛ[[ÛŠ
-NÂˆ[š][™İÚXÚÙ\Š
-NÂˆ[š]\ÚYĞÛX[™\Š
-NÂˆ[š]›Ü›X]\Š
-NÂˆ[š]Ù[™\˜]ÜŠ
-NÂˆJNÂŸJJ
-NÂ
+  function countEnglishWords(value) {
+    if (!value) return 0;
+    return (value.match(/[A-Za-z]+(?:['â€™-][A-Za-z]+)*/g) || []).length;
+  }
+
+  function countLines(value) {
+    return value.trim().length ? value.split(/\r\n|\r|\n/u).length : 0;
+  }
+
+  function initLengthChecker() {
+    const input = document.getElementById("length-input");
+    if (!input) return;
+
+    const presetRoot = document.getElementById("preset-list");
+    const customLimit = document.getElementById("custom-limit");
+    const resetLimit = document.getElementById("reset-limit");
+    const countCharacters = document.getElementById("character-count");
+    const countWords = document.getElementById("word-count");
+    const countLinesElement = document.getElementById("line-count");
+    const currentTarget = document.getElementById("current-target");
+    const targetMeta = document.getElementById("target-meta");
+    const targetKind = document.getElementById("target-kind");
+    const sourceText = document.getElementById("source-text");
+    const sourceLink = document.getElementById("source-link");
+    const verified = document.getElementById("verified-date");
+    const status = document.getElementById("length-status");
+    const statusTitle = document.getElementById("length-status-title");
+    const statusBody = document.getElementById("length-status-body");
+    const progress = document.getElementById("length-progress");
+    const cloudAction = document.getElementById("length-cloud-action");
+    const cloudResult = document.getElementById("length-cloud-result");
+    const cloudOutput = document.getElementById("length-cloud-output");
+
+    let selectedPresetId = PLATFORM_PRESETS[0].id;
+
+    function selectedPreset() {
+      return PLATFORM_PRESETS.find((preset) => preset.id === selectedPresetId) || PLATFORM_PRESETS[0];
+    }
+
+    function activeLimit() {
+      const customValue = Number.parseInt(customLimit.value, 10);
+      return Number.isFinite(customValue) && customValue > 0 ? customValue : selectedPreset().limit;
+    }
+
+    function clearCloudResult() {
+      if (!cloudResult || !cloudOutput) return;
+      cloudResult.hidden = true;
+      cloudOutput.textContent = "";
+    }
+
+    function renderPresetButtons() {
+      presetRoot.innerHTML = PLATFORM_PRESETS.map((preset) => {
+        const selected = preset.id === selectedPresetId;
+        const selectedClasses = "border-brand bg-brand text-white shadow-sm";
+        const defaultClasses = "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50";
+        return '<button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ' + (selected ? selectedClasses : defaultClasses) + '" data-preset-id="' + preset.id + '" aria-pressed="' + selected + '"><i class="fa-solid ' + preset.icon + '" aria-hidden="true"></i><span>' + t(preset.labelKey) + "</span></button>";
+      }).join("");
+      animateChanged(presetRoot, selectedPresetId + "|" + currentLanguage);
+
+      presetRoot.querySelectorAll("[data-preset-id]").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedPresetId = button.dataset.presetId;
+          customLimit.value = "";
+          renderPresetButtons();
+          clearCloudResult();
+          update();
+        });
+      });
+    }
+
+    function updatePresetInformation(limit) {
+      const preset = selectedPreset();
+      currentTarget.textContent = String(limit);
+      targetMeta.textContent = t(preset.labelKey) + " Â· " + t(preset.fieldKey);
+      targetKind.textContent = t("length." + preset.ruleType);
+      verified.textContent = t("length.update") + " " + preset.lastVerified;
+      sourceText.textContent = t(preset.sourceKey);
+      sourceLink.classList.toggle("hidden", !preset.sourceUrl);
+      animateChanged(targetMeta, targetMeta.textContent);
+      animateChanged(targetKind, targetKind.textContent);
+      animateChanged(verified, verified.textContent);
+      animateChanged(sourceText, sourceText.textContent);
+
+      if (preset.sourceUrl) {
+        sourceLink.href = preset.sourceUrl;
+        sourceLink.textContent = t("length.openSource");
+      }
+    }
+
+    function statusStyle(kind) {
+      const styles = {
+        ready: {
+          classes: "border-zinc-200 bg-zinc-50 text-zinc-800",
+          icon: "fa-circle-info",
+          title: t("length.noText"),
+          body: t("length.ready"),
+        },
+        good: {
+          classes: "border-emerald-200 bg-emerald-50 text-emerald-900",
+          icon: "fa-circle-check",
+          title: t("length.good"),
+          body: t("length.settingsNote"),
+        },
+        near: {
+          classes: "border-amber-200 bg-amber-50 text-amber-950",
+          icon: "fa-triangle-exclamation",
+          title: t("length.near"),
+          body: t("length.settingsNote"),
+        },
+        over: {
+          classes: "border-rose-200 bg-rose-50 text-rose-950",
+          icon: "fa-circle-exclamation",
+          title: t("length.over"),
+          body: t("length.settingsNote"),
+        },
+      };
+      return styles[kind];
+    }
+
+    function update() {
+      const value = input.value;
+      const limit = activeLimit();
+      const characters = countVisibleCharacters(value);
+      const words = countEnglishWords(value);
+      const lines = countLines(value);
+
+      countCharacters.textContent = String(characters);
+      countWords.textContent = String(words);
+      countLinesElement.textContent = String(lines);
+      updatePresetInformation(limit);
+      animateChanged(countCharacters, characters);
+      animateChanged(countWords, words);
+      animateChanged(countLinesElement, lines);
+      animateChanged(currentTarget, limit);
+
+      let kind = "ready";
+      if (characters > 0 && characters > limit) {
+        kind = "over";
+      } else if (characters > 0 && characters / limit >= 0.75) {
+        kind = "near";
+      } else if (characters > 0) {
+        kind = "good";
+      }
+
+      const style = statusStyle(kind);
+      status.className = "mt-7 flex gap-3 rounded-lg border p-4 " + style.classes;
+      statusTitle.innerHTML = '<i class="fa-solid ' + style.icon + ' mr-2" aria-hidden="true"></i>' + style.title;
+      statusBody.textContent = style.body;
+      animateChanged(status, kind + "|" + currentLanguage);
+
+      const ratio = limit > 0 ? Math.min(characters / limit, 1) : 0;
+      progress.style.width = String(Math.round(ratio * 100)) + "%";
+      progress.className = "h-full rounded-full transition-[width] duration-200 " + (kind === "over" ? "bg-rose-600" : kind === "near" ? "bg-amber-500" : kind === "good" ? "bg-emerald-600" : "bg-zinc-400");
+    }
+
+    input.addEventListener("input", () => {
+      clearCloudResult();
+      update();
+    });
+    customLimit.addEventListener("input", () => {
+      clearCloudResult();
+      update();
+    });
+    resetLimit.addEventListener("click", () => {
+      customLimit.value = "";
+      clearCloudResult();
+      update();
+    });
+
+    document.getElementById("length-clear").addEventListener("click", () => {
+      input.value = "";
+      customLimit.value = "";
+      input.focus();
+      clearCloudResult();
+      update();
+    });
+
+    if (cloudAction && cloudResult && cloudOutput) {
+      cloudAction.addEventListener("click", async () => {
+        const draft = input.value.trim();
+        if (!draft) {
+          showToast(t("cloud.empty"));
+          input.focus();
+          return;
+        }
+
+        setCloudBusy(cloudAction, true);
+        try {
+          const content = await requestCloudText("length", draft, {
+            platform: selectedPreset().id,
+            limit: activeLimit(),
+          });
+          cloudOutput.textContent = content;
+          cloudResult.hidden = false;
+          animateChanged(cloudOutput, content);
+        } catch (error) {
+          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+        } finally {
+          setCloudBusy(cloudAction, false);
+        }
+      });
+    }
+
+    document.addEventListener("postprep:languagechange", () => {
+      renderPresetButtons();
+      update();
+    });
+
+    renderPresetButtons();
+    update();
+  }
+
+  function normalizeHashtag(rawToken) {
+    const normalized = rawToken
+      .normalize("NFKC")
+      .trim()
+      .replace(/^[#ï¼ƒ]+/u, "")
+      .replace(/[#ï¼ƒ]+$/u, "")
+      .replace(/[ï¼Œ,;ï¼›|ã€]+$/u, "")
+      .replace(/\s+/gu, "");
+
+    const safe = normalized.replace(/[^\p{L}\p{N}_-]/gu, "");
+    return safe.length ? safe : "";
+  }
+
+  function cleanHashtags(value) {
+    const candidates = value.replace(/[#ï¼ƒ]/gu, " #").split(/[\s,ï¼Œ;ï¼›|ã€]+/u);
+    const seen = new Set();
+    const tags = [];
+
+    candidates.forEach((candidate) => {
+      const tag = normalizeHashtag(candidate);
+      const fingerprint = tag.toLocaleLowerCase();
+      if (tag && !seen.has(fingerprint)) {
+        seen.add(fingerprint);
+        tags.push("#" + tag);
+      }
+    });
+
+    return tags;
+  }
+
+  function initHashtagCleaner() {
+    const input = document.getElementById("hashtag-input");
+    if (!input) return;
+
+    const output = document.getElementById("hashtag-output");
+    const count = document.getElementById("hashtag-count");
+    const cloudAction = document.getElementById("hashtag-cloud-action");
+    const cloudResult = document.getElementById("hashtag-cloud-result");
+    const cloudOutput = document.getElementById("hashtag-cloud-output");
+
+    function update() {
+      const tags = cleanHashtags(input.value);
+      output.value = tags.join(" ");
+      count.textContent = String(tags.length);
+      animateChanged(output, output.value);
+      animateChanged(count, tags.length);
+    }
+
+    function clearCloudResult() {
+      if (!cloudResult || !cloudOutput) return;
+      cloudResult.hidden = true;
+      cloudOutput.value = "";
+    }
+
+    input.addEventListener("input", () => {
+      clearCloudResult();
+      update();
+    });
+    document.getElementById("hashtag-clear").addEventListener("click", () => {
+      input.value = "";
+      output.value = "";
+      count.textContent = "0";
+      clearCloudResult();
+      input.focus();
+    });
+
+    if (cloudAction && cloudResult && cloudOutput) {
+      cloudAction.addEventListener("click", async () => {
+        const draft = input.value.trim();
+        if (!draft) {
+          showToast(t("cloud.empty"));
+          input.focus();
+          return;
+        }
+
+        setCloudBusy(cloudAction, true);
+        try {
+          const content = await requestCloudText("hashtags", draft);
+          const tags = cleanHashtags(content).slice(0, 5);
+          if (!tags.length) throw new Error("No usable cloud tags");
+          cloudOutput.value = tags.join(" ");
+          cloudResult.hidden = false;
+          animateChanged(cloudOutput, cloudOutput.value);
+        } catch (error) {
+          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+        } finally {
+          setCloudBusy(cloudAction, false);
+        }
+      });
+    }
+
+    update();
+  }
+
+  function countInvisibleCharacters(value) {
+    return (value.match(/[\u200B\uFEFF\u2060\u00AD]/gu) || []).length;
+  }
+
+  function formatCaption(value, settings) {
+    const source = value.replace(/\r\n?|\n/gu, "\n");
+    const invisibleBefore = countInvisibleCharacters(source);
+    let result = source;
+    let collapsed = 0;
+
+    if (settings.removeInvisible) {
+      result = result.replace(/[\u200B\uFEFF\u2060\u00AD]/gu, "");
+    }
+
+    if (settings.trimLines) {
+      result = result
+        .split("\n")
+        .map((line) => line.replace(/^[\t ]+|[\t ]+$/gu, ""))
+        .join("\n");
+    }
+
+    if (settings.collapseBlank) {
+      const beforeBlankLines = (result.match(/\n{3,}/gu) || []).length;
+      result = result.replace(/\n{3,}/gu, "\n\n");
+      collapsed = beforeBlankLines;
+    }
+
+    if (settings.trimLines) {
+      result = result.replace(/^\n+|\n+$/gu, "");
+    }
+
+    return {
+      result,
+      invisibleRemoved: settings.removeInvisible ? invisibleBefore : 0,
+      collapsed,
+    };
+  }
+
+  function stripCodeFence(value) {
+    return String(value || "")
+      .trim()
+      .replace(/^```[\w-]*\s*/u, "")
+      .replace(/\s*```$/u, "")
+      .trim();
+  }
+
+  function setCloudBusy(button, busy) {
+    if (!button) return;
+    button.disabled = busy;
+    button.classList.toggle("is-loading", busy);
+    button.setAttribute("aria-busy", String(busy));
+  }
+
+  function isCloudUnavailable(error) {
+    return Boolean(error && ["CLOUD_UNAVAILABLE_LOCAL", "MISSING_SERVER_SECRET", "ORIGIN_NOT_ALLOWED"].includes(error.code));
+  }
+
+  async function requestCloudText(action, draft, metadata) {
+    if (window.location.protocol === "file:" || (IS_GITHUB_PAGES_HOST && !CONFIGURED_CLOUD_TEXT_ENDPOINT)) {
+      const unavailable = new Error("Cloud processing is unavailable in this static deployment");
+      unavailable.code = "CLOUD_UNAVAILABLE_LOCAL";
+      throw unavailable;
+    }
+
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    const timeoutId = controller
+      ? window.setTimeout(() => controller.abort(), 30000)
+      : null;
+
+    try {
+      const response = await fetch(CLOUD_TEXT_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action,
+          draft,
+          language: currentLanguage,
+          ...(metadata || {}),
+        }),
+        signal: controller ? controller.signal : undefined,
+      });
+
+      const payload = await response.json().catch(() => null);
+      const content = payload && typeof payload.content === "string" ? stripCodeFence(payload.content) : "";
+      if (!response.ok) {
+        const error = new Error(payload && typeof payload.message === "string" ? payload.message : "Cloud request failed");
+        error.code = payload && typeof payload.code === "string" ? payload.code : "CLOUD_REQUEST_FAILED";
+        if ((response.status === 404 || response.status === 405) && !CONFIGURED_CLOUD_TEXT_ENDPOINT) {
+          error.code = "CLOUD_UNAVAILABLE_LOCAL";
+        }
+        throw error;
+      }
+
+      if (!content) {
+        const error = new Error("Empty cloud response");
+        error.code = "EMPTY_CLOUD_RESPONSE";
+        throw error;
+      }
+      return content;
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        error.code = "CLOUD_TIMEOUT";
+      }
+      throw error;
+    } finally {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+    }
+  }
+
+  function initFormatter() {
+    const input = document.getElementById("formatter-input");
+    if (!input) return;
+
+    const output = document.getElementById("formatter-output");
+    const invisibleCount = document.getElementById("invisible-count");
+    const blankCount = document.getElementById("blank-count");
+    const changesMessage = document.getElementById("formatter-changes");
+    const settings = {
+      removeInvisible: document.getElementById("remove-invisible"),
+      trimLines: document.getElementById("trim-lines"),
+      collapseBlank: document.getElementById("collapse-blank"),
+    };
+    const cloudAction = document.getElementById("formatter-cloud-action");
+    const cloudResult = document.getElementById("formatter-cloud-result");
+    const cloudOutput = document.getElementById("formatter-cloud-output");
+    const cloudApply = document.getElementById("formatter-cloud-apply");
+    const cloudRestore = document.getElementById("formatter-cloud-restore");
+    let pendingCloudText = "";
+    let previousCloudText = null;
+    let preserveCloudPreview = false;
+
+    function update() {
+      const formatted = formatCaption(input.value, {
+        removeInvisible: settings.removeInvisible.checked,
+        trimLines: settings.trimLines.checked,
+        collapseBlank: settings.collapseBlank.checked,
+      });
+
+      output.value = formatted.result;
+      invisibleCount.textContent = String(formatted.invisibleRemoved);
+      blankCount.textContent = String(formatted.collapsed);
+      animateChanged(output, formatted.result);
+      animateChanged(invisibleCount, formatted.invisibleRemoved);
+      animateChanged(blankCount, formatted.collapsed);
+
+      if (!input.value.trim() || (!formatted.invisibleRemoved && !formatted.collapsed && formatted.result === input.value)) {
+        changesMessage.textContent = t("formatter.noChanges");
+      } else {
+        changesMessage.textContent = t("formatter.changes");
+      }
+      animateChanged(changesMessage, changesMessage.textContent);
+    }
+
+    function clearCloudResult() {
+      pendingCloudText = "";
+      if (cloudResult) cloudResult.hidden = true;
+      if (cloudOutput) cloudOutput.value = "";
+      if (cloudRestore && !preserveCloudPreview) {
+        previousCloudText = null;
+        cloudRestore.disabled = true;
+      }
+    }
+
+    input.addEventListener("input", () => {
+      update();
+      if (!preserveCloudPreview) clearCloudResult();
+    });
+    Object.values(settings).forEach((checkbox) => checkbox.addEventListener("change", update));
+
+    document.getElementById("formatter-clear").addEventListener("click", () => {
+      input.value = "";
+      output.value = "";
+      previousCloudText = null;
+      clearCloudResult();
+      input.focus();
+      update();
+    });
+
+    if (cloudAction && cloudResult && cloudOutput && cloudApply && cloudRestore) {
+      cloudAction.addEventListener("click", async () => {
+        const draft = input.value.trim();
+        if (!draft) {
+          showToast(t("cloud.empty"));
+          input.focus();
+          return;
+        }
+
+        setCloudBusy(cloudAction, true);
+        try {
+          const content = await requestCloudText("polish", draft);
+          pendingCloudText = content;
+          cloudOutput.value = content;
+          cloudResult.hidden = false;
+          animateChanged(cloudOutput, content);
+        } catch (error) {
+          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+        } finally {
+          setCloudBusy(cloudAction, false);
+        }
+      });
+
+      cloudApply.addEventListener("click", () => {
+        if (!pendingCloudText) {
+          showToast(t("cloud.noResult"));
+          return;
+        }
+        previousCloudText = input.value;
+        preserveCloudPreview = true;
+        input.value = pendingCloudText;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        preserveCloudPreview = false;
+        pendingCloudText = "";
+        cloudResult.hidden = true;
+        cloudOutput.value = "";
+        cloudRestore.disabled = false;
+        input.focus();
+        showToast(t("cloud.applied"));
+      });
+
+      cloudRestore.addEventListener("click", () => {
+        if (previousCloudText === null) return;
+        preserveCloudPreview = true;
+        input.value = previousCloudText;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        preserveCloudPreview = false;
+        previousCloudText = null;
+        cloudRestore.disabled = true;
+        input.focus();
+        showToast(t("cloud.restored"));
+      });
+    }
+
+    document.addEventListener("postprep:languagechange", update);
+    update();
+  }
+
+  function initGenerator() {
+    const input = document.getElementById("generator-input");
+    if (!input) return;
+
+    const platformList = document.getElementById("generator-platform-list");
+    const typeList = document.getElementById("generator-type-list");
+    const selectedMeta = document.getElementById("generator-selected-meta");
+    const output = document.getElementById("generator-output");
+    const generateButton = document.getElementById("generator-action");
+    const generateLabel = document.getElementById("generator-action-label");
+    const clearButton = document.getElementById("generator-clear");
+    let selectedPresetId = PLATFORM_PRESETS[0].id;
+    let generationKind = "caption";
+
+    function announceGeneratorResult(hasResult) {
+      document.dispatchEvent(new CustomEvent("postprep:generatorresult", {
+        detail: {
+          hasResult: Boolean(hasResult),
+          generationKind: generationKind === "hashtags" ? "hashtags" : "caption",
+        },
+      }));
+    }
+
+    function selectedPreset() {
+      return PLATFORM_PRESETS.find((preset) => preset.id === selectedPresetId) || PLATFORM_PRESETS[0];
+    }
+
+    function updateSelection() {
+      const preset = selectedPreset();
+      selectedMeta.textContent = t(preset.labelKey) + " Â· " + t("generator." + generationKind);
+      output.placeholder = t("generator.resultPlaceholder");
+      animateChanged(selectedMeta, selectedMeta.textContent);
+    }
+
+    function clearResult() {
+      output.value = "";
+      animateChanged(output, "");
+      announceGeneratorResult(false);
+    }
+
+    function renderPlatformButtons() {
+      platformList.innerHTML = PLATFORM_PRESETS.map((preset) => {
+        const selected = preset.id === selectedPresetId;
+        const selectedClasses = "border-brand bg-brand text-white shadow-sm";
+        const defaultClasses = "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50";
+        return '<button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ' + (selected ? selectedClasses : defaultClasses) + '" data-generator-platform="' + preset.id + '" aria-pressed="' + selected + '"><i class="fa-solid ' + preset.icon + '" aria-hidden="true"></i><span>' + t(preset.labelKey) + "</span></button>";
+      }).join("");
+
+      platformList.querySelectorAll("[data-generator-platform]").forEach((button) => {
+        button.addEventListener("click", () => {
+          selectedPresetId = button.dataset.generatorPlatform;
+          clearResult();
+          renderPlatformButtons();
+          updateSelection();
+        });
+      });
+    }
+
+    function renderGenerationKinds() {
+      const kinds = ["caption", "hashtags"];
+      typeList.innerHTML = kinds.map((kind) => {
+        const selected = kind === generationKind;
+        const selectedClasses = "border-brand bg-teal-50 text-brand";
+        const defaultClasses = "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50";
+        const icon = kind === "caption" ? "fa-pen-nib" : "fa-hashtag";
+        return '<button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 ' + (selected ? selectedClasses : defaultClasses) + '" data-generator-kind="' + kind + '" aria-pressed="' + selected + '"><i class="fa-solid ' + icon + '" aria-hidden="true"></i><span>' + t("generator." + kind) + "</span></button>";
+      }).join("");
+
+      typeList.querySelectorAll("[data-generator-kind]").forEach((button) => {
+        button.addEventListener("click", () => {
+          generationKind = button.dataset.generatorKind;
+          clearResult();
+          renderGenerationKinds();
+          updateSelection();
+        });
+      });
+    }
+
+    function setGeneratorBusy(busy) {
+      setCloudBusy(generateButton, busy);
+      generateLabel.textContent = busy ? t("generator.processing") : t("generator.generate");
+    }
+
+    input.addEventListener("input", clearResult);
+
+    clearButton.addEventListener("click", () => {
+      input.value = "";
+      clearResult();
+      input.focus();
+    });
+
+    generateButton.addEventListener("click", async () => {
+      const seed = input.value.trim();
+      if (!seed) {
+        showToast(t("generator.empty"));
+        input.focus();
+        return;
+      }
+
+      announceGeneratorResult(false);
+      setGeneratorBusy(true);
+      try {
+        const content = await requestCloudText("generate", seed, {
+          platform: selectedPresetId,
+          generationKind,
+        });
+        const result = generationKind === "hashtags"
+          ? cleanHashtags(content).slice(0, 5).join(" ")
+          : content;
+        if (!result) throw new Error("No usable generated content");
+        output.value = result;
+        animateChanged(output, result);
+        announceGeneratorResult(true);
+      } catch (error) {
+        showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+      } finally {
+        setGeneratorBusy(false);
+      }
+    });
+
+    document.addEventListener("postprep:languagechange", () => {
+      renderPlatformButtons();
+      renderGenerationKinds();
+      updateSelection();
+      setGeneratorBusy(generateButton.disabled);
+    });
+
+    renderPlatformButtons();
+    renderGenerationKinds();
+    updateSelection();
+  }
+
+  globalThis.PostPrep = Object.freeze({
+    PLATFORM_PRESETS,
+    countVisibleCharacters,
+    countEnglishWords,
+    countLines,
+    cleanHashtags,
+    formatCaption,
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initCommon();
+    initLengthChecker();
+    initHashtagCleaner();
+    initFormatter();
+    initGenerator();
+  });
+})();
