@@ -18,13 +18,10 @@ const AD_CONFIG = Object.freeze({
   "use strict";
 
   const PLACEHOLDER_PATTERN = /(?:YOUR_ADSTERRA_|PASTE_|REPLACE_|INSERT_)/i;
-  const SCRIPT_FAILURE_GRACE_MS = 3000;
+  const EMPTY_AD_TIMEOUT_MS = 12000;
   const state = {
-    topMode: "",
-    topMount: 0,
     nativeMount: 0,
     nativeMounted: false,
-    mediaQuery: null,
   };
 
   function isConfiguredSnippet(value) {
@@ -60,11 +57,11 @@ const AD_CONFIG = Object.freeze({
     return Boolean(content.querySelector("iframe, img, video, object, embed, a, [data-ad-rendered], [id^=\"container-\"] > *"));
   }
 
-  function scheduleFailureCheck(slot, mountId) {
+  function scheduleEmptyCheck(slot, mountId) {
     window.setTimeout(() => {
       if (!slot || slot.dataset.adMount !== String(mountId)) return;
       if (!slotHasRenderedContent(slot)) hideSlot(slot);
-    }, SCRIPT_FAILURE_GRACE_MS);
+    }, EMPTY_AD_TIMEOUT_MS);
   }
 
   function createSlotContent(slot) {
@@ -89,16 +86,46 @@ const AD_CONFIG = Object.freeze({
     return content;
   }
 
-  function copyScriptNode(source, slot, mountId) {
+  function copyScriptNode(source) {
     const script = document.createElement("script");
     for (const attribute of Array.from(source.attributes)) {
       script.setAttribute(attribute.name, attribute.value);
     }
     script.textContent = source.textContent || "";
-    script.addEventListener("error", () => {
-      scheduleFailureCheck(slot, mountId);
-    }, { once: true });
     return script;
+  }
+
+  function writeTopSnippetDuringParsing(loader) {
+    const slot = loader?.closest(".postprep-ad-slot--top");
+    if (!slot || document.readyState !== "loading") return;
+
+    const isDesktop = window.matchMedia
+      ? window.matchMedia("(min-width: 768px)").matches
+      : window.innerWidth >= 768;
+    const snippet = isDesktop ? AD_CONFIG.bannerDesktop : AD_CONFIG.bannerMobile;
+    const mountId = `top-${isDesktop ? "desktop" : "mobile"}`;
+
+    if (!isConfiguredSnippet(snippet)) {
+      hideSlot(slot, false);
+      return;
+    }
+
+    // Adsterra banner snippets can depend on parser-time script execution.
+    // Writing the original snippet at this parser position preserves that behavior.
+    slot.hidden = false;
+    slot.classList.remove("is-loading");
+    slot.classList.add("is-ready");
+    slot.dataset.adState = "ready";
+    slot.dataset.adMount = mountId;
+    slot.dataset.adMode = isDesktop ? "desktop" : "mobile";
+    document.write(
+      `<span class="postprep-ad-slot__label" data-ad-label="true" aria-hidden="true">${currentLabel()}</span>`
+        + `<div class="postprep-ad-slot__content" data-ad-content="true">${snippet}</div>`,
+    );
+
+    document.addEventListener("DOMContentLoaded", () => {
+      scheduleEmptyCheck(slot, mountId);
+    }, { once: true });
   }
 
   function mountSnippet(slot, snippet, mountId) {
@@ -115,33 +142,24 @@ const AD_CONFIG = Object.freeze({
       template.innerHTML = snippet;
       fragment = template.content;
       const scripts = Array.from(fragment.querySelectorAll("script"));
-      scripts.forEach((script) => script.replaceWith(copyScriptNode(script, slot, mountId)));
+      scripts.forEach((script) => script.replaceWith(copyScriptNode(script)));
       if (!fragment.childNodes.length) throw new Error("Empty ad snippet");
     } catch {
       hideSlot(slot);
       return false;
     }
 
-    let runtimeFailed = false;
-    const onRuntimeError = () => {
-      runtimeFailed = true;
-      if (slot.dataset.adMount === String(mountId)) scheduleFailureCheck(slot, mountId);
-    };
-    window.addEventListener("error", onRuntimeError, true);
     try {
       content.appendChild(fragment);
     } catch {
-      runtimeFailed = true;
-    } finally {
-      window.removeEventListener("error", onRuntimeError, true);
+      hideSlot(slot);
+      return false;
     }
 
     if (slot.dataset.adMount !== String(mountId)) {
       hideSlot(slot);
       return false;
     }
-
-    if (runtimeFailed) scheduleFailureCheck(slot, mountId);
 
     if (slot.dataset.adState !== "loading") {
       hideSlot(slot);
@@ -153,19 +171,8 @@ const AD_CONFIG = Object.freeze({
     slot.classList.add("is-ready");
     slot.dataset.adState = "ready";
     updateLabel(slot);
+    scheduleEmptyCheck(slot, mountId);
     return true;
-  }
-
-  function mountTop() {
-    const slot = document.getElementById("postprep-ad-top");
-    if (!slot) return;
-    const isMobile = state.mediaQuery ? !state.mediaQuery.matches : window.innerWidth < 768;
-    const mode = isMobile ? "mobile" : "desktop";
-    if (state.topMode === mode && slot.dataset.adState === "ready") return;
-    state.topMode = mode;
-    state.topMount += 1;
-    const snippet = isMobile ? AD_CONFIG.bannerMobile : AD_CONFIG.bannerDesktop;
-    mountSnippet(slot, snippet, state.topMount);
   }
 
   function mountNative() {
@@ -201,19 +208,6 @@ const AD_CONFIG = Object.freeze({
     const native = document.getElementById("postprep-ad-native");
     if (!top && !native) return;
 
-    if (top && window.matchMedia) {
-      state.mediaQuery = window.matchMedia("(min-width: 768px)");
-      const onViewportChange = () => mountTop();
-      if (typeof state.mediaQuery.addEventListener === "function") {
-        state.mediaQuery.addEventListener("change", onViewportChange);
-      } else if (typeof state.mediaQuery.addListener === "function") {
-        state.mediaQuery.addListener(onViewportChange);
-      }
-      mountTop();
-    } else if (top) {
-      mountTop();
-    }
-
     if (native) {
       hideSlot(native);
       document.addEventListener("postprep:generatorresult", handleGeneratorResult);
@@ -223,6 +217,8 @@ const AD_CONFIG = Object.freeze({
       updateLabel(native);
     });
   }
+
+  writeTopSnippetDuringParsing(document.currentScript);
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init, { once: true });
