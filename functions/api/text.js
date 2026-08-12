@@ -16,8 +16,11 @@ const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
   "https://postprep-ae6.pages.dev",
 ]);
 const GITHUB_REPOSITORY_SEARCH_URL = "https://api.github.com/search/repositories";
-const GITHUB_SEARCH_RESULT_LIMIT = 8;
-const GITHUB_SEARCH_TIMEOUT_MS = 8000;
+const GITHUB_SEARCH_RESULT_LIMIT = 6;
+const GITHUB_SEARCH_TIMEOUT_MS = 5000;
+const SKILL_SEARCH_CACHE_TTL_MS = 90000;
+const SKILL_SEARCH_CACHE_MAX_ENTRIES = 16;
+const SKILL_RANKING_TIMEOUT_MS = 6000;
 const SKILL_SEARCH_CATEGORIES = Object.freeze({
   frontend: Object.freeze({
     focusedTerms: "frontend skill",
@@ -37,6 +40,25 @@ const SKILL_SEARCH_CATEGORIES = Object.freeze({
   }),
 });
 const SKILL_SEARCH_STAR_FLOORS = Object.freeze([50, 100, 500, 1000]);
+const CURATED_SKILL_SOURCE_FALLBACKS = Object.freeze({
+  frontend: Object.freeze([
+    Object.freeze({ repository: "anthropics/skills", url: "https://github.com/anthropics/skills" }),
+    Object.freeze({ repository: "addyosmani/agent-skills", url: "https://github.com/addyosmani/agent-skills" }),
+  ]),
+  content: Object.freeze([
+    Object.freeze({ repository: "coreyhaines31/marketingskills", url: "https://github.com/coreyhaines31/marketingskills" }),
+    Object.freeze({ repository: "addyosmani/agent-skills", url: "https://github.com/addyosmani/agent-skills" }),
+  ]),
+  automation: Object.freeze([
+    Object.freeze({ repository: "vercel-labs/agent-skills", url: "https://github.com/vercel-labs/agent-skills" }),
+    Object.freeze({ repository: "composio-community/awesome-codex-skills", url: "https://github.com/composio-community/awesome-codex-skills" }),
+  ]),
+  research: Object.freeze([
+    Object.freeze({ repository: "anthropics/skills", url: "https://github.com/anthropics/skills" }),
+    Object.freeze({ repository: "addyosmani/agent-skills", url: "https://github.com/addyosmani/agent-skills" }),
+  ]),
+});
+const skillSearchCache = new Map();
 
 const PLATFORM_NAMES = Object.freeze({
   xiaohongshu: "Xiaohongshu",
@@ -82,7 +104,8 @@ const ACTIONS = Object.freeze({
   skillSearch: Object.freeze({
     model: FAST_MODEL,
     temperature: 0.1,
-    maxTokens: 700,
+    maxTokens: 420,
+    timeoutMs: SKILL_RANKING_TIMEOUT_MS,
   }),
 });
 
@@ -290,6 +313,31 @@ function githubSearchKeywords(value) {
   return [...new Set(matches.map((match) => match.toLowerCase()))].slice(0, 5).join(" ");
 }
 
+function skillSearchCacheKey(category, minStars, query) {
+  return [category, minStars, githubSearchKeywords(query)].join(":");
+}
+
+function cachedSkillSearch(key) {
+  const cached = skillSearchCache.get(key);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    skillSearchCache.delete(key);
+    return null;
+  }
+  return cached.value;
+}
+
+function cacheSkillSearch(key, value) {
+  if (skillSearchCache.size >= SKILL_SEARCH_CACHE_MAX_ENTRIES) {
+    const oldestKey = skillSearchCache.keys().next().value;
+    if (oldestKey) skillSearchCache.delete(oldestKey);
+  }
+  skillSearchCache.set(key, {
+    expiresAt: Date.now() + SKILL_SEARCH_CACHE_TTL_MS,
+    value,
+  });
+}
+
 function normalizedGithubRepositoryUrl(value) {
   try {
     const url = new URL(String(value || ""));
@@ -387,16 +435,52 @@ async function searchGithubRepositories(searchTerms, minStars) {
   }
 }
 
-async function searchGithubSkills(query, category, minStars) {
+function curatedFallbackSkillItems(category, language) {
+  const fallbackReason = language === "en"
+    ? "GitHub live metadata is temporarily unavailable. This is a public source address only; its stars, license, update date, and task fit were not verified for this request."
+    : "GitHub 实时元数据暂不可用；这里仅提供公开仓库源地址，未对本次请求的星标、许可证、更新时间或任务匹配度作核验。";
+  return (CURATED_SKILL_SOURCE_FALLBACKS[category] || []).map((source) => ({
+    ...source,
+    description: "",
+    stars: null,
+    forks: null,
+    license: "",
+    updatedAt: "",
+    score: null,
+    reason: fallbackReason,
+    metadataStatus: "source-only",
+  }));
+}
+
+function unavailableGithubSearch(category, language) {
+  return {
+    items: curatedFallbackSkillItems(category, language),
+    sourceMode: "fallback",
+    searchMode: "fallback",
+    checkedAt: new Date().toISOString(),
+  };
+}
+
+async function searchGithubSkills(query, category, minStars, language) {
+  const cacheKey = skillSearchCacheKey(category, minStars, query);
+  const cached = cachedSkillSearch(cacheKey);
+  if (cached) return { ...cached, sourceMode: "cached" };
+
   const profile = SKILL_SEARCH_CATEGORIES[category];
   const keywords = githubSearchKeywords(query);
   const focused = await searchGithubRepositories([profile.focusedTerms, keywords].filter(Boolean).join(" "), minStars);
-  if (focused.error) return focused;
-  if (focused.items.length) return { items: focused.items, searchMode: "focused" };
+  if (focused.error) return unavailableGithubSearch(category, language);
+  if (focused.items.length) {
+    const result = { items: focused.items, sourceMode: "live", searchMode: "focused", checkedAt: new Date().toISOString() };
+    cacheSkillSearch(cacheKey, result);
+    return result;
+  }
 
   const expanded = await searchGithubRepositories([profile.expandedTerms, keywords].filter(Boolean).join(" "), minStars);
-  if (expanded.error) return expanded;
-  return { items: expanded.items, searchMode: "expanded" };
+  if (expanded.error) return unavailableGithubSearch(category, language);
+  const result = { items: expanded.items, sourceMode: "live", searchMode: "expanded", checkedAt: new Date().toISOString() };
+  cacheSkillSearch(cacheKey, result);
+  return result;
 }
 
 function fallbackSkillScore(candidate) {
@@ -510,8 +594,11 @@ async function callAgnes(env, requestConfig) {
   const model = requestConfig.model;
   if (!apiKey) return { error: { status: 503, code: "MISSING_SERVER_SECRET", message: "Cloud processing is not configured", details: {} } };
 
+  const timeoutMs = Number.isInteger(requestConfig?.timeoutMs)
+    ? Math.max(1000, Math.min(requestConfig.timeoutMs, REQUEST_TIMEOUT_MS))
+    : REQUEST_TIMEOUT_MS;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(AGNES_API_URL, {
       method: "POST",
@@ -647,15 +734,14 @@ export async function onRequest(context) {
 
   if (action === "skillSearch") {
     const searchQuery = normalizedSkillQuery(draft);
-    const githubResult = await searchGithubSkills(searchQuery, body.skillCategory, Number(body.minStars));
-    if (githubResult.error) {
-      return failure(request, githubResult.error.status, githubResult.error.code, githubResult.error.message, githubResult.error.details, env);
-    }
+    const githubResult = await searchGithubSkills(searchQuery, body.skillCategory, Number(body.minStars), body.language);
 
     const candidates = githubResult.items;
     let rankingMode = "public-data";
-    let rankedItems = rankedGithubSkills("", candidates, body.language).items;
-    if (candidates.length) {
+    let rankedItems = githubResult.sourceMode === "fallback"
+      ? candidates
+      : rankedGithubSkills("", candidates, body.language).items;
+    if (githubResult.sourceMode !== "fallback" && candidates.length) {
       const aiResult = await callAgnes(env, {
         ...ACTIONS.skillSearch,
         ...skillRankingPrompt(searchQuery, body.skillCategory, candidates, body.language),
@@ -670,10 +756,11 @@ export async function onRequest(context) {
     return json(request, {
       ok: true,
       content: JSON.stringify({
-        source: "github-public-api",
+        source: githubResult.sourceMode === "fallback" ? "curated-public-sources" : "github-public-api",
         rankingMode,
         searchMode: githubResult.searchMode,
-        checkedAt: new Date().toISOString(),
+        sourceMode: githubResult.sourceMode,
+        checkedAt: githubResult.checkedAt,
         items: rankedItems,
       }),
     }, 200, env);

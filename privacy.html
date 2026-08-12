@@ -29,7 +29,7 @@
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.servicesTitle">静态资源与人机验证</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成或深度处理时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌；当前公开版本不加载第三方广告脚本。</p>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理或 Skills 筛选时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选由服务端查询 GitHub 的公开仓库元数据；为减少公开 API 限流，候选元数据可在服务端内存中短时缓存，缓存键不含中文查询内容。若启用 AI 排序，也只传递该公开元数据。当前公开版本不加载第三方广告脚本。</p>
         <a class="mt-3 inline-block text-sm font-semibold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark" href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener noreferrer" data-i18n="privacy.turnstilePolicy">查看 Cloudflare Turnstile 隐私说明</a>
       </section>
       <section class="py-8">
@@ -46,6 +46,6 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js"></script>
-  <script src="assets/postprep.js?v=20260812-skills"></script>
+  <script src="assets/postprep.js?v=20260812-skills-reliable-search-v2"></script>
 </body>
 </html>

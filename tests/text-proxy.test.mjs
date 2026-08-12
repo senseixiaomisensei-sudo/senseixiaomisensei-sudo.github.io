@@ -368,6 +368,56 @@ test("Skill discovery expands safely when a focused Chinese request has no candi
   }
 });
 
+test("Skill discovery returns explicit source-only fallbacks when GitHub is temporarily unavailable", async () => {
+  const originalFetch = globalThis.fetch;
+  let githubCalls = 0;
+  globalThis.fetch = async (url) => {
+    const urlText = String(url);
+    if (urlText.includes("turnstile/v0/siteverify")) {
+      return Response.json({
+        success: true,
+        action: "postprep_text",
+        hostname: "senseixiaomisensei-sudo.github.io",
+      });
+    }
+    if (urlText.includes("api.github.com/search/repositories")) {
+      githubCalls += 1;
+      return new Response("{\"message\":\"rate limited\"}", { status: 429 });
+    }
+    throw new Error("Fallback source lists must not call the model");
+  };
+
+  try {
+    const response = await onRequest(requestContext({
+      env: {
+        TURNSTILE_SECRET_KEY: "turnstile-secret",
+        POSTPREP_GATEWAY_SECRET: "gateway-secret",
+      },
+      body: {
+        action: "skillSearch",
+        draft: "workflow automation",
+        skillCategory: "automation",
+        minStars: 500,
+        turnstileToken: "valid-token",
+      },
+      gatewaySecret: "gateway-secret",
+    }));
+    const body = await responseBody(response);
+    assert.equal(response.status, 200);
+    const payload = JSON.parse(body.content);
+    assert.equal(payload.source, "curated-public-sources");
+    assert.equal(payload.sourceMode, "fallback");
+    assert.equal(payload.searchMode, "fallback");
+    assert.equal(payload.rankingMode, "public-data");
+    assert.equal(payload.items.length, 2);
+    assert.equal(payload.items[0].metadataStatus, "source-only");
+    assert.match(payload.items[0].url, /^https:\/\/github\.com\//);
+    assert.equal(githubCalls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("Skill discovery labels invalid AI ranking output as public-data fallback", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {

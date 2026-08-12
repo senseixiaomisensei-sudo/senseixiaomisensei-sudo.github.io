@@ -28,6 +28,10 @@ test("Skills hub keeps local files local and sends GitHub discovery through the 
   assert.match(client, /function githubMcpReviewTask\(\)/);
   assert.match(client, /skills\.sourceAddress/);
   assert.match(client, /skills\.searchExpanded/);
+  assert.match(client, /skills\.searchFallback/);
+  assert.match(client, /function skillSearchFailureMessage\(error\)/);
+  assert.match(client, /skills\.searchTimeout/);
+  assert.match(client, /metadataStatus === "source-only"/);
   assert.match(client, /localPreviewContent\.textContent/);
   assert.doesNotMatch(client, /api\.github\.com/);
   assert.match(client, /\{ id: "skills", href: "skills\.html"/);
