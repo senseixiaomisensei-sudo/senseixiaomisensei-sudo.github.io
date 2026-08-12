@@ -6,9 +6,17 @@
   const CONFIGURED_CLOUD_TEXT_ENDPOINT = typeof globalThis.POSTPREP_API_ENDPOINT === "string"
     ? globalThis.POSTPREP_API_ENDPOINT.trim()
     : "";
+  const CONFIGURED_TURNSTILE_SITE_KEY = typeof globalThis.POSTPREP_TURNSTILE_SITE_KEY === "string"
+    ? globalThis.POSTPREP_TURNSTILE_SITE_KEY.trim()
+    : "";
   const CLOUD_TEXT_ENDPOINT = CONFIGURED_CLOUD_TEXT_ENDPOINT || "/api/text";
+  const TURNSTILE_SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+  const TURNSTILE_ACTION = "postprep_text";
+  const TURNSTILE_PLACEHOLDER_PATTERN = /(?:YOUR_|PASTE_|REPLACE_|INSERT_)/i;
   const IS_GITHUB_PAGES_HOST = typeof window !== "undefined"
     && window.location.hostname.toLowerCase().endsWith(".github.io");
+  let turnstileApiPromise = null;
+  let turnstileRequestSequence = 0;
 
   const translations = {
     zh: {
@@ -51,7 +59,7 @@
         privacyBody: "基础工具只在当前网页中计算和整理文字；云端生成或深度处理只有在部署启用且你主动点击时才发送当前主题或文案。",
         noteOne: "中英界面，一键切换",
         noteTwo: "手机与电脑都能使用",
-        noteThree: "广告位仅在完成配置后显示",
+        noteThree: "第三方广告脚本默认不加载",
       },
       length: {
         eyebrow: "TEXT LENGTH CHECKER",
@@ -149,6 +157,8 @@
         empty: "请先粘贴一段文字",
         networkError: "暂未响应，请稍后再试",
         unavailable: "深度处理暂未配置，基础工具可正常使用",
+        verification: "请完成人机验证后重试",
+        rateLimited: "请求过于频繁，请稍后再试",
         resultNote: "结果仅供参考，请确认后再发布。",
         applied: "已采用处理结果",
         restored: "已恢复处理前的文本",
@@ -162,11 +172,11 @@
         localBody: "长度检查、标签整理和排版整理都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。",
         cloudTitle: "云端深度处理（按部署配置）",
         cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色或按平台生成后，只会发送当前主题或文案来生成结果；未启用时按钮会提示暂不可用。",
-        servicesTitle: "第三方静态资源",
-        servicesBody: "页面样式、图标和首页图片使用仓库内置资源；广告位启用后，浏览器还会按广告代码向 Adsterra 请求广告内容。这些请求不包含你在工具内粘贴的文案。",
-        adsTitle: "广告与统计",
-        adsBody: "广告位只有在站点配置了 Adsterra 代码后才会加载。Adsterra 及其合作方可能根据设备、浏览器和访问情况处理数据，并使用 Cookie 或进行个性化展示；具体范围以其政策为准。PostPrep 不会把工具输入主动传给广告脚本。",
-        cookiesLink: "查看 Adsterra Cookie 政策",
+        servicesTitle: "静态资源与人机验证",
+        servicesBody: "页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成或深度处理时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌；当前公开版本不加载第三方广告脚本。",
+        turnstilePolicy: "查看 Cloudflare Turnstile 隐私说明",
+        adsTitle: "第三方代码",
+        adsBody: "当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。",
         controlTitle: "你的选择",
         controlBody: "你可以随时清空输入框、关闭页面或清除浏览器的本地站点数据。只有语言偏好保存在当前浏览器的 localStorage 中。",
         back: "返回首页",
@@ -226,7 +236,7 @@
         privacyBody: "Basic tools calculate and clean text in this page; optional generation or deep processing sends the current topic or draft only after you choose it and the deployment enables it.",
         noteOne: "Chinese and English interface",
         noteTwo: "Comfortable on mobile and desktop",
-        noteThree: "Ads appear only after configuration",
+        noteThree: "Third-party advertising scripts stay disabled",
       },
       length: {
         eyebrow: "TEXT LENGTH CHECKER",
@@ -324,6 +334,8 @@
         empty: "Paste some text before starting",
         networkError: "The service is not responding. Please try again later.",
         unavailable: "Deep processing is not configured; the basic tools still work.",
+        verification: "Complete the verification and try again.",
+        rateLimited: "Too many requests. Please wait and try again.",
         resultNote: "Review the result before publishing.",
         applied: "Processing result applied",
         restored: "Text from before processing restored",
@@ -337,11 +349,11 @@
         localBody: "Length checking, hashtag cleaning, and caption formatting run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
         cloudTitle: "Optional deep processing",
         cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, or platform generation, only the current topic or draft is sent for a result; otherwise the button reports that the feature is unavailable.",
-        servicesTitle: "Third-party static resources",
-        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site; when configured, ad slots also request content from Adsterra using the supplied ad code. Those requests do not contain the draft you paste into a tool.",
-        adsTitle: "Ads and analytics",
-        adsBody: "Ad slots load only after Adsterra code is configured. Adsterra and its partners may process device, browser, and visit information and may use cookies or personalized delivery; see their policies for the current scope. PostPrep does not intentionally send tool inputs to the ad script.",
-        cookiesLink: "Read Adsterra's Cookie Policy",
+        servicesTitle: "Static resources and verification",
+        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site. When you choose cloud generation or deep processing, the browser requests a one-time verification token from Cloudflare Turnstile; the current public build does not load third-party advertising scripts.",
+        turnstilePolicy: "View Cloudflare's Turnstile privacy notice",
+        adsTitle: "Third-party code",
+        adsBody: "The current public build does not load advertising, analytics, or arbitrary third-party scripts. Cloud processing contacts only the configured server-side proxy and Cloudflare Turnstile. Any future third-party service must be reviewed and documented before it is enabled.",
         controlTitle: "Your control",
         controlBody: "You can clear any input, close the page, or erase local site data at any time. Only your language preference is stored in this browser's localStorage.",
         back: "Back to home",
@@ -854,7 +866,7 @@
           cloudResult.hidden = false;
           animateChanged(cloudOutput, content);
         } catch (error) {
-          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+          showToast(cloudErrorMessage(error));
         } finally {
           setCloudBusy(cloudAction, false);
         }
@@ -954,7 +966,7 @@
           cloudResult.hidden = false;
           animateChanged(cloudOutput, cloudOutput.value);
         } catch (error) {
-          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+          showToast(cloudErrorMessage(error));
         } finally {
           setCloudBusy(cloudAction, false);
         }
@@ -1018,7 +1030,125 @@
   }
 
   function isCloudUnavailable(error) {
-    return Boolean(error && ["CLOUD_UNAVAILABLE_LOCAL", "MISSING_SERVER_SECRET", "ORIGIN_NOT_ALLOWED"].includes(error.code));
+    return Boolean(error && [
+      "CLOUD_UNAVAILABLE_LOCAL",
+      "MISSING_SERVER_SECRET",
+      "ORIGIN_NOT_ALLOWED",
+      "GATEWAY_NOT_CONFIGURED",
+      "GATEWAY_NOT_ALLOWED",
+      "TURNSTILE_NOT_CONFIGURED",
+      "RATE_LIMITER_NOT_CONFIGURED",
+      "RATE_LIMITER_UNAVAILABLE",
+      "HUMAN_VERIFICATION_UNAVAILABLE",
+    ].includes(error.code));
+  }
+
+  function cloudErrorMessage(error) {
+    if (error && error.code === "RATE_LIMITED") return t("cloud.rateLimited");
+    if (error && ["HUMAN_VERIFICATION_REQUIRED", "HUMAN_VERIFICATION_FAILED"].includes(error.code)) {
+      return t("cloud.verification");
+    }
+    return isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError");
+  }
+
+  function turnstileError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+  }
+
+  function isTurnstileConfigured() {
+    return Boolean(CONFIGURED_TURNSTILE_SITE_KEY)
+      && !TURNSTILE_PLACEHOLDER_PATTERN.test(CONFIGURED_TURNSTILE_SITE_KEY);
+  }
+
+  function loadTurnstileApi() {
+    if (window.turnstile && typeof window.turnstile.render === "function") {
+      return Promise.resolve(window.turnstile);
+    }
+    if (turnstileApiPromise) return turnstileApiPromise;
+
+    turnstileApiPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = TURNSTILE_SCRIPT_URL;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (window.turnstile && typeof window.turnstile.render === "function") {
+          resolve(window.turnstile);
+        } else {
+          reject(turnstileError("HUMAN_VERIFICATION_UNAVAILABLE", "Turnstile did not initialize"));
+        }
+      };
+      script.onerror = () => reject(turnstileError("HUMAN_VERIFICATION_UNAVAILABLE", "Turnstile failed to load"));
+      document.head.append(script);
+    }).catch((error) => {
+      turnstileApiPromise = null;
+      throw error;
+    });
+    return turnstileApiPromise;
+  }
+
+  async function requestTurnstileToken() {
+    if (!isTurnstileConfigured()) {
+      throw turnstileError("TURNSTILE_NOT_CONFIGURED", "Turnstile site key is not configured");
+    }
+    if (window.location.protocol === "file:") {
+      throw turnstileError("CLOUD_UNAVAILABLE_LOCAL", "Turnstile requires an HTTP(S) page");
+    }
+
+    const turnstile = await loadTurnstileApi();
+    return new Promise((resolve, reject) => {
+      const mount = document.createElement("div");
+      const mountId = `postprep-turnstile-${Date.now()}-${turnstileRequestSequence += 1}`;
+      mount.id = mountId;
+      mount.className = "fixed bottom-5 left-1/2 z-50 -translate-x-1/2";
+      document.body.append(mount);
+
+      let widgetId;
+      let settled = false;
+      const timeoutId = window.setTimeout(() => {
+        finish(null, turnstileError("HUMAN_VERIFICATION_UNAVAILABLE", "Turnstile timed out"));
+      }, 30000);
+
+      function cleanup() {
+        window.clearTimeout(timeoutId);
+        if (widgetId !== undefined && typeof turnstile.remove === "function") {
+          try {
+            turnstile.remove(widgetId);
+          } catch {
+            // The widget may already have removed itself after a provider error.
+          }
+        }
+        mount.remove();
+      }
+
+      function finish(token, error) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (error) reject(error);
+        else resolve(token);
+      }
+
+      try {
+        widgetId = turnstile.render(`#${mountId}`, {
+          sitekey: CONFIGURED_TURNSTILE_SITE_KEY,
+          execution: "execute",
+          appearance: "interaction-only",
+          action: TURNSTILE_ACTION,
+          language: currentLanguage === "zh" ? "zh-CN" : "en",
+          "response-field": false,
+          callback: (token) => finish(token),
+          "error-callback": () => finish(null, turnstileError("HUMAN_VERIFICATION_FAILED", "Turnstile verification failed")),
+          "expired-callback": () => finish(null, turnstileError("HUMAN_VERIFICATION_FAILED", "Turnstile verification expired")),
+          "timeout-callback": () => finish(null, turnstileError("HUMAN_VERIFICATION_FAILED", "Turnstile verification timed out")),
+        });
+        turnstile.execute(`#${mountId}`);
+      } catch {
+        finish(null, turnstileError("HUMAN_VERIFICATION_UNAVAILABLE", "Turnstile could not start"));
+      }
+    });
   }
 
   async function requestCloudText(action, draft, metadata) {
@@ -1028,12 +1158,15 @@
       throw unavailable;
     }
 
-    const controller = typeof AbortController === "function" ? new AbortController() : null;
-    const timeoutId = controller
-      ? window.setTimeout(() => controller.abort(), 30000)
-      : null;
+    let controller = null;
+    let timeoutId = null;
 
     try {
+      const turnstileToken = await requestTurnstileToken();
+      controller = typeof AbortController === "function" ? new AbortController() : null;
+      timeoutId = controller
+        ? window.setTimeout(() => controller.abort(), 30000)
+        : null;
       const response = await fetch(CLOUD_TEXT_ENDPOINT, {
         method: "POST",
         headers: {
@@ -1043,6 +1176,7 @@
           action,
           draft,
           language: currentLanguage,
+          turnstileToken,
           ...(metadata || {}),
         }),
         signal: controller ? controller.signal : undefined,
@@ -1161,7 +1295,7 @@
           cloudResult.hidden = false;
           animateChanged(cloudOutput, content);
         } catch (error) {
-          showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+          showToast(cloudErrorMessage(error));
         } finally {
           setCloudBusy(cloudAction, false);
         }
@@ -1316,7 +1450,7 @@
         animateChanged(output, result);
         announceGeneratorResult(true);
       } catch (error) {
-        showToast(isCloudUnavailable(error) ? t("cloud.unavailable") : t("cloud.networkError"));
+        showToast(cloudErrorMessage(error));
       } finally {
         setGeneratorBusy(false);
       }

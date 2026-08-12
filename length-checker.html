@@ -3,18 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; form-action 'self'">
   <meta name="description" content="PostPrep 文案长度检查器：按平台目标查看字符、英文词数和行数。">
   <title>文案长度检查 | PostPrep</title>
   <link rel="stylesheet" href="assets/postprep-tailwind.css">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css">
-  <link rel="stylesheet" href="assets/postprep-ads.css">
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="length" data-title-key="length.title">
   <div id="site-header"></div>
-  <div id="postprep-ad-top" class="postprep-ad-slot postprep-ad-slot--top" data-ad-slot="banner-top" role="complementary" aria-label="广告" hidden>
-    <script src="assets/postprep-ads.js?v=20260809-5" data-postprep-ad-loader="top"></script>
-  </div>
   <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
     <header class="max-w-3xl">
       <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="length.eyebrow">TEXT LENGTH CHECKER</p>
