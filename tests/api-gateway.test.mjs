@@ -7,6 +7,7 @@ const moduleUrl = `data:text/javascript;base64,${Buffer.from(source).toString("b
 const { default: gateway } = await import(moduleUrl);
 
 const SITE_ORIGIN = "https://senseixiaomisensei-sudo.github.io";
+const PAGES_ORIGIN = "https://postprep-ae6.pages.dev";
 const BASE_ENV = {
   POSTPREP_UPSTREAM_URL: "https://postprep-ae6.pages.dev/api/text",
   POSTPREP_GATEWAY_SECRET: "gateway-secret",
@@ -78,6 +79,24 @@ test("gateway forwards an allowed request only with its internal header", async 
     assert.equal(forwarded.options.headers.get("X-PostPrep-Gateway"), BASE_ENV.POSTPREP_GATEWAY_SECRET);
     assert.equal(forwarded.options.headers.get("Origin"), SITE_ORIGIN);
     assert.equal(response.headers.get("Access-Control-Allow-Origin"), SITE_ORIGIN);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("gateway permits the controlled Cloudflare Pages host", async () => {
+  const originalFetch = globalThis.fetch;
+  let forwarded;
+  globalThis.fetch = async (url, options) => {
+    forwarded = { url: String(url), options };
+    return Response.json({ ok: true, content: "#测试" });
+  };
+
+  try {
+    const response = await gateway.fetch(request({ origin: PAGES_ORIGIN, body: '{"action":"hashtags"}' }), BASE_ENV);
+    assert.equal(response.status, 200);
+    assert.equal(forwarded.options.headers.get("Origin"), PAGES_ORIGIN);
+    assert.equal(response.headers.get("Access-Control-Allow-Origin"), PAGES_ORIGIN);
   } finally {
     globalThis.fetch = originalFetch;
   }

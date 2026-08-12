@@ -2,6 +2,7 @@ const RATE_LIMITER_BINDING = "POSTPREP_RATE_LIMITER";
 const GATEWAY_SECRET_BINDING = "POSTPREP_GATEWAY_SECRET";
 const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
   "https://senseixiaomisensei-sudo.github.io",
+  "https://postprep-ae6.pages.dev",
 ]);
 
 function normalizedHttpOrigin(value) {

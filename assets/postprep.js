@@ -158,6 +158,13 @@
         networkError: "暂未响应，请稍后再试",
         unavailable: "深度处理暂未配置，基础工具可正常使用",
         verification: "请完成人机验证后重试",
+        verificationTitle: "请完成人机验证",
+        verificationHint: "验证通过后会自动继续处理，无需再次点击开始按钮。",
+        verificationWaiting: "正在等待验证…",
+        verificationCancel: "取消",
+        verificationCancelled: "已取消人机验证",
+        verificationTimeout: "人机验证超时，请重试",
+        verificationUnavailable: "人机验证暂不可用，请检查网络后重试",
         rateLimited: "请求过于频繁，请稍后再试",
         resultNote: "结果仅供参考，请确认后再发布。",
         applied: "已采用处理结果",
@@ -335,6 +342,13 @@
         networkError: "The service is not responding. Please try again later.",
         unavailable: "Deep processing is not configured; the basic tools still work.",
         verification: "Complete the verification and try again.",
+        verificationTitle: "Complete verification",
+        verificationHint: "Processing continues automatically after verification. You do not need to press the action button again.",
+        verificationWaiting: "Waiting for verification…",
+        verificationCancel: "Cancel",
+        verificationCancelled: "Verification cancelled",
+        verificationTimeout: "Verification timed out. Please try again.",
+        verificationUnavailable: "Verification is unavailable. Check your network and try again.",
         rateLimited: "Too many requests. Please wait and try again.",
         resultNote: "Review the result before publishing.",
         applied: "Processing result applied",
@@ -1045,6 +1059,9 @@
 
   function cloudErrorMessage(error) {
     if (error && error.code === "RATE_LIMITED") return t("cloud.rateLimited");
+    if (error && error.code === "HUMAN_VERIFICATION_CANCELLED") return t("cloud.verificationCancelled");
+    if (error && error.code === "HUMAN_VERIFICATION_TIMEOUT") return t("cloud.verificationTimeout");
+    if (error && error.code === "HUMAN_VERIFICATION_UNAVAILABLE") return t("cloud.verificationUnavailable");
     if (error && ["HUMAN_VERIFICATION_REQUIRED", "HUMAN_VERIFICATION_FAILED"].includes(error.code)) {
       return t("cloud.verification");
     }
@@ -1099,20 +1116,55 @@
 
     const turnstile = await loadTurnstileApi();
     return new Promise((resolve, reject) => {
+      const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const overlay = document.createElement("div");
+      const dialog = document.createElement("section");
+      const title = document.createElement("h2");
+      const hint = document.createElement("p");
+      const status = document.createElement("p");
       const mount = document.createElement("div");
+      const cancel = document.createElement("button");
       const mountId = `postprep-turnstile-${Date.now()}-${turnstileRequestSequence += 1}`;
       mount.id = mountId;
-      mount.className = "fixed bottom-5 left-1/2 z-50 -translate-x-1/2";
-      document.body.append(mount);
+      overlay.className = "postprep-turnstile-overlay";
+      dialog.className = "postprep-turnstile-dialog";
+      dialog.setAttribute("role", "dialog");
+      dialog.setAttribute("aria-modal", "true");
+      dialog.setAttribute("aria-labelledby", `${mountId}-title`);
+      dialog.setAttribute("aria-describedby", `${mountId}-hint`);
+      title.id = `${mountId}-title`;
+      title.className = "postprep-turnstile-title";
+      title.textContent = t("cloud.verificationTitle");
+      hint.id = `${mountId}-hint`;
+      hint.className = "postprep-turnstile-hint";
+      hint.textContent = t("cloud.verificationHint");
+      status.className = "postprep-turnstile-status";
+      status.setAttribute("aria-live", "polite");
+      status.textContent = t("cloud.verificationWaiting");
+      mount.className = "postprep-turnstile-widget";
+      cancel.type = "button";
+      cancel.className = "postprep-turnstile-cancel";
+      cancel.textContent = t("cloud.verificationCancel");
+      dialog.append(title, hint, status, mount, cancel);
+      overlay.append(dialog);
+      document.body.append(overlay);
 
       let widgetId;
       let settled = false;
       const timeoutId = window.setTimeout(() => {
-        finish(null, turnstileError("HUMAN_VERIFICATION_UNAVAILABLE", "Turnstile timed out"));
-      }, 30000);
+        finish(null, turnstileError("HUMAN_VERIFICATION_TIMEOUT", "Turnstile timed out"));
+      }, 60000);
+
+      function onKeydown(event) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          finish(null, turnstileError("HUMAN_VERIFICATION_CANCELLED", "Turnstile verification was cancelled"));
+        }
+      }
 
       function cleanup() {
         window.clearTimeout(timeoutId);
+        document.removeEventListener("keydown", onKeydown);
         if (widgetId !== undefined && typeof turnstile.remove === "function") {
           try {
             turnstile.remove(widgetId);
@@ -1120,7 +1172,14 @@
             // The widget may already have removed itself after a provider error.
           }
         }
-        mount.remove();
+        overlay.remove();
+        if (previousFocus && document.contains(previousFocus)) {
+          try {
+            previousFocus.focus({ preventScroll: true });
+          } catch {
+            previousFocus.focus();
+          }
+        }
       }
 
       function finish(token, error) {
@@ -1131,20 +1190,29 @@
         else resolve(token);
       }
 
+      cancel.addEventListener("click", () => {
+        finish(null, turnstileError("HUMAN_VERIFICATION_CANCELLED", "Turnstile verification was cancelled"));
+      });
+      document.addEventListener("keydown", onKeydown);
+
       try {
         widgetId = turnstile.render(`#${mountId}`, {
           sitekey: CONFIGURED_TURNSTILE_SITE_KEY,
-          execution: "execute",
-          appearance: "interaction-only",
+          execution: "render",
+          appearance: "always",
           action: TURNSTILE_ACTION,
           language: currentLanguage === "zh" ? "zh-CN" : "en",
+          size: "flexible",
           "response-field": false,
           callback: (token) => finish(token),
+          "before-interactive-callback": () => {
+            status.textContent = t("cloud.verificationWaiting");
+          },
           "error-callback": () => finish(null, turnstileError("HUMAN_VERIFICATION_FAILED", "Turnstile verification failed")),
           "expired-callback": () => finish(null, turnstileError("HUMAN_VERIFICATION_FAILED", "Turnstile verification expired")),
           "timeout-callback": () => finish(null, turnstileError("HUMAN_VERIFICATION_FAILED", "Turnstile verification timed out")),
+          "unsupported-callback": () => finish(null, turnstileError("HUMAN_VERIFICATION_UNAVAILABLE", "Turnstile is unsupported")),
         });
-        turnstile.execute(`#${mountId}`);
       } catch {
         finish(null, turnstileError("HUMAN_VERIFICATION_UNAVAILABLE", "Turnstile could not start"));
       }

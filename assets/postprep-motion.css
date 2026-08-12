@@ -105,6 +105,70 @@ body[data-page="home"] main article {
   animation: postprep-fade-up var(--motion-base) var(--motion-ease) both;
 }
 
+.postprep-turnstile-overlay {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.42);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 2147483000;
+}
+
+.postprep-turnstile-dialog {
+  background: #fff;
+  border: 1px solid #dfe6e8;
+  border-radius: 14px;
+  box-shadow: 0 24px 55px rgba(15, 23, 42, 0.22);
+  color: #1f2933;
+  max-width: 31rem;
+  padding: 1.25rem;
+  width: min(100%, 31rem);
+}
+
+.postprep-turnstile-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.postprep-turnstile-hint,
+.postprep-turnstile-status {
+  color: #667085;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-top: 0.5rem;
+}
+
+.postprep-turnstile-status {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.postprep-turnstile-widget {
+  margin-top: 1rem;
+  min-height: 65px;
+  width: 100%;
+}
+
+.postprep-turnstile-cancel {
+  background: transparent;
+  border: 1px solid #dfe6e8;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.85rem;
+}
+
+.postprep-turnstile-cancel:hover {
+  border-color: #0f766e;
+  color: #0f766e;
+}
+
 @media (hover: hover) and (pointer: fine) {
   button:not(:disabled):hover,
   a[class*="rounded"]:hover,

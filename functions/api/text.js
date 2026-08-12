@@ -12,6 +12,7 @@ const GATEWAY_HEADER = "X-PostPrep-Gateway";
 const GATEWAY_SECRET_BINDING = "POSTPREP_GATEWAY_SECRET";
 const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
   "https://senseixiaomisensei-sudo.github.io",
+  "https://postprep-ae6.pages.dev",
 ]);
 
 const PLATFORM_NAMES = Object.freeze({
