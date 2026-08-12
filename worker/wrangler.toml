@@ -1,0 +1,15 @@
+name = "postprep-text-gateway"
+main = "api-gateway.js"
+compatibility_date = "2026-08-12"
+workers_dev = true
+
+[vars]
+POSTPREP_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/text"
+
+[[ratelimits]]
+name = "POSTPREP_RATE_LIMITER"
+namespace_id = "2026081201"
+
+  [ratelimits.simple]
+  limit = 12
+  period = 60

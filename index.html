@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; form-action 'self'">
   <meta name="description" content="PostPrep：无需登录的双语创作者文案工具，帮助你在发布前检查长度、整理标签与清理排版。">
   <meta name="theme-color" content="#0F766E">
   <title>PostPrep · 发布前检查</title>
@@ -10,13 +11,9 @@
   <link rel="stylesheet" href="assets/postprep-tailwind.css">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css">
-  <link rel="stylesheet" href="assets/postprep-ads.css">
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="home" data-title-key="home.title">
   <div id="site-header"></div>
-  <div id="postprep-ad-top" class="postprep-ad-slot postprep-ad-slot--top" data-ad-slot="banner-top" role="complementary" aria-label="广告" hidden>
-    <script src="assets/postprep-ads.js?v=20260809-5" data-postprep-ad-loader="top"></script>
-  </div>
 
   <main>
     <section class="border-b border-line bg-surface">
@@ -38,12 +35,12 @@
           <ul class="mt-9 grid gap-3 text-sm font-semibold text-ink sm:grid-cols-3" aria-label="PostPrep 特点">
             <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand" aria-hidden="true"></i><span data-i18n="home.noteOne">中英界面，一键切换</span></li>
             <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand" aria-hidden="true"></i><span data-i18n="home.noteTwo">手机与电脑都能使用</span></li>
-            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand" aria-hidden="true"></i><span data-i18n="home.noteThree">广告位仅在完成配置后显示</span></li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand" aria-hidden="true"></i><span data-i18n="home.noteThree">第三方广告脚本默认不加载</span></li>
           </ul>
         </div>
 
         <figure class="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
-          <img src="assets/hero-notebook.jpg" alt="打开的笔记本与钢笔" class="h-72 w-full object-cover sm:h-96" decoding="async">
+          <img src="assets/hero-postprep-original.png" alt="打开的笔记本与钢笔" class="h-72 w-full object-cover sm:h-96" decoding="async">
           <figcaption class="border-t border-line px-5 py-4 text-sm leading-6 text-muted">从一段草稿开始，把发布前的细节收好。</figcaption>
         </figure>
       </div>
