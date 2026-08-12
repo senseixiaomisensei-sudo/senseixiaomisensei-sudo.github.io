@@ -135,3 +135,221 @@ test("validates a one-time human token before the upstream model request", async
     globalThis.fetch = originalFetch;
   }
 });
+
+test("Skill discovery filters GitHub candidates and ranks only the retained public metadata", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options = {}) => {
+    const urlText = String(url);
+    calls.push({ url: urlText, options });
+    if (urlText.includes("turnstile/v0/siteverify")) {
+      return Response.json({
+        success: true,
+        action: "postprep_text",
+        hostname: "senseixiaomisensei-sudo.github.io",
+      });
+    }
+    if (urlText.includes("api.github.com/search/repositories")) {
+      const parsedUrl = new URL(urlText);
+      assert.match(parsedUrl.searchParams.get("q"), /stars:>=100/);
+      assert.doesNotMatch(parsedUrl.searchParams.get("q"), /stars:>=0/);
+      return Response.json({
+        items: [
+          {
+            full_name: "safe-org/skill-library",
+            html_url: "https://github.com/safe-org/skill-library",
+            description: "A well documented Skill collection",
+            stargazers_count: 1200,
+            forks_count: 42,
+            license: { spdx_id: "MIT" },
+            updated_at: "2026-08-01T00:00:00Z",
+            archived: false,
+            fork: false,
+            disabled: false,
+          },
+          {
+            full_name: "unlicensed/repository",
+            html_url: "https://github.com/unlicensed/repository",
+            description: "No visible license",
+            stargazers_count: 9000,
+            forks_count: 1,
+            license: null,
+            updated_at: "2026-08-01T00:00:00Z",
+            archived: false,
+            fork: false,
+            disabled: false,
+          },
+          {
+            full_name: "forked/repository",
+            html_url: "https://github.com/forked/repository",
+            description: "A fork",
+            stargazers_count: 5000,
+            forks_count: 1,
+            license: { spdx_id: "Apache-2.0" },
+            updated_at: "2026-08-01T00:00:00Z",
+            archived: false,
+            fork: true,
+            disabled: false,
+          },
+        ],
+      });
+    }
+    return Response.json({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            items: [{
+              repository: "safe-org/skill-library",
+              score: 92,
+              reason: "公开星标高、MIT 许可且近期维护。",
+            }],
+          }),
+        },
+      }],
+    });
+  };
+
+  try {
+    const response = await onRequest(requestContext({
+      env: {
+        AGNES_API_KEY: "server-only-key",
+        TURNSTILE_SECRET_KEY: "turnstile-secret",
+        POSTPREP_GATEWAY_SECRET: "gateway-secret",
+      },
+      body: {
+        action: "skillSearch",
+        draft: "frontend stars:>=0",
+        skillCategory: "frontend",
+        minStars: 100,
+        turnstileToken: "valid-token",
+      },
+      gatewaySecret: "gateway-secret",
+    }));
+    const body = await responseBody(response);
+    assert.equal(response.status, 200);
+    const payload = JSON.parse(body.content);
+    assert.equal(payload.rankingMode, "ai-assisted");
+    assert.equal(payload.items.length, 1);
+    assert.equal(payload.items[0].repository, "safe-org/skill-library");
+    assert.equal(payload.items[0].license, "MIT");
+    assert.equal(payload.items[0].score, 92);
+    assert.equal(calls.length, 3);
+    const modelPayload = JSON.parse(calls[2].options.body);
+    assert.match(modelPayload.messages[0].content, /untrusted data/);
+    assert.match(modelPayload.messages[1].content, /safe-org\/skill-library/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Skill discovery keeps a useful public-data fallback when AI ranking is not configured", async () => {
+  const originalFetch = globalThis.fetch;
+  let githubCalls = 0;
+  globalThis.fetch = async (url) => {
+    const urlText = String(url);
+    if (urlText.includes("turnstile/v0/siteverify")) {
+      return Response.json({
+        success: true,
+        action: "postprep_text",
+        hostname: "senseixiaomisensei-sudo.github.io",
+      });
+    }
+    if (urlText.includes("api.github.com/search/repositories")) {
+      githubCalls += 1;
+      return Response.json({
+        items: [{
+          full_name: "public-org/skill",
+          html_url: "https://github.com/public-org/skill",
+          description: "A public Skill",
+          stargazers_count: 300,
+          forks_count: 5,
+          license: { spdx_id: "Apache-2.0" },
+          updated_at: "2026-08-01T00:00:00Z",
+          archived: false,
+          fork: false,
+          disabled: false,
+        }],
+      });
+    }
+    throw new Error("The model must not be called when its server secret is absent");
+  };
+
+  try {
+    const response = await onRequest(requestContext({
+      env: {
+        TURNSTILE_SECRET_KEY: "turnstile-secret",
+        POSTPREP_GATEWAY_SECRET: "gateway-secret",
+      },
+      body: {
+        action: "skillSearch",
+        draft: "",
+        skillCategory: "content",
+        minStars: 100,
+        turnstileToken: "valid-token",
+      },
+      gatewaySecret: "gateway-secret",
+    }));
+    const body = await responseBody(response);
+    assert.equal(response.status, 200);
+    const payload = JSON.parse(body.content);
+    assert.equal(payload.rankingMode, "public-data");
+    assert.equal(payload.items[0].repository, "public-org/skill");
+    assert.equal(githubCalls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Skill discovery labels invalid AI ranking output as public-data fallback", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const urlText = String(url);
+    if (urlText.includes("turnstile/v0/siteverify")) {
+      return Response.json({
+        success: true,
+        action: "postprep_text",
+        hostname: "senseixiaomisensei-sudo.github.io",
+      });
+    }
+    if (urlText.includes("api.github.com/search/repositories")) {
+      return Response.json({
+        items: [{
+          full_name: "public-org/skill",
+          html_url: "https://github.com/public-org/skill",
+          description: "A public Skill",
+          stargazers_count: 300,
+          forks_count: 5,
+          license: { spdx_id: "Apache-2.0" },
+          updated_at: "2026-08-01T00:00:00Z",
+          archived: false,
+          fork: false,
+          disabled: false,
+        }],
+      });
+    }
+    return Response.json({ choices: [{ message: { content: "not JSON" } }] });
+  };
+
+  try {
+    const response = await onRequest(requestContext({
+      env: {
+        AGNES_API_KEY: "server-only-key",
+        TURNSTILE_SECRET_KEY: "turnstile-secret",
+        POSTPREP_GATEWAY_SECRET: "gateway-secret",
+      },
+      body: {
+        action: "skillSearch",
+        draft: "content",
+        skillCategory: "content",
+        minStars: 100,
+        turnstileToken: "valid-token",
+      },
+      gatewaySecret: "gateway-secret",
+    }));
+    const body = await responseBody(response);
+    assert.equal(response.status, 200);
+    assert.equal(JSON.parse(body.content).rankingMode, "public-data");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

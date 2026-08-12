@@ -27,6 +27,7 @@
         hashtags: "标签整理",
         formatter: "排版整理",
         generator: "灵感生成",
+        skills: "Skills",
         privacy: "隐私",
         language: "EN",
         languageLabel: "切换至 English",
@@ -140,6 +141,60 @@
         empty: "先输入一个主题、标题或标签",
         noResult: "还没有可复制的生成结果",
       },
+      skills: {
+        eyebrow: "OPEN SKILLS LIBRARY",
+        title: "Skills 中心",
+        intro: "下载 PostPrep 原创的开源 Skills，或在不上传文件的前提下预览本机 Skill。GitHub 发现只展示公开仓库的当次数据。",
+        originalEyebrow: "POSTPREP ORIGINALS",
+        originalTitle: "免费、可下载、MIT 许可",
+        installHint: "下载 `SKILL.md` 后，放入同名文件夹即可作为本机 Skill 使用。",
+        contentTitle: "内容设计",
+        contentBody: "为多平台创作生成、润色并核查文案，避免补造事实。",
+        frontendTitle: "前端设计",
+        frontendBody: "为网页界面提供无障碍、响应式和安全边界检查清单。",
+        curatorTitle: "Skill 筛选",
+        curatorBody: "基于许可证、任务匹配与风险审阅来发现和采用开源 Skills。",
+        download: "下载 SKILL.md",
+        downloadReady: "Skill 下载已开始",
+        downloadFailed: "暂时无法下载该 Skill，请打开源码页重试",
+        viewSource: "查看源码",
+        license: "MIT 许可",
+        localTitle: "预览本机 Skill",
+        localBody: "选择一个本机 `SKILL.md`。内容只在当前浏览器读取，不会上传到 PostPrep、GitHub 或 AI 服务。",
+        chooseLocal: "选择 SKILL.md",
+        localEmpty: "尚未选择本机文件",
+        localLoading: "正在读取本机文件…",
+        localOnly: "仅本机",
+        localInvalid: "请选择不超过 96 KB 的 Markdown 文件",
+        localReadFailed: "无法读取该本机文件",
+        previewLabel: "LOCAL PREVIEW",
+        searchEyebrow: "GITHUB DISCOVERY",
+        searchTitle: "AI 辅助筛选高星开源 Skills",
+        searchBody: "系统先从 GitHub 公开仓库中筛去无许可证、归档或 Fork 项目，再依据公开星标、近期维护与任务匹配度排序。星标是参考，不代表安全审核或官方推荐。",
+        searchSafety: "服务端查询 · 不暴露密钥",
+        queryLabel: "想找什么类型的 Skill？",
+        queryPlaceholder: "例如：网页动效、内容策划、自动化测试",
+        categoryLabel: "优先方向",
+        categoryFrontend: "前端设计",
+        categoryContent: "内容设计",
+        categoryAutomation: "自动化",
+        categoryResearch: "研究与整理",
+        starsLabel: "最低公开星标",
+        searchAction: "开始筛选",
+        searching: "正在筛选…",
+        searchIdle: "选择方向后开始筛选。首次查询会要求完成人机验证。",
+        searchResults: "找到 {count} 个公开候选仓库 · 查询于 {time}",
+        searchNoResults: "这次没有符合条件的公开候选仓库；可降低星标门槛或换一个方向。",
+        searchRateLimited: "GitHub 搜索暂时限流，请稍后再试。",
+        searchFailed: "暂时无法查询 GitHub，请稍后再试。",
+        searchAi: "AI 辅助排序",
+        searchPublic: "公开数据排序",
+        candidate: "候选仓库",
+        stars: "Stars",
+        updated: "更新",
+        openGithub: "打开 GitHub",
+        searchFootnote: "仅显示查询时 GitHub 返回、带可识别许可证的公开候选仓库。使用第三方 Skill 前请自行阅读其 `SKILL.md`、脚本与许可；本站不会复制或自动安装第三方代码。",
+      },
       cloud: {
         lengthTitle: "发布建议",
         lengthHint: "根据所选发布位置，给出简短调整方向。",
@@ -178,12 +233,12 @@
         localTitle: "基础工具不会上传",
         localBody: "长度检查、标签整理和排版整理都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。",
         cloudTitle: "云端深度处理（按部署配置）",
-        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色或按平台生成后，只会发送当前主题或文案来生成结果；未启用时按钮会提示暂不可用。",
+        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色或按平台生成后，只会发送当前主题或文案来生成结果；使用 Skills 筛选时，会发送当前查询词、类别和星标门槛。未启用时按钮会提示暂不可用。",
         servicesTitle: "静态资源与人机验证",
-        servicesBody: "页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成或深度处理时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌；当前公开版本不加载第三方广告脚本。",
+        servicesBody: "页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理或 Skills 筛选时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选由服务端查询 GitHub 的公开仓库元数据；若启用 AI 排序，也只传递该公开元数据。当前公开版本不加载第三方广告脚本。",
         turnstilePolicy: "查看 Cloudflare Turnstile 隐私说明",
         adsTitle: "第三方代码",
-        adsBody: "当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。",
+        adsBody: "当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile；你主动发起 Skills 筛选时，服务端还会查询 GitHub 公开 API。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。",
         controlTitle: "你的选择",
         controlBody: "你可以随时清空输入框、关闭页面或清除浏览器的本地站点数据。只有语言偏好保存在当前浏览器的 localStorage 中。",
         back: "返回首页",
@@ -211,6 +266,7 @@
         hashtags: "Hashtags",
         formatter: "Formatter",
         generator: "Generator",
+        skills: "Skills",
         privacy: "Privacy",
         language: "中文",
         languageLabel: "Switch to Chinese",
@@ -324,6 +380,60 @@
         empty: "Enter a topic, title, or tags first",
         noResult: "There is no generated result to copy yet",
       },
+      skills: {
+        eyebrow: "OPEN SKILLS LIBRARY",
+        title: "Skills hub",
+        intro: "Download original PostPrep open-source Skills, or preview a local Skill without uploading it. GitHub discovery shows the public data returned for this search only.",
+        originalEyebrow: "POSTPREP ORIGINALS",
+        originalTitle: "Free to download, MIT licensed",
+        installHint: "Download `SKILL.md` and place it in a folder with the same name to use it as a local Skill.",
+        contentTitle: "Content design",
+        contentBody: "Create, refine, and check multi-platform copy without inventing facts.",
+        frontendTitle: "Frontend design",
+        frontendBody: "Use an accessibility, responsive-layout, and security-boundary checklist for web interfaces.",
+        curatorTitle: "Skill curation",
+        curatorBody: "Discover and adopt open-source Skills using license, task-fit, and risk review.",
+        download: "Download SKILL.md",
+        downloadReady: "Skill download started",
+        downloadFailed: "This Skill could not be downloaded. Open its source instead.",
+        viewSource: "View source",
+        license: "MIT License",
+        localTitle: "Preview a local Skill",
+        localBody: "Choose a local `SKILL.md`. Its content is read only in this browser and is not uploaded to PostPrep, GitHub, or an AI service.",
+        chooseLocal: "Choose SKILL.md",
+        localEmpty: "No local file selected",
+        localLoading: "Reading local file…",
+        localOnly: "Local only",
+        localInvalid: "Choose a Markdown file no larger than 96 KB",
+        localReadFailed: "This local file could not be read",
+        previewLabel: "LOCAL PREVIEW",
+        searchEyebrow: "GITHUB DISCOVERY",
+        searchTitle: "AI-assisted high-star Skill discovery",
+        searchBody: "The service removes repositories without a visible license, archived repositories, and forks, then ranks public stars, recent maintenance, and task fit. Stars are a signal only; they are not a security review or endorsement.",
+        searchSafety: "Server-side search · no key exposed",
+        queryLabel: "What type of Skill are you looking for?",
+        queryPlaceholder: "For example: web motion, content planning, test automation",
+        categoryLabel: "Priority area",
+        categoryFrontend: "Frontend design",
+        categoryContent: "Content design",
+        categoryAutomation: "Automation",
+        categoryResearch: "Research and curation",
+        starsLabel: "Minimum public stars",
+        searchAction: "Find Skills",
+        searching: "Filtering…",
+        searchIdle: "Choose an area to begin. The first search asks for human verification.",
+        searchResults: "{count} public candidate repositories · checked {time}",
+        searchNoResults: "No public candidates met this search. Lower the star floor or try another focus.",
+        searchRateLimited: "GitHub search is temporarily rate limited. Please try again later.",
+        searchFailed: "GitHub search is temporarily unavailable. Please try again later.",
+        searchAi: "AI-assisted ranking",
+        searchPublic: "Public-data ranking",
+        candidate: "Candidate repository",
+        stars: "Stars",
+        updated: "Updated",
+        openGithub: "Open GitHub",
+        searchFootnote: "Only public candidates returned by GitHub for this search and carrying a recognizable license are shown. Read each third-party Skill's `SKILL.md`, scripts, and license before use; this site neither copies nor installs third-party code automatically.",
+      },
       cloud: {
         lengthTitle: "Publishing suggestion",
         lengthHint: "Get a short adjustment direction for the selected publishing field.",
@@ -362,12 +472,12 @@
         localTitle: "Basic tools stay local",
         localBody: "Length checking, hashtag cleaning, and caption formatting run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
         cloudTitle: "Optional deep processing",
-        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, or platform generation, only the current topic or draft is sent for a result; otherwise the button reports that the feature is unavailable.",
+        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, or platform generation, only the current topic or draft is sent for a result. Skills discovery sends only the current query, category, and star threshold. Otherwise the button reports that the feature is unavailable.",
         servicesTitle: "Static resources and verification",
-        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site. When you choose cloud generation or deep processing, the browser requests a one-time verification token from Cloudflare Turnstile; the current public build does not load third-party advertising scripts.",
+        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site. When you choose cloud generation, deep processing, or Skills discovery, the browser requests a one-time verification token from Cloudflare Turnstile. Skills discovery queries GitHub's public repository metadata server-side; if AI ranking is enabled, only that public metadata is passed to it. The current public build does not load third-party advertising scripts.",
         turnstilePolicy: "View Cloudflare's Turnstile privacy notice",
         adsTitle: "Third-party code",
-        adsBody: "The current public build does not load advertising, analytics, or arbitrary third-party scripts. Cloud processing contacts only the configured server-side proxy and Cloudflare Turnstile. Any future third-party service must be reviewed and documented before it is enabled.",
+        adsBody: "The current public build does not load advertising, analytics, or arbitrary third-party scripts. Cloud processing contacts only the configured server-side proxy and Cloudflare Turnstile; when you start Skills discovery, the server also queries GitHub's public API. Any future third-party service must be reviewed and documented before it is enabled.",
         controlTitle: "Your control",
         controlBody: "You can clear any input, close the page, or erase local site data at any time. Only your language preference is stored in this browser's localStorage.",
         back: "Back to home",
@@ -457,6 +567,38 @@
       sourceKey: "length.officialHint",
     },
   ];
+
+  const POSTPREP_SKILLS = Object.freeze([
+    Object.freeze({
+      id: "content",
+      titleKey: "skills.contentTitle",
+      bodyKey: "skills.contentBody",
+      icon: "fa-pen-ruler",
+      path: "skills/postprep-content-studio/SKILL.md",
+      sourcePath: "skills/postprep-content-studio",
+      filename: "postprep-content-studio-SKILL.md",
+    }),
+    Object.freeze({
+      id: "frontend",
+      titleKey: "skills.frontendTitle",
+      bodyKey: "skills.frontendBody",
+      icon: "fa-compass-drafting",
+      path: "skills/postprep-frontend-quality/SKILL.md",
+      sourcePath: "skills/postprep-frontend-quality",
+      filename: "postprep-frontend-quality-SKILL.md",
+    }),
+    Object.freeze({
+      id: "curator",
+      titleKey: "skills.curatorTitle",
+      bodyKey: "skills.curatorBody",
+      icon: "fa-magnifying-glass",
+      path: "skills/postprep-skill-curator/SKILL.md",
+      sourcePath: "skills/postprep-skill-curator",
+      filename: "postprep-skill-curator-SKILL.md",
+    }),
+  ]);
+  const POSTPREP_REPOSITORY_URL = "https://github.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io";
+  const MAX_LOCAL_SKILL_BYTES = 96 * 1024;
 
   let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "zh";
 
@@ -606,6 +748,7 @@
       { id: "hashtags", href: "hashtag-cleaner.html", label: "shared.hashtags" },
       { id: "formatter", href: "caption-formatter.html", label: "shared.formatter" },
       { id: "generator", href: "idea-generator.html", label: "shared.generator" },
+      { id: "skills", href: "skills.html", label: "shared.skills" },
     ];
 
     const linkMarkup = links.map((link) => {
@@ -622,15 +765,15 @@
             '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand text-white shadow-sm"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span>' +
             '<span class="min-w-0"><span class="block truncate text-sm font-black tracking-wide text-ink">PostPrep</span><span class="block truncate text-xs text-muted" data-i18n="shared.tagline">' + t("shared.tagline") + "</span></span>" +
           "</a>" +
-          '<nav class="hidden items-center gap-1 md:flex" aria-label="Primary navigation">' + linkMarkup + "</nav>" +
+          '<nav class="hidden items-center gap-1 lg:flex" aria-label="Primary navigation">' + linkMarkup + "</nav>" +
           '<div class="flex items-center gap-2">' +
             '<button type="button" data-language-toggle class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-i18n-title="shared.languageLabel" data-i18n-aria-label="shared.languageLabel" title="' + t("shared.languageLabel") + '" aria-label="' + t("shared.languageLabel") + '">' +
               '<i class="fa-solid fa-language text-brand" aria-hidden="true"></i><span data-i18n="shared.language">' + t("shared.language") + "</span>" +
             "</button>" +
-            '<button type="button" data-menu-toggle class="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 md:hidden" aria-expanded="false" aria-controls="mobile-navigation" aria-label="' + t("shared.menu") + '" title="' + t("shared.menu") + '"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>' +
+            '<button type="button" data-menu-toggle class="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-line bg-white text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 lg:hidden" aria-expanded="false" aria-controls="mobile-navigation" aria-label="' + t("shared.menu") + '" title="' + t("shared.menu") + '"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>' +
           "</div>" +
         "</div>" +
-        '<nav id="mobile-navigation" class="hidden border-t border-line bg-white px-4 py-3 md:hidden" aria-label="Mobile navigation">' + linkMarkup + "</nav>" +
+        '<nav id="mobile-navigation" class="hidden border-t border-line bg-white px-4 py-3 lg:hidden" aria-label="Mobile navigation">' + linkMarkup + "</nav>" +
       "</header>";
     }
 
@@ -1277,6 +1420,324 @@
     }
   }
 
+  function interpolate(template, values) {
+    return String(template || "").replace(/\{([A-Za-z0-9_]+)\}/gu, (_, key) => (
+      Object.prototype.hasOwnProperty.call(values || {}, key) ? String(values[key]) : ""
+    ));
+  }
+
+  function createIcon(className) {
+    const icon = document.createElement("i");
+    icon.className = "fa-solid " + className;
+    icon.setAttribute("aria-hidden", "true");
+    return icon;
+  }
+
+  function formatPublicNumber(value) {
+    try {
+      return new Intl.NumberFormat(currentLanguage === "zh" ? "zh-CN" : "en-US").format(Number(value) || 0);
+    } catch {
+      return String(Number(value) || 0);
+    }
+  }
+
+  function formatPublicDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    try {
+      return new Intl.DateTimeFormat(currentLanguage === "zh" ? "zh-CN" : "en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }).format(date);
+    } catch {
+      return date.toISOString().slice(0, 10);
+    }
+  }
+
+  function approvedGithubRepositoryUrl(value) {
+    try {
+      const url = new URL(String(value || ""));
+      const segments = url.pathname.split("/").filter(Boolean);
+      if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "github.com" || segments.length !== 2) return "";
+      if (!segments.every((segment) => /^[A-Za-z0-9_.-]+$/u.test(segment))) return "";
+      return "https://github.com/" + segments.join("/");
+    } catch {
+      return "";
+    }
+  }
+
+  function makePill(text, classes) {
+    const pill = document.createElement("span");
+    pill.className = "rounded-full px-3 py-1 text-xs font-bold " + classes;
+    pill.textContent = text;
+    return pill;
+  }
+
+  function initSkillsHub() {
+    const library = document.getElementById("skills-library");
+    if (!library) return;
+
+    const localInput = document.getElementById("skills-local-file");
+    const localStatus = document.getElementById("skills-local-status");
+    const localPreview = document.getElementById("skills-local-preview");
+    const localPreviewName = document.getElementById("skills-local-preview-name");
+    const localPreviewContent = document.getElementById("skills-local-preview-content");
+    const searchForm = document.getElementById("skills-search-form");
+    const searchQuery = document.getElementById("skills-search-query");
+    const searchCategory = document.getElementById("skills-search-category");
+    const searchStars = document.getElementById("skills-search-min-stars");
+    const searchButton = document.getElementById("skills-search-button");
+    const searchButtonLabel = document.getElementById("skills-search-button-label");
+    const searchStatus = document.getElementById("skills-search-status");
+    const searchResults = document.getElementById("skills-search-results");
+    let localFileName = "";
+    let localFileText = "";
+    let lastSearch = null;
+
+    function setLocalStatus(kind) {
+      if (!localStatus) return;
+      if (kind === "loading") {
+        localStatus.textContent = t("skills.localLoading");
+        return;
+      }
+      if (kind === "loaded" && localFileName) {
+        localStatus.textContent = localFileName + " · " + t("skills.localOnly");
+        return;
+      }
+      localStatus.textContent = t("skills.localEmpty");
+    }
+
+    function setSearchBusy(busy) {
+      setCloudBusy(searchButton, busy);
+      if (searchButtonLabel) searchButtonLabel.textContent = busy ? t("skills.searching") : t("skills.searchAction");
+    }
+
+    function renderLibrary() {
+      library.replaceChildren();
+      POSTPREP_SKILLS.forEach((skill) => {
+        const card = document.createElement("article");
+        card.className = "flex min-h-72 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm";
+
+        const iconWrap = document.createElement("div");
+        iconWrap.className = "flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-xl text-brand";
+        iconWrap.append(createIcon(skill.icon));
+
+        const title = document.createElement("h3");
+        title.className = "mt-6 text-xl font-black";
+        title.textContent = t(skill.titleKey);
+        const body = document.createElement("p");
+        body.className = "mt-3 flex-1 text-sm leading-7 text-muted";
+        body.textContent = t(skill.bodyKey);
+
+        const meta = document.createElement("div");
+        meta.className = "mt-5 flex flex-wrap gap-2";
+        meta.append(makePill(t("skills.license"), "bg-teal-50 text-brand"));
+
+        const actions = document.createElement("div");
+        actions.className = "mt-5 flex flex-wrap gap-3";
+        const download = document.createElement("button");
+        download.type = "button";
+        download.className = "inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
+        download.append(createIcon("fa-download"), document.createTextNode(t("skills.download")));
+        download.addEventListener("click", async () => {
+          setCloudBusy(download, true);
+          try {
+            const response = await fetch(skill.path, { cache: "no-store" });
+            if (!response.ok) throw new Error("Skill source unavailable");
+            const content = await response.text();
+            if (!content.trim()) throw new Error("Skill source empty");
+            const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = objectUrl;
+            link.download = skill.filename;
+            document.body.append(link);
+            link.click();
+            link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+            showToast(t("skills.downloadReady"));
+          } catch {
+            showToast(t("skills.downloadFailed"));
+          } finally {
+            setCloudBusy(download, false);
+          }
+        });
+
+        const source = document.createElement("a");
+        source.className = "inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-4 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
+        source.href = POSTPREP_REPOSITORY_URL + "/tree/main/" + skill.sourcePath;
+        source.target = "_blank";
+        source.rel = "noreferrer";
+        source.append(createIcon("fa-code"), document.createTextNode(t("skills.viewSource")));
+        actions.append(download, source);
+        card.append(iconWrap, title, body, meta, actions);
+        library.append(card);
+      });
+    }
+
+    function normalizedSearchItem(item) {
+      const repository = typeof item?.repository === "string" && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(item.repository)
+        ? item.repository
+        : "";
+      const url = approvedGithubRepositoryUrl(item?.url);
+      const stars = Number(item?.stars);
+      const forks = Number(item?.forks);
+      const score = Number(item?.score);
+      const license = typeof item?.license === "string" ? item.license.trim().slice(0, 80) : "";
+      const updatedAt = typeof item?.updatedAt === "string" && Number.isFinite(Date.parse(item.updatedAt)) ? item.updatedAt : "";
+      const description = typeof item?.description === "string" ? item.description.replace(/[\u0000-\u001F\u007F]/gu, " ").trim().slice(0, 300) : "";
+      const reason = typeof item?.reason === "string" ? item.reason.replace(/[\u0000-\u001F\u007F]/gu, " ").trim().slice(0, 150) : "";
+      if (!repository || !url || !Number.isSafeInteger(stars) || stars < 0 || !Number.isSafeInteger(forks) || forks < 0
+        || !Number.isInteger(score) || score < 0 || score > 100 || !license || !updatedAt || !reason) return null;
+      return { repository, url, stars, forks, score, license, updatedAt, description, reason };
+    }
+
+    function parseSearchPayload(content) {
+      const payload = JSON.parse(stripCodeFence(content));
+      if (!payload || !Array.isArray(payload.items)) throw new Error("Invalid search result");
+      const checkedAt = typeof payload.checkedAt === "string" && Number.isFinite(Date.parse(payload.checkedAt))
+        ? payload.checkedAt
+        : new Date().toISOString();
+      const rankingMode = payload.rankingMode === "ai-assisted" ? "ai-assisted" : "public-data";
+      return {
+        checkedAt,
+        rankingMode,
+        items: payload.items.map(normalizedSearchItem).filter(Boolean).slice(0, 8),
+      };
+    }
+
+    function renderSearchResults() {
+      if (!searchResults || !searchStatus || !lastSearch) return;
+      searchResults.replaceChildren();
+      const checkedAt = formatPublicDate(lastSearch.checkedAt);
+      if (!lastSearch.items.length) {
+        searchStatus.textContent = t("skills.searchNoResults");
+        return;
+      }
+      const resultSummary = interpolate(t("skills.searchResults"), {
+        count: lastSearch.items.length,
+        time: checkedAt,
+      });
+      searchStatus.textContent = resultSummary + " · " + t(lastSearch.rankingMode === "ai-assisted" ? "skills.searchAi" : "skills.searchPublic");
+
+      lastSearch.items.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "flex min-h-64 flex-col rounded-xl border border-line bg-canvas p-5";
+        const heading = document.createElement("div");
+        heading.className = "flex flex-wrap items-start justify-between gap-3";
+        const titleWrap = document.createElement("div");
+        const eyebrow = document.createElement("p");
+        eyebrow.className = "text-xs font-bold uppercase tracking-[0.14em] text-brand";
+        eyebrow.textContent = t("skills.candidate");
+        const title = document.createElement("a");
+        title.className = "mt-2 inline-block break-all text-lg font-black text-ink underline decoration-teal-200 underline-offset-4 hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
+        title.href = item.url;
+        title.target = "_blank";
+        title.rel = "noreferrer";
+        title.textContent = item.repository;
+        titleWrap.append(eyebrow, title);
+        heading.append(titleWrap, makePill(item.score + "/100", "bg-teal-50 text-brand"));
+
+        const body = document.createElement("p");
+        body.className = "mt-4 flex-1 text-sm leading-7 text-muted";
+        body.textContent = item.description || t("skills.candidate");
+        const reason = document.createElement("p");
+        reason.className = "mt-4 rounded-lg border border-teal-100 bg-white px-3 py-3 text-sm leading-6 text-ink";
+        reason.textContent = item.reason;
+        const meta = document.createElement("div");
+        meta.className = "mt-4 flex flex-wrap gap-2";
+        meta.append(
+          makePill("★ " + formatPublicNumber(item.stars) + " " + t("skills.stars"), "bg-white text-ink ring-1 ring-line"),
+          makePill(item.license, "bg-white text-ink ring-1 ring-line"),
+          makePill(t("skills.updated") + " " + formatPublicDate(item.updatedAt), "bg-white text-ink ring-1 ring-line"),
+        );
+        const link = document.createElement("a");
+        link.className = "mt-5 inline-flex min-h-10 items-center gap-2 self-start rounded-lg border border-line px-4 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
+        link.href = item.url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.append(createIcon("fa-arrow-up-right-from-square"), document.createTextNode(t("skills.openGithub")));
+        card.append(heading, body, reason, meta, link);
+        searchResults.append(card);
+      });
+    }
+
+    if (localInput) {
+      localInput.addEventListener("change", () => {
+        const file = localInput.files && localInput.files[0];
+        if (!file) return;
+        const isMarkdown = /\.md$/iu.test(file.name) || file.type === "text/markdown" || file.type === "text/plain";
+        if (!isMarkdown || file.size > MAX_LOCAL_SKILL_BYTES) {
+          localFileName = "";
+          localFileText = "";
+          if (localPreview) localPreview.hidden = true;
+          if (localStatus) localStatus.textContent = t("skills.localInvalid");
+          localInput.value = "";
+          return;
+        }
+        setLocalStatus("loading");
+        const reader = new FileReader();
+        reader.onload = () => {
+          const content = typeof reader.result === "string" ? reader.result : "";
+          if (!content.trim()) {
+            if (localStatus) localStatus.textContent = t("skills.localReadFailed");
+            return;
+          }
+          localFileName = file.name;
+          localFileText = content.slice(0, MAX_LOCAL_SKILL_BYTES);
+          if (localPreviewName) localPreviewName.textContent = localFileName;
+          if (localPreviewContent) localPreviewContent.textContent = localFileText;
+          if (localPreview) localPreview.hidden = false;
+          setLocalStatus("loaded");
+        };
+        reader.onerror = () => {
+          if (localStatus) localStatus.textContent = t("skills.localReadFailed");
+        };
+        reader.readAsText(file, "utf-8");
+      });
+    }
+
+    if (searchForm && searchQuery && searchCategory && searchStars && searchStatus) {
+      searchForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const query = searchQuery.value.trim().slice(0, 80);
+        const minStars = Number(searchStars.value);
+        setSearchBusy(true);
+        lastSearch = null;
+        if (searchResults) searchResults.replaceChildren();
+        searchStatus.textContent = t("skills.searching");
+        try {
+          const content = await requestCloudText("skillSearch", query, {
+            skillCategory: searchCategory.value,
+            minStars,
+          });
+          lastSearch = parseSearchPayload(content);
+          renderSearchResults();
+          if (lastSearch.rankingMode === "ai-assisted") {
+            showToast(t("skills.searchAi"));
+          }
+        } catch (error) {
+          const isRateLimited = error && error.code === "GITHUB_SEARCH_RATE_LIMITED";
+          searchStatus.textContent = isRateLimited ? t("skills.searchRateLimited") : t("skills.searchFailed");
+          showToast(isRateLimited ? t("skills.searchRateLimited") : cloudErrorMessage(error));
+        } finally {
+          setSearchBusy(false);
+        }
+      });
+    }
+
+    document.addEventListener("postprep:languagechange", () => {
+      renderLibrary();
+      setLocalStatus(localFileName ? "loaded" : "empty");
+      setSearchBusy(Boolean(searchButton && searchButton.disabled));
+      if (lastSearch) renderSearchResults();
+    });
+
+    renderLibrary();
+    setLocalStatus("empty");
+  }
+
   function initFormatter() {
     const input = document.getElementById("formatter-input");
     if (!input) return;
@@ -1551,5 +2012,6 @@
     initHashtagCleaner();
     initFormatter();
     initGenerator();
+    initSkillsHub();
   });
 })();

@@ -1,6 +1,6 @@
 # PostPrep
 
-一个无需登录的双语创作者文案工具站：发布前检查长度、整理标签、清理排版，并按所选平台从一句主题、标题或标签生成可编辑文案或标签。
+一个无需登录的双语创作者文案工具站：发布前检查长度、整理标签、清理排版，并按所选平台从一句主题、标题或标签生成可编辑文案或标签。网站还提供 Skills 中心：下载本项目原创的 MIT Skills、本机预览 `SKILL.md`，以及经人机验证和服务端代理保护的 GitHub 公开 Skill 发现。
 
 ## 访问
 
@@ -20,7 +20,7 @@ npm install
 npm run build:styles
 ```
 
-页面使用的 Tailwind、Font Awesome 和首页插图均随仓库发布，不再让访客浏览器加载海外 CDN 或广告脚本。
+页面使用的 Tailwind、Font Awesome 和首页插图均随仓库发布，不再让访客浏览器加载海外 CDN 或广告脚本。`skills/` 中的三个 PostPrep 原创 Skills 采用本项目的 MIT License；页面不会复制、安装或重新发布第三方 GitHub Skills。本机导入仅在浏览器内预览，不会上传文件。
 
 ## 开源与贡献
 
@@ -36,6 +36,8 @@ npm test
 ## 部署结构
 
 GitHub Pages 负责公开静态页面；`worker/api-gateway.js` 是唯一的公开 AI 网关，执行每 Origin/IP 的 Cloudflare Rate Limiting 后才转发到 `functions/api/text.js`。Pages Function 只接受网关持有的服务器密钥。代理只从运行环境读取 `AGNES_API_KEY`、`TURNSTILE_SECRET_KEY` 和 `POSTPREP_GATEWAY_SECRET`，前端永远不会保存或发送任一密钥。每个云端请求都要求受信任 Origin、网关限流和服务器验证的 Turnstile 一次性令牌。
+
+Skills 发现由 Pages Function 在服务端调用 GitHub 的公开仓库搜索 API：固定筛去无许可证、归档和 Fork 候选，再以公开星标与维护日期为基础排序。若 `AGNES_API_KEY` 已配置，会对已过滤的公开元数据做额外的 AI 排序；若未配置或模型不可用，页面仍返回透明的公开数据排序。GitHub 星标不是安全审计、兼容性保证或官方背书；在使用第三方 Skill 前，请阅读其 `SKILL.md`、脚本和许可。
 
 完成 Cloudflare 登录后，可按下面的顺序创建/发布代理：
 

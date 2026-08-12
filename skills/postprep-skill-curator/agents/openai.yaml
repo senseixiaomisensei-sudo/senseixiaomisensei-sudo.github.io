@@ -1,0 +1,3 @@
+interface:
+  display_name: "PostPrep Skill Curator"
+  short_description: "Find and vet open-source agent Skills safely"

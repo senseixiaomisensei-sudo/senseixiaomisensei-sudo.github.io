@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; form-action 'self'">
+  <meta name="description" content="PostPrep Skills 中心：下载原创开源 Skills、本机预览，以及基于 GitHub 公开数据的高星 Skill 发现。">
+  <meta name="theme-color" content="#0F766E">
+  <title>Skills 中心 | PostPrep</title>
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
+  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260812-skills">
+  <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260812-skills">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="skills" data-title-key="skills.title">
+  <div id="site-header"></div>
+
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="max-w-3xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="skills.eyebrow">OPEN SKILLS LIBRARY</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="skills.title">Skills 中心</h1>
+      <p class="mt-3 text-base leading-7 text-muted" data-i18n="skills.intro">下载 PostPrep 原创的开源 Skills，或在不上传文件的前提下预览本机 Skill。GitHub 发现只展示公开仓库的当次数据。</p>
+    </header>
+
+    <section class="mt-10" aria-labelledby="postprep-skills-heading">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="skills.originalEyebrow">POSTPREP ORIGINALS</p>
+          <h2 id="postprep-skills-heading" class="mt-2 text-2xl font-black tracking-tight" data-i18n="skills.originalTitle">免费、可下载、MIT 许可</h2>
+        </div>
+        <p class="max-w-xl text-sm leading-6 text-muted" data-i18n="skills.installHint">下载 `SKILL.md` 后，放入同名文件夹即可作为本机 Skill 使用。</p>
+      </div>
+      <div id="skills-library" class="mt-6 grid gap-5 md:grid-cols-3" aria-live="polite"></div>
+    </section>
+
+    <section class="mt-12 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]" aria-labelledby="local-skill-heading">
+      <article class="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-700" aria-hidden="true"><i class="fa-solid fa-laptop-file"></i></div>
+        <h2 id="local-skill-heading" class="mt-5 text-xl font-black" data-i18n="skills.localTitle">预览本机 Skill</h2>
+        <p class="mt-2 text-sm leading-7 text-muted" data-i18n="skills.localBody">选择一个本机 `SKILL.md`。内容只在当前浏览器读取，不会上传到 PostPrep、GitHub 或 AI 服务。</p>
+        <label for="skills-local-file" class="mt-5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-brand bg-white px-4 py-3 text-sm font-bold text-brand transition hover:bg-teal-50 focus-within:ring-2 focus-within:ring-brand focus-within:ring-offset-2">
+          <i class="fa-solid fa-folder-open" aria-hidden="true"></i><span data-i18n="skills.chooseLocal">选择 SKILL.md</span>
+        </label>
+        <input id="skills-local-file" class="sr-only" type="file" accept=".md,text/markdown" aria-describedby="skills-local-status">
+        <p id="skills-local-status" class="mt-3 text-sm font-semibold text-muted" role="status" aria-live="polite" data-i18n="skills.localEmpty">尚未选择本机文件</p>
+      </article>
+
+      <article id="skills-local-preview" class="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-7" hidden>
+        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-i18n="skills.previewLabel">LOCAL PREVIEW</p>
+            <h3 id="skills-local-preview-name" class="mt-2 break-all text-lg font-black"></h3>
+          </div>
+          <span class="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-brand" data-i18n="skills.localOnly">仅本机</span>
+        </div>
+        <pre id="skills-local-preview-content" class="mt-4 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-canvas p-4 text-xs leading-6 text-slate-700"></pre>
+      </article>
+    </section>
+
+    <section class="mt-12 rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-7" aria-labelledby="skill-search-heading">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="max-w-3xl">
+          <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="skills.searchEyebrow">GITHUB DISCOVERY</p>
+          <h2 id="skill-search-heading" class="mt-2 text-2xl font-black tracking-tight" data-i18n="skills.searchTitle">AI 辅助筛选高星开源 Skills</h2>
+          <p class="mt-3 text-sm leading-7 text-muted" data-i18n="skills.searchBody">系统先从 GitHub 公开仓库中筛去无许可证、归档或 Fork 项目，再依据公开星标、近期维护与任务匹配度排序。星标是参考，不代表安全审核或官方推荐。</p>
+        </div>
+        <div class="inline-flex items-center gap-2 rounded-lg bg-teal-50 px-3 py-2 text-xs font-bold text-brand"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-i18n="skills.searchSafety">服务端查询 · 不暴露密钥</span></div>
+      </div>
+
+      <form id="skills-search-form" class="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.75fr)_auto]" novalidate>
+        <div>
+          <label for="skills-search-query" class="text-sm font-bold" data-i18n="skills.queryLabel">想找什么类型的 Skill？</label>
+          <input id="skills-search-query" maxlength="80" autocomplete="off" class="mt-2 min-h-11 w-full rounded-lg border-line bg-white px-3 py-2 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="skills.queryPlaceholder" placeholder="例如：网页动效、内容策划、自动化测试">
+        </div>
+        <div>
+          <label for="skills-search-category" class="text-sm font-bold" data-i18n="skills.categoryLabel">优先方向</label>
+          <select id="skills-search-category" class="mt-2 min-h-11 w-full rounded-lg border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
+            <option value="frontend" data-i18n="skills.categoryFrontend">前端设计</option>
+            <option value="content" data-i18n="skills.categoryContent">内容设计</option>
+            <option value="automation" data-i18n="skills.categoryAutomation">自动化</option>
+            <option value="research" data-i18n="skills.categoryResearch">研究与整理</option>
+          </select>
+        </div>
+        <div>
+          <label for="skills-search-min-stars" class="text-sm font-bold" data-i18n="skills.starsLabel">最低公开星标</label>
+          <select id="skills-search-min-stars" class="mt-2 min-h-11 w-full rounded-lg border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
+            <option value="50">50+</option>
+            <option value="100" selected>100+</option>
+            <option value="500">500+</option>
+            <option value="1000">1000+</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button id="skills-search-button" type="submit" class="cloud-action-button inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-busy="false"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><span id="skills-search-button-label" data-i18n="skills.searchAction">开始筛选</span></button>
+        </div>
+      </form>
+      <p id="skills-search-status" class="mt-4 text-sm font-semibold text-muted" role="status" aria-live="polite" data-i18n="skills.searchIdle">选择方向后开始筛选。首次查询会要求完成人机验证。</p>
+      <div id="skills-search-results" class="mt-6 grid gap-5 md:grid-cols-2" aria-live="polite"></div>
+      <p class="mt-6 border-t border-line pt-5 text-xs leading-6 text-muted" data-i18n="skills.searchFootnote">仅显示查询时 GitHub 返回、带可识别许可证的公开候选仓库。使用第三方 Skill 前请自行阅读其 `SKILL.md`、脚本与许可；本站不会复制或自动安装第三方代码。</p>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
+  <script src="assets/postprep-config.js"></script>
+  <script src="assets/postprep.js?v=20260812-skills"></script>
+</body>
+</html>
