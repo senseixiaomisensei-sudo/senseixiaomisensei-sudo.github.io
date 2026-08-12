@@ -19,9 +19,15 @@ test("Skills hub keeps local files local and sends GitHub discovery through the 
   assert.match(page, /data-page="skills"/);
   assert.match(page, /id="skills-local-file"/);
   assert.match(page, /id="skills-search-form"/);
+  assert.match(page, /id="skills-search-source-list"/);
+  assert.match(page, /id="skills-copy-all-sources"/);
+  assert.match(page, /id="skills-copy-mcp-review"/);
   assert.match(client, /function initSkillsHub\(\)/);
   assert.match(client, /new FileReader\(\)/);
   assert.match(client, /requestCloudText\("skillSearch"/);
+  assert.match(client, /function githubMcpReviewTask\(\)/);
+  assert.match(client, /skills\.sourceAddress/);
+  assert.match(client, /skills\.searchExpanded/);
   assert.match(client, /localPreviewContent\.textContent/);
   assert.doesNotMatch(client, /api\.github\.com/);
   assert.match(client, /\{ id: "skills", href: "skills\.html"/);

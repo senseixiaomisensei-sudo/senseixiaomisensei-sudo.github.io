@@ -17,11 +17,24 @@ const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
 ]);
 const GITHUB_REPOSITORY_SEARCH_URL = "https://api.github.com/search/repositories";
 const GITHUB_SEARCH_RESULT_LIMIT = 8;
+const GITHUB_SEARCH_TIMEOUT_MS = 8000;
 const SKILL_SEARCH_CATEGORIES = Object.freeze({
-  frontend: "frontend design agent skill",
-  content: "content writing agent skill",
-  automation: "automation developer agent skill",
-  research: "research knowledge agent skill",
+  frontend: Object.freeze({
+    focusedTerms: "frontend skill",
+    expandedTerms: "agent skills",
+  }),
+  content: Object.freeze({
+    focusedTerms: "content writing skill",
+    expandedTerms: "agent skills",
+  }),
+  automation: Object.freeze({
+    focusedTerms: "automation skill",
+    expandedTerms: "agent skills",
+  }),
+  research: Object.freeze({
+    focusedTerms: "research knowledge skill",
+    expandedTerms: "agent skills",
+  }),
 });
 const SKILL_SEARCH_STAR_FLOORS = Object.freeze([50, 100, 500, 1000]);
 
@@ -272,6 +285,11 @@ function normalizedSkillQuery(value) {
     .slice(0, MAX_SKILL_QUERY_CHARS);
 }
 
+function githubSearchKeywords(value) {
+  const matches = normalizedSkillQuery(value).match(/[A-Za-z][A-Za-z0-9_-]{1,}/g) || [];
+  return [...new Set(matches.map((match) => match.toLowerCase()))].slice(0, 5).join(" ");
+}
+
 function normalizedGithubRepositoryUrl(value) {
   try {
     const url = new URL(String(value || ""));
@@ -322,10 +340,7 @@ function githubSkillCandidate(item) {
   });
 }
 
-async function searchGithubSkills(query, category, minStars) {
-  const categoryTerms = SKILL_SEARCH_CATEGORIES[category];
-  const queryTerms = normalizedSkillQuery(query);
-  const searchTerms = [categoryTerms, queryTerms || "SKILL.md"].join(" ").trim();
+async function searchGithubRepositories(searchTerms, minStars) {
   const githubQuery = `${searchTerms} in:name,description,readme stars:>=${minStars} archived:false fork:false`;
   const url = new URL(GITHUB_REPOSITORY_SEARCH_URL);
   url.searchParams.set("q", githubQuery);
@@ -334,7 +349,7 @@ async function searchGithubSkills(query, category, minStars) {
   url.searchParams.set("per_page", String(GITHUB_SEARCH_RESULT_LIMIT));
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), GITHUB_SEARCH_TIMEOUT_MS);
   try {
     const response = await fetch(url, {
       headers: {
@@ -370,6 +385,18 @@ async function searchGithubSkills(query, category, minStars) {
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+async function searchGithubSkills(query, category, minStars) {
+  const profile = SKILL_SEARCH_CATEGORIES[category];
+  const keywords = githubSearchKeywords(query);
+  const focused = await searchGithubRepositories([profile.focusedTerms, keywords].filter(Boolean).join(" "), minStars);
+  if (focused.error) return focused;
+  if (focused.items.length) return { items: focused.items, searchMode: "focused" };
+
+  const expanded = await searchGithubRepositories([profile.expandedTerms, keywords].filter(Boolean).join(" "), minStars);
+  if (expanded.error) return expanded;
+  return { items: expanded.items, searchMode: "expanded" };
 }
 
 function fallbackSkillScore(candidate) {
@@ -619,7 +646,8 @@ export async function onRequest(context) {
   if (humanVerification.error) return failure(request, humanVerification.error.status, humanVerification.error.code, humanVerification.error.message, humanVerification.error.details, env);
 
   if (action === "skillSearch") {
-    const githubResult = await searchGithubSkills(draft, body.skillCategory, Number(body.minStars));
+    const searchQuery = normalizedSkillQuery(draft);
+    const githubResult = await searchGithubSkills(searchQuery, body.skillCategory, Number(body.minStars));
     if (githubResult.error) {
       return failure(request, githubResult.error.status, githubResult.error.code, githubResult.error.message, githubResult.error.details, env);
     }
@@ -630,7 +658,7 @@ export async function onRequest(context) {
     if (candidates.length) {
       const aiResult = await callAgnes(env, {
         ...ACTIONS.skillSearch,
-        ...skillRankingPrompt(draft, body.skillCategory, candidates, body.language),
+        ...skillRankingPrompt(searchQuery, body.skillCategory, candidates, body.language),
       });
       if (aiResult.content) {
         const ranked = rankedGithubSkills(aiResult.content, candidates, body.language);
@@ -644,6 +672,7 @@ export async function onRequest(context) {
       content: JSON.stringify({
         source: "github-public-api",
         rankingMode,
+        searchMode: githubResult.searchMode,
         checkedAt: new Date().toISOString(),
         items: rankedItems,
       }),

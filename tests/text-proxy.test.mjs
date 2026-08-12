@@ -300,6 +300,74 @@ test("Skill discovery keeps a useful public-data fallback when AI ranking is not
   }
 });
 
+test("Skill discovery expands safely when a focused Chinese request has no candidates", async () => {
+  const originalFetch = globalThis.fetch;
+  const githubQueries = [];
+  globalThis.fetch = async (url) => {
+    const urlText = String(url);
+    if (urlText.includes("turnstile/v0/siteverify")) {
+      return Response.json({
+        success: true,
+        action: "postprep_text",
+        hostname: "senseixiaomisensei-sudo.github.io",
+      });
+    }
+    if (urlText.includes("api.github.com/search/repositories")) {
+      const githubQuery = new URL(urlText).searchParams.get("q");
+      githubQueries.push(githubQuery);
+      assert.match(githubQuery, /stars:>=1000/);
+      assert.doesNotMatch(githubQuery, /stars:>=0/);
+      assert.doesNotMatch(githubQuery, /前端设计/);
+      if (githubQueries.length === 1) {
+        assert.match(githubQuery, /frontend skill/);
+        return Response.json({ items: [] });
+      }
+      assert.match(githubQuery, /agent skills/);
+      return Response.json({
+        items: [{
+          full_name: "public-org/agent-skills",
+          html_url: "https://github.com/public-org/agent-skills",
+          description: "Public agent Skills",
+          stargazers_count: 1200,
+          forks_count: 14,
+          license: { spdx_id: "MIT" },
+          updated_at: "2026-08-01T00:00:00Z",
+          archived: false,
+          fork: false,
+          disabled: false,
+        }],
+      });
+    }
+    throw new Error("The model must not be called when its server secret is absent");
+  };
+
+  try {
+    const response = await onRequest(requestContext({
+      env: {
+        TURNSTILE_SECRET_KEY: "turnstile-secret",
+        POSTPREP_GATEWAY_SECRET: "gateway-secret",
+      },
+      body: {
+        action: "skillSearch",
+        draft: "前端设计",
+        skillCategory: "frontend",
+        minStars: 1000,
+        turnstileToken: "valid-token",
+      },
+      gatewaySecret: "gateway-secret",
+    }));
+    const body = await responseBody(response);
+    assert.equal(response.status, 200);
+    const payload = JSON.parse(body.content);
+    assert.equal(payload.searchMode, "expanded");
+    assert.equal(payload.rankingMode, "public-data");
+    assert.equal(payload.items[0].url, "https://github.com/public-org/agent-skills");
+    assert.equal(githubQueries.length, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("Skill discovery labels invalid AI ranking output as public-data fallback", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
