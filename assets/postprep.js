@@ -28,6 +28,8 @@
         formatter: "排版整理",
         generator: "灵感生成",
         skills: "Skills",
+        trust: "可信发布",
+        passport: "Skill 护照",
         privacy: "隐私",
         language: "EN",
         languageLabel: "切换至 English",
@@ -55,6 +57,10 @@
         formatBody: "清掉多余空行与隐形字符，保留你的原意。",
         generatorTitle: "按平台生成文案",
         generatorBody: "输入一句主题、标题或标签，按平台生成可直接编辑的文案或标签。",
+        trustTitle: "发布可信包",
+        trustBody: "本机整理发布前检查、待确认事项与 AI 使用提醒。",
+        passportTitle: "Skill 权限护照",
+        passportBody: "安装前查看 Skill 的来源、版本与静态风险信号。",
         open: "打开",
         privacyHeading: "文案留在你手边",
         privacyBody: "基础工具只在当前网页中计算和整理文字；云端生成或深度处理只有在部署启用且你主动点击时才发送当前主题或文案。",
@@ -214,6 +220,113 @@
         mcpPromptCopied: "GitHub MCP 核验任务已复制",
         searchFootnote: "正常结果仅显示查询时 GitHub 返回、带可识别许可证的公开候选仓库。若标记为“仅备用源地址”，GitHub 实时元数据不可用，本次未核验星标、许可证或更新时间。使用第三方 Skill 前请自行阅读其 `SKILL.md`、脚本与许可；本站不会复制或自动安装第三方代码。",
       },
+      trust: {
+        eyebrow: "PUBLISH TRUST PACK",
+        title: "发布可信包",
+        intro: "在发布前把格式、来源提醒与 AI 使用声明整理在一起。普通检查只在浏览器完成。",
+        inputEyebrow: "YOUR DRAFT",
+        inputTitle: "准备发布的内容",
+        localBadge: "普通检查仅本机",
+        platformLabel: "发布位置",
+        aiUseLabel: "AI 参与情况",
+        aiUseHint: "这是发布前提醒，不替代平台规则、法律意见或平台审核。",
+        aiNone: "未使用 AI 生成或合成素材",
+        aiAssisted: "AI 仅辅助编辑或构思",
+        aiSynthetic: "含 AI 生成或合成的文本、图片、音频或视频",
+        draftLabel: "发布文案",
+        draftHint: "事实、链接与声明由你最终确认；本机检查不会上传内容。",
+        draftPlaceholder: "粘贴准备发布的正文、标题或说明…",
+        checkEyebrow: "LOCAL PRE-FLIGHT",
+        checkTitle: "发布前检查",
+        empty: "粘贴文案后开始本机检查。",
+        checkCharacters: "{count} 个可见字符 · {lines} 行",
+        checkTags: "整理出 {count} 个可用标签",
+        checkTagDuplicates: "发现 {count} 个重复标签；发布包仅保留首次出现的标签",
+        checkLinks: "检测到 {count} 个公开链接；发布前请逐个打开确认",
+        checkNoLinks: "未检测到公开链接",
+        checkInvisible: "检测到 {count} 个常见隐形字符；建议先用“排版整理”清理",
+        checkBlank: "检测到 {count} 处连续空行；发布前确认段落节奏",
+        checkClaims: "检测到 {count} 处数字、绝对化或效果类表述；建议确认依据",
+        checkNoClaims: "没有匹配到需特别确认的数字或绝对化表述",
+        aiReminderNone: "未选择 AI 生成/合成素材；请按实际创作过程确认。",
+        aiReminderAssisted: "若发布内容含有需要平台标识的合成素材，请在发布页面按实际情况声明。",
+        aiReminderSynthetic: "内容含 AI 生成或合成素材时，请在发布页面使用平台提供的声明或标识功能，并按实际情况确认。",
+        disclaimer: "检查结果用于帮助你整理发布材料，不会验证事实，也不代表平台或监管审核结果。",
+        packLabel: "可复制的发布包",
+        packHint: "包含正文、检查摘要和待确认事项；生成不保存内容。",
+        packPlaceholder: "检查结果会整理为可复制的发布包",
+        packTitle: "发布可信包",
+        packPlatform: "发布位置",
+        packAi: "AI 参与情况",
+        packCheckHeading: "发布前检查",
+        packConfirmHeading: "发布前待确认",
+        packNoConfirm: "未匹配到额外待确认项；仍请自行核对事实、链接与发布页面规则。",
+        deepTitle: "深度编辑建议",
+        deepHint: "仅在你点击后，当前文案才会发送到受保护的服务端代理进行建议。",
+        deepAction: "获取深度建议",
+        deepProcessing: "正在分析…",
+        deepTooLarge: "当前内容过长，仍可使用本机检查；请缩短后再获取深度建议。",
+        deepResultLabel: "EDITORIAL NOTES",
+      },
+      passport: {
+        eyebrow: "SKILL PERMISSION PASSPORT",
+        title: "Skill 权限护照",
+        intro: "安装前先理解它可能触及的命令、网络、环境变量和文件路径。不会执行、安装或下载任何第三方代码。",
+        localTitle: "检查本机 SKILL.md",
+        localBody: "选择一个本机文件，静态检查只在当前浏览器完成，不会上传。",
+        chooseLocal: "选择 SKILL.md",
+        localEmpty: "尚未选择本机文件",
+        localLoading: "正在读取本机 Skill…",
+        localInvalid: "请选择不超过 96 KB 的 Markdown 文件",
+        localReadFailed: "无法读取本机 Skill",
+        localReady: "已在本机完成静态检查",
+        githubTitle: "检查公开 GitHub Skill",
+        githubBody: "仅允许公开 github.com 仓库根目录或固定版本的 Skill 文件夹地址；读取经受保护网关完成。",
+        githubLabel: "GitHub Skill 地址",
+        githubPlaceholder: "https://github.com/owner/repo/tree/commit/skill-folder",
+        githubHint: "不接受任意网址、私有仓库或自动安装请求。",
+        githubAction: "读取公开 Skill",
+        githubReading: "正在读取…",
+        githubInvalid: "请输入公开 github.com 的仓库根目录或 Skill 文件夹地址。",
+        githubNotFound: "未在该公开路径找到 SKILL.md。请粘贴仓库根目录或包含 Skill 的文件夹地址。",
+        githubRateLimited: "GitHub 读取暂时限流，请稍后再试。",
+        githubTooLarge: "该公开 SKILL.md 超过可安全读取的大小上限。",
+        githubUnavailable: "暂时无法读取该公开 GitHub Skill，请稍后再试。",
+        resultEyebrow: "STATIC REVIEW",
+        capabilityTitle: "权限与行为信号",
+        capabilityHint: "只报告文本中的静态信号；不运行命令，也不表示实际执行结果。",
+        scopeTitle: "审查范围",
+        referencesTitle: "声明但未读取的引用",
+        referencesNone: "未在当前 SKILL.md 中识别到 scripts、references 或 assets 路径。",
+        sourceLocal: "本机文件：{name}",
+        sourceGithub: "公开 GitHub：{repository} · {license} · {stars} Stars · 提交 {commit}",
+        scopeLocal: "仅静态读取你选择的一个 SKILL.md；其引用的脚本、参考资料和资源文件未被读取或执行。",
+        scopeGithub: "服务端仅从 GitHub 公共 API 读取指定 SKILL.md 与公开仓库元数据；引用脚本、依赖和资源文件未被读取或执行。",
+        pinLabel: "固定版本地址",
+        copyPin: "复制固定版本地址",
+        pinCopied: "固定版本地址已复制",
+        riskLow: "未发现高风险匹配项",
+        riskReview: "需要人工审阅",
+        riskHigh: "高风险信号",
+        capabilityShell: "Shell 或安装命令",
+        capabilityNetwork: "网络访问或外部域名",
+        capabilityEnvironment: "环境变量或凭证引用",
+        capabilityFiles: "文件系统路径或写入操作",
+        capabilityDynamic: "动态执行或解释器调用",
+        capabilityObfuscation: "隐藏字符或可疑编码载荷",
+        capabilityInjection: "可能的提示注入或指令劫持表述",
+        capabilitySecrets: "疑似硬编码凭证模式",
+        found: "检测到 {count} 处信号",
+        notFound: "未匹配到静态信号",
+        deepTitle: "深度解释风险信号",
+        deepHint: "仅在你点击后，当前 Skill 文本才会发送到受保护的服务端代理。它不会被执行。",
+        deepAction: "获取深度解释",
+        deepProcessing: "正在解释…",
+        deepResultLabel: "REVIEW NOTES",
+        deepTooLong: "当前 Skill 超过深度解释的长度上限；本机静态报告仍可使用。",
+        remoteParseFailed: "公开 Skill 返回格式异常，未显示报告。",
+        disclaimer: "“未发现匹配信号”不等于安全。阅读来源、许可、引用文件和实际脚本后再决定是否安装。",
+      },
       cloud: {
         lengthTitle: "发布建议",
         lengthHint: "根据所选发布位置，给出简短调整方向。",
@@ -250,14 +363,14 @@
         title: "隐私说明",
         intro: "基础工具在浏览器中本地处理；云端生成或深度处理仅在部署启用且你主动点击后调用。",
         localTitle: "基础工具不会上传",
-        localBody: "长度检查、标签整理和排版整理都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。",
+        localBody: "长度检查、标签整理、排版整理、发布可信包和本机 Skill 权限护照都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。",
         cloudTitle: "云端深度处理（按部署配置）",
-        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色或按平台生成后，只会发送当前主题或文案来生成结果；使用 Skills 筛选时，会发送当前查询词、类别和星标门槛。未启用时按钮会提示暂不可用。",
+        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色、发布可信包的深度建议或按平台生成后，只会发送当前主题或文案来生成结果；使用 Skills 筛选时，会发送当前查询词、类别和星标门槛；使用公开 GitHub Skill 权限护照时，只会发送你粘贴的 GitHub 地址并读取对应公开 SKILL.md。未启用时按钮会提示暂不可用。",
         servicesTitle: "静态资源与人机验证",
-        servicesBody: "页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理或 Skills 筛选时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选由服务端查询 GitHub 的公开仓库元数据；为减少公开 API 限流，候选元数据可在服务端内存中短时缓存，缓存键不含中文查询内容。若启用 AI 排序，也只传递该公开元数据。当前公开版本不加载第三方广告脚本。",
+        servicesBody: "页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理、Skills 筛选或公开 GitHub Skill 权限护照时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选与公开 Skill 读取由服务端查询 GitHub 公开 API；为减少公开 API 限流，公开候选或 Skill 元数据可在服务端内存中短时缓存，缓存键不含草稿内容。若启用 AI 排序或深度解释，也只在你主动点击后传递当前文本。当前公开版本不加载第三方广告脚本。",
         turnstilePolicy: "查看 Cloudflare Turnstile 隐私说明",
         adsTitle: "第三方代码",
-        adsBody: "当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile；你主动发起 Skills 筛选时，服务端还会查询 GitHub 公开 API。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。",
+        adsBody: "当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile；你主动发起 Skills 筛选或公开 Skill 护照时，服务端还会查询 GitHub 公开 API。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。",
         controlTitle: "你的选择",
         controlBody: "你可以随时清空输入框、关闭页面或清除浏览器的本地站点数据。只有语言偏好保存在当前浏览器的 localStorage 中。",
         back: "返回首页",
@@ -286,6 +399,8 @@
         formatter: "Formatter",
         generator: "Generator",
         skills: "Skills",
+        trust: "Publish trust",
+        passport: "Skill passport",
         privacy: "Privacy",
         language: "中文",
         languageLabel: "Switch to Chinese",
@@ -313,6 +428,10 @@
         formatBody: "Remove extra blank lines and invisible characters without changing your message.",
         generatorTitle: "Platform copy generator",
         generatorBody: "Start with a topic, title, or tags and generate editable platform-ready copy or hashtags.",
+        trustTitle: "Publish trust pack",
+        trustBody: "Prepare local pre-flight checks, confirmations, and an AI-use reminder.",
+        passportTitle: "Skill permission passport",
+        passportBody: "Review a Skill's source, version, and static risk signals before installing it.",
         open: "Open",
         privacyHeading: "Keep your draft close",
         privacyBody: "Basic tools calculate and clean text in this page; optional generation or deep processing sends the current topic or draft only after you choose it and the deployment enables it.",
@@ -472,6 +591,113 @@
         mcpPromptCopied: "GitHub MCP review task copied",
         searchFootnote: "Normal results show only public candidates returned by GitHub for this search and carrying a recognizable license. If marked as a backup source address, GitHub live metadata was unavailable and stars, license, and update date were not verified for this request. Read each third-party Skill's `SKILL.md`, scripts, and license before use; this site neither copies nor installs third-party code automatically.",
       },
+      trust: {
+        eyebrow: "PUBLISH TRUST PACK",
+        title: "Publish trust pack",
+        intro: "Bring formatting, source reminders, and AI-use disclosure into one final publishing pass. Ordinary checks stay in this browser.",
+        inputEyebrow: "YOUR DRAFT",
+        inputTitle: "Content to publish",
+        localBadge: "Local checks only",
+        platformLabel: "Publishing platform",
+        aiUseLabel: "AI involvement",
+        aiUseHint: "This is a pre-publish reminder, not platform policy, legal advice, or an approval decision.",
+        aiNone: "No AI-generated or synthetic material",
+        aiAssisted: "AI assisted editing or ideation only",
+        aiSynthetic: "Includes AI-generated or synthetic text, image, audio, or video",
+        draftLabel: "Draft to publish",
+        draftHint: "You remain responsible for facts, links, and declarations; local checks do not upload your content.",
+        draftPlaceholder: "Paste the caption, title, or description you plan to publish…",
+        checkEyebrow: "LOCAL PRE-FLIGHT",
+        checkTitle: "Pre-publish checks",
+        empty: "Paste a draft to begin a local check.",
+        checkCharacters: "{count} visible characters · {lines} lines",
+        checkTags: "Prepared {count} usable hashtags",
+        checkTagDuplicates: "Found {count} duplicate hashtags; the pack keeps first appearances only",
+        checkLinks: "Found {count} public link(s); open and confirm each before publishing",
+        checkNoLinks: "No public links were detected",
+        checkInvisible: "Found {count} common invisible character(s); use Formatter before publishing",
+        checkBlank: "Found {count} runs of blank lines; confirm the paragraph rhythm",
+        checkClaims: "Found {count} numeric, absolute, or outcome-style statement(s); confirm their basis",
+        checkNoClaims: "No numeric or absolute statement patterns were matched",
+        aiReminderNone: "No AI-generated or synthetic material was selected. Confirm this matches the real creation process.",
+        aiReminderAssisted: "If the published material includes synthetic content that a platform asks you to mark, declare it in the publishing flow.",
+        aiReminderSynthetic: "For AI-generated or synthetic material, use the platform's available declaration or labeling flow as appropriate before publishing.",
+        disclaimer: "This helps organize publishing materials. It does not verify facts or represent a platform or regulatory review.",
+        packLabel: "Ready-to-copy publish pack",
+        packHint: "Includes the draft, check summary, and reminders. Generating it does not save content.",
+        packPlaceholder: "The local check will prepare a ready-to-copy publish pack",
+        packTitle: "Publish trust pack",
+        packPlatform: "Publishing platform",
+        packAi: "AI involvement",
+        packCheckHeading: "Pre-publish checks",
+        packConfirmHeading: "Confirm before publishing",
+        packNoConfirm: "No extra confirmation pattern was matched. Still confirm facts, links, and the platform's publishing rules.",
+        deepTitle: "Deep editorial notes",
+        deepHint: "Only after you choose this action is the current draft sent to the protected server-side proxy for suggestions.",
+        deepAction: "Get editorial notes",
+        deepProcessing: "Reviewing…",
+        deepTooLarge: "This content is too long for deep notes. The local checks remain available; shorten it and try again.",
+        deepResultLabel: "EDITORIAL NOTES",
+      },
+      passport: {
+        eyebrow: "SKILL PERMISSION PASSPORT",
+        title: "Skill permission passport",
+        intro: "Understand the commands, network access, environment variables, and file paths a Skill may touch before installation. No third-party code is run, installed, or downloaded.",
+        localTitle: "Check a local SKILL.md",
+        localBody: "Choose a local file. The static check runs only in this browser and does not upload it.",
+        chooseLocal: "Choose SKILL.md",
+        localEmpty: "No local file selected",
+        localLoading: "Reading local Skill…",
+        localInvalid: "Choose a Markdown file no larger than 96 KB",
+        localReadFailed: "This local Skill could not be read",
+        localReady: "Local static check completed",
+        githubTitle: "Check a public GitHub Skill",
+        githubBody: "Only a public github.com repository root or a pinned Skill folder URL is accepted; reading uses the protected gateway.",
+        githubLabel: "GitHub Skill address",
+        githubPlaceholder: "https://github.com/owner/repo/tree/commit/skill-folder",
+        githubHint: "Arbitrary URLs, private repositories, and automatic installation requests are not accepted.",
+        githubAction: "Read public Skill",
+        githubReading: "Reading…",
+        githubInvalid: "Enter a public github.com repository root or Skill folder address.",
+        githubNotFound: "No SKILL.md was found at this public path. Use a repository root or the folder containing the Skill.",
+        githubRateLimited: "GitHub reading is temporarily rate limited. Please try again later.",
+        githubTooLarge: "This public SKILL.md exceeds the safe reading size limit.",
+        githubUnavailable: "This public GitHub Skill is temporarily unavailable. Please try again later.",
+        resultEyebrow: "STATIC REVIEW",
+        capabilityTitle: "Capability and behavior signals",
+        capabilityHint: "Only static text signals are reported. No command is run, and a signal does not prove real execution.",
+        scopeTitle: "Review scope",
+        referencesTitle: "Declared but unread references",
+        referencesNone: "No scripts, references, or assets paths were identified in the current SKILL.md.",
+        sourceLocal: "Local file: {name}",
+        sourceGithub: "Public GitHub: {repository} · {license} · {stars} stars · commit {commit}",
+        scopeLocal: "Only one SKILL.md you selected was statically read. Referenced scripts, references, and assets were not read or executed.",
+        scopeGithub: "The server read only the specified public SKILL.md and public GitHub metadata. Referenced scripts, dependencies, and assets were not read or executed.",
+        pinLabel: "Pinned version address",
+        copyPin: "Copy pinned version address",
+        pinCopied: "Pinned version address copied",
+        riskLow: "No high-risk pattern matched",
+        riskReview: "Human review needed",
+        riskHigh: "High-risk signal",
+        capabilityShell: "Shell or installation commands",
+        capabilityNetwork: "Network access or external domains",
+        capabilityEnvironment: "Environment variables or credential references",
+        capabilityFiles: "Filesystem paths or write operations",
+        capabilityDynamic: "Dynamic execution or interpreter calls",
+        capabilityObfuscation: "Hidden characters or suspicious encoded payloads",
+        capabilityInjection: "Possible prompt injection or instruction-hijacking wording",
+        capabilitySecrets: "Possible hard-coded credential pattern",
+        found: "{count} signal(s) matched",
+        notFound: "No static signal matched",
+        deepTitle: "Explain risk signals",
+        deepHint: "Only after you choose this action is the current Skill text sent to the protected server-side proxy. It is never executed.",
+        deepAction: "Explain findings",
+        deepProcessing: "Explaining…",
+        deepResultLabel: "REVIEW NOTES",
+        deepTooLong: "This Skill exceeds the deep-explanation length limit. Its local static report remains available.",
+        remoteParseFailed: "The public Skill response had an unexpected format, so no report was shown.",
+        disclaimer: "“No matching signal” does not mean safe. Read the source, license, referenced files, and actual scripts before installing.",
+      },
       cloud: {
         lengthTitle: "Publishing suggestion",
         lengthHint: "Get a short adjustment direction for the selected publishing field.",
@@ -508,14 +734,14 @@
         title: "Privacy",
         intro: "Basic tools run in this browser; optional generation or deep processing is available only when the deployment enables it and you choose it.",
         localTitle: "Basic tools stay local",
-        localBody: "Length checking, hashtag cleaning, and caption formatting run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
+        localBody: "Length checking, hashtag cleaning, caption formatting, the publish trust pack, and a local Skill permission passport run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
         cloudTitle: "Optional deep processing",
-        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, or platform generation, only the current topic or draft is sent for a result. Skills discovery sends only the current query, category, and star threshold. Otherwise the button reports that the feature is unavailable.",
+        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, publish-trust editorial notes, or platform generation, only the current topic or draft is sent for a result. Skills discovery sends only the current query, category, and star threshold. A public GitHub Skill passport sends only the GitHub address you paste and reads the matching public SKILL.md. Otherwise the button reports that the feature is unavailable.",
         servicesTitle: "Static resources and verification",
-        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site. When you choose cloud generation, deep processing, or Skills discovery, the browser requests a one-time verification token from Cloudflare Turnstile. Skills discovery queries GitHub's public repository metadata server-side; candidate metadata may be kept briefly in server memory to reduce public API rate limits, and cache keys contain no Chinese query content. If AI ranking is enabled, only that public metadata is passed to it. The current public build does not load third-party advertising scripts.",
+        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site. When you choose cloud generation, deep processing, Skills discovery, or a public GitHub Skill passport, the browser requests a one-time verification token from Cloudflare Turnstile. Skills discovery and public Skill reading query GitHub's public API server-side; public candidate or Skill metadata may be kept briefly in server memory to reduce rate limits, and cache keys do not include draft content. If AI ranking or deep explanation is enabled, the current text is sent only after you choose that action. The current public build does not load third-party advertising scripts.",
         turnstilePolicy: "View Cloudflare's Turnstile privacy notice",
         adsTitle: "Third-party code",
-        adsBody: "The current public build does not load advertising, analytics, or arbitrary third-party scripts. Cloud processing contacts only the configured server-side proxy and Cloudflare Turnstile; when you start Skills discovery, the server also queries GitHub's public API. Any future third-party service must be reviewed and documented before it is enabled.",
+        adsBody: "The current public build does not load advertising, analytics, or arbitrary third-party scripts. Cloud processing contacts only the configured server-side proxy and Cloudflare Turnstile; when you start Skills discovery or a public Skill passport, the server also queries GitHub's public API. Any future third-party service must be reviewed and documented before it is enabled.",
         controlTitle: "Your control",
         controlBody: "You can clear any input, close the page, or erase local site data at any time. Only your language preference is stored in this browser's localStorage.",
         back: "Back to home",
@@ -788,7 +1014,9 @@
       { id: "hashtags", href: "hashtag-cleaner.html", label: "shared.hashtags" },
       { id: "formatter", href: "caption-formatter.html", label: "shared.formatter" },
       { id: "generator", href: "idea-generator.html", label: "shared.generator" },
+      { id: "trust", href: "publish-trust.html", label: "shared.trust" },
       { id: "skills", href: "skills.html", label: "shared.skills" },
+      { id: "passport", href: "skill-passport.html", label: "shared.passport" },
     ];
 
     const linkMarkup = links.map((link) => {
@@ -2131,6 +2359,550 @@
     updateSelection();
   }
 
+  function rawHashtagTokens(value) {
+    return String(value || "")
+      .replace(/[#＃]/gu, " #")
+      .split(/[\s,，;；|、]+/u)
+      .map(normalizeHashtag)
+      .filter(Boolean);
+  }
+
+  function collectPublicLinks(value) {
+    const links = [];
+    const seen = new Set();
+    const candidates = String(value || "").match(/https?:\/\/[^\s<>"'`）】]+/giu) || [];
+    candidates.forEach((candidate) => {
+      const cleaned = candidate.replace(/[.,，。!！?？:：;；]+$/u, "");
+      try {
+        const parsed = new URL(cleaned);
+        if (!/^https?:$/u.test(parsed.protocol) || seen.has(parsed.href)) return;
+        seen.add(parsed.href);
+        links.push(parsed.href);
+      } catch {
+        // A malformed URL is not counted as a public link.
+      }
+    });
+    return links;
+  }
+
+  function countPatternMatches(value, pattern) {
+    const matches = String(value || "").match(pattern);
+    return matches ? matches.length : 0;
+  }
+
+  function publishClaimSignalCount(value) {
+    const numeric = countPatternMatches(value, /(?:\d+(?:[.,]\d+)?\s?(?:%|倍|万|亿|元|天|小时|分钟|项|人|个|年)|\b\d+(?:\.\d+)?%\b)/gu);
+    const absolute = countPatternMatches(value, /(?:第一|唯一|最好|最强|保证|永久|零风险|百分之百|100%|官方认证|权威|治愈|必然|永远|all|best|only|guarantee|risk[- ]?free)/giu);
+    return Math.min(12, numeric + absolute);
+  }
+
+  function consecutiveBlankRuns(value) {
+    return countPatternMatches(value, /\n[\t ]*\n[\t ]*(?:\n[\t ]*)+/gu);
+  }
+
+  function publishAiUseLabel(value) {
+    if (value === "synthetic") return t("trust.aiSynthetic");
+    if (value === "assisted") return t("trust.aiAssisted");
+    return t("trust.aiNone");
+  }
+
+  function publishAiReminder(value) {
+    if (value === "synthetic") return t("trust.aiReminderSynthetic");
+    if (value === "assisted") return t("trust.aiReminderAssisted");
+    return t("trust.aiReminderNone");
+  }
+
+  function localPublishTrustReport(value, aiUse) {
+    const draft = String(value || "");
+    const rawTags = rawHashtagTokens(draft);
+    const tags = cleanHashtags(draft);
+    const duplicateTags = Math.max(0, rawTags.length - tags.length);
+    const links = collectPublicLinks(draft);
+    const invisible = countInvisibleCharacters(draft);
+    const blankRuns = consecutiveBlankRuns(draft);
+    const claimSignals = publishClaimSignalCount(draft);
+    const checks = [];
+    const confirmations = [];
+
+    checks.push({
+      tone: "info",
+      text: interpolate(t("trust.checkCharacters"), {
+        count: countVisibleCharacters(draft),
+        lines: countLines(draft),
+      }),
+    });
+    checks.push({ tone: tags.length ? "good" : "info", text: interpolate(t("trust.checkTags"), { count: tags.length }) });
+    if (duplicateTags) {
+      const text = interpolate(t("trust.checkTagDuplicates"), { count: duplicateTags });
+      checks.push({ tone: "review", text });
+      confirmations.push(text);
+    }
+    if (links.length) {
+      const text = interpolate(t("trust.checkLinks"), { count: links.length });
+      checks.push({ tone: "review", text });
+      confirmations.push(text);
+    } else {
+      checks.push({ tone: "info", text: t("trust.checkNoLinks") });
+    }
+    if (invisible) {
+      const text = interpolate(t("trust.checkInvisible"), { count: invisible });
+      checks.push({ tone: "review", text });
+      confirmations.push(text);
+    }
+    if (blankRuns) {
+      const text = interpolate(t("trust.checkBlank"), { count: blankRuns });
+      checks.push({ tone: "review", text });
+      confirmations.push(text);
+    }
+    if (claimSignals) {
+      const text = interpolate(t("trust.checkClaims"), { count: claimSignals });
+      checks.push({ tone: "review", text });
+      confirmations.push(text);
+    } else {
+      checks.push({ tone: "good", text: t("trust.checkNoClaims") });
+    }
+    const aiReminder = publishAiReminder(aiUse);
+    checks.push({ tone: aiUse === "synthetic" ? "review" : "info", text: aiReminder });
+    if (aiUse !== "none") confirmations.push(aiReminder);
+
+    return {
+      tags,
+      links,
+      checks,
+      confirmations,
+    };
+  }
+
+  function trustToneIcon(tone) {
+    if (tone === "good") return "fa-circle-check text-brand";
+    if (tone === "review") return "fa-circle-exclamation text-amber-700";
+    return "fa-circle-info text-sky-700";
+  }
+
+  function renderTrustChecks(list, checks) {
+    if (!list) return;
+    list.replaceChildren();
+    checks.forEach((check) => {
+      const item = document.createElement("li");
+      item.className = "flex gap-3 py-3 text-sm leading-6 text-ink";
+      const icon = createIcon(trustToneIcon(check.tone));
+      icon.classList.add("mt-1");
+      const text = document.createElement("span");
+      text.textContent = check.text;
+      item.append(icon, text);
+      list.append(item);
+    });
+  }
+
+  function publishTrustPack(draft, preset, aiUse, report) {
+    const checkLines = report.checks.map((check) => "- " + check.text).join("\n");
+    const confirmations = report.confirmations.length
+      ? report.confirmations.map((item) => "- " + item).join("\n")
+      : "- " + t("trust.packNoConfirm");
+    return [
+      t("trust.packTitle"),
+      t("trust.packPlatform") + "：" + t(preset.labelKey),
+      t("trust.packAi") + "：" + publishAiUseLabel(aiUse),
+      "",
+      draft,
+      "",
+      t("trust.packCheckHeading"),
+      checkLines,
+      "",
+      t("trust.packConfirmHeading"),
+      confirmations,
+    ].join("\n").trim();
+  }
+
+  function initPublishTrust() {
+    const input = document.getElementById("trust-input");
+    if (!input) return;
+
+    const platformList = document.getElementById("trust-platform-list");
+    const aiUse = document.getElementById("trust-ai-use");
+    const status = document.getElementById("trust-status");
+    const checkList = document.getElementById("trust-check-list");
+    const pack = document.getElementById("trust-pack");
+    const clear = document.getElementById("trust-clear");
+    const deepAction = document.getElementById("trust-deep-action");
+    const deepActionLabel = document.getElementById("trust-deep-action-label");
+    const deepResult = document.getElementById("trust-deep-result");
+    const deepOutput = document.getElementById("trust-deep-output");
+    let selectedPresetId = PLATFORM_PRESETS[0].id;
+
+    function selectedPreset() {
+      return PLATFORM_PRESETS.find((preset) => preset.id === selectedPresetId) || PLATFORM_PRESETS[0];
+    }
+
+    function clearDeepResult() {
+      if (!deepResult || !deepOutput) return;
+      deepResult.hidden = true;
+      deepOutput.textContent = "";
+    }
+
+    function renderPlatformButtons() {
+      if (!platformList) return;
+      platformList.replaceChildren();
+      PLATFORM_PRESETS.forEach((preset) => {
+        const selected = preset.id === selectedPresetId;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "inline-flex min-h-10 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 " + (selected
+          ? "border-brand bg-brand text-white shadow-sm"
+          : "border-zinc-200 bg-white text-ink hover:border-brand hover:bg-teal-50");
+        button.setAttribute("aria-pressed", String(selected));
+        button.append(createIcon(preset.icon), document.createTextNode(t(preset.labelKey)));
+        button.addEventListener("click", () => {
+          selectedPresetId = preset.id;
+          clearDeepResult();
+          renderPlatformButtons();
+          update();
+        });
+        platformList.append(button);
+      });
+    }
+
+    function update() {
+      const draft = input.value;
+      if (!draft.trim()) {
+        if (status) status.textContent = t("trust.empty");
+        renderTrustChecks(checkList, []);
+        if (pack) pack.value = "";
+        return;
+      }
+      const report = localPublishTrustReport(draft, aiUse ? aiUse.value : "none");
+      if (status) status.textContent = t("trust.localBadge");
+      renderTrustChecks(checkList, report.checks);
+      if (pack) {
+        pack.value = publishTrustPack(draft, selectedPreset(), aiUse ? aiUse.value : "none", report);
+        animateChanged(pack, pack.value);
+      }
+    }
+
+    function setDeepBusy(busy) {
+      setCloudBusy(deepAction, busy);
+      if (deepActionLabel) deepActionLabel.textContent = busy ? t("trust.deepProcessing") : t("trust.deepAction");
+    }
+
+    input.addEventListener("input", () => {
+      clearDeepResult();
+      update();
+    });
+    if (aiUse) aiUse.addEventListener("change", () => {
+      clearDeepResult();
+      update();
+    });
+    if (clear) clear.addEventListener("click", () => {
+      input.value = "";
+      clearDeepResult();
+      update();
+      input.focus();
+    });
+    if (deepAction && deepResult && deepOutput) {
+      deepAction.addEventListener("click", async () => {
+        const draft = input.value.trim();
+        if (!draft) {
+          showToast(t("cloud.empty"));
+          input.focus();
+          return;
+        }
+        if (!fitsExplicitCloudTextLimit(draft)) {
+          showToast(t("trust.deepTooLarge"));
+          return;
+        }
+        setDeepBusy(true);
+        try {
+          const content = await requestCloudText("publishTrust", draft, {
+            platform: selectedPresetId,
+            aiUse: aiUse ? aiUse.value : "none",
+          });
+          deepOutput.textContent = content;
+          deepResult.hidden = false;
+          animateChanged(deepOutput, content);
+        } catch (error) {
+          showToast(cloudErrorMessage(error));
+        } finally {
+          setDeepBusy(false);
+        }
+      });
+    }
+    document.addEventListener("postprep:languagechange", () => {
+      renderPlatformButtons();
+      setDeepBusy(Boolean(deepAction && deepAction.disabled));
+      update();
+    });
+
+    renderPlatformButtons();
+    update();
+  }
+
+  const SKILL_PASSPORT_DEEP_CHAR_LIMIT = 16000;
+  const MAX_EXPLICIT_CLOUD_TEXT_BYTES = 20000;
+
+  function fitsExplicitCloudTextLimit(value) {
+    return new TextEncoder().encode(String(value || "")).byteLength <= MAX_EXPLICIT_CLOUD_TEXT_BYTES;
+  }
+
+  function skillFrontmatter(value) {
+    const source = String(value || "").replace(/\r\n?/gu, "\n");
+    const match = source.match(/^---\n([\s\S]{0,8192}?)\n---(?:\n|$)/u);
+    const frontmatter = match ? match[1] : "";
+    function field(name) {
+      const found = frontmatter.match(new RegExp("^" + name + "\\s*:\\s*(.+)$", "mi"));
+      return found ? found[1].replace(/^['"]|['"]$/gu, "").trim().slice(0, 240) : "";
+    }
+    return {
+      name: field("name"),
+      description: field("description"),
+    };
+  }
+
+  function staticSkillReferencePaths(value) {
+    const matches = String(value || "").match(/(?:scripts|references|assets)\/(?:[A-Za-z0-9_.-]+\/)*[A-Za-z0-9_.-]+/gu) || [];
+    return [...new Set(matches.map((item) => item.slice(0, 240)))].slice(0, 12);
+  }
+
+  function skillStaticCapabilityReport(value, source) {
+    const text = String(value || "");
+    const invisible = countInvisibleCharacters(text);
+    const encoded = countPatternMatches(text, /(?:[A-Za-z0-9+/]{80,}={0,2})/gu);
+    const patterns = [
+      ["shell", /\b(?:curl|wget|invoke-webrequest|invoke-restmethod|npm\s+(?:install|exec|run)|npx|pip(?:3)?\s+install|git\s+clone|bash|zsh|sh|powershell(?:\.exe)?|cmd(?:\.exe)?|chmod)\b/giu],
+      ["network", /(?:https?:\/\/|\bfetch\s*\(|\baxios\b|\bwebsocket\b|\brequests\.(?:get|post)\b)/giu],
+      ["environment", /(?:process\.env\.|os\.getenv\s*\(|\$\{?[A-Z][A-Z0-9_]{2,}\}?|\b(?:API|ACCESS|SECRET|TOKEN|PASSWORD)[A-Z0-9_]*\b)/gu],
+      ["files", /(?:~\/(?:\.ssh|\.aws)|%USERPROFILE%|\/etc\/|[A-Za-z]:\\(?:Users|Windows)|\b(?:rm\s+-rf|remove-item|del\s+|rmdir\s+|move-item|copy-item|writefile)\b|\b(?:\.env|id_rsa)\b)/giu],
+      ["dynamic", /\b(?:eval|exec|function\s*\(|child_process|subprocess|invoke-expression|\biex\b|fromcharcode|atob|base64|node\s+-e|python(?:3)?\s+-c)\b/giu],
+      ["injection", /(?:\bignore\s+(?:all\s+|any\s+)?(?:previous|earlier|above)\b|\bsystem prompt\b|\bdeveloper message\b|\breveal\s+(?:the\s+)?(?:prompt|instructions)\b|\bdo not tell\s+(?:the\s+)?user\b|\bpriority instruction\b|\bjailbreak\b|忽略(?:之前|以上|此前|所有)指令|系统提示词|开发者消息|泄露(?:提示词|指令)|不要告诉(?:用户|任何人))/giu],
+      ["secrets", /(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----)/gu],
+    ];
+    const counts = Object.fromEntries(patterns.map(([key, pattern]) => [key, countPatternMatches(text, pattern)]));
+    counts.obfuscation = invisible + encoded;
+    const capabilityKeys = ["shell", "network", "environment", "files", "dynamic", "obfuscation", "injection", "secrets"];
+    const capabilities = capabilityKeys.map((key) => ({
+      key,
+      count: Number(counts[key]) || 0,
+      label: t("passport.capability" + key.slice(0, 1).toUpperCase() + key.slice(1)),
+    }));
+    const high = counts.secrets > 0 || counts.injection > 0;
+    const review = high || capabilities.some((item) => item.count > 0);
+    return {
+      source: source || {},
+      frontmatter: skillFrontmatter(text),
+      content: text,
+      references: staticSkillReferencePaths(text),
+      capabilities,
+      risk: high ? "high" : review ? "review" : "low",
+    };
+  }
+
+  function passportRiskPresentation(risk) {
+    if (risk === "high") return { text: t("passport.riskHigh"), classes: "bg-rose-50 text-rose-800 ring-1 ring-rose-200" };
+    if (risk === "review") return { text: t("passport.riskReview"), classes: "bg-amber-50 text-amber-800 ring-1 ring-amber-200" };
+    return { text: t("passport.riskLow"), classes: "bg-teal-50 text-brand ring-1 ring-teal-100" };
+  }
+
+  function passportCapabilityIcon(key, hasFinding) {
+    if (!hasFinding) return "fa-circle-check text-brand";
+    if (["injection", "secrets"].includes(key)) return "fa-triangle-exclamation text-rose-700";
+    return "fa-circle-exclamation text-amber-700";
+  }
+
+  function renderSkillPassport(report, elements) {
+    if (!report || !elements) return;
+    const source = report.source || {};
+    const displayName = report.frontmatter.name || source.repository || source.filename || "SKILL.md";
+    elements.name.textContent = displayName;
+    if (source.kind === "github") {
+      elements.source.textContent = interpolate(t("passport.sourceGithub"), {
+        repository: source.repository || "github.com",
+        license: source.license || "—",
+        stars: formatPublicNumber(source.stars),
+        commit: source.commitSha ? source.commitSha.slice(0, 12) : "—",
+      });
+    } else {
+      elements.source.textContent = interpolate(t("passport.sourceLocal"), { name: source.filename || "SKILL.md" });
+    }
+    const risk = passportRiskPresentation(report.risk);
+    elements.risk.className = "rounded-full px-3 py-1 text-xs font-bold " + risk.classes;
+    elements.risk.textContent = risk.text;
+    elements.capabilities.replaceChildren();
+    report.capabilities.forEach((capability) => {
+      const item = document.createElement("li");
+      item.className = "flex items-start justify-between gap-4 py-3 text-sm";
+      const heading = document.createElement("div");
+      heading.className = "flex min-w-0 gap-3";
+      const icon = createIcon(passportCapabilityIcon(capability.key, capability.count > 0));
+      icon.classList.add("mt-1");
+      const body = document.createElement("div");
+      const title = document.createElement("p");
+      title.className = "font-bold text-ink";
+      title.textContent = t("passport.capability" + capability.key.slice(0, 1).toUpperCase() + capability.key.slice(1));
+      const detail = document.createElement("p");
+      detail.className = "mt-1 text-xs leading-5 text-muted";
+      detail.textContent = capability.count
+        ? interpolate(t("passport.found"), { count: capability.count })
+        : t("passport.notFound");
+      body.append(title, detail);
+      heading.append(icon, body);
+      item.append(heading);
+      elements.capabilities.append(item);
+    });
+    elements.scope.textContent = source.kind === "github" ? t("passport.scopeGithub") : t("passport.scopeLocal");
+    elements.references.replaceChildren();
+    if (report.references.length) {
+      report.references.forEach((reference) => {
+        const item = document.createElement("li");
+        item.className = "break-all py-2 font-mono text-xs leading-6 text-ink";
+        item.textContent = reference;
+        elements.references.append(item);
+      });
+    } else {
+      const item = document.createElement("li");
+      item.className = "py-3 text-sm leading-6 text-muted";
+      item.textContent = t("passport.referencesNone");
+      elements.references.append(item);
+    }
+    if (source.pinnedUrl) {
+      elements.pinWrap.hidden = false;
+      elements.pin.value = source.pinnedUrl;
+    } else {
+      elements.pinWrap.hidden = true;
+      elements.pin.value = "";
+    }
+    elements.result.hidden = false;
+  }
+
+  function passportErrorMessage(error) {
+    if (error && error.code === "INVALID_GITHUB_SKILL_URL") return t("passport.githubInvalid");
+    if (error && error.code === "GITHUB_SKILL_NOT_FOUND") return t("passport.githubNotFound");
+    if (error && error.code === "GITHUB_SKILL_RATE_LIMITED") return t("passport.githubRateLimited");
+    if (error && error.code === "GITHUB_SKILL_TOO_LARGE") return t("passport.githubTooLarge");
+    if (error && ["GITHUB_SKILL_UNAVAILABLE", "GITHUB_SKILL_TIMEOUT"].includes(error.code)) return t("passport.githubUnavailable");
+    return cloudErrorMessage(error);
+  }
+
+  function initSkillPassport() {
+    const localInput = document.getElementById("passport-local-file");
+    if (!localInput) return;
+    const elements = {
+      result: document.getElementById("passport-result"),
+      name: document.getElementById("passport-result-name"),
+      source: document.getElementById("passport-result-source"),
+      risk: document.getElementById("passport-risk-badge"),
+      capabilities: document.getElementById("passport-capabilities"),
+      scope: document.getElementById("passport-scope"),
+      references: document.getElementById("passport-references"),
+      pinWrap: document.getElementById("passport-pin-wrap"),
+      pin: document.getElementById("passport-pin"),
+    };
+    const localStatus = document.getElementById("passport-local-status");
+    const githubUrl = document.getElementById("passport-github-url");
+    const githubAction = document.getElementById("passport-github-inspect");
+    const githubLabel = document.getElementById("passport-github-inspect-label");
+    const copyPin = document.getElementById("passport-copy-pin");
+    const deepAction = document.getElementById("passport-deep-action");
+    const deepLabel = document.getElementById("passport-deep-action-label");
+    const deepResult = document.getElementById("passport-deep-result");
+    const deepOutput = document.getElementById("passport-deep-output");
+    let currentReport = null;
+
+    function clearDeepResult() {
+      if (!deepResult || !deepOutput) return;
+      deepResult.hidden = true;
+      deepOutput.textContent = "";
+    }
+
+    function setGithubBusy(busy) {
+      setCloudBusy(githubAction, busy);
+      if (githubLabel) githubLabel.textContent = busy ? t("passport.githubReading") : t("passport.githubAction");
+    }
+
+    function setDeepBusy(busy) {
+      setCloudBusy(deepAction, busy);
+      if (deepLabel) deepLabel.textContent = busy ? t("passport.deepProcessing") : t("passport.deepAction");
+    }
+
+    function showReport(content, source) {
+      currentReport = skillStaticCapabilityReport(content, source);
+      clearDeepResult();
+      renderSkillPassport(currentReport, elements);
+    }
+
+    localInput.addEventListener("change", () => {
+      const file = localInput.files && localInput.files[0];
+      if (!file) return;
+      if (!/\.md$/iu.test(file.name) || file.size > MAX_LOCAL_SKILL_BYTES) {
+        if (localStatus) localStatus.textContent = t("passport.localInvalid");
+        return;
+      }
+      if (localStatus) localStatus.textContent = t("passport.localLoading");
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== "string") {
+          if (localStatus) localStatus.textContent = t("passport.localReadFailed");
+          return;
+        }
+        showReport(reader.result, { kind: "local", filename: file.name });
+        if (localStatus) localStatus.textContent = file.name + " · " + t("passport.localReady");
+      };
+      reader.onerror = () => {
+        if (localStatus) localStatus.textContent = t("passport.localReadFailed");
+      };
+      reader.readAsText(file);
+    });
+
+    if (githubAction && githubUrl) {
+      githubAction.addEventListener("click", async () => {
+        const address = githubUrl.value.trim();
+        if (!address) {
+          showToast(t("passport.githubInvalid"));
+          githubUrl.focus();
+          return;
+        }
+        setGithubBusy(true);
+        try {
+          const response = await requestCloudText("skillPassport", address);
+          const payload = JSON.parse(response);
+          if (!payload || typeof payload.content !== "string" || !payload.source || payload.source.kind !== "github") {
+            throw Object.assign(new Error("Invalid public Skill payload"), { code: "GITHUB_SKILL_INVALID_RESPONSE" });
+          }
+          showReport(payload.content, payload.source);
+        } catch (error) {
+          showToast(error && error.code === "GITHUB_SKILL_INVALID_RESPONSE" ? t("passport.remoteParseFailed") : passportErrorMessage(error));
+        } finally {
+          setGithubBusy(false);
+        }
+      });
+    }
+
+    if (copyPin) copyPin.addEventListener("click", () => copyText(elements.pin.value, t("passport.pinCopied")));
+    if (deepAction && deepResult && deepOutput) {
+      deepAction.addEventListener("click", async () => {
+        if (!currentReport || !currentReport.content) return;
+        if (currentReport.content.length > SKILL_PASSPORT_DEEP_CHAR_LIMIT || !fitsExplicitCloudTextLimit(currentReport.content)) {
+          showToast(t("passport.deepTooLong"));
+          return;
+        }
+        setDeepBusy(true);
+        try {
+          const content = await requestCloudText("skillPassportExplain", currentReport.content);
+          deepOutput.textContent = content;
+          deepResult.hidden = false;
+          animateChanged(deepOutput, content);
+        } catch (error) {
+          showToast(cloudErrorMessage(error));
+        } finally {
+          setDeepBusy(false);
+        }
+      });
+    }
+    document.addEventListener("postprep:languagechange", () => {
+      setGithubBusy(Boolean(githubAction && githubAction.disabled));
+      setDeepBusy(Boolean(deepAction && deepAction.disabled));
+      if (currentReport) renderSkillPassport(currentReport, elements);
+    });
+  }
+
   globalThis.PostPrep = Object.freeze({
     PLATFORM_PRESETS,
     countVisibleCharacters,
@@ -2138,6 +2910,8 @@
     countLines,
     cleanHashtags,
     formatCaption,
+    localPublishTrustReport,
+    skillStaticCapabilityReport,
   });
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -2147,5 +2921,7 @@
     initFormatter();
     initGenerator();
     initSkillsHub();
+    initPublishTrust();
+    initSkillPassport();
   });
 })();

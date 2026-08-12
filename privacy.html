@@ -21,20 +21,20 @@
     <div class="divide-y divide-line">
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.localTitle">基础工具不会上传</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.localBody">长度检查、标签整理和排版整理都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。</p>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.localBody">长度检查、标签整理、排版整理、发布可信包和本机 Skill 权限护照都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。</p>
       </section>
       <section id="cloud" class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.cloudTitle">云端深度处理（按部署配置）</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.cloudBody">基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理或深度润色后，只会发送当前文案来生成结果；未启用时按钮会提示暂不可用。</p>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.cloudBody">基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色、发布可信包的深度建议或按平台生成后，只会发送当前主题或文案来生成结果；使用公开 GitHub Skill 权限护照时，只会发送你粘贴的 GitHub 地址并读取对应公开 SKILL.md。未启用时按钮会提示暂不可用。</p>
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.servicesTitle">静态资源与人机验证</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理或 Skills 筛选时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选由服务端查询 GitHub 的公开仓库元数据；为减少公开 API 限流，候选元数据可在服务端内存中短时缓存，缓存键不含中文查询内容。若启用 AI 排序，也只传递该公开元数据。当前公开版本不加载第三方广告脚本。</p>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理、Skills 筛选或公开 GitHub Skill 权限护照时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选与公开 Skill 读取由服务端查询 GitHub 公开 API；为减少公开 API 限流，公开候选或 Skill 元数据可在服务端内存中短时缓存，缓存键不含草稿内容。若启用 AI 排序或深度解释，也只在你主动点击后传递当前文本。当前公开版本不加载第三方广告脚本。</p>
         <a class="mt-3 inline-block text-sm font-semibold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark" href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener noreferrer" data-i18n="privacy.turnstilePolicy">查看 Cloudflare Turnstile 隐私说明</a>
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.adsTitle">第三方代码</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.adsBody">当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。</p>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.adsBody">当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile；你主动发起 Skills 筛选或公开 Skill 护照时，服务端还会查询 GitHub 公开 API。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。</p>
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.controlTitle">你的选择</h2>
@@ -46,6 +46,6 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js"></script>
-  <script src="assets/postprep.js?v=20260812-skills-reliable-search-v2"></script>
+  <script src="assets/postprep.js?v=20260812-trust-passport"></script>
 </body>
 </html>

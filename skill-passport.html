@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; form-action 'self'">
+  <meta name="description" content="PostPrep Skill 权限护照：在安装前用本机静态检查或受限 GitHub 公共读取理解 Skill 的来源和风险信号。">
+  <meta name="theme-color" content="#0F766E">
+  <title>Skill 权限护照 | PostPrep</title>
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
+  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260812-trust-passport">
+  <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260812-trust-passport">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="passport" data-title-key="passport.title">
+  <div id="site-header"></div>
+
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="max-w-3xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="passport.eyebrow">SKILL PERMISSION PASSPORT</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="passport.title">Skill 权限护照</h1>
+      <p class="mt-3 text-base leading-7 text-muted" data-i18n="passport.intro">安装前先理解它可能触及的命令、网络、环境变量和文件路径。不会执行、安装或下载任何第三方代码。</p>
+    </header>
+
+    <section class="mt-10 grid gap-6 lg:grid-cols-2" aria-labelledby="passport-source-heading">
+      <article class="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-brand" aria-hidden="true"><i class="fa-solid fa-laptop-file"></i></div>
+        <h2 id="passport-source-heading" class="mt-5 text-xl font-black" data-i18n="passport.localTitle">检查本机 SKILL.md</h2>
+        <p class="mt-2 text-sm leading-7 text-muted" data-i18n="passport.localBody">选择一个本机文件，静态检查只在当前浏览器完成，不会上传。</p>
+        <label for="passport-local-file" class="mt-5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-brand bg-white px-4 py-3 text-sm font-bold text-brand transition hover:bg-teal-50 focus-within:ring-2 focus-within:ring-brand focus-within:ring-offset-2"><i class="fa-solid fa-folder-open" aria-hidden="true"></i><span data-i18n="passport.chooseLocal">选择 SKILL.md</span></label>
+        <input id="passport-local-file" class="sr-only" type="file" accept=".md,text/markdown" aria-describedby="passport-local-status">
+        <p id="passport-local-status" class="mt-3 text-sm font-semibold text-muted" role="status" aria-live="polite" data-i18n="passport.localEmpty">尚未选择本机文件</p>
+      </article>
+
+      <article class="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-7">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-50 text-sky-700" aria-hidden="true"><i class="fa-brands fa-github"></i></div>
+        <h2 class="mt-5 text-xl font-black" data-i18n="passport.githubTitle">检查公开 GitHub Skill</h2>
+        <p class="mt-2 text-sm leading-7 text-muted" data-i18n="passport.githubBody">仅允许公开 github.com 仓库根目录或固定版本的 Skill 文件夹地址；读取经受保护网关完成。</p>
+        <label for="passport-github-url" class="mt-5 block text-sm font-bold" data-i18n="passport.githubLabel">GitHub Skill 地址</label>
+        <input id="passport-github-url" inputmode="url" autocomplete="off" maxlength="500" class="mt-2 min-h-11 w-full rounded-lg border-line bg-white px-3 py-2 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="passport.githubPlaceholder" placeholder="https://github.com/owner/repo/tree/commit/skill-folder">
+        <p class="mt-2 text-xs leading-5 text-muted" data-i18n="passport.githubHint">不接受任意网址、私有仓库或自动安装请求。</p>
+        <button id="passport-github-inspect" type="button" class="cloud-action-button mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-busy="false"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span id="passport-github-inspect-label" data-i18n="passport.githubAction">读取公开 Skill</span></button>
+      </article>
+    </section>
+
+    <section id="passport-result" class="mt-8 rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-7" aria-labelledby="passport-result-heading" hidden>
+      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-i18n="passport.resultEyebrow">STATIC REVIEW</p>
+          <h2 id="passport-result-heading" class="mt-2 break-all text-2xl font-black tracking-tight"><span id="passport-result-name"></span></h2>
+          <p id="passport-result-source" class="mt-2 break-all text-sm leading-6 text-muted"></p>
+        </div>
+        <span id="passport-risk-badge" class="rounded-full px-3 py-1 text-xs font-bold"></span>
+      </div>
+
+      <div class="mt-6 grid gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
+        <div>
+          <h3 class="text-base font-black" data-i18n="passport.capabilityTitle">权限与行为信号</h3>
+          <p class="mt-1 text-sm leading-6 text-muted" data-i18n="passport.capabilityHint">只报告文本中的静态信号；不运行命令，也不表示实际执行结果。</p>
+          <ul id="passport-capabilities" class="mt-4 divide-y divide-line border-y border-line" aria-live="polite"></ul>
+        </div>
+        <div>
+          <h3 class="text-base font-black" data-i18n="passport.scopeTitle">审查范围</h3>
+          <p id="passport-scope" class="mt-2 text-sm leading-7 text-muted"></p>
+          <h3 class="mt-6 text-base font-black" data-i18n="passport.referencesTitle">声明但未读取的引用</h3>
+          <ul id="passport-references" class="mt-3 divide-y divide-line border-y border-line text-sm" aria-live="polite"></ul>
+          <div id="passport-pin-wrap" class="mt-6" hidden>
+            <label for="passport-pin" class="text-sm font-bold" data-i18n="passport.pinLabel">固定版本地址</label>
+            <textarea id="passport-pin" readonly class="mt-2 min-h-20 w-full resize-y rounded-lg border border-line bg-canvas p-3 font-mono text-xs leading-6 text-ink shadow-sm focus:border-brand focus:ring-brand"></textarea>
+            <button id="passport-copy-pin" type="button" class="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-brand bg-white px-4 py-2 text-sm font-bold text-brand transition hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-regular fa-copy" aria-hidden="true"></i><span data-i18n="passport.copyPin">复制固定版本地址</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-7 border-t border-line pt-6">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div class="max-w-2xl">
+            <h3 class="text-base font-black" data-i18n="passport.deepTitle">深度解释风险信号</h3>
+            <p class="mt-1 text-sm leading-6 text-muted" data-i18n="passport.deepHint">仅在你点击后，当前 Skill 文本才会发送到受保护的服务端代理。它不会被执行。</p>
+          </div>
+          <button id="passport-deep-action" type="button" class="cloud-action-button inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-busy="false"><i class="fa-solid fa-sparkles" aria-hidden="true"></i><span id="passport-deep-action-label" data-i18n="passport.deepAction">获取深度解释</span></button>
+        </div>
+        <div id="passport-deep-result" class="cloud-result mt-5 rounded-lg border border-teal-100 bg-teal-50/70 p-4" hidden>
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-i18n="passport.deepResultLabel">REVIEW NOTES</p>
+          <p id="passport-deep-output" class="mt-3 whitespace-pre-wrap text-sm leading-7 text-ink" aria-live="polite"></p>
+        </div>
+        <p class="mt-5 text-xs leading-6 text-muted" data-i18n="passport.disclaimer">“未发现匹配信号”不等于安全。阅读来源、许可、引用文件和实际脚本后再决定是否安装。</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
+  <script src="assets/postprep-config.js"></script>
+  <script src="assets/postprep.js?v=20260812-trust-passport"></script>
+</body>
+</html>

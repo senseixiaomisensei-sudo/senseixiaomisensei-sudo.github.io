@@ -19,8 +19,13 @@ arrange a private channel.
 - `AGNES_API_KEY` and `TURNSTILE_SECRET_KEY` belong only in the server runtime.
 - Browser configuration may contain a public API endpoint and a public
   Turnstile site key, never a secret key.
-- Third-party scripts, new external network origins, CSP changes, and proxy
-  changes require maintainer review before merge.
+- Public GitHub Skill reading is limited to a fixed `github.com` URL grammar,
+  GitHub's public API, a size limit, timeouts, and a pinned commit SHA; loaded
+  Skill text is untrusted data and must never be executed or treated as
+  instructions.
+- Third-party scripts, new external network origins, CSP changes, proxy
+  changes, and automatic Skill installation or execution require maintainer
+  review before merge.
 
 ## Response target
 
