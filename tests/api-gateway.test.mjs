@@ -101,3 +101,69 @@ test("gateway permits the controlled Cloudflare Pages host", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+test("voice route fails closed until its dedicated upstream and rate limiter exist", async () => {
+  const request = new Request("https://postprep-text-gateway.example.workers.dev/voice", {
+    method: "POST",
+    headers: { Origin: SITE_ORIGIN, "Content-Type": "multipart/form-data; boundary=test" },
+    body: "--test--",
+  });
+  const response = await gateway.fetch(request, BASE_ENV);
+  const body = await response.json();
+  assert.equal(response.status, 503);
+  assert.equal(body.code, "VOICE_BACKEND_NOT_CONFIGURED");
+});
+
+test("voice route uses a separate limiter and fixed Pages upstream", async () => {
+  const originalFetch = globalThis.fetch;
+  let forwarded;
+  globalThis.fetch = async (url, options) => {
+    forwarded = { url: String(url), options };
+    return Response.json({ ok: true, jobId: "11111111-2222-3333-8444-555555555555" });
+  };
+
+  try {
+    const request = new Request("https://postprep-text-gateway.example.workers.dev/voice", {
+      method: "POST",
+      headers: { Origin: SITE_ORIGIN, "Content-Type": "multipart/form-data; boundary=test" },
+      body: "--test--",
+    });
+    const env = {
+      ...BASE_ENV,
+      POSTPREP_VOICE_UPSTREAM_URL: "https://postprep-ae6.pages.dev/api/voice",
+      POSTPREP_VOICE_RATE_LIMITER: { limit: async ({ key }) => ({ success: key.startsWith("voice:") }) },
+    };
+    const response = await gateway.fetch(request, env);
+    assert.equal(response.status, 200);
+    assert.equal(forwarded.url, env.POSTPREP_VOICE_UPSTREAM_URL);
+    assert.equal(forwarded.options.headers.get("X-PostPrep-Gateway"), BASE_ENV.POSTPREP_GATEWAY_SECRET);
+    assert.match(forwarded.options.headers.get("Content-Type"), /multipart\/form-data/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("voice output route rejects an arbitrary job address before any upstream fetch", async () => {
+  const originalFetch = globalThis.fetch;
+  let upstreamCalls = 0;
+  globalThis.fetch = async () => {
+    upstreamCalls += 1;
+    throw new Error("Invalid voice output must not reach Pages");
+  };
+  try {
+    const request = new Request("https://postprep-text-gateway.example.workers.dev/voice/output/not-a-job?token=short", {
+      headers: { Origin: SITE_ORIGIN },
+    });
+    const response = await gateway.fetch(request, {
+      ...BASE_ENV,
+      POSTPREP_VOICE_OUTPUT_UPSTREAM_URL: "https://postprep-ae6.pages.dev/api/voice-output",
+      POSTPREP_VOICE_RATE_LIMITER: { limit: async () => ({ success: true }) },
+    });
+    const body = await response.json();
+    assert.equal(response.status, 400);
+    assert.equal(body.code, "INVALID_VOICE_OUTPUT_TOKEN");
+    assert.equal(upstreamCalls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

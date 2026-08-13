@@ -10,8 +10,12 @@
    `innerHTML`, and do not add user-controlled shell or file-system execution.
 4. Do not add third-party scripts, analytics, advertising code, or new network
    origins without maintainer approval and a privacy/CSP update.
-5. Add or update a focused test when changing `functions/api/text.js`.
+5. Add or update a focused test when changing a Pages Function or gateway route.
 6. Run `npm run build:styles` and `npm test` before requesting review.
+7. Voice changes must preserve the authorization gate, disclosure requirement,
+   fixed GPU destination, short retention, and no-browser-CORS design. Do not
+   add public-figure presets, community voice libraries, source downloading,
+   or model auto-installation.
 
 ## Pull request scope
 

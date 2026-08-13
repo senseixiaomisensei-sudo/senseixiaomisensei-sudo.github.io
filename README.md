@@ -4,6 +4,8 @@
 
 Skills 中心提供本项目原创的 MIT Skills、本机预览 `SKILL.md`，以及经人机验证和服务端代理保护的 GitHub 公开 Skill 发现。Skill 权限护照可静态展示来源、许可证、固定提交版本、脚本/网络/环境变量/文件/Shell/动态执行/混淆与提示注入信号；它不会自动下载、安装或执行第三方代码。
 
+声音工作台只接受本人声音、已获书面许可的声音，或拥有角色与表演权利的原创虚构声音。它提供浏览器本机音频预检，以及在 GPU 服务已配置时的文本朗读和干声音转换；不提供公众人物／真实他人／未授权角色克隆、下载音源或伴奏分离。使用与权利边界见 [VOICE_USE_POLICY.md](VOICE_USE_POLICY.md)。
+
 ## 访问
 
 <https://senseixiaomisensei-sudo.github.io/>
@@ -37,7 +39,7 @@ npm test
 
 ## 部署结构
 
-GitHub Pages 负责公开静态页面；`worker/api-gateway.js` 是唯一的公开 AI 网关，执行每 Origin/IP 的 Cloudflare Rate Limiting 后才转发到 `functions/api/text.js`。Pages Function 只接受网关持有的服务器密钥。代理只从运行环境读取 `AGNES_API_KEY`、`TURNSTILE_SECRET_KEY` 和 `POSTPREP_GATEWAY_SECRET`，前端永远不会保存或发送任一密钥。每个云端请求都要求受信任 Origin、网关限流和服务器验证的 Turnstile 一次性令牌。
+GitHub Pages 负责公开静态页面；`worker/api-gateway.js` 是唯一的公开云端网关，执行每 Origin/IP 的 Cloudflare Rate Limiting 后才转发到 Pages Functions。`functions/api/text.js` 处理文本；`functions/api/voice.js`、`voice-status.js` 和 `voice-output.js` 只经网关访问受保护的 GPU 服务。Pages Function 只接受网关持有的服务器密钥。代理只从运行环境读取 `AGNES_API_KEY`、`TURNSTILE_SECRET_KEY`、`POSTPREP_GATEWAY_SECRET`、`VOICE_INFERENCE_URL` 和 `VOICE_INFERENCE_TOKEN`，前端永远不会保存或发送任一密钥。每个云端请求都要求受信任 Origin、网关限流和服务器验证的 Turnstile 一次性令牌。
 
 Skills 发现由 Pages Function 在服务端调用 GitHub 的公开仓库搜索 API：固定筛去无许可证、归档和 Fork 候选，再以公开星标与维护日期为基础排序。若 `AGNES_API_KEY` 已配置，会对已过滤的公开元数据做额外的 AI 排序；若未配置或模型不可用，页面仍返回透明的公开数据排序。
 
@@ -51,6 +53,8 @@ npx wrangler pages project create postprep --production-branch main
 npx wrangler pages secret put AGNES_API_KEY --project-name postprep
 npx wrangler pages secret put TURNSTILE_SECRET_KEY --project-name postprep
 npx wrangler pages secret put POSTPREP_GATEWAY_SECRET --project-name postprep
+npx wrangler pages secret put VOICE_INFERENCE_URL --project-name postprep
+npx wrangler pages secret put VOICE_INFERENCE_TOKEN --project-name postprep
 npx wrangler pages deploy . --project-name postprep --branch main
 npx wrangler secret put POSTPREP_GATEWAY_SECRET --config worker/wrangler.toml
 npx wrangler deploy --config worker/wrangler.toml
@@ -59,6 +63,10 @@ npx wrangler deploy --config worker/wrangler.toml
 在 Cloudflare Turnstile 后台创建绑定到站点域名的 widget：把**公开** Site Key 填入 `assets/postprep-config.js` 的 `POSTPREP_TURNSTILE_SITE_KEY`，把 Secret Key 仅通过上一条命令存为 Pages 服务器密钥。为两个 `POSTPREP_GATEWAY_SECRET` 输入同一个高强度随机值；它用于拒绝绕过网关直连 Pages Function 的请求。再把已启用的 Worker URL 填入 `POSTPREP_API_ENDPOINT`（只填公开网关地址，不填密钥），然后推送 GitHub Pages 前端。`worker/wrangler.toml` 配置了每 Origin/IP 12 次/分钟的限流绑定。
 
 所有 AI 输出默认使用中文，界面切到 English 后才会返回英文。若改用新的 API 域名，必须同步更新各 HTML 页面和 `_headers` 中 Content-Security-Policy 的 `connect-src` 白名单；不要为了方便改成 `https:` 或 `*`。
+
+## 声音 GPU 服务
+
+GitHub Pages、Cloudflare Pages Functions 和 Workers 不能运行声音克隆或声音转换模型。要开启声音生成，账户所有者必须先授权一个 GPU 容器／云主机及其计费；在此之前，网页会保留本机预检并关闭上传按钮。部署后端请使用本仓库的 [voice-service](voice-service/README.md) 与 [声音工作台部署说明](docs/VOICE_STUDIO_DEPLOYMENT.md)。不要把 GPU URL、网关令牌、模型权重许可或任意第三方模型下载链接放进前端。
 
 ## 中国大陆正式上线
 

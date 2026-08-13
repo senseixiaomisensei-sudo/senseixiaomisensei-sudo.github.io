@@ -30,6 +30,7 @@
         skills: "Skills",
         trust: "可信发布",
         passport: "Skill 护照",
+        voice: "声音",
         privacy: "隐私",
         language: "EN",
         languageLabel: "切换至 English",
@@ -40,7 +41,7 @@
         copied: "已复制到剪贴板",
         copyFallback: "请手动复制结果",
         nothingToCopy: "还没有可复制的内容",
-        privacyShort: "基础工具在本机处理；生成或深度处理需主动点击并由服务端代理。",
+        privacyShort: "基础工具在本机处理；文本或授权声音的云端处理均需你主动点击。",
         adLabel: "广告",
       },
       home: {
@@ -61,6 +62,8 @@
         trustBody: "本机整理发布前检查、待确认事项与 AI 使用提醒。",
         passportTitle: "Skill 权限护照",
         passportBody: "安装前查看 Skill 的来源、版本与静态风险信号。",
+        voiceTitle: "声音工作台",
+        voiceBody: "在明确授权后，为文本朗读或干声音转换做本机预检与受保护生成。",
         open: "打开",
         privacyHeading: "文案留在你手边",
         privacyBody: "基础工具只在当前网页中计算和整理文字；云端生成或深度处理只有在部署启用且你主动点击时才发送当前主题或文案。",
@@ -361,13 +364,13 @@
       privacy: {
         eyebrow: "PRIVACY",
         title: "隐私说明",
-        intro: "基础工具在浏览器中本地处理；云端生成或深度处理仅在部署启用且你主动点击后调用。",
+        intro: "基础工具在浏览器中本地处理；云端生成、深度处理或授权声音生成仅在部署启用且你主动点击后调用。",
         localTitle: "基础工具不会上传",
-        localBody: "长度检查、标签整理、排版整理、发布可信包和本机 Skill 权限护照都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。",
+        localBody: "长度检查、标签整理、排版整理、发布可信包、本机 Skill 权限护照，以及声音工作台的文件格式、时长、声道、削波与静音预检都在你的浏览器内完成。我们不会建立账号、保存草稿或把这些基础工具的输入发送给 PostPrep 服务器。",
         cloudTitle: "云端深度处理（按部署配置）",
-        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色、发布可信包的深度建议或按平台生成后，只会发送当前主题或文案来生成结果；使用 Skills 筛选时，会发送当前查询词、类别和星标门槛；使用公开 GitHub Skill 权限护照时，只会发送你粘贴的 GitHub 地址并读取对应公开 SKILL.md。未启用时按钮会提示暂不可用。",
+        cloudBody: "基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色、发布可信包的深度建议或按平台生成后，只会发送当前主题或文案来生成结果；使用 Skills 筛选时，会发送当前查询词、类别和星标门槛；使用公开 GitHub Skill 权限护照时，只会发送你粘贴的 GitHub 地址并读取对应公开 SKILL.md。声音工作台只在你选择权利范围、完成确认、主动点击生成且受保护 GPU 服务已就绪时，才通过受保护代理传递参考音频、必要的源干声或朗读文本；来源文件在 GPU 任务结束后删除，生成文件为短时、带随机令牌的下载。未启用时按钮会保持关闭且不会上传音频。",
         servicesTitle: "静态资源与人机验证",
-        servicesBody: "页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理、Skills 筛选或公开 GitHub Skill 权限护照时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选与公开 Skill 读取由服务端查询 GitHub 公开 API；为减少公开 API 限流，公开候选或 Skill 元数据可在服务端内存中短时缓存，缓存键不含草稿内容。若启用 AI 排序或深度解释，也只在你主动点击后传递当前文本。当前公开版本不加载第三方广告脚本。",
+        servicesBody: "页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理、Skills 筛选、公开 GitHub Skill 权限护照或授权声音生成时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选与公开 Skill 读取由服务端查询 GitHub 公开 API；为减少公开 API 限流，公开候选或 Skill 元数据可在服务端内存中短时缓存，缓存键不含草稿内容。声音生成在部署启用后由单独的受保护 GPU 服务处理，不会向浏览器公开 GPU 地址或密钥。若启用 AI 排序或深度解释，也只在你主动点击后传递当前文本。当前公开版本不加载第三方广告脚本。",
         turnstilePolicy: "查看 Cloudflare Turnstile 隐私说明",
         adsTitle: "第三方代码",
         adsBody: "当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile；你主动发起 Skills 筛选或公开 Skill 护照时，服务端还会查询 GitHub 公开 API。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。",
@@ -401,6 +404,7 @@
         skills: "Skills",
         trust: "Publish trust",
         passport: "Skill passport",
+        voice: "Voice",
         privacy: "Privacy",
         language: "中文",
         languageLabel: "Switch to Chinese",
@@ -411,7 +415,7 @@
         copied: "Copied to clipboard",
         copyFallback: "Select and copy the result manually",
         nothingToCopy: "There is nothing to copy yet",
-        privacyShort: "Basic tools run locally; optional generation and deep processing use a server-side proxy.",
+        privacyShort: "Basic tools run locally; text and authorized-voice cloud processing require your explicit action.",
         adLabel: "Advertisement",
       },
       home: {
@@ -432,6 +436,8 @@
         trustBody: "Prepare local pre-flight checks, confirmations, and an AI-use reminder.",
         passportTitle: "Skill permission passport",
         passportBody: "Review a Skill's source, version, and static risk signals before installing it.",
+        voiceTitle: "Voice studio",
+        voiceBody: "Locally preflight authorized voices for text reading or dry-vocal conversion, then generate through a protected service.",
         open: "Open",
         privacyHeading: "Keep your draft close",
         privacyBody: "Basic tools calculate and clean text in this page; optional generation or deep processing sends the current topic or draft only after you choose it and the deployment enables it.",
@@ -732,13 +738,13 @@
       privacy: {
         eyebrow: "PRIVACY",
         title: "Privacy",
-        intro: "Basic tools run in this browser; optional generation or deep processing is available only when the deployment enables it and you choose it.",
+        intro: "Basic tools run in this browser; optional generation, deep processing, or authorized voice generation is available only when the deployment enables it and you choose it.",
         localTitle: "Basic tools stay local",
-        localBody: "Length checking, hashtag cleaning, caption formatting, the publish trust pack, and a local Skill permission passport run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
+        localBody: "Length checking, hashtag cleaning, caption formatting, the publish trust pack, a local Skill permission passport, and the voice studio's format, duration, channel, clipping, and silence preflight run in your browser. PostPrep does not create accounts, save drafts, or send these basic-tool inputs to a PostPrep server.",
         cloudTitle: "Optional deep processing",
-        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, publish-trust editorial notes, or platform generation, only the current topic or draft is sent for a result. Skills discovery sends only the current query, category, and star threshold. A public GitHub Skill passport sends only the GitHub address you paste and reads the matching public SKILL.md. Otherwise the button reports that the feature is unavailable.",
+        cloudBody: "Basic tools do not upload drafts. When the deployment has a server-side proxy and you choose Deep suggestion, Deep cleanup, Deep polish, publish-trust editorial notes, or platform generation, only the current topic or draft is sent for a result. Skills discovery sends only the current query, category, and star threshold. A public GitHub Skill passport sends only the GitHub address you paste and reads the matching public SKILL.md. The voice studio sends a reference voice, a necessary source dry vocal, or reading text through the protected proxy only after you choose a rights scope, complete the confirmations, choose Generate, and the protected GPU service is ready. Source files are deleted after the GPU task; generated files are short-lived downloads protected by a random token. When it is not enabled, the button stays closed and audio is not uploaded.",
         servicesTitle: "Static resources and verification",
-        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site. When you choose cloud generation, deep processing, Skills discovery, or a public GitHub Skill passport, the browser requests a one-time verification token from Cloudflare Turnstile. Skills discovery and public Skill reading query GitHub's public API server-side; public candidate or Skill metadata may be kept briefly in server memory to reduce rate limits, and cache keys do not include draft content. If AI ranking or deep explanation is enabled, the current text is sent only after you choose that action. The current public build does not load third-party advertising scripts.",
+        servicesBody: "Page styles, icons, and the homepage photo are bundled with this site. When you choose cloud generation, deep processing, Skills discovery, a public GitHub Skill passport, or authorized voice generation, the browser requests a one-time verification token from Cloudflare Turnstile. Skills discovery and public Skill reading query GitHub's public API server-side; public candidate or Skill metadata may be kept briefly in server memory to reduce rate limits, and cache keys do not include draft content. When deployed, voice generation is processed by a separate protected GPU service; neither its address nor its token is exposed to the browser. If AI ranking or deep explanation is enabled, the current text is sent only after you choose that action. The current public build does not load third-party advertising scripts.",
         turnstilePolicy: "View Cloudflare's Turnstile privacy notice",
         adsTitle: "Third-party code",
         adsBody: "The current public build does not load advertising, analytics, or arbitrary third-party scripts. Cloud processing contacts only the configured server-side proxy and Cloudflare Turnstile; when you start Skills discovery or a public Skill passport, the server also queries GitHub's public API. Any future third-party service must be reviewed and documented before it is enabled.",
@@ -1015,6 +1021,7 @@
       { id: "formatter", href: "caption-formatter.html", label: "shared.formatter" },
       { id: "generator", href: "idea-generator.html", label: "shared.generator" },
       { id: "trust", href: "publish-trust.html", label: "shared.trust" },
+      { id: "voice", href: "voice-studio.html", label: "shared.voice" },
       { id: "skills", href: "skills.html", label: "shared.skills" },
       { id: "passport", href: "skill-passport.html", label: "shared.passport" },
     ];
@@ -1517,7 +1524,7 @@
     return turnstileApiPromise;
   }
 
-  async function requestTurnstileToken() {
+  async function requestTurnstileToken(action = TURNSTILE_ACTION) {
     if (!isTurnstileConfigured()) {
       throw turnstileError("TURNSTILE_NOT_CONFIGURED", "Turnstile site key is not configured");
     }
@@ -1526,6 +1533,7 @@
     }
 
     const turnstile = await loadTurnstileApi();
+    const requestedAction = action === "postprep_voice" ? "postprep_voice" : TURNSTILE_ACTION;
     return new Promise((resolve, reject) => {
       const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       const overlay = document.createElement("div");
@@ -1611,7 +1619,7 @@
           sitekey: CONFIGURED_TURNSTILE_SITE_KEY,
           execution: "render",
           appearance: "always",
-          action: TURNSTILE_ACTION,
+          action: requestedAction,
           language: currentLanguage === "zh" ? "zh-CN" : "en",
           size: "flexible",
           "response-field": false,
@@ -2912,6 +2920,8 @@
     formatCaption,
     localPublishTrustReport,
     skillStaticCapabilityReport,
+    requestHumanVerification: (action) => requestTurnstileToken(action),
+    getLanguage: () => currentLanguage,
   });
 
   document.addEventListener("DOMContentLoaded", () => {
