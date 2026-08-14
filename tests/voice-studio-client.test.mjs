@@ -18,13 +18,16 @@ test("voice studio has a visible rights gate, local preflight, and no default up
   assert.match(page, /id="voice-rights-confirmed"/);
   assert.match(page, /id="voice-rights-phrase"/);
   assert.match(page, /id="voice-disclosure-confirmed"/);
-  assert.match(page, /id="voice-generate"[^>]*disabled/);
+  assert.match(page, /id="voice-generate"[^>]*aria-describedby="voice-service-status"/);
   assert.match(page, /media-src 'self' blob: https:\/\/postprep-text-gateway\.postprep\.workers\.dev/);
   assert.match(client, /decodeAudioData/);
   assert.match(client, /MAX_REFERENCE_BYTES/);
   assert.match(client, /I HAVE THE RIGHTS/);
   assert.match(client, /await verify\(VOICE_ACTION\)/);
   assert.match(client, /state\.backend !== "ready"/);
+  assert.match(client, /handlePrimaryAction/);
+  assert.match(client, /checkService/);
+  assert.match(client, /await checkAvailability\(\)/);
   assert.doesNotMatch(client, /VOICE_INFERENCE_TOKEN/);
   assert.doesNotMatch(client, /api\.github\.com/);
   assert.match(config, /POSTPREP_VOICE_API_ENDPOINT/);

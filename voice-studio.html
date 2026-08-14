@@ -114,7 +114,7 @@
 
         <div class="mt-7 border-t border-line pt-6">
           <p id="voice-service-status" class="rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" role="status" aria-live="polite" data-voice-i18n="checkingService">正在确认受保护声音服务是否可用；此检查不上传音频。</p>
-          <button id="voice-generate" type="button" class="cloud-action-button mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:w-auto" disabled aria-busy="false"><i class="fa-solid fa-wave-square" aria-hidden="true"></i><span id="voice-generate-label" data-voice-i18n="generate">确认授权并生成</span></button>
+          <button id="voice-generate" type="button" class="cloud-action-button mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark disabled:cursor-wait disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:w-auto" disabled aria-busy="false" aria-describedby="voice-service-status"><i class="fa-solid fa-wave-square" aria-hidden="true"></i><span id="voice-generate-label" data-voice-i18n="checkingServiceAction">正在检查服务…</span></button>
         </div>
       </section>
 

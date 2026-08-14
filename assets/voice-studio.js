@@ -74,6 +74,8 @@
       serviceReady: "受保护声音服务已就绪。完成本机预检和授权确认后才会上传音频。",
       serviceUnavailable: "声音生成功能尚未配置 GPU 推理服务；不会上传文件。其余本机预检仍可使用。",
       serviceError: "暂时无法确认声音服务状态；为保护你的音频，生成已保持关闭。",
+      checkService: "重新检查声音服务",
+      checkingServiceAction: "正在检查服务…",
       generate: "确认授权并生成",
       generating: "正在生成…",
       qualityTitle: "自然度不能被保证",
@@ -165,6 +167,8 @@
       serviceReady: "The protected voice service is ready. Audio uploads only after local preflight and rights confirmation.",
       serviceUnavailable: "Voice generation has not been configured with a GPU inference service. Files will not be uploaded; local preflight is still available.",
       serviceError: "The voice service status could not be confirmed. To protect your audio, generation remains closed.",
+      checkService: "Check voice service again",
+      checkingServiceAction: "Checking service…",
       generate: "Confirm rights and generate",
       generating: "Generating…",
       qualityTitle: "Naturalness cannot be guaranteed",
@@ -301,16 +305,36 @@
     element.textContent = message;
   }
 
-  function setBusy(busy) {
-    state.busy = busy;
+  function primaryActionLabel() {
+    if (state.busy) return t("generating");
+    if (state.backend === "checking") return t("checkingServiceAction");
+    return state.backend === "ready" ? t("generate") : t("checkService");
+  }
+
+  function updatePrimaryAction() {
     const button = document.getElementById("voice-generate");
     const label = document.getElementById("voice-generate-label");
     if (button) {
-      button.disabled = busy || state.backend !== "ready";
-      button.classList.toggle("is-loading", busy);
-      button.setAttribute("aria-busy", String(busy));
+      const ready = state.backend === "ready";
+      const checking = state.backend === "checking";
+      button.disabled = state.busy || checking;
+      button.classList.toggle("is-loading", state.busy);
+      button.classList.toggle("bg-brand", ready);
+      button.classList.toggle("text-white", ready);
+      button.classList.toggle("hover:bg-brandDark", ready);
+      button.classList.toggle("border", !ready);
+      button.classList.toggle("border-amber-300", !ready);
+      button.classList.toggle("bg-amber-50", !ready);
+      button.classList.toggle("text-amber-950", !ready);
+      button.classList.toggle("hover:bg-amber-100", !ready && !checking);
+      button.setAttribute("aria-busy", String(state.busy || checking));
     }
-    if (label) label.textContent = busy ? t("generating") : t("generate");
+    if (label) label.textContent = primaryActionLabel();
+  }
+
+  function setBusy(busy) {
+    state.busy = busy;
+    updatePrimaryAction();
   }
 
   function selectedScope() {
@@ -473,9 +497,7 @@
   }
 
   function updateGenerateEnabled() {
-    const button = document.getElementById("voice-generate");
-    if (!button || state.busy) return;
-    button.disabled = state.backend !== "ready";
+    updatePrimaryAction();
   }
 
   function errorMessage(error) {
@@ -588,15 +610,25 @@
     }
   }
 
+  async function handlePrimaryAction() {
+    if (state.busy || state.backend === "checking") return;
+    if (state.backend !== "ready") {
+      await checkAvailability();
+      return;
+    }
+    await requestGeneration();
+  }
+
   async function checkAvailability() {
     if (!VOICE_STATUS_ENDPOINT || window.location.protocol === "file:") {
       state.backend = "unavailable";
       setServiceStatus(t("serviceUnavailable"), "warning");
-      updateGenerateEnabled();
+      updatePrimaryAction();
       return;
     }
     state.backend = "checking";
     setServiceStatus(t("checkingService"));
+    updatePrimaryAction();
     try {
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), 8000);
@@ -618,7 +650,7 @@
       state.backend = "unavailable";
       setServiceStatus(t("serviceError"), "error");
     }
-    updateGenerateEnabled();
+    updatePrimaryAction();
   }
 
   function applyTranslations() {
@@ -669,7 +701,7 @@
     sourceInput.addEventListener("change", () => { analyzeFile("source"); });
     read.addEventListener("click", () => updateMode("read"));
     cover.addEventListener("click", () => updateMode("cover"));
-    generate.addEventListener("click", requestGeneration);
+    generate.addEventListener("click", handlePrimaryAction);
     ["voice-rights-confirmed", "voice-rights-phrase", "voice-disclosure-confirmed", "voice-text"].forEach((id) => {
       const element = document.getElementById(id);
       if (element) element.addEventListener("input", updateGenerateEnabled);
