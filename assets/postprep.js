@@ -1497,6 +1497,13 @@
       && !TURNSTILE_PLACEHOLDER_PATTERN.test(CONFIGURED_TURNSTILE_SITE_KEY);
   }
 
+  function turnstileWidgetSize(mount) {
+    const availableWidth = mount && typeof mount.getBoundingClientRect === "function"
+      ? mount.getBoundingClientRect().width
+      : 0;
+    return availableWidth > 0 && availableWidth < 300 ? "compact" : "flexible";
+  }
+
   function loadTurnstileApi() {
     if (window.turnstile && typeof window.turnstile.render === "function") {
       return Promise.resolve(window.turnstile);
@@ -1621,7 +1628,7 @@
           appearance: "always",
           action: requestedAction,
           language: currentLanguage === "zh" ? "zh-CN" : "en",
-          size: "flexible",
+          size: turnstileWidgetSize(mount),
           "response-field": false,
           callback: (token) => finish(token),
           "before-interactive-callback": () => {

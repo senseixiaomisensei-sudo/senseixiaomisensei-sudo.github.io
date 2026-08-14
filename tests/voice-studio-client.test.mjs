@@ -13,12 +13,15 @@ test("voice studio has a visible rights gate, local preflight, and no default up
   ]);
 
   assert.match(page, /data-page="voice"/);
+  assert.match(page, /viewport-fit=cover/);
   assert.match(page, /id="voice-reference-file"/);
   assert.match(page, /id="voice-source-file"/);
   assert.match(page, /id="voice-rights-confirmed"/);
   assert.match(page, /id="voice-rights-phrase"/);
   assert.match(page, /id="voice-disclosure-confirmed"/);
   assert.match(page, /id="voice-generate"[^>]*aria-describedby="voice-service-status"/);
+  assert.match(page, /id="voice-generate"[^>]*min-h-12/);
+  assert.match(page, /id="toast"[^>]*w-\[calc\(100%-2rem\)\]/);
   assert.match(page, /media-src 'self' blob: https:\/\/postprep-text-gateway\.postprep\.workers\.dev/);
   assert.match(client, /decodeAudioData/);
   assert.match(client, /MAX_REFERENCE_BYTES/);
