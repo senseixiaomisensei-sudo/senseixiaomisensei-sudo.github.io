@@ -1,0 +1,82 @@
+{
+  "hubert.onnx": {
+    "totalSize": 377840312,
+    "chunks": [
+      "models/base/hubert/chunk_0.bin",
+      "models/base/hubert/chunk_1.bin",
+      "models/base/hubert/chunk_2.bin",
+      "models/base/hubert/chunk_3.bin",
+      "models/base/hubert/chunk_4.bin",
+      "models/base/hubert/chunk_5.bin",
+      "models/base/hubert/chunk_6.bin",
+      "models/base/hubert/chunk_7.bin",
+      "models/base/hubert/chunk_8.bin",
+      "models/base/hubert/chunk_9.bin",
+      "models/base/hubert/chunk_10.bin",
+      "models/base/hubert/chunk_11.bin",
+      "models/base/hubert/chunk_12.bin",
+      "models/base/hubert/chunk_13.bin",
+      "models/base/hubert/chunk_14.bin",
+      "models/base/hubert/chunk_15.bin",
+      "models/base/hubert/chunk_16.bin",
+      "models/base/hubert/chunk_17.bin",
+      "models/base/hubert/chunk_18.bin"
+    ]
+  },
+  "rmvpe.onnx": {
+    "totalSize": 361688443,
+    "chunks": [
+      "models/base/rmvpe/chunk_0.bin",
+      "models/base/rmvpe/chunk_1.bin",
+      "models/base/rmvpe/chunk_2.bin",
+      "models/base/rmvpe/chunk_3.bin",
+      "models/base/rmvpe/chunk_4.bin",
+      "models/base/rmvpe/chunk_5.bin",
+      "models/base/rmvpe/chunk_6.bin",
+      "models/base/rmvpe/chunk_7.bin",
+      "models/base/rmvpe/chunk_8.bin",
+      "models/base/rmvpe/chunk_9.bin",
+      "models/base/rmvpe/chunk_10.bin",
+      "models/base/rmvpe/chunk_11.bin",
+      "models/base/rmvpe/chunk_12.bin",
+      "models/base/rmvpe/chunk_13.bin",
+      "models/base/rmvpe/chunk_14.bin",
+      "models/base/rmvpe/chunk_15.bin",
+      "models/base/rmvpe/chunk_16.bin",
+      "models/base/rmvpe/chunk_17.bin"
+    ]
+  },
+  "tomori.onnx": {
+    "totalSize": 114919487,
+    "chunks": [
+      "models/characters/tomori/chunk_0.bin",
+      "models/characters/tomori/chunk_1.bin",
+      "models/characters/tomori/chunk_2.bin",
+      "models/characters/tomori/chunk_3.bin",
+      "models/characters/tomori/chunk_4.bin",
+      "models/characters/tomori/chunk_5.bin"
+    ]
+  },
+  "rana.onnx": {
+    "totalSize": 114919487,
+    "chunks": [
+      "models/characters/rana/chunk_0.bin",
+      "models/characters/rana/chunk_1.bin",
+      "models/characters/rana/chunk_2.bin",
+      "models/characters/rana/chunk_3.bin",
+      "models/characters/rana/chunk_4.bin",
+      "models/characters/rana/chunk_5.bin"
+    ]
+  },
+  "teio.onnx": {
+    "totalSize": 110200895,
+    "chunks": [
+      "models/characters/teio/chunk_0.bin",
+      "models/characters/teio/chunk_1.bin",
+      "models/characters/teio/chunk_2.bin",
+      "models/characters/teio/chunk_3.bin",
+      "models/characters/teio/chunk_4.bin",
+      "models/characters/teio/chunk_5.bin"
+    ]
+  }
+}

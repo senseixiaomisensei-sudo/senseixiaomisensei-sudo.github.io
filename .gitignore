@@ -10,6 +10,8 @@ node_modules/
 .idea/
 __pycache__/
 *.py[cod]
-models/
+*.onnx
+models/**/*.onnx
 tests/*.wav
+
 

@@ -235,6 +235,54 @@
     } catch (e) {}
   }
 
+  async function fetchChunkedModel(chunkUrls, name, mimeType, onProgress) {
+    const cached = await getCachedModel(name);
+    if (cached instanceof Blob) {
+      return new File([cached], name, { type: mimeType });
+    }
+
+    const urls = Array.isArray(chunkUrls) ? chunkUrls : [chunkUrls];
+    const blobParts = [];
+    let loadedBytes = 0;
+    const estimatedTotal = urls.length * 20 * 1024 * 1024;
+
+    for (let i = 0; i < urls.length; i++) {
+      const u = urls[i];
+      const res = await fetch(u);
+      if (!res.ok) {
+        throw new Error(`Failed to load ${name} part ${i + 1}/${urls.length} (HTTP ${res.status})`);
+      }
+      const buf = await res.arrayBuffer();
+      blobParts.push(buf);
+      loadedBytes += buf.byteLength;
+      if (typeof onProgress === "function") {
+        onProgress(loadedBytes, estimatedTotal, i + 1, urls.length);
+      }
+    }
+
+    const fullBlob = new Blob(blobParts, { type: mimeType });
+    await setCachedModel(name, fullBlob);
+    return new File([fullBlob], name, { type: mimeType });
+  }
+
+  async function loadModelAuto(modelConfig, name, mimeType, onProgress) {
+    const cached = await getCachedModel(name);
+    if (cached instanceof Blob) {
+      return new File([cached], name, { type: mimeType });
+    }
+
+    if (modelConfig && Array.isArray(modelConfig.chunks) && modelConfig.chunks.length > 0) {
+      try {
+        return await fetchChunkedModel(modelConfig.chunks, name, mimeType, onProgress);
+      } catch (err) {
+        console.warn(`Chunked fetch for ${name} failed, falling back to URLs:`, err);
+      }
+    }
+
+    const urls = modelConfig?.urls || (typeof modelConfig === "string" ? [modelConfig] : [name]);
+    return await fetchWithCache(urls, name, mimeType, onProgress);
+  }
+
   async function fetchWithCache(urlOrUrls, name, mimeType, onProgress) {
     const urls = Array.isArray(urlOrUrls) ? urlOrUrls.filter(Boolean) : [urlOrUrls];
     for (const u of urls) {
@@ -625,39 +673,31 @@
         wasmBaseUrl: new URL("assets/rvc-engine/ort126/", window.location.href).href,
       });
 
-      // 2. Fetch base HuBERT & RMVPE models and character ONNX model
-      const hubertCandidates = selectedModel.hubertUrls || state.baseModels.hubertUrls || [
-        "models/base/hubert.onnx",
-        "https://huggingface.co/ohnoitsaninja/rvc-base-onnx/resolve/main/onnx/hubert_base_layer12_nomask_32000.onnx",
-      ];
-      const rmvpeCandidates = selectedModel.rmvpeUrls || state.baseModels.rmvpeUrls || [
-        "models/base/rmvpe.onnx",
-        "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/rmvpe.onnx",
-      ];
-      const charCandidates = selectedModel.urls || [
-        selectedModel.file || `models/characters/${selectedModel.id}.onnx`,
-        `https://github.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/releases/download/v1.0-models/${selectedModel.id}.onnx`,
-      ];
+      const hubertCfg = state.baseModels?.hubert || { chunks: [] };
+      const rmvpeCfg = state.baseModels?.rmvpe || { chunks: [] };
 
       updateStatusDisplay("⏳ [1/4] 正在准备声线模型 (HuBERT 语义特征)...");
-      const hubertFile = await fetchWithCache(hubertCandidates, "hubert.onnx", "application/onnx", (l, t) => {
+      const hubertFile = await loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", (l, t, cur, total) => {
         const mb = (l / 1024 / 1024).toFixed(1);
-        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "?";
-        updateStatusDisplay(`⏳ [1/4] 正在加载基础语义模型 (HuBERT): ${Math.round((l / (t || 1)) * 100)}% (${mb}MB / ${totalMb}MB)`);
+        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "377.6";
+        const partText = total ? ` · 分片 ${cur}/${total}` : "";
+        updateStatusDisplay(`⏳ [1/4] 正在加载基础语义模型 (HuBERT): ${Math.min(100, Math.round((l / (t || 1)) * 100))}% (${mb}MB / ${totalMb}MB)${partText}`);
       });
 
       updateStatusDisplay("⏳ [2/4] 正在准备音高模型 (RMVPE 音高追踪)...");
-      const rmvpeFile = await fetchWithCache(rmvpeCandidates, "rmvpe.onnx", "application/onnx", (l, t) => {
+      const rmvpeFile = await loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", (l, t, cur, total) => {
         const mb = (l / 1024 / 1024).toFixed(1);
-        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "?";
-        updateStatusDisplay(`⏳ [2/4] 正在加载高精度音高模型 (RMVPE): ${Math.round((l / (t || 1)) * 100)}% (${mb}MB / ${totalMb}MB)`);
+        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "361.7";
+        const partText = total ? ` · 分片 ${cur}/${total}` : "";
+        updateStatusDisplay(`⏳ [2/4] 正在加载高精度音高模型 (RMVPE): ${Math.min(100, Math.round((l / (t || 1)) * 100))}% (${mb}MB / ${totalMb}MB)${partText}`);
       });
 
       updateStatusDisplay(`⏳ [3/4] 正在准备角色模型 (${selectedModel.name})...`);
-      const modelFile = await fetchWithCache(charCandidates, `${selectedModel.id}.onnx`, "application/onnx", (l, t) => {
+      const modelFile = await loadModelAuto(selectedModel, `${selectedModel.id}.onnx`, "application/onnx", (l, t, cur, total) => {
         const mb = (l / 1024 / 1024).toFixed(1);
-        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "?";
-        updateStatusDisplay(`⏳ [3/4] 正在加载角色音色模型 (${selectedModel.name}): ${Math.round((l / (t || 1)) * 100)}% (${mb}MB / ${totalMb}MB)`);
+        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "110.2";
+        const partText = total ? ` · 分片 ${cur}/${total}` : "";
+        updateStatusDisplay(`⏳ [3/4] 正在加载角色音色模型 (${selectedModel.name}): ${Math.min(100, Math.round((l / (t || 1)) * 100))}% (${mb}MB / ${totalMb}MB)${partText}`);
       });
 
       // 3. Run Pipeline in Web Worker

@@ -16,6 +16,7 @@ const MIME_MAP = {
   ".jpg": "image/jpeg",
   ".svg": "image/svg+xml",
   ".onnx": "application/octet-stream",
+  ".bin": "application/octet-stream",
   ".wav": "audio/wav",
   ".mp3": "audio/mpeg",
   ".m4a": "audio/mp4",
