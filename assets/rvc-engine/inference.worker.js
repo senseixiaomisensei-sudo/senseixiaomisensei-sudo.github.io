@@ -12651,7 +12651,7 @@ async function synthesizeVoice(session, features, pitch, options = {}) {
   return parseSynthesisOutput(outputs);
 }
 function encodeMonoPcmToWav(audio, options = {}) {
-  const { sampleRate = 48e3, numChannels = 1, bitsPerSample = 16 } = options;
+  const { sampleRate = 40e3, numChannels = 1, bitsPerSample = 16 } = options;
   const bytesPerSample = bitsPerSample / 8;
   const blockAlign = numChannels * bytesPerSample;
   const byteRate = sampleRate * blockAlign;
@@ -12671,10 +12671,21 @@ function encodeMonoPcmToWav(audio, options = {}) {
   view.setUint16(34, bitsPerSample, true);
   writeAscii(view, 36, "data");
   view.setUint32(40, dataSize, true);
+
+  let maxPeak = 0;
+  for (let i = 0; i < audio.length; i += 1) {
+    const val = Math.abs(audio[i]);
+    if (val > maxPeak && !isNaN(val)) maxPeak = val;
+  }
+  const normScale = maxPeak > 0.85 ? 0.85 / maxPeak : 1.0;
+
   let offset = 44;
   for (let i = 0; i < audio.length; i += 1) {
-    const clamped = Math.max(-1, Math.min(1, audio[i]));
-    const int16 = clamped < 0 ? clamped * 32768 : clamped * 32767;
+    let s = audio[i] * normScale;
+    if (isNaN(s)) s = 0;
+    if (s > 0.99) s = 0.99;
+    else if (s < -0.99) s = -0.99;
+    const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
     view.setInt16(offset, int16, true);
     offset += bytesPerSample;
   }

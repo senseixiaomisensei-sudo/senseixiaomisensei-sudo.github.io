@@ -398,8 +398,27 @@
         out16k = resampledBuffer.getChannelData(0);
       }
 
+      // Input Peak Normalization & DC Offset Removal to prevent distortion in neural model
+      let mean = 0;
+      for (let i = 0; i < out16k.length; i++) mean += out16k[i];
+      mean /= (out16k.length || 1);
+
+      let inPeak = 0;
+      const clean16k = new Float32Array(out16k.length);
+      for (let i = 0; i < out16k.length; i++) {
+        const sample = out16k[i] - mean;
+        clean16k[i] = sample;
+        const abs = Math.abs(sample);
+        if (abs > inPeak) inPeak = abs;
+      }
+
+      if (inPeak > 0.8) {
+        const inScale = 0.8 / inPeak;
+        for (let i = 0; i < clean16k.length; i++) clean16k[i] *= inScale;
+      }
+
       return {
-        float32: out16k,
+        float32: clean16k,
         duration: audioBuffer.duration,
         sampleRate: 16000,
       };
