@@ -246,8 +246,11 @@
 
     let lastErr = null;
     for (const u of urls) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       try {
-        const res = await fetch(u);
+        const res = await fetch(u, { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const contentLength = res.headers.get("content-length");
         const total = contentLength ? parseInt(contentLength, 10) : 0;
@@ -274,6 +277,7 @@
         await setCachedModel(u, blob);
         return new File([blob], name, { type: mimeType });
       } catch (err) {
+        clearTimeout(timeoutId);
         lastErr = err;
         console.warn(`Fetch ${name} from ${u} failed:`, err);
       }
@@ -635,21 +639,29 @@
         `https://github.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/releases/download/v1.0-models/${selectedModel.id}.onnx`,
       ];
 
-      updateStatusDisplay("⏳ [1/4] 正在加载 AI 声线模型权重 (首次运行需要下载)...");
-      const [hubertFile, rmvpeFile, modelFile] = await Promise.all([
-        fetchWithCache(hubertCandidates, "hubert.onnx", "application/onnx", (l, t) => {
-          updateStatusDisplay(`⏳ [1/4] 加载基础语音模型 (HuBERT): ${Math.round((l / (t || 1)) * 100)}%`);
-        }),
-        fetchWithCache(rmvpeCandidates, "rmvpe.onnx", "application/onnx", (l, t) => {
-          updateStatusDisplay(`⏳ [1/4] 加载高精度音高模型 (RMVPE): ${Math.round((l / (t || 1)) * 100)}%`);
-        }),
-        fetchWithCache(charCandidates, `${selectedModel.id}.onnx`, "application/onnx", (l, t) => {
-          updateStatusDisplay(`⏳ [1/4] 加载角色音色模型 (${selectedModel.name}): ${Math.round((l / (t || 1)) * 100)}%`);
-        }),
-      ]);
+      updateStatusDisplay("⏳ [1/4] 正在准备声线模型 (HuBERT 语义特征)...");
+      const hubertFile = await fetchWithCache(hubertCandidates, "hubert.onnx", "application/onnx", (l, t) => {
+        const mb = (l / 1024 / 1024).toFixed(1);
+        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "?";
+        updateStatusDisplay(`⏳ [1/4] 正在加载基础语义模型 (HuBERT): ${Math.round((l / (t || 1)) * 100)}% (${mb}MB / ${totalMb}MB)`);
+      });
+
+      updateStatusDisplay("⏳ [2/4] 正在准备音高模型 (RMVPE 音高追踪)...");
+      const rmvpeFile = await fetchWithCache(rmvpeCandidates, "rmvpe.onnx", "application/onnx", (l, t) => {
+        const mb = (l / 1024 / 1024).toFixed(1);
+        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "?";
+        updateStatusDisplay(`⏳ [2/4] 正在加载高精度音高模型 (RMVPE): ${Math.round((l / (t || 1)) * 100)}% (${mb}MB / ${totalMb}MB)`);
+      });
+
+      updateStatusDisplay(`⏳ [3/4] 正在准备角色模型 (${selectedModel.name})...`);
+      const modelFile = await fetchWithCache(charCandidates, `${selectedModel.id}.onnx`, "application/onnx", (l, t) => {
+        const mb = (l / 1024 / 1024).toFixed(1);
+        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "?";
+        updateStatusDisplay(`⏳ [3/4] 正在加载角色音色模型 (${selectedModel.name}): ${Math.round((l / (t || 1)) * 100)}% (${mb}MB / ${totalMb}MB)`);
+      });
 
       // 3. Run Pipeline in Web Worker
-      updateStatusDisplay("🚀 [2/4] 本地 WebAssembly SIMD 推理开始...");
+      updateStatusDisplay("🚀 [4/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
       const result = await runPipelineInWorker(
         rvc,
         {
