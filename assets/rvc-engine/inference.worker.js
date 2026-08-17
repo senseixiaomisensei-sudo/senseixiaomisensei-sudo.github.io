@@ -12288,32 +12288,32 @@ function decodeSalienceToF0(salience, frameCount, threshold) {
   }
   return f0;
 }
-function padMelSpectrogram(melSpec, nMels) {
-  const numFrames = melSpec.length / nMels;
-  const targetFrames = 160 * Math.ceil(numFrames / 160);
-  const padFrames = targetFrames - numFrames;
-  if (padFrames === 0) {
+function padMelSpectrogram(melSpec, nMels, numFrames, targetFrames) {
+  if (targetFrames <= numFrames) {
     return melSpec;
   }
   const padded = new Float32Array(targetFrames * nMels);
-  padded.set(melSpec);
-  padded.fill(0, melSpec.length);
+  for (let mel = 0; mel < nMels; mel++) {
+    const srcOffset = mel * numFrames;
+    const dstOffset = mel * targetFrames;
+    padded.set(melSpec.subarray(srcOffset, srcOffset + numFrames), dstOffset);
+  }
   return padded;
 }
 async function runRmvpeInference(session, audio) {
   try {
-    const { hopLength, threshold } = RMVPE_PARAMS;
+    const { hopLength, threshold, nMels } = RMVPE_PARAMS;
     const numFrames = Math.ceil(audio.length / hopLength);
     const inputName = session.inputNames[0] ?? "mel";
     let inputTensor;
     if (inputName === "waveform") {
       inputTensor = new Te("float32", audio, [1, audio.length]);
     } else {
-      const { nMels } = RMVPE_PARAMS;
       const melSpec = computeMelSpectrogram(audio);
-      const paddedMelSpec = padMelSpectrogram(melSpec, nMels);
-      const paddedFrames = paddedMelSpec.length / nMels;
-      inputTensor = new Te("float32", paddedMelSpec, [1, nMels, paddedFrames]);
+      const computedFrames = Math.floor(melSpec.length / nMels);
+      const targetFrames = 160 * Math.ceil(computedFrames / 160);
+      const paddedMelSpec = padMelSpectrogram(melSpec, nMels, computedFrames, targetFrames);
+      inputTensor = new Te("float32", paddedMelSpec, [1, nMels, targetFrames]);
     }
     const feeds = {};
     feeds[inputName] = inputTensor;
