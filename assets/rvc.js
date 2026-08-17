@@ -622,19 +622,28 @@
       });
 
       // 2. Fetch base HuBERT & RMVPE models and character ONNX model
-      const hubertUrl = selectedModel.hubertUrl || state.baseModels.hubert || "models/base/hubert.onnx";
-      const rmvpeUrl = selectedModel.rmvpeUrl || state.baseModels.rmvpe || "models/base/rmvpe.onnx";
-      const charModelUrl = selectedModel.file || `models/characters/${selectedModel.id}.onnx`;
+      const hubertCandidates = selectedModel.hubertUrls || state.baseModels.hubertUrls || [
+        "models/base/hubert.onnx",
+        "https://huggingface.co/ohnoitsaninja/rvc-base-onnx/resolve/main/onnx/hubert_base_layer12_nomask_32000.onnx",
+      ];
+      const rmvpeCandidates = selectedModel.rmvpeUrls || state.baseModels.rmvpeUrls || [
+        "models/base/rmvpe.onnx",
+        "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/rmvpe.onnx",
+      ];
+      const charCandidates = selectedModel.urls || [
+        selectedModel.file || `models/characters/${selectedModel.id}.onnx`,
+        `https://github.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/releases/download/v1.0-models/${selectedModel.id}.onnx`,
+      ];
 
       updateStatusDisplay("⏳ [1/4] 正在加载 AI 声线模型权重 (首次运行需要下载)...");
       const [hubertFile, rmvpeFile, modelFile] = await Promise.all([
-        fetchWithCache(hubertUrl, "hubert.onnx", "application/onnx", (l, t) => {
+        fetchWithCache(hubertCandidates, "hubert.onnx", "application/onnx", (l, t) => {
           updateStatusDisplay(`⏳ [1/4] 加载基础语音模型 (HuBERT): ${Math.round((l / (t || 1)) * 100)}%`);
         }),
-        fetchWithCache(rmvpeUrl, "rmvpe.onnx", "application/onnx", (l, t) => {
+        fetchWithCache(rmvpeCandidates, "rmvpe.onnx", "application/onnx", (l, t) => {
           updateStatusDisplay(`⏳ [1/4] 加载高精度音高模型 (RMVPE): ${Math.round((l / (t || 1)) * 100)}%`);
         }),
-        fetchWithCache(charModelUrl, `${selectedModel.id}.onnx`, "application/onnx", (l, t) => {
+        fetchWithCache(charCandidates, `${selectedModel.id}.onnx`, "application/onnx", (l, t) => {
           updateStatusDisplay(`⏳ [1/4] 加载角色音色模型 (${selectedModel.name}): ${Math.round((l / (t || 1)) * 100)}%`);
         }),
       ]);

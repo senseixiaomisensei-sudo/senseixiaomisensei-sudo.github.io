@@ -1,12 +1,16 @@
 {
   "version": 2,
   "updatedAt": "2026-08-17",
-  "_readme": "RVC 角色声音目录（纯客户端 Web-RVC 与云端双模兼容）。模型完全在用户浏览器本地运算，零服务器消耗。",
+  "_readme": "RVC 角色声音目录（纯客户端 Web-RVC，支持本地与 GitHub Release CDN 自动双向回退）。",
   "baseModels": {
-    "hubert": "models/base/hubert.onnx",
-    "rmvpe": "models/base/rmvpe.onnx",
-    "hubertCdn": "https://huggingface.co/ohnoitsaninja/rvc-base-onnx/resolve/main/onnx/hubert_base_layer12_nomask_32000.onnx",
-    "rmvpeCdn": "https://huggingface.co/spaces/Anjok07/UltimateRVC/resolve/main/rmvpe.onnx"
+    "hubertUrls": [
+      "models/base/hubert.onnx",
+      "https://huggingface.co/ohnoitsaninja/rvc-base-onnx/resolve/main/onnx/hubert_base_layer12_nomask_32000.onnx"
+    ],
+    "rmvpeUrls": [
+      "models/base/rmvpe.onnx",
+      "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/rmvpe.onnx"
+    ]
   },
   "models": [
     {
@@ -16,6 +20,10 @@
       "description": "《BanG Dream! It's MyGO!!!!!》主唱 · 清澈少年感少女音 · RVC v2",
       "tags": ["女声", "动漫", "MyGO"],
       "file": "models/characters/tomori.onnx",
+      "urls": [
+        "models/characters/tomori.onnx",
+        "https://github.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/releases/download/v1.0-models/tomori.onnx"
+      ],
       "defaultPitch": 2
     },
     {
@@ -25,6 +33,10 @@
       "description": "《BanG Dream! It's MyGO!!!!!》吉他手 · 慵懒灵动猫系少女音 · RVC v2",
       "tags": ["女声", "动漫", "MyGO"],
       "file": "models/characters/rana.onnx",
+      "urls": [
+        "models/characters/rana.onnx",
+        "https://github.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/releases/download/v1.0-models/rana.onnx"
+      ],
       "defaultPitch": 2
     },
     {
@@ -34,6 +46,10 @@
       "description": "《赛马娘 Pretty Derby》· 活泼元气高辨识度少女音 · RVC v2",
       "tags": ["女声", "动漫", "赛马娘"],
       "file": "models/characters/teio.onnx",
+      "urls": [
+        "models/characters/teio.onnx",
+        "https://github.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/releases/download/v1.0-models/teio.onnx"
+      ],
       "defaultPitch": 3
     }
   ]
