@@ -78,5 +78,71 @@
       "models/characters/teio/chunk_4.bin",
       "models/characters/teio/chunk_5.bin"
     ]
+  },
+  "arisu.onnx": {
+    "totalSize": 110680729,
+    "chunks": [
+      "models/characters/arisu/chunk_0.bin",
+      "models/characters/arisu/chunk_1.bin",
+      "models/characters/arisu/chunk_2.bin",
+      "models/characters/arisu/chunk_3.bin",
+      "models/characters/arisu/chunk_4.bin",
+      "models/characters/arisu/chunk_5.bin"
+    ]
+  },
+  "shiroko.onnx": {
+    "totalSize": 110680729,
+    "chunks": [
+      "models/characters/shiroko/chunk_0.bin",
+      "models/characters/shiroko/chunk_1.bin",
+      "models/characters/shiroko/chunk_2.bin",
+      "models/characters/shiroko/chunk_3.bin",
+      "models/characters/shiroko/chunk_4.bin",
+      "models/characters/shiroko/chunk_5.bin"
+    ]
+  },
+  "yuuka.onnx": {
+    "totalSize": 110680729,
+    "chunks": [
+      "models/characters/yuuka/chunk_0.bin",
+      "models/characters/yuuka/chunk_1.bin",
+      "models/characters/yuuka/chunk_2.bin",
+      "models/characters/yuuka/chunk_3.bin",
+      "models/characters/yuuka/chunk_4.bin",
+      "models/characters/yuuka/chunk_5.bin"
+    ]
+  },
+  "hina.onnx": {
+    "totalSize": 110680729,
+    "chunks": [
+      "models/characters/hina/chunk_0.bin",
+      "models/characters/hina/chunk_1.bin",
+      "models/characters/hina/chunk_2.bin",
+      "models/characters/hina/chunk_3.bin",
+      "models/characters/hina/chunk_4.bin",
+      "models/characters/hina/chunk_5.bin"
+    ]
+  },
+  "noa.onnx": {
+    "totalSize": 110680729,
+    "chunks": [
+      "models/characters/noa/chunk_0.bin",
+      "models/characters/noa/chunk_1.bin",
+      "models/characters/noa/chunk_2.bin",
+      "models/characters/noa/chunk_3.bin",
+      "models/characters/noa/chunk_4.bin",
+      "models/characters/noa/chunk_5.bin"
+    ]
+  },
+  "koharu.onnx": {
+    "totalSize": 110680729,
+    "chunks": [
+      "models/characters/koharu/chunk_0.bin",
+      "models/characters/koharu/chunk_1.bin",
+      "models/characters/koharu/chunk_2.bin",
+      "models/characters/koharu/chunk_3.bin",
+      "models/characters/koharu/chunk_4.bin",
+      "models/characters/koharu/chunk_5.bin"
+    ]
   }
 }

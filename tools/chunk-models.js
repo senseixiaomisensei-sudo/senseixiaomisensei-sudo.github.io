@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const CHUNK_SIZE = 20 * 1024 * 1024; // 20 MB per chunk (well under GitHub 100MB & Cloudflare 25MB limits)
+const CHUNK_SIZE = 20 * 1024 * 1024; // 20 MB per chunk
 
 const MODELS = [
   {
@@ -29,6 +29,36 @@ const MODELS = [
     src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\teio.onnx",
     dstDir: "E:\\大肥鱼\\site\\models\\characters\\teio",
   },
+  {
+    name: "arisu.onnx",
+    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\arisu.onnx",
+    dstDir: "E:\\大肥鱼\\site\\models\\characters\\arisu",
+  },
+  {
+    name: "shiroko.onnx",
+    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\shiroko.onnx",
+    dstDir: "E:\\大肥鱼\\site\\models\\characters\\shiroko",
+  },
+  {
+    name: "yuuka.onnx",
+    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\yuuka.onnx",
+    dstDir: "E:\\大肥鱼\\site\\models\\characters\\yuuka",
+  },
+  {
+    name: "hina.onnx",
+    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\hina.onnx",
+    dstDir: "E:\\大肥鱼\\site\\models\\characters\\hina",
+  },
+  {
+    name: "noa.onnx",
+    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\noa.onnx",
+    dstDir: "E:\\大肥鱼\\site\\models\\characters\\noa",
+  },
+  {
+    name: "koharu.onnx",
+    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\koharu.onnx",
+    dstDir: "E:\\大肥鱼\\site\\models\\characters\\koharu",
+  },
 ];
 
 const manifest = {};
@@ -53,7 +83,6 @@ for (const m of MODELS) {
     const chunkPath = path.join(m.dstDir, chunkFilename);
     fs.writeFileSync(chunkPath, chunkBuf);
 
-    // Relative URL for website
     const relDir = path.relative("E:\\大肥鱼\\site", m.dstDir).replace(/\\/g, "/");
     chunkList.push(`${relDir}/${chunkFilename}`);
   }

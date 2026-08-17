@@ -1,6 +1,6 @@
 {
-  "version": 3,
-  "updatedAt": "2026-08-17",
+  "version": 4,
+  "updatedAt": "2026-08-18",
   "_readme": "RVC 角色声音目录（100% 同源分片静态加速，0 CORS，0 第三方依赖）。",
   "baseModels": {
     "hubert": {
@@ -55,9 +55,105 @@
   },
   "models": [
     {
+      "id": "arisu",
+      "name": "天童爱丽丝 (Alice)",
+      "avatarText": "爱丽丝",
+      "description": "《蔚蓝档案》千年游戏开发部 · 邦邦卡邦~ 纯真机械勇者少女音 · RVC v2",
+      "tags": ["女声", "蔚蓝档案", "千年"],
+      "defaultPitch": 2,
+      "chunks": [
+        "models/characters/arisu/chunk_0.bin",
+        "models/characters/arisu/chunk_1.bin",
+        "models/characters/arisu/chunk_2.bin",
+        "models/characters/arisu/chunk_3.bin",
+        "models/characters/arisu/chunk_4.bin",
+        "models/characters/arisu/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "shiroko",
+      "name": "砂狼白子 (Shiroko)",
+      "avatarText": "白子",
+      "description": "《蔚蓝档案》阿拜多斯对策委员会 · 沉稳酷飒行动派少女音 · RVC v2",
+      "tags": ["女声", "蔚蓝档案", "阿拜多斯"],
+      "defaultPitch": 1,
+      "chunks": [
+        "models/characters/shiroko/chunk_0.bin",
+        "models/characters/shiroko/chunk_1.bin",
+        "models/characters/shiroko/chunk_2.bin",
+        "models/characters/shiroko/chunk_3.bin",
+        "models/characters/shiroko/chunk_4.bin",
+        "models/characters/shiroko/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "yuuka",
+      "name": "早濑优香 (Yuuka)",
+      "avatarText": "优香",
+      "description": "《蔚蓝档案》千年研讨会会计 · 傲娇理智计算系少女音 · RVC v2",
+      "tags": ["女声", "蔚蓝档案", "千年"],
+      "defaultPitch": 2,
+      "chunks": [
+        "models/characters/yuuka/chunk_0.bin",
+        "models/characters/yuuka/chunk_1.bin",
+        "models/characters/yuuka/chunk_2.bin",
+        "models/characters/yuuka/chunk_3.bin",
+        "models/characters/yuuka/chunk_4.bin",
+        "models/characters/yuuka/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "hina",
+      "name": "空崎日奈 (Hina)",
+      "avatarText": "日奈",
+      "description": "《蔚蓝档案》格黑娜风纪委员会长 · 威严中带着疲倦的温柔少女音 · RVC v2",
+      "tags": ["女声", "蔚蓝档案", "格黑娜"],
+      "defaultPitch": 1,
+      "chunks": [
+        "models/characters/hina/chunk_0.bin",
+        "models/characters/hina/chunk_1.bin",
+        "models/characters/hina/chunk_2.bin",
+        "models/characters/hina/chunk_3.bin",
+        "models/characters/hina/chunk_4.bin",
+        "models/characters/hina/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "noa",
+      "name": "生盐诺亚 (Noa)",
+      "avatarText": "诺亚",
+      "description": "《蔚蓝档案》千年研讨会书记 · 温柔腹黑记录系少女音 · RVC v2",
+      "tags": ["女声", "蔚蓝档案", "千年"],
+      "defaultPitch": 2,
+      "chunks": [
+        "models/characters/noa/chunk_0.bin",
+        "models/characters/noa/chunk_1.bin",
+        "models/characters/noa/chunk_2.bin",
+        "models/characters/noa/chunk_3.bin",
+        "models/characters/noa/chunk_4.bin",
+        "models/characters/noa/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "koharu",
+      "name": "下江小春 (Koharu)",
+      "avatarText": "小春",
+      "description": "《蔚蓝档案》三一补课部 · 色情是不行的！死刑！傲娇纯情少女音 · RVC v2",
+      "tags": ["女声", "蔚蓝档案", "三一"],
+      "defaultPitch": 3,
+      "chunks": [
+        "models/characters/koharu/chunk_0.bin",
+        "models/characters/koharu/chunk_1.bin",
+        "models/characters/koharu/chunk_2.bin",
+        "models/characters/koharu/chunk_3.bin",
+        "models/characters/koharu/chunk_4.bin",
+        "models/characters/koharu/chunk_5.bin"
+      ]
+    },
+    {
       "id": "tomori",
       "name": "高松灯 (Tomori)",
-      "emoji": "🎸",
+      "avatarText": "灯",
       "description": "《BanG Dream! It's MyGO!!!!!》主唱 · 清澈少年感少女音 · RVC v2",
       "tags": ["女声", "动漫", "MyGO"],
       "defaultPitch": 2,
@@ -73,7 +169,7 @@
     {
       "id": "rana",
       "name": "要乐奈 (Rana)",
-      "emoji": "🐱",
+      "avatarText": "乐奈",
       "description": "《BanG Dream! It's MyGO!!!!!》吉他手 · 慵懒灵动猫系少女音 · RVC v2",
       "tags": ["女声", "动漫", "MyGO"],
       "defaultPitch": 2,
@@ -89,7 +185,7 @@
     {
       "id": "teio",
       "name": "东海帝皇 (Tokai Teio)",
-      "emoji": "🐎",
+      "avatarText": "帝皇",
       "description": "《赛马娘 Pretty Derby》· 活泼元气高辨识度少女音 · RVC v2",
       "tags": ["女声", "动漫", "赛马娘"],
       "defaultPitch": 3,

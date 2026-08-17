@@ -461,10 +461,13 @@
       card.setAttribute("role", "option");
       card.setAttribute("aria-selected", isSelected ? "true" : "false");
 
+      const avatarText = m.avatarText || m.name.slice(0, 2);
       card.innerHTML = `
         <div class="flex items-center justify-between w-full">
           <div class="flex items-center gap-3">
-            <span class="text-2xl">${m.emoji || "🎙️"}</span>
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50/80 border border-teal-200/60 font-black text-brand text-xs shadow-xs">
+              ${avatarText}
+            </div>
             <div>
               <p class="text-sm font-black text-ink">${m.name}</p>
               <div class="flex flex-wrap gap-1 mt-1">
