@@ -12652,6 +12652,92 @@ async function synthesizeVoice(session, features, pitch, options = {}) {
   const outputs = await runInference(session, feeds);
   return parseSynthesisOutput(outputs);
 }
+function applyRmsVolumeEnvelope(input16k, synth40k, rmsMixRate = 0.25) {
+  if (!input16k || !synth40k || rmsMixRate <= 0) return synth40k;
+  const win16k = 320;
+  const win40k = 800;
+  const numWindows = Math.min(
+    Math.floor(input16k.length / win16k),
+    Math.floor(synth40k.length / win40k)
+  );
+  if (numWindows === 0) return synth40k;
+
+  const output = new Float32Array(synth40k);
+  for (let w = 0; w < numWindows; w++) {
+    let sumIn = 0;
+    const inStart = w * win16k;
+    for (let i = 0; i < win16k; i++) {
+      const s = input16k[inStart + i];
+      sumIn += s * s;
+    }
+    const rmsIn = Math.sqrt(sumIn / win16k + 1e-6);
+
+    let sumSynth = 0;
+    const synthStart = w * win40k;
+    for (let i = 0; i < win40k; i++) {
+      const s = synth40k[synthStart + i];
+      sumSynth += s * s;
+    }
+    const rmsSynth = Math.sqrt(sumSynth / win40k + 1e-6);
+
+    const ratio = Math.max(0.6, Math.min(1.8, rmsIn / (rmsSynth + 1e-5)));
+    const scale = (1 - rmsMixRate) + rmsMixRate * ratio;
+
+    for (let i = 0; i < win40k; i++) {
+      output[synthStart + i] *= scale;
+    }
+  }
+  return output;
+}
+function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
+  if (!audio || audio.length === 0) return audio;
+  function createPeakingFilter(fc, gainDb, q, fs) {
+    const A = Math.pow(10, gainDb / 40.0);
+    const w0 = 2 * Math.PI * fc / fs;
+    const alpha = Math.sin(w0) / (2 * q);
+    const b0 = 1 + alpha * A;
+    const b1 = -2 * Math.cos(w0);
+    const b2 = 1 - alpha * A;
+    const a0 = 1 + alpha / A;
+    const a1 = -2 * Math.cos(w0);
+    const a2 = 1 - alpha / A;
+    return { b0: b0/a0, b1: b1/a0, b2: b2/a0, a1: a1/a0, a2: a2/a0 };
+  }
+  function createHighShelfFilter(fc, gainDb, fs) {
+    const A = Math.pow(10, gainDb / 40.0);
+    const w0 = 2 * Math.PI * fc / fs;
+    const cosW = Math.cos(w0);
+    const sinW = Math.sin(w0);
+    const alpha = sinW / 2 * Math.sqrt((A + 1/A)*(1/0.7 - 1) + 2);
+    const b0 = A * ((A + 1) + (A - 1) * cosW + 2 * Math.sqrt(A) * alpha);
+    const b1 = -2 * A * ((A - 1) + (A + 1) * cosW);
+    const b2 = A * ((A + 1) + (A - 1) * cosW - 2 * Math.sqrt(A) * alpha);
+    const a0 = (A + 1) - (A - 1) * cosW + 2 * Math.sqrt(A) * alpha;
+    const a1 = 2 * ((A - 1) - (A + 1) * cosW);
+    const a2 = (A + 1) - (A - 1) * cosW - 2 * Math.sqrt(A) * alpha;
+    return { b0: b0/a0, b1: b1/a0, b2: b2/a0, a1: a1/a0, a2: a2/a0 };
+  }
+  function applyBiquad(inAudio, f) {
+    const out = new Float32Array(inAudio.length);
+    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+    for (let i = 0; i < inAudio.length; i++) {
+      const x0 = inAudio[i];
+      const y0 = f.b0 * x0 + f.b1 * x1 + f.b2 * x2 - f.a1 * y1 - f.a2 * y2;
+      out[i] = y0;
+      x2 = x1;
+      x1 = x0;
+      y2 = y1;
+      y1 = y0;
+    }
+    return out;
+  }
+  const warmFilter = createPeakingFilter(220, 1.2, 0.7, sampleRate);
+  const stage1 = applyBiquad(audio, warmFilter);
+  const clearFilter = createPeakingFilter(3800, 1.5, 0.8, sampleRate);
+  const stage2 = applyBiquad(stage1, clearFilter);
+  const airFilter = createHighShelfFilter(11000, 1.3, sampleRate);
+  return applyBiquad(stage2, airFilter);
+}
 function encodeMonoPcmToWav(audio, options = {}) {
   const { sampleRate = 40e3, numChannels = 1, bitsPerSample = 16 } = options;
   const bytesPerSample = bitsPerSample / 8;
@@ -12777,7 +12863,13 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
         callbacks.onEvent?.({ type: "chunk", current, total });
       }
     );
-    ctx.outputAudio = outputAudio;
+    let finalAudio = outputAudio;
+    // 1. Blend RMS Volume Envelope (Soul / Emotion dynamic retention)
+    finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 0.25);
+    // 2. Polish Harmonics & Vocal Air
+    finalAudio = applyHarmonicAirAndWarmth(finalAudio, options.outputSampleRate ?? 40e3);
+
+    ctx.outputAudio = finalAudio;
     ctx.hiddenStates = new Float32Array(0);
     ctx.f0 = new Float32Array(0);
     emitStage(PIPELINE_STAGES[5]);
