@@ -471,6 +471,16 @@
 
   function selectModel(id, name) {
     state.selectedModelId = id;
+    const entry = state.catalog.find((candidate) => candidate.id === id);
+    if (entry && Number.isFinite(Number(entry.defaultPitch))) {
+      const pitch = document.getElementById("rvc-pitch");
+      if (pitch) {
+        pitch.value = String(entry.defaultPitch);
+        const value = document.getElementById("rvc-pitch-value");
+        if (value) value.textContent = String(entry.defaultPitch);
+        syncRangeFill(pitch);
+      }
+    }
     displayModels();
     if (state.backend === "ready") setServiceStatus(interpolate(t("selectedModel"), { name }), "normal");
   }

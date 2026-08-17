@@ -49,6 +49,9 @@ ALLOWED_MIME_TYPES = {
     "audio/x-m4a",
     "audio/ogg",
     "audio/webm",
+    # Some HTTP clients (curl, PowerShell, generic uploaders) send a generic
+    # type for audio files; ffmpeg still parses the real format below.
+    "application/octet-stream",
 }
 ALLOWED_FORMATS = {"wav", "mp3"}
 ALLOWED_F0_METHODS = {"rmvpe", "crepe", "fcpe", "harvest"}
@@ -96,7 +99,13 @@ def scan_models() -> list[dict]:
     results: list[dict] = []
     for pth in sorted(MODELS_DIR.rglob("*.pth")):
         relative = pth.relative_to(MODELS_DIR)
-        model_id = str(relative.with_suffix("")).replace("\\", "/").replace("/", "-")
+        parent = pth.parent
+        # models/<name>/<name>.pth or models/<name>/model.pth -> id "<name>";
+        # models/<name>.pth (flat) -> id "<name>".
+        if parent != MODELS_DIR and (pth.stem == parent.name or pth.stem == "model"):
+            model_id = parent.name
+        else:
+            model_id = pth.stem
         model_id = "".join(ch for ch in model_id if ch.isalnum() or ch in "-_")
         if not model_id:
             continue
@@ -139,12 +148,8 @@ def find_model_path(model_id: str) -> Path:
     candidates = [
         MODELS_DIR / f"{model_id}.pth",
         MODELS_DIR / model_id / "model.pth",
+        MODELS_DIR / model_id / f"{model_id}.pth",
     ]
-    if "/" in model_id or "-" in model_id:
-        # ids generated from nested paths use "-" as separator; try both separators.
-        as_path = MODELS_DIR / model_id.replace("-", "/")
-        candidates.append(as_path.with_suffix(".pth"))
-        candidates.append(as_path / "model.pth")
     for candidate in candidates:
         if candidate.is_file():
             return candidate.resolve()
