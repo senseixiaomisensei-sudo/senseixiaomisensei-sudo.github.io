@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev; media-src 'self' blob: https://postprep-text-gateway.postprep.workers.dev; frame-src 'none'; form-action 'self'">
+  <meta name="description" content="PostPrep AI 变声器：选择角色声音，上传或录制一段声音，一键变成角色音色。RVC 声音转换，简单三步。">
+  <meta name="theme-color" content="#0F766E">
+  <title>AI 变声器 | PostPrep</title>
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
+  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260815-rvc">
+  <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260815-rvc">
+  <link rel="stylesheet" href="assets/rvc.css?v=20260815-rvc">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="rvc">
+  <div id="site-header"></div>
+
+  <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+    <header class="max-w-4xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-rvc-i18n="eyebrow">RVC VOICE CHANGER</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
+      <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
+    </header>
+
+    <section class="mt-8 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950 shadow-sm sm:p-5" aria-labelledby="rvc-note-title">
+      <div class="flex items-start gap-3">
+        <i class="fa-solid fa-circle-info mt-1 shrink-0 text-sky-700" aria-hidden="true"></i>
+        <div class="min-w-0">
+          <h2 id="rvc-note-title" class="font-black" data-rvc-i18n="noteTitle">使用提示</h2>
+          <p class="mt-1" data-rvc-i18n="noteBody">角色音色来自各模型的许可情况，请仅将变声结果用于你有权使用的场景，并为 AI 生成内容做清晰标注。请勿用他人声音冒充本人或用于欺骗。</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.74fr)]">
+      <section class="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-7" aria-labelledby="rvc-workflow-heading">
+        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-rvc-i18n="workflowEyebrow">VOICE WORKFLOW</p>
+            <h2 id="rvc-workflow-heading" class="mt-2 text-xl font-black" data-rvc-i18n="workflowTitle">三步完成变声</h2>
+          </div>
+          <span class="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-brand"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-rvc-i18n="privacyBadge">用完即删</span></span>
+        </div>
+
+        <!-- Step 1: 选择角色 -->
+        <div class="mt-7">
+          <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end sm:gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-bold" id="rvc-step-model-label" data-rvc-i18n="stepModel">1. 选择角色声音</p>
+              <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepModelHint">点一下卡片即可选中。搜索框可快速找到角色。</p>
+            </div>
+            <input id="rvc-model-search" type="search" autocomplete="off" spellcheck="false" class="min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand sm:w-56" data-rvc-i18n-placeholder="searchPlaceholder" placeholder="搜索角色…">
+          </div>
+          <div id="rvc-model-gallery" class="mt-4 grid max-h-80 gap-3 overflow-y-auto pr-1 sm:grid-cols-2" role="listbox" aria-labelledby="rvc-step-model-label"></div>
+          <p id="rvc-model-empty" class="mt-4 hidden rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" data-rvc-i18n="modelEmpty">没有找到匹配的角色。换个关键词试试。</p>
+        </div>
+
+        <!-- Step 2: 你的声音 -->
+        <div class="mt-7 border-t border-line pt-6">
+          <p class="text-sm font-bold" id="rvc-step-audio-label" data-rvc-i18n="stepAudio">2. 上传或录制你的声音</p>
+          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepAudioHint">建议单人、干净、无伴奏的说话或唱歌片段，3 秒到 3 分钟，最大 25 MB。支持 WAV、MP3、M4A、OGG 和浏览器录音。</p>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2" role="group" aria-labelledby="rvc-step-audio-label">
+            <button id="rvc-source-upload" type="button" class="min-h-24 rounded-lg border border-brand bg-teal-50 p-4 text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="true">
+              <span class="flex items-center gap-3"><i class="fa-solid fa-upload text-brand" aria-hidden="true"></i><span class="font-black" data-rvc-i18n="sourceUpload">上传音频</span></span>
+              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceUploadHint">选择电脑或手机里已有的录音文件。</span>
+            </button>
+            <button id="rvc-source-record" type="button" class="min-h-24 rounded-lg border border-line bg-white p-4 text-left transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="false">
+              <span class="flex items-center gap-3"><i class="fa-solid fa-microphone text-violet-700" aria-hidden="true"></i><span class="font-black" data-rvc-i18n="sourceRecord">录制声音</span></span>
+              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceRecordHint">直接用麦克风录一段，录完自动可用。</span>
+            </button>
+          </div>
+
+          <div id="rvc-upload-wrap" class="mt-5">
+            <input id="rvc-audio-file" type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/webm" class="mt-1 block w-full overflow-hidden rounded-lg border border-line bg-white px-3 py-2 text-xs text-ink file:mr-2 file:rounded-md file:border-0 file:bg-teal-50 file:px-2 file:py-2 file:text-sm file:font-bold file:text-brand hover:file:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:text-sm sm:file:mr-4 sm:file:px-3">
+            <p id="rvc-audio-status" class="mt-3 break-words text-sm leading-6 text-muted" role="status" aria-live="polite" data-rvc-i18n="fileEmpty">尚未选择音频文件。</p>
+          </div>
+
+          <div id="rvc-record-wrap" class="mt-5 hidden">
+            <div class="flex flex-wrap items-center gap-3">
+              <button id="rvc-record-toggle" type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                <i class="fa-solid fa-microphone" aria-hidden="true"></i><span id="rvc-record-label" data-rvc-i18n="recordStart">开始录音</span>
+              </button>
+              <span id="rvc-record-timer" class="font-mono text-lg font-black text-brand" aria-live="polite">0:00</span>
+              <span id="rvc-record-hint" class="text-xs leading-5 text-muted" data-rvc-i18n="recordHint">录音在浏览器本地完成，只有点击“开始变声”后才会发送。</span>
+            </div>
+            <audio id="rvc-record-preview" class="mt-4 w-full" controls preload="metadata" hidden></audio>
+          </div>
+        </div>
+
+        <!-- Step 3: 简单设置 -->
+        <div class="mt-7 border-t border-line pt-6">
+          <p class="text-sm font-bold" data-rvc-i18n="stepSettings">3. 调节声音（可选）</p>
+          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepSettingsHint">大多数时候保持默认就好。想更贴近角色音色，可以把“相似度”调高一些。</p>
+
+          <div class="mt-5">
+            <div class="flex items-center justify-between gap-3">
+              <label for="rvc-pitch" class="text-sm font-bold" data-rvc-i18n="pitchLabel">音高</label>
+              <span id="rvc-pitch-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0</span>
+            </div>
+            <input id="rvc-pitch" type="range" min="-12" max="12" step="1" value="0" class="rvc-range mt-3 w-full" aria-describedby="rvc-pitch-hint">
+            <div class="mt-1 flex justify-between text-xs text-muted" id="rvc-pitch-hint">
+              <span data-rvc-i18n="pitchLow">低沉（-12）</span>
+              <span data-rvc-i18n="pitchDefault">原声（0）</span>
+              <span data-rvc-i18n="pitchHigh">清脆（+12）</span>
+            </div>
+          </div>
+
+          <details class="mt-6 rounded-lg border border-line bg-canvas px-4 py-3" id="rvc-advanced">
+            <summary class="cursor-pointer text-sm font-bold text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-rvc-i18n="advancedToggle">高级设置（进阶用户）</summary>
+            <div class="mt-5 space-y-6">
+              <div>
+                <div class="flex items-center justify-between gap-3">
+                  <label for="rvc-index-rate" class="text-sm font-bold" data-rvc-i18n="indexRateLabel">相似度</label>
+                  <span id="rvc-index-rate-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0.5</span>
+                </div>
+                <input id="rvc-index-rate" type="range" min="0" max="1" step="0.05" value="0.5" class="rvc-range mt-3 w-full">
+                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="indexRateHint">越高音色越像角色，太高可能不自然。建议 0.3–0.8。</p>
+              </div>
+              <div>
+                <div class="flex items-center justify-between gap-3">
+                  <label for="rvc-protect" class="text-sm font-bold" data-rvc-i18n="protectLabel">辅音保护</label>
+                  <span id="rvc-protect-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0.33</span>
+                </div>
+                <input id="rvc-protect" type="range" min="0" max="0.5" step="0.01" value="0.33" class="rvc-range mt-3 w-full">
+                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="protectHint">保护清辅音和呼吸声，防止破音。0 不保护，0.5 最保守。</p>
+              </div>
+              <div class="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label for="rvc-f0-method" class="text-sm font-bold" data-rvc-i18n="f0Label">音高提取算法</label>
+                  <select id="rvc-f0-method" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
+                    <option value="rmvpe" data-rvc-i18n="f0Rmvpe">RMVPE（推荐）</option>
+                    <option value="crepe" data-rvc-i18n="f0Crepe">Crepe（更准更慢）</option>
+                    <option value="fcpe" data-rvc-i18n="f0Fcpe">FCPE（快）</option>
+                    <option value="harvest" data-rvc-i18n="f0Harvest">Harvest（传统）</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="rvc-format" class="text-sm font-bold" data-rvc-i18n="formatLabel">输出格式</label>
+                  <select id="rvc-format" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
+                    <option value="wav" data-rvc-i18n="formatWav">WAV（无损）</option>
+                    <option value="mp3" data-rvc-i18n="formatMp3">MP3（体积小）</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="rvc-resample" class="text-sm font-bold" data-rvc-i18n="resampleLabel">重采样率</label>
+                  <select id="rvc-resample" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
+                    <option value="0" data-rvc-i18n="resampleKeep">保持原样</option>
+                    <option value="16000">16 kHz</option>
+                    <option value="24000">24 kHz</option>
+                    <option value="32000">32 kHz</option>
+                    <option value="44100">44.1 kHz</option>
+                    <option value="48000">48 kHz</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <label for="rvc-rms-mix" class="text-sm font-bold" data-rvc-i18n="rmsLabel">音量跟随</label>
+                    <span id="rvc-rms-mix-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">1.0</span>
+                  </div>
+                  <input id="rvc-rms-mix" type="range" min="0" max="1" step="0.05" value="1" class="rvc-range mt-3 w-full">
+                </div>
+                <div>
+                  <label for="rvc-filter-radius" class="text-sm font-bold" data-rvc-i18n="filterLabel">滤波半径</label>
+                  <select id="rvc-filter-radius" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
+                    <option value="3">3（推荐）</option>
+                    <option value="0">0（关）</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="mt-7 border-t border-line pt-6">
+          <p id="rvc-service-status" class="break-words rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" role="status" aria-live="polite" data-rvc-i18n="checkingService">正在确认变声服务是否可用；此检查不会上传音频。</p>
+          <button id="rvc-convert" type="button" class="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark disabled:cursor-wait disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:w-auto" disabled aria-busy="false" aria-describedby="rvc-service-status"><i class="fa-solid fa-wave-square" aria-hidden="true"></i><span id="rvc-convert-label" data-rvc-i18n="checkingServiceAction">正在检查服务…</span></button>
+        </div>
+      </section>
+
+      <aside class="space-y-6">
+        <section class="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-6" aria-labelledby="rvc-howto-title">
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">HOW IT WORKS</p>
+          <h2 id="rvc-howto-title" class="mt-2 text-xl font-black" data-rvc-i18n="howtoTitle">三步上手</h2>
+          <ol class="mt-5 space-y-4 text-sm leading-6 text-muted">
+            <li class="flex gap-3"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-black text-brand">1</span><span data-rvc-i18n="howtoOne">在左侧选一个角色声音（点击卡片即可）。</span></li>
+            <li class="flex gap-3"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-black text-brand">2</span><span data-rvc-i18n="howtoTwo">上传一段你自己的录音，或直接用麦克风录制。</span></li>
+            <li class="flex gap-3"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-black text-brand">3</span><span data-rvc-i18n="howtoThree">点“开始变声”，等几秒，试听并下载结果。</span></li>
+          </ol>
+        </section>
+
+        <section class="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-6" aria-labelledby="rvc-tips-title">
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">TIPS</p>
+          <h2 id="rvc-tips-title" class="mt-2 text-xl font-black" data-rvc-i18n="tipsTitle">让效果更好</h2>
+          <ul class="mt-5 space-y-3 text-sm leading-6 text-muted" data-rvc-list="tips">
+            <li class="flex gap-3"><i class="fa-solid fa-check mt-1 text-brand" aria-hidden="true"></i><span>使用安静环境、单人声音的清晰录音。</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check mt-1 text-brand" aria-hidden="true"></i><span>5–30 秒效果最稳；带背景音乐或混响会降低质量。</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check mt-1 text-brand" aria-hidden="true"></i><span>变声结果请标注“AI 合成音频”，不要冒充真人。</span></li>
+          </ul>
+        </section>
+
+        <section id="rvc-result" class="rounded-xl border border-teal-100 bg-teal-50/70 p-4 shadow-sm sm:p-6" hidden aria-labelledby="rvc-result-title">
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">AI GENERATED AUDIO</p>
+          <h2 id="rvc-result-title" class="mt-2 text-xl font-black" data-rvc-i18n="resultTitle">变声结果</h2>
+          <p id="rvc-result-meta" class="mt-2 break-words text-sm leading-6 text-muted"></p>
+          <audio id="rvc-result-audio" class="mt-5 w-full" controls preload="metadata"></audio>
+          <a id="rvc-result-download" class="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-brand bg-white px-4 py-2 text-sm font-bold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:w-auto" href="#" download="postprep-rvc-audio.wav"><i class="fa-solid fa-download" aria-hidden="true"></i><span data-rvc-i18n="download">下载变声结果</span></a>
+          <p class="mt-4 text-xs leading-5 text-muted" data-rvc-i18n="resultDisclosure">临时链接会在约 15 分钟后失效，请及时下载。</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
+  <script src="assets/postprep-config.js"></script>
+  <script src="assets/postprep.js?v=20260815-rvc"></script>
+  <script src="assets/rvc.js?v=20260815-rvc"></script>
+</body>
+</html>

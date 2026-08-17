@@ -1,0 +1,7 @@
+# rvc-python 0.1.5 pins torch>=2.0 / torchaudio>=2.0; the Dockerfile installs the
+# CUDA 11.8 build first so pip keeps it. rvc-python also pins numpy<=1.23.5 and
+# faiss-cpu==1.7.3; do not bump them without testing.
+rvc-python==0.1.5
+fastapi==0.115.12
+python-multipart==0.0.20
+uvicorn[standard]==0.34.0

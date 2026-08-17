@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-15",
+  "_readme": "RVC 角色声音目录。每个条目对应一个 RVC 模型。file/index 是相对 GPU 服务 models 目录的路径（部署 rvc-service 后，把 .pth 与 .index 放入对应目录即可自动出现，无需改本文件）；也可以把 file 改成完整的 https 直链（模型需允许跨域下载）。本文件只是展示目录，实际可用角色以 GPU 服务的 /v1/models 为准。",
+  "models": [
+    {
+      "id": "qingse-male-low",
+      "name": "低沉男声 · 示例",
+      "emoji": "🎙️",
+      "description": "示例条目：把模型文件放入 rvc-service 的 models/qingse-male-low/ 后自动启用。",
+      "tags": ["男声", "示例", "低沉"],
+      "file": "models/qingse-male-low/model.pth",
+      "index": "models/qingse-male-low/model.index",
+      "defaultPitch": -4
+    },
+    {
+      "id": "mellow-male",
+      "name": "磁性男声 · 示例",
+      "emoji": "🎤",
+      "description": "示例条目：适合翻唱与配音的磁性男声。",
+      "tags": ["男声", "示例", "磁性"],
+      "file": "models/mellow-male/model.pth",
+      "index": "models/mellow-male/model.index",
+      "defaultPitch": -2
+    },
+    {
+      "id": "youth-male",
+      "name": "少年音 · 示例",
+      "emoji": "🧢",
+      "description": "示例条目：清亮的少年音色。",
+      "tags": ["男声", "示例", "少年"],
+      "file": "models/youth-male/model.pth",
+      "index": "models/youth-male/model.index",
+      "defaultPitch": 2
+    },
+    {
+      "id": "sweet-female",
+      "name": "甜美少女 · 示例",
+      "emoji": "🎀",
+      "description": "示例条目：甜美的少女音色。",
+      "tags": ["女声", "示例", "甜美"],
+      "file": "models/sweet-female/model.pth",
+      "index": "models/sweet-female/model.index",
+      "defaultPitch": 4
+    },
+    {
+      "id": "clear-female",
+      "name": "清亮女声 · 示例",
+      "emoji": "🌸",
+      "description": "示例条目：干净的清亮女声。",
+      "tags": ["女声", "示例", "清亮"],
+      "file": "models/clear-female/model.pth",
+      "index": "models/clear-female/model.index",
+      "defaultPitch": 2
+    },
+    {
+      "id": "warm-female",
+      "name": "温暖御姐 · 示例",
+      "emoji": "🌹",
+      "description": "示例条目：温暖成熟的御姐音色。",
+      "tags": ["女声", "示例", "御姐"],
+      "file": "models/warm-female/model.pth",
+      "index": "models/warm-female/model.index",
+      "defaultPitch": 0
+    },
+    {
+      "id": "anime-loli",
+      "name": "萝莉音 · 示例",
+      "emoji": "🍭",
+      "description": "示例条目：可爱的萝莉音色。",
+      "tags": ["女声", "示例", "萝莉"],
+      "file": "models/anime-loli/model.pth",
+      "index": "models/anime-loli/model.index",
+      "defaultPitch": 6
+    },
+    {
+      "id": "anime-moe",
+      "name": "元气萌音 · 示例",
+      "emoji": "✨",
+      "description": "示例条目：活力满满的萌系音色。",
+      "tags": ["女声", "示例", "萌系"],
+      "file": "models/anime-moe/model.pth",
+      "index": "models/anime-moe/model.index",
+      "defaultPitch": 4
+    },
+    {
+      "id": "deep-anime-male",
+      "name": "动漫低音炮 · 示例",
+      "emoji": "🔥",
+      "description": "示例条目：厚重的动漫系低音男声。",
+      "tags": ["男声", "示例", "动漫"],
+      "file": "models/deep-anime-male/model.pth",
+      "index": "models/deep-anime-male/model.index",
+      "defaultPitch": -6
+    },
+    {
+      "id": "singer-male",
+      "name": "歌手男声 · 示例",
+      "emoji": "🎸",
+      "description": "示例条目：适合演唱的男歌手音色。",
+      "tags": ["男声", "示例", "歌手"],
+      "file": "models/singer-male/model.pth",
+      "index": "models/singer-male/model.index",
+      "defaultPitch": 0
+    },
+    {
+      "id": "singer-female",
+      "name": "歌手女声 · 示例",
+      "emoji": "🎹",
+      "description": "示例条目：适合演唱的女歌手音色。",
+      "tags": ["女声", "示例", "歌手"],
+      "file": "models/singer-female/model.pth",
+      "index": "models/singer-female/model.index",
+      "defaultPitch": 0
+    },
+    {
+      "id": "narrator",
+      "name": "播音男声 · 示例",
+      "emoji": "📻",
+      "description": "示例条目：沉稳的播音/旁白男声。",
+      "tags": ["男声", "示例", "旁白"],
+      "file": "models/narrator/model.pth",
+      "index": "models/narrator/model.index",
+      "defaultPitch": -2
+    }
+  ]
+}

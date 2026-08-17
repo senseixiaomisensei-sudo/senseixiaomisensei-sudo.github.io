@@ -1,0 +1,89 @@
+/* RVC voice changer page styles (PostPrep brand tokens). */
+
+.rvc-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #0F766E var(--rvc-fill, 50%), #E5E7EB var(--rvc-fill, 50%));
+  outline: none;
+  cursor: pointer;
+}
+
+.rvc-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  border: 3px solid #0F766E;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.rvc-range::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+}
+
+.rvc-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  border: 3px solid #0F766E;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.rvc-range::-moz-range-thumb:hover {
+  transform: scale(1.12);
+}
+
+.rvc-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #E5E7EB;
+}
+
+.rvc-range:focus-visible {
+  outline: 2px solid #0F766E;
+  outline-offset: 3px;
+}
+
+/* Model gallery cards */
+.rvc-model-card {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.rvc-model-card:hover {
+  transform: translateY(-1px);
+}
+
+.rvc-model-card[aria-pressed="true"] {
+  border-color: #0F766E;
+  box-shadow: 0 0 0 1px #0F766E, 0 4px 12px rgba(15, 118, 110, 0.12);
+}
+
+.rvc-model-card[aria-pressed="true"] .rvc-model-check {
+  opacity: 1;
+}
+
+.rvc-model-check {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* Recording pulse */
+@keyframes rvc-record-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+}
+
+.rvc-recording .rvc-record-dot {
+  animation: rvc-record-pulse 1.2s ease-in-out infinite;
+}
+
+.rvc-recording #rvc-record-label {
+  color: #FFFFFF;
+}

@@ -1,7 +1,7 @@
 const TEXT_RATE_LIMITER_BINDING = "POSTPREP_RATE_LIMITER";
-const VOICE_RATE_LIMITER_BINDING = "POSTPREP_VOICE_RATE_LIMITER";
+const RVC_RATE_LIMITER_BINDING = "POSTPREP_RVC_RATE_LIMITER";
 const GATEWAY_SECRET_BINDING = "POSTPREP_GATEWAY_SECRET";
-const MAX_VOICE_UPLOAD_BYTES = 45 * 1024 * 1024;
+const MAX_RVC_UPLOAD_BYTES = 25 * 1024 * 1024;
 const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
   "https://senseixiaomisensei-sudo.github.io",
   "https://postprep-ae6.pages.dev",
@@ -103,40 +103,50 @@ function requestRoute(request) {
       message: "Use POST for text processing",
     };
   }
-  if (path === "/voice") {
+  if (path === "/rvc") {
     return {
-      id: "voice",
-      upstreamBinding: "POSTPREP_VOICE_UPSTREAM_URL",
+      id: "rvc",
+      upstreamBinding: "POSTPREP_RVC_UPSTREAM_URL",
       method: "POST",
-      rateBinding: VOICE_RATE_LIMITER_BINDING,
-      ratePrefix: "voice",
-      maxBytes: MAX_VOICE_UPLOAD_BYTES,
-      message: "Use POST for voice processing",
+      rateBinding: RVC_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc",
+      maxBytes: MAX_RVC_UPLOAD_BYTES,
+      message: "Use POST for voice conversion",
     };
   }
-  if (path === "/voice/status") {
+  if (path === "/rvc/status") {
     return {
-      id: "voice-status",
-      upstreamBinding: "POSTPREP_VOICE_STATUS_UPSTREAM_URL",
+      id: "rvc-status",
+      upstreamBinding: "POSTPREP_RVC_STATUS_UPSTREAM_URL",
       method: "GET",
       rateBinding: TEXT_RATE_LIMITER_BINDING,
-      ratePrefix: "voice-status",
-      message: "Use GET for voice service status",
+      ratePrefix: "rvc-status",
+      message: "Use GET for service status",
     };
   }
-  const outputMatch = path.match(/^\/voice\/output\/([^/]+)$/u);
+  if (path === "/rvc/models") {
+    return {
+      id: "rvc-models",
+      upstreamBinding: "POSTPREP_RVC_MODELS_UPSTREAM_URL",
+      method: "GET",
+      rateBinding: TEXT_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc-models",
+      message: "Use GET for the voice list",
+    };
+  }
+  const outputMatch = path.match(/^\/rvc\/output\/([^/]+)$/u);
   if (outputMatch) {
     const jobId = outputMatch[1];
     const token = url.searchParams.get("token") || "";
     if (!isOutputJobId(jobId) || !isOutputToken(token)) {
-      return { error: { status: 400, code: "INVALID_VOICE_OUTPUT_TOKEN", message: "Invalid voice output address" } };
+      return { error: { status: 400, code: "INVALID_RVC_OUTPUT_TOKEN", message: "Invalid voice output address" } };
     }
     return {
-      id: "voice-output",
-      upstreamBinding: "POSTPREP_VOICE_OUTPUT_UPSTREAM_URL",
+      id: "rvc-output",
+      upstreamBinding: "POSTPREP_RVC_OUTPUT_UPSTREAM_URL",
       method: "GET",
       rateBinding: TEXT_RATE_LIMITER_BINDING,
-      ratePrefix: "voice-output",
+      ratePrefix: "rvc-output",
       message: "Use GET for voice output",
       jobId,
       token,
@@ -151,7 +161,7 @@ function resolvedUpstreamUrl(route, env) {
   try {
     const url = new URL(configured);
     if (url.protocol !== "https:") return "";
-    if (route.id === "voice-output") {
+    if (route.id === "rvc-output") {
       url.searchParams.set("job", route.jobId);
       url.searchParams.set("token", route.token);
     }
@@ -188,13 +198,13 @@ export default {
     if (method === "OPTIONS") return preflightResponse(request, env, route);
     if (method !== route.method) return failure(request, env, 405, "METHOD_NOT_ALLOWED", route.message);
     if (declaredRequestIsTooLarge(request, route.maxBytes)) {
-      return failure(request, env, 413, "VOICE_AUDIO_TOO_LARGE", "The voice upload is too large");
+      return failure(request, env, 413, "RVC_AUDIO_TOO_LARGE", "The audio upload is too large");
     }
 
     const gatewaySecret = protectedGatewaySecret(env);
     const upstreamUrl = resolvedUpstreamUrl(route, env);
     if (!gatewaySecret || !upstreamUrl) {
-      const code = route.id.startsWith("voice") ? "VOICE_BACKEND_NOT_CONFIGURED" : "GATEWAY_NOT_CONFIGURED";
+      const code = route.id.startsWith("rvc") ? "RVC_BACKEND_NOT_CONFIGURED" : "GATEWAY_NOT_CONFIGURED";
       return failure(request, env, 503, code, "Cloud processing safeguards are not configured");
     }
 

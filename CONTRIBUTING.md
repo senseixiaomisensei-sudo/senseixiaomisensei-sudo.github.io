@@ -12,10 +12,10 @@
    origins without maintainer approval and a privacy/CSP update.
 5. Add or update a focused test when changing a Pages Function or gateway route.
 6. Run `npm run build:styles` and `npm test` before requesting review.
-7. Voice changes must preserve the authorization gate, disclosure requirement,
-   fixed GPU destination, short retention, and no-browser-CORS design. Do not
-   add public-figure presets, community voice libraries, source downloading,
-   or model auto-installation.
+7. Voice-changer changes must preserve the fixed GPU destination, short
+   retention, and no-browser-CORS design, and must validate model ids, audio
+   files, and numeric parameters server-side. Do not add arbitrary URL
+   fetching, model auto-installation, or browser-to-GPU paths.
 
 ## Pull request scope
 

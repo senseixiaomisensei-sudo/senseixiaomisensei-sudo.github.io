@@ -1,12 +1,12 @@
-import { configuredVoiceBackend, failure, fetchWithTimeout, json, sameOrigin, verifyGateway } from "./_voice-shared.js";
+import { configuredRvcBackend, failure, fetchWithTimeout, json, sameOrigin, verifyGateway } from "./_rvc-shared.js";
 
 export async function onRequest(context) {
   const { request, env } = context;
   if (!sameOrigin(request, env)) return failure(request, env, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed");
   const gateway = verifyGateway(request, env);
   if (gateway.error) return failure(request, env, gateway.error.status, gateway.error.code, gateway.error.message);
-  if (request.method.toUpperCase() !== "GET") return failure(request, env, 405, "METHOD_NOT_ALLOWED", "Use GET for voice service status");
-  const backend = configuredVoiceBackend(env);
+  if (request.method.toUpperCase() !== "GET") return failure(request, env, 405, "METHOD_NOT_ALLOWED", "Use GET for service status");
+  const backend = configuredRvcBackend(env);
   if (!backend) return json(request, env, { ready: false });
   const healthUrl = new URL("/healthz", backend.url.origin);
   try {

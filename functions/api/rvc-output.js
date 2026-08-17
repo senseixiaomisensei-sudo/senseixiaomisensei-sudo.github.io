@@ -1,5 +1,5 @@
 import {
-  configuredVoiceBackend,
+  configuredRvcBackend,
   failure,
   fetchWithTimeout,
   responseHeaders,
@@ -7,7 +7,7 @@ import {
   validOutputJobId,
   validOutputToken,
   verifyGateway,
-} from "./_voice-shared.js";
+} from "./_rvc-shared.js";
 
 export async function onRequest(context) {
   const { request, env } = context;
@@ -18,9 +18,9 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const job = url.searchParams.get("job") || "";
   const token = url.searchParams.get("token") || "";
-  if (!validOutputJobId(job) || !validOutputToken(token)) return failure(request, env, 400, "INVALID_VOICE_OUTPUT_TOKEN", "Invalid voice output address");
-  const backend = configuredVoiceBackend(env);
-  if (!backend) return failure(request, env, 503, "VOICE_BACKEND_NOT_CONFIGURED", "Voice generation is not configured");
+  if (!validOutputJobId(job) || !validOutputToken(token)) return failure(request, env, 400, "INVALID_RVC_OUTPUT_TOKEN", "Invalid voice output address");
+  const backend = configuredRvcBackend(env);
+  if (!backend) return failure(request, env, 503, "RVC_BACKEND_NOT_CONFIGURED", "Voice conversion is not configured");
 
   const outputUrl = new URL(`/v1/output/${encodeURIComponent(job)}`, backend.url.origin);
   outputUrl.searchParams.set("token", token);
@@ -28,12 +28,12 @@ export async function onRequest(context) {
   try {
     upstream = await fetchWithTimeout(outputUrl.toString(), { headers: { Authorization: `Bearer ${backend.token}` } }, 30000);
   } catch (error) {
-    return failure(request, env, error && error.name === "AbortError" ? 504 : 502, "VOICE_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
+    return failure(request, env, error && error.name === "AbortError" ? 504 : 502, "RVC_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
   }
   const contentType = String(upstream.headers.get("Content-Type") || "").toLowerCase();
-  if (!upstream.ok || !contentType.startsWith("audio/")) return failure(request, env, 502, "VOICE_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
+  if (!upstream.ok || !contentType.startsWith("audio/")) return failure(request, env, 502, "RVC_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
   const headers = new Headers(responseHeaders(request, env, contentType));
-  headers.set("Content-Disposition", 'attachment; filename="postprep-ai-audio.wav"');
+  headers.set("Content-Disposition", 'attachment; filename="postprep-rvc-audio.wav"');
   headers.set("Referrer-Policy", "no-referrer");
   return new Response(upstream.body, { status: 200, headers });
 }

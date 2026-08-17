@@ -5,9 +5,10 @@ workers_dev = true
 
 [vars]
 POSTPREP_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/text"
-POSTPREP_VOICE_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/voice"
-POSTPREP_VOICE_STATUS_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/voice-status"
-POSTPREP_VOICE_OUTPUT_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/voice-output"
+POSTPREP_RVC_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/rvc"
+POSTPREP_RVC_STATUS_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/rvc-status"
+POSTPREP_RVC_MODELS_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/rvc-models"
+POSTPREP_RVC_OUTPUT_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/rvc-output"
 
 [[ratelimits]]
 name = "POSTPREP_RATE_LIMITER"
@@ -18,8 +19,8 @@ namespace_id = "2026081201"
   period = 60
 
 [[ratelimits]]
-name = "POSTPREP_VOICE_RATE_LIMITER"
-namespace_id = "2026081301"
+name = "POSTPREP_RVC_RATE_LIMITER"
+namespace_id = "2026081501"
 
   [ratelimits.simple]
   limit = 1

@@ -102,8 +102,8 @@ test("gateway permits the controlled Cloudflare Pages host", async () => {
   }
 });
 
-test("voice route fails closed until its dedicated upstream and rate limiter exist", async () => {
-  const request = new Request("https://postprep-text-gateway.example.workers.dev/voice", {
+test("rvc route fails closed until its dedicated upstream and rate limiter exist", async () => {
+  const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc", {
     method: "POST",
     headers: { Origin: SITE_ORIGIN, "Content-Type": "multipart/form-data; boundary=test" },
     body: "--test--",
@@ -111,10 +111,10 @@ test("voice route fails closed until its dedicated upstream and rate limiter exi
   const response = await gateway.fetch(request, BASE_ENV);
   const body = await response.json();
   assert.equal(response.status, 503);
-  assert.equal(body.code, "VOICE_BACKEND_NOT_CONFIGURED");
+  assert.equal(body.code, "RVC_BACKEND_NOT_CONFIGURED");
 });
 
-test("voice route uses a separate limiter and fixed Pages upstream", async () => {
+test("rvc route uses a separate limiter and fixed Pages upstream", async () => {
   const originalFetch = globalThis.fetch;
   let forwarded;
   globalThis.fetch = async (url, options) => {
@@ -123,19 +123,19 @@ test("voice route uses a separate limiter and fixed Pages upstream", async () =>
   };
 
   try {
-    const request = new Request("https://postprep-text-gateway.example.workers.dev/voice", {
+    const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc", {
       method: "POST",
       headers: { Origin: SITE_ORIGIN, "Content-Type": "multipart/form-data; boundary=test" },
       body: "--test--",
     });
     const env = {
       ...BASE_ENV,
-      POSTPREP_VOICE_UPSTREAM_URL: "https://postprep-ae6.pages.dev/api/voice",
-      POSTPREP_VOICE_RATE_LIMITER: { limit: async ({ key }) => ({ success: key.startsWith("voice:") }) },
+      POSTPREP_RVC_UPSTREAM_URL: "https://postprep-ae6.pages.dev/api/rvc",
+      POSTPREP_RVC_RATE_LIMITER: { limit: async ({ key }) => ({ success: key.startsWith("rvc:") }) },
     };
     const response = await gateway.fetch(request, env);
     assert.equal(response.status, 200);
-    assert.equal(forwarded.url, env.POSTPREP_VOICE_UPSTREAM_URL);
+    assert.equal(forwarded.url, env.POSTPREP_RVC_UPSTREAM_URL);
     assert.equal(forwarded.options.headers.get("X-PostPrep-Gateway"), BASE_ENV.POSTPREP_GATEWAY_SECRET);
     assert.match(forwarded.options.headers.get("Content-Type"), /multipart\/form-data/);
   } finally {
@@ -143,7 +143,7 @@ test("voice route uses a separate limiter and fixed Pages upstream", async () =>
   }
 });
 
-test("voice output route rejects an arbitrary job address before any upstream fetch", async () => {
+test("rvc output route rejects an arbitrary job address before any upstream fetch", async () => {
   const originalFetch = globalThis.fetch;
   let upstreamCalls = 0;
   globalThis.fetch = async () => {
@@ -151,17 +151,17 @@ test("voice output route rejects an arbitrary job address before any upstream fe
     throw new Error("Invalid voice output must not reach Pages");
   };
   try {
-    const request = new Request("https://postprep-text-gateway.example.workers.dev/voice/output/not-a-job?token=short", {
+    const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc/output/not-a-job?token=short", {
       headers: { Origin: SITE_ORIGIN },
     });
     const response = await gateway.fetch(request, {
       ...BASE_ENV,
-      POSTPREP_VOICE_OUTPUT_UPSTREAM_URL: "https://postprep-ae6.pages.dev/api/voice-output",
-      POSTPREP_VOICE_RATE_LIMITER: { limit: async () => ({ success: true }) },
+      POSTPREP_RVC_OUTPUT_UPSTREAM_URL: "https://postprep-ae6.pages.dev/api/rvc-output",
+      POSTPREP_RVC_RATE_LIMITER: { limit: async () => ({ success: true }) },
     });
     const body = await response.json();
     assert.equal(response.status, 400);
-    assert.equal(body.code, "INVALID_VOICE_OUTPUT_TOKEN");
+    assert.equal(body.code, "INVALID_RVC_OUTPUT_TOKEN");
     assert.equal(upstreamCalls, 0);
   } finally {
     globalThis.fetch = originalFetch;
