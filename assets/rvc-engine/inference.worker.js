@@ -12339,7 +12339,8 @@ async function runRmvpeInference(session, audio) {
       }
     } else if (outputTensor.dims.length === 3 && (outputTensor.dims[1] === RMVPE_PARAMS.nClass || outputTensor.dims[2] === RMVPE_PARAMS.nClass)) {
       const salienceData = outputTensor.data;
-      const outputFrames = outputTensor.dims[2];
+      const isLastDimClass = outputTensor.dims[2] === RMVPE_PARAMS.nClass;
+      const outputFrames = isLastDimClass ? outputTensor.dims[1] : outputTensor.dims[2];
       const f0All = decodeSalienceToF0(salienceData, outputFrames, threshold);
       f0 = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
