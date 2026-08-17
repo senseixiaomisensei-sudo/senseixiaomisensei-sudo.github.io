@@ -8426,7 +8426,7 @@ function splitAudioIntoChunks(audio, config = {}) {
   if (numChunks === 1) {
     return [
       {
-        data: padAudioSymmetric(audio, padSamples),
+        data: audio,
         index: 0,
         startTime: 0,
         endTime: totalSamples / sampleRate,
@@ -8487,6 +8487,9 @@ function padAudioMirror(chunk, padSamples, fullAudio, chunkStart, chunkEnd) {
 function mergeProcessedChunks(chunks, config = {}) {
   if (chunks.length === 0) {
     return new Float32Array(0);
+  }
+  if (chunks.length === 1) {
+    return chunks[0];
   }
   const padDuration = config.padDuration ?? DEFAULT_PAD_DURATION;
   const outputSampleRate = config.outputSampleRate ?? DEFAULT_OUTPUT_SAMPLE_RATE;
@@ -8653,7 +8656,7 @@ async function runContentVecInference(session, audio) {
     } else {
       throw new Error(`Unexpected output shape: ${output.dims.join(", ")}`);
     }
-    const upsampled = upsampleFeaturesLinear(features, frameCount, featureSize);
+    const upsampled = upsampleFeaturesRepeat(features, frameCount, featureSize);
     return {
       hiddenStates: upsampled,
       frameCount,
@@ -8677,18 +8680,16 @@ function transposeFeatures(data, batch, featureSize, frameCount) {
   }
   return result;
 }
-function upsampleFeaturesLinear(features, frameCount, featureSize) {
+function upsampleFeaturesRepeat(features, frameCount, featureSize) {
   const upsampledCount = frameCount * 2;
   const result = new Float32Array(upsampledCount * featureSize);
-  for (let feat = 0; feat < featureSize; feat++) {
-    for (let i = 0; i < upsampledCount; i++) {
-      const srcPos = i / 2;
-      const srcIdx = Math.floor(srcPos);
-      const t = srcPos - srcIdx;
-      const val0 = features[srcIdx * featureSize + feat] ?? 0;
-      const val1 = features[(srcIdx + 1) * featureSize + feat] ?? val0;
-      result[i * featureSize + feat] = val0 + t * (val1 - val0);
-    }
+  for (let i = 0; i < frameCount; i++) {
+    const srcOffset = i * featureSize;
+    const dstOffset1 = (2 * i) * featureSize;
+    const dstOffset2 = (2 * i + 1) * featureSize;
+    const slice = features.subarray(srcOffset, srcOffset + featureSize);
+    result.set(slice, dstOffset1);
+    result.set(slice, dstOffset2);
   }
   return result;
 }
