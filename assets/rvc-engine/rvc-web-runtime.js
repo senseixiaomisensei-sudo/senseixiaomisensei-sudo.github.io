@@ -2,8 +2,7 @@ const DEFAULT_CDN_BASE = `https://cdn.jsdelivr.net/npm/rvc-web-runtime@${"1.0.5"
 const DEFAULT_ORT_CDN_BASE = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${"1.26.0"}/dist/`;
 function createRVC(config = {}) {
   const rawAsset = config.assetBaseUrl ?? DEFAULT_CDN_BASE;
-  const assetBaseUrl = rawAsset.endsWith("/") ? rawAsset : `${rawAsset}/`;
-  const workerUrl = `${assetBaseUrl}inference.worker.js`;
+  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20260817-v4`;
   const rawWasm = config.wasmBaseUrl ?? DEFAULT_ORT_CDN_BASE;
   const wasmBaseUrl = rawWasm.endsWith("/") ? rawWasm : `${rawWasm}/`;
   return {

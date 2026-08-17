@@ -191,7 +191,7 @@
   };
 
   // Simple IndexedDB Model Cache for Zero-Download Repeated Runs
-  const DB_NAME = "rvc_web_models_db";
+  const DB_NAME = "rvc_web_models_v4_db";
   const STORE_NAME = "model_blobs";
 
   function openModelDB() {
@@ -684,7 +684,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260817-v4", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
