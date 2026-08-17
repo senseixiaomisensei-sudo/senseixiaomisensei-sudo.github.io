@@ -1,36 +1,39 @@
 {
   "version": 2,
-  "updatedAt": "2026-08-15",
-  "_readme": "RVC 角色声音目录。file/index 是相对 GPU 服务 models 目录的路径（把 .pth 与 .index 放入对应目录即可自动出现，无需改本文件）；也可以把 file 改成完整的 https 直链（模型需允许跨域下载）。本文件只是展示目录，实际可用角色以 GPU 服务的 /v1/models 为准。角色模型来源与许可以各模型作者发布页为准。",
+  "updatedAt": "2026-08-17",
+  "_readme": "RVC 角色声音目录（纯客户端 Web-RVC 与云端双模兼容）。模型完全在用户浏览器本地运算，零服务器消耗。",
+  "baseModels": {
+    "hubert": "models/base/hubert.onnx",
+    "rmvpe": "models/base/rmvpe.onnx",
+    "hubertCdn": "https://huggingface.co/ohnoitsaninja/rvc-base-onnx/resolve/main/onnx/hubert_base_layer12_nomask_32000.onnx",
+    "rmvpeCdn": "https://huggingface.co/spaces/Anjok07/UltimateRVC/resolve/main/rmvpe.onnx"
+  },
   "models": [
     {
       "id": "tomori",
       "name": "高松灯 (Tomori)",
       "emoji": "🎸",
-      "description": "《BanG Dream! It's MyGO!!!!!》高松灯 · RVC v2 · 模型作者 TogetsuDo（HuggingFace 公开发布）",
+      "description": "《BanG Dream! It's MyGO!!!!!》主唱 · 清澈少年感少女音 · RVC v2",
       "tags": ["女声", "动漫", "MyGO"],
-      "file": "models/tomori/tomori.pth",
-      "index": "models/tomori/tomori.index",
+      "file": "models/characters/tomori.onnx",
       "defaultPitch": 2
     },
     {
       "id": "rana",
       "name": "要乐奈 (Rana)",
       "emoji": "🐱",
-      "description": "《BanG Dream! It's MyGO!!!!!》要乐奈 · RVC v2 · 模型作者 TogetsuDo（HuggingFace 公开发布）",
+      "description": "《BanG Dream! It's MyGO!!!!!》吉他手 · 慵懒灵动猫系少女音 · RVC v2",
       "tags": ["女声", "动漫", "MyGO"],
-      "file": "models/rana/rana.pth",
-      "index": "models/rana/rana.index",
+      "file": "models/characters/rana.onnx",
       "defaultPitch": 2
     },
     {
       "id": "teio",
       "name": "东海帝皇 (Tokai Teio)",
       "emoji": "🐎",
-      "description": "《赛马娘》东海帝皇 · RVC v2 · 模型作者 TogetsuDo（HuggingFace 公开发布）",
+      "description": "《赛马娘 Pretty Derby》· 活泼元气高辨识度少女音 · RVC v2",
       "tags": ["女声", "动漫", "赛马娘"],
-      "file": "models/teio/teio.pth",
-      "index": "models/teio/teio.index",
+      "file": "models/characters/teio.onnx",
       "defaultPitch": 3
     }
   ]

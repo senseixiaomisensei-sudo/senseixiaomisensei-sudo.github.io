@@ -10,3 +10,6 @@ node_modules/
 .idea/
 __pycache__/
 *.py[cod]
+models/
+tests/*.wav
+

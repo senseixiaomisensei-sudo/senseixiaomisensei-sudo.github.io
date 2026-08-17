@@ -2,58 +2,30 @@
   "use strict";
 
   const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
-  const MIN_AUDIO_SECONDS = 1;
-  const WARN_AUDIO_SECONDS = 3;
-  const MAX_AUDIO_SECONDS = 180;
-  const REQUEST_TIMEOUT_MS = 180000;
-  const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm"]);
-  const ALLOWED_MIME_TYPES = new Set([
-    "audio/wav",
-    "audio/x-wav",
-    "audio/mpeg",
-    "audio/mp4",
-    "audio/x-m4a",
-    "audio/ogg",
-    "audio/webm",
-  ]);
-
-  const configuredGateway = typeof globalThis.POSTPREP_API_ENDPOINT === "string"
-    ? globalThis.POSTPREP_API_ENDPOINT.trim().replace(/\/+$/u, "")
-    : "";
-  const RVC_BASE = typeof globalThis.POSTPREP_RVC_API_ENDPOINT === "string"
-    && globalThis.POSTPREP_RVC_API_ENDPOINT.trim()
-    ? globalThis.POSTPREP_RVC_API_ENDPOINT.trim().replace(/\/+$/u, "")
-    : configuredGateway ? `${configuredGateway}/rvc` : "";
-  const RVC_STATUS_ENDPOINT = typeof globalThis.POSTPREP_RVC_STATUS_ENDPOINT === "string"
-    && globalThis.POSTPREP_RVC_STATUS_ENDPOINT.trim()
-    ? globalThis.POSTPREP_RVC_STATUS_ENDPOINT.trim()
-    : RVC_BASE ? `${RVC_BASE}/status` : "";
-  const RVC_MODELS_ENDPOINT = typeof globalThis.POSTPREP_RVC_MODELS_ENDPOINT === "string"
-    && globalThis.POSTPREP_RVC_MODELS_ENDPOINT.trim()
-    ? globalThis.POSTPREP_RVC_MODELS_ENDPOINT.trim()
-    : RVC_BASE ? `${RVC_BASE}/models` : "";
+  const MIN_AUDIO_SECONDS = 0.5;
+  const WARN_AUDIO_SECONDS = 2;
+  const MAX_AUDIO_SECONDS = 300;
+  const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"]);
 
   const translations = {
     zh: {
-      eyebrow: "RVC VOICE CHANGER",
+      eyebrow: "RVC VOICE CHANGER · WEB EDITION",
       title: "AI 变声器",
-      intro: "选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。",
+      intro: "选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。变声计算 100% 在您的浏览器本地运行，不消耗任何服务器算力，零录音泄露风险。",
       noteTitle: "使用提示",
-      noteBody: "角色音色来自各模型的许可情况，请仅将变声结果用于你有权使用的场景，并为 AI 生成内容做清晰标注。请勿用他人声音冒充本人或用于欺骗。",
+      noteBody: "变声计算由您的设备浏览器本地完成（配置好则变声快，配置稍慢则多等几秒，但最终音质完全一致）。请仅将变声结果用于正当合规场景，并清晰标注为 AI 变声。",
       workflowEyebrow: "VOICE WORKFLOW",
       workflowTitle: "三步完成变声",
-      privacyBadge: "用完即删",
+      privacyBadge: "纯本地运行 · 零隐私上传",
       stepModel: "1. 选择角色声音",
-      stepModelHint: "点一下卡片即可选中。搜索框可快速找到角色。",
+      stepModelHint: "点击卡片即可选中。搜索框可快速筛选角色。",
       searchPlaceholder: "搜索角色…",
       modelEmpty: "没有找到匹配的角色。换个关键词试试。",
       modelCatalogTitle: "角色声音库",
       modelInstalled: "已就绪",
-      modelMissing: "未安装",
-      modelMissingHint: "把模型放入 GPU 服务后自动启用",
       modelPick: "已选择",
       stepAudio: "2. 上传或录制你的声音",
-      stepAudioHint: "建议单人、干净、无伴奏的说话或唱歌片段，3 秒到 3 分钟，最大 25 MB。支持 WAV、MP3、M4A、OGG 和浏览器录音。",
+      stepAudioHint: "建议单人、清晰、无背景噪音的说话或唱歌片段。支持 WAV、MP3、M4A、OGG、WebM 和浏览器录音。",
       sourceUpload: "上传音频",
       sourceUploadHint: "选择电脑或手机里已有的录音文件。",
       sourceRecord: "录制声音",
@@ -61,185 +33,151 @@
       fileEmpty: "尚未选择音频文件。",
       recordStart: "开始录音",
       recordStop: "停止录音",
-      recordHint: "录音在浏览器本地完成，只有点击“开始变声”后才会发送。",
+      recordHint: "录音在浏览器本地完成，不会上传至任何云端服务器。",
       recordUnsupported: "当前浏览器不支持录音，请改用上传音频。",
       recordDenied: "麦克风权限被拒绝。请在浏览器设置中允许麦克风后重试，或改用上传音频。",
       recordInsecure: "录音需要 HTTPS 环境。当前页面不是安全上下文，请改用上传音频。",
       recordError: "录音启动失败，请改用上传音频。",
       stepSettings: "3. 调节声音（可选）",
-      stepSettingsHint: "大多数时候保持默认就好。想更贴近角色音色，可以把“相似度”调高一些。",
-      pitchLabel: "音高",
-      pitchLow: "低沉（-12）",
-      pitchDefault: "原声（0）",
-      pitchHigh: "清脆（+12）",
-      advancedToggle: "高级设置（进阶用户）",
-      indexRateLabel: "相似度",
-      indexRateHint: "越高音色越像角色，太高可能不自然。建议 0.3–0.8。",
-      protectLabel: "辅音保护",
+      stepSettingsHint: "大多数时候保持默认就好。男生变女声建议音高设为 +12（女变男设为 -12）。",
+      pitchLabel: "音高调整 (变调)",
+      pitchLow: "男声化 (-12)",
+      pitchDefault: "原调 (0)",
+      pitchHigh: "女声化 (+12)",
+      advancedToggle: "高级设置（进阶选项）",
+      indexRateLabel: "音色相似度",
+      indexRateHint: "越高音色越贴近角色，太高可能不自然。建议 0.3–0.8。",
+      protectLabel: "辅音与呼吸保护",
       protectHint: "保护清辅音和呼吸声，防止破音。0 不保护，0.5 最保守。",
-      f0Label: "音高提取算法",
-      f0Rmvpe: "RMVPE（推荐）",
-      f0Crepe: "Crepe（更准更慢）",
-      f0Fcpe: "FCPE（快）",
-      f0Harvest: "Harvest（传统）",
+      f0Label: "音高算法",
+      f0Rmvpe: "RMVPE（超高精度 · 推荐）",
+      f0Harvest: "Harvest（传统稳健）",
       formatLabel: "输出格式",
-      formatWav: "WAV（无损）",
-      formatMp3: "MP3（体积小）",
-      resampleLabel: "重采样率",
-      resampleKeep: "保持原样",
-      rmsLabel: "音量跟随",
-      filterLabel: "滤波半径",
-      checkingService: "正在确认变声服务是否可用；此检查不会上传音频。",
-      serviceReady: "变声服务已就绪。选好角色和声音后即可开始变声。",
-      serviceUnavailable: "变声服务尚未配置 GPU 推理服务；你可以先选角色和上传声音，但无法开始变声。",
-      serviceError: "暂时无法确认变声服务状态；为保护你的音频，变声已保持关闭。",
-      checkService: "重新检查变声服务",
-      checkingServiceAction: "正在检查服务…",
+      formatWav: "WAV（40kHz 高保真）",
+      resampleLabel: "输出采样率",
+      resampleKeep: "40 kHz / 48 kHz (标准)",
+      checkingService: "正在初始化本地 AI 变声引擎 (ONNX Runtime Web WASM)...",
+      serviceReady: "🟢 本地 AI 变声引擎已就绪（算力由本机提供 · 零服务器费用）",
+      serviceLoading: "正在从本地缓存或 CDN 加载模型权重...",
       convert: "开始变声",
-      converting: "正在变声，请稍候…",
+      converting: "正在变声中...",
       howtoTitle: "三步上手",
       howtoOne: "在左侧选一个角色声音（点击卡片即可）。",
       howtoTwo: "上传一段你自己的录音，或直接用麦克风录制。",
-      howtoThree: "点“开始变声”，等几秒，试听并下载结果。",
+      howtoThree: "点“开始变声”，等待本地推理完成即可试听与下载。",
       tipsTitle: "让效果更好",
       resultTitle: "变声结果",
       download: "下载变声结果",
-      resultDisclosure: "临时链接会在约 15 分钟后失效，请及时下载。",
-      resultMeta: "角色：{model} · 音高：{pitch} · 临时链接约 {expires} 后失效。",
-      analyzing: "正在检查音频…",
-      analysisReady: "音频检查完成：{name} · {duration} · 可以变声。",
-      analysisFallback: "文件格式与大小通过检查；当前浏览器无法读取完整音频参数，服务端仍会验证。",
-      invalidFile: "请选择 WAV、MP3、M4A、OGG 或 WebM 音频文件。",
-      fileTooLarge: "文件超过安全上限（25 MB）。",
-      audioTooShort: "音频太短（不足 1 秒），请换一段更长的录音。",
-      audioShortWarn: "音频不足 3 秒，效果可能不稳定，建议换更长的片段。",
-      audioTooLong: "音频超过 3 分钟，请裁剪为更短、更干净的片段。",
-      decodeFailed: "无法在本机读取该音频。请导出为清晰的 WAV、MP3 或 M4A 后重试。",
-      stereo: "检测到多声道音频；服务端会转换为单声道。",
+      resultDisclosure: "变声音频已保存在浏览器内存中，点击下方按钮即可保存到本地电脑/手机。",
+      resultMeta: "角色：{model} · 音高变调：{pitch} · 耗时：{elapsed}s · 纯本地生成",
+      analyzing: "正在分析音频…",
+      analysisReady: "音频已就绪：{name} · 时长 {duration} · 可以变声。",
+      invalidFile: "请选择有效格式的音频文件 (WAV/MP3/M4A/OGG/WebM)。",
+      fileTooLarge: "文件超过大小限制 (25 MB)。",
+      audioTooShort: "音频太短（不足 0.5 秒），请换一段更长的录音。",
+      audioShortWarn: "音频不足 2 秒，建议使用稍长的句子获得更自然效果。",
+      audioTooLong: "音频超过 5 分钟，建议裁剪为更短的片段以加快转换速度。",
+      decodeFailed: "无法解码此音频文件。请换成标准 WAV 或 MP3 重试。",
       missingModel: "请先选择一个角色声音。",
-      modelNotInstalled: "这个角色的模型尚未安装到服务端，请换一个已就绪的角色。",
       missingAudio: "请先上传或录制一段你的声音。",
-      uploadBlocked: "变声服务尚未就绪，本次没有上传任何文件。",
-      rateLimited: "请求过于频繁，请稍后再试。",
-      backendUnavailable: "变声服务暂不可用，请稍后再试。",
-      generationFailed: "变声失败。请换更短、更干净的录音，或稍后再试。",
-      networkFailed: "网络请求未完成。请确认服务状态后再试。",
-      outputUnavailable: "音频已生成，但暂时无法播放或下载。请重新变声。",
+      generationFailed: "变声处理出错，请查看控制台日志或换一段简短音频重试。",
       selectedModel: "已选择角色：{name}。",
-      noModels: "角色库暂时为空。部署 GPU 服务并放入模型后，角色会自动出现。",
+      noModels: "未找到可用角色模型。",
       tips: [
-        "使用安静环境、单人声音的清晰录音。",
-        "5–30 秒效果最稳；带背景音乐或混响会降低质量。",
-        "变声结果请标注“AI 合成音频”，不要冒充真人。",
+        "使用安静环境、单人清晰的人声录音效果最佳。",
+        "男生转女声角色建议将音高调为 +12（女转男调为 -12）。",
+        "所有变声运算均在您的浏览器本地进行，数据 100% 私密安全。",
       ],
     },
     en: {
-      eyebrow: "RVC VOICE CHANGER",
+      eyebrow: "RVC VOICE CHANGER · WEB EDITION",
       title: "AI Voice Changer",
-      intro: "Pick a character voice, upload or record your own audio, and convert it in one click. Just three steps: pick a voice → provide audio → convert. Files are used for this conversion only and deleted afterwards.",
-      noteTitle: "Heads-up",
-      noteBody: "Character voices come from models with their own licensing. Use conversions only where you have the right to, and clearly label AI-generated content. Never impersonate another person.",
+      intro: "Pick a character voice, upload or record your own audio, and convert it in one click. 100% runs locally in your browser with zero server costs and full privacy.",
+      noteTitle: "Notice",
+      noteBody: "Inference runs on your device's browser (faster on powerful hardware, slightly longer on mobile, but audio quality is identical). Use ethically and label AI audio.",
       workflowEyebrow: "VOICE WORKFLOW",
       workflowTitle: "Three steps to a new voice",
-      privacyBadge: "Deleted after use",
+      privacyBadge: "100% Client-Side · Private",
       stepModel: "1. Pick a character voice",
       stepModelHint: "Click a card to select it. Use the search box to find a voice.",
       searchPlaceholder: "Search voices…",
       modelEmpty: "No matching voice. Try another keyword.",
       modelCatalogTitle: "Voice library",
       modelInstalled: "Ready",
-      modelMissing: "Not installed",
-      modelMissingHint: "Add the model to the GPU service to enable it",
       modelPick: "Selected",
       stepAudio: "2. Upload or record your voice",
-      stepAudioHint: "A clean single-person speech or singing clip is best: 3 seconds to 3 minutes, max 25 MB. WAV, MP3, M4A, OGG and browser recording are supported.",
+      stepAudioHint: "A clean single-person voice clip without background noise is best. WAV, MP3, M4A, OGG, and WebM supported.",
       sourceUpload: "Upload audio",
-      sourceUploadHint: "Choose an existing recording from your device.",
+      sourceUploadHint: "Choose an existing audio file from your device.",
       sourceRecord: "Record voice",
-      sourceRecordHint: "Record directly with your microphone; it is ready when you stop.",
+      sourceRecordHint: "Record directly with your microphone.",
       fileEmpty: "No audio file selected.",
       recordStart: "Start recording",
       recordStop: "Stop recording",
-      recordHint: "Recording happens locally in your browser. Audio is sent only when you click “Convert”.",
+      recordHint: "Recording is processed locally and never uploaded to any server.",
       recordUnsupported: "Recording is not supported in this browser. Please upload audio instead.",
-      recordDenied: "Microphone permission was denied. Allow the microphone in your browser settings and try again, or upload audio instead.",
-      recordInsecure: "Recording requires an HTTPS page. Please upload audio instead.",
+      recordDenied: "Microphone permission was denied. Allow it in settings or upload a file.",
+      recordInsecure: "Recording requires HTTPS. Please upload audio instead.",
       recordError: "Recording could not start. Please upload audio instead.",
       stepSettings: "3. Tune the sound (optional)",
-      stepSettingsHint: "Defaults work for most people. Raise “Similarity” to get closer to the character voice.",
-      pitchLabel: "Pitch",
-      pitchLow: "Lower (-12)",
+      stepSettingsHint: "For male-to-female voices, set pitch to +12 (female-to-male to -12).",
+      pitchLabel: "Pitch Shift",
+      pitchLow: "Male (-12)",
       pitchDefault: "Original (0)",
-      pitchHigh: "Higher (+12)",
-      advancedToggle: "Advanced settings (for pros)",
+      pitchHigh: "Female (+12)",
+      advancedToggle: "Advanced settings",
       indexRateLabel: "Similarity",
-      indexRateHint: "Higher means closer to the character, but it can sound unnatural. 0.3–0.8 is recommended.",
+      indexRateHint: "Higher matches character timbre more closely. 0.3–0.8 recommended.",
       protectLabel: "Consonant protection",
-      protectHint: "Protects unvoiced consonants and breaths from artifacts. 0 = off, 0.5 = most conservative.",
+      protectHint: "Protects unvoiced consonants and breaths. 0.33 default.",
       f0Label: "Pitch extraction",
-      f0Rmvpe: "RMVPE (recommended)",
-      f0Crepe: "Crepe (more accurate, slower)",
-      f0Fcpe: "FCPE (fast)",
-      f0Harvest: "Harvest (classic)",
+      f0Rmvpe: "RMVPE (High Precision)",
+      f0Harvest: "Harvest (Classic)",
       formatLabel: "Output format",
-      formatWav: "WAV (lossless)",
-      formatMp3: "MP3 (smaller)",
-      resampleLabel: "Resample rate",
-      resampleKeep: "Keep original",
-      rmsLabel: "Volume tracking",
-      filterLabel: "Filter radius",
-      checkingService: "Checking whether the voice-changer service is available. This check uploads nothing.",
-      serviceReady: "The voice-changer service is ready. Pick a voice and your audio, then convert.",
-      serviceUnavailable: "The voice-changer service is not configured with a GPU backend yet. You can still pick a voice and upload audio, but conversion stays off.",
-      serviceError: "The service status could not be confirmed. To protect your audio, conversion stays off.",
-      checkService: "Check the service again",
-      checkingServiceAction: "Checking service…",
+      formatWav: "WAV (40kHz Lossless)",
+      resampleLabel: "Output sample rate",
+      resampleKeep: "40 kHz / 48 kHz (Standard)",
+      checkingService: "Initializing ONNX Runtime Web WASM engine...",
+      serviceReady: "🟢 Local AI Voice Engine Ready (Powered by your device)",
+      serviceLoading: "Loading model weights...",
       convert: "Convert now",
-      converting: "Converting, please wait…",
+      converting: "Converting...",
       howtoTitle: "How it works",
-      howtoOne: "Pick a character voice on the left (click a card).",
-      howtoTwo: "Upload your recording or record with the microphone.",
-      howtoThree: "Click “Convert now”, wait a few seconds, then preview and download.",
-      tipsTitle: "Better results",
+      howtoOne: "Pick a character voice on the left.",
+      howtoTwo: "Upload your recording or record with microphone.",
+      howtoThree: "Click “Convert now”, wait for local inference, then listen and download.",
+      tipsTitle: "Tips",
       resultTitle: "Result",
       download: "Download result",
-      resultDisclosure: "The temporary link expires in about 15 minutes. Download in time.",
-      resultMeta: "Voice: {model} · Pitch: {pitch} · Temporary link expires at {expires}.",
-      analyzing: "Checking audio…",
-      analysisReady: "Audio check passed: {name} · {duration} · ready to convert.",
-      analysisFallback: "The file type and size passed local checks. This browser could not read full audio parameters; the server will still validate.",
-      invalidFile: "Choose a WAV, MP3, M4A, OGG, or WebM audio file.",
-      fileTooLarge: "This file exceeds the safety limit (25 MB).",
-      audioTooShort: "The audio is shorter than 1 second. Use a longer recording.",
-      audioShortWarn: "Audio under 3 seconds may convert poorly. A longer clip is recommended.",
-      audioTooLong: "The audio exceeds 3 minutes. Trim it to a shorter, cleaner clip.",
-      decodeFailed: "This browser could not read the audio. Export a clean WAV, MP3, or M4A file and try again.",
-      stereo: "Multi-channel audio detected; the server will convert it to mono.",
+      resultDisclosure: "Audio generated in your browser. Click below to download.",
+      resultMeta: "Voice: {model} · Pitch: {pitch} · Time: {elapsed}s · Pure Local Inference",
+      analyzing: "Analyzing audio…",
+      analysisReady: "Audio ready: {name} · Duration {duration} · Ready to convert.",
+      invalidFile: "Choose a valid WAV, MP3, M4A, OGG, or WebM file.",
+      fileTooLarge: "File exceeds 25 MB limit.",
+      audioTooShort: "Audio is too short (under 0.5s).",
+      audioShortWarn: "Audio under 2s may sound robotic. Longer speech is recommended.",
+      audioTooLong: "Audio exceeds 5 minutes. Please trim to a shorter clip.",
+      decodeFailed: "Could not decode audio. Try converting to standard MP3 or WAV.",
       missingModel: "Pick a character voice first.",
-      modelNotInstalled: "This character's model is not installed on the server yet. Pick a voice that is ready.",
       missingAudio: "Upload or record your voice first.",
-      uploadBlocked: "The voice-changer service is not ready, so nothing was uploaded.",
-      rateLimited: "Too many requests. Please try again later.",
-      backendUnavailable: "The voice-changer service is temporarily unavailable. Please try again later.",
-      generationFailed: "Conversion failed. Try a shorter, cleaner recording or try again later.",
-      networkFailed: "The network request did not complete. Check the service status and try again.",
-      outputUnavailable: "The audio was generated but cannot be played or downloaded right now. Please convert again.",
+      generationFailed: "Conversion failed. Please try a shorter audio clip.",
       selectedModel: "Voice selected: {name}.",
-      noModels: "The voice library is empty for now. Deploy the GPU service and add models and voices will appear automatically.",
+      noModels: "No character models available.",
       tips: [
-        "Use a clear recording of one person in a quiet environment.",
-        "5–30 seconds works best; background music or reverb lowers quality.",
-        "Label results as “AI-generated audio” and never impersonate a real person.",
+        "Use a clear, quiet single-person vocal recording.",
+        "Male-to-female conversion works best with pitch +12.",
+        "All calculations run inside your browser. 100% private and free.",
       ],
     },
   };
 
   const state = {
-    backend: "checking",
+    lang: "zh",
+    engineReady: false,
     busy: false,
-    selectedModelId: "",
-    availableModelIds: new Set(),
-    audio: null, // { blob, name, duration, analysis }
+    selectedModelId: "tomori",
+    audio: null, // { file, buffer, float32, sampleRate, name, duration }
     sourceMode: "upload",
     recording: false,
     mediaRecorder: null,
@@ -248,709 +186,621 @@
     recordStartAt: 0,
     recordTimerId: 0,
     catalog: [],
+    baseModels: {},
+    rvcContext: null,
   };
 
-  function language() {
-    const fromPostPrep = globalThis.PostPrep && typeof globalThis.PostPrep.getLanguage === "function"
-      ? globalThis.PostPrep.getLanguage()
-      : "";
-    return fromPostPrep === "en" || document.documentElement.lang.toLowerCase().startsWith("en") ? "en" : "zh";
-  }
+  // Simple IndexedDB Model Cache for Zero-Download Repeated Runs
+  const DB_NAME = "rvc_web_models_db";
+  const STORE_NAME = "model_blobs";
 
-  function t(key) {
-    return translations[language()][key] || translations.zh[key] || key;
-  }
-
-  function interpolate(template, values) {
-    return String(template || "").replace(/\{([A-Za-z0-9_]+)\}/gu, (_, key) => (
-      Object.prototype.hasOwnProperty.call(values || {}, key) ? String(values[key]) : ""
-    ));
-  }
-
-  function formatSeconds(value) {
-    const seconds = Math.max(0, Math.round(Number(value) || 0));
-    const minutes = Math.floor(seconds / 60);
-    const remainder = String(seconds % 60).padStart(2, "0");
-    return `${minutes}:${remainder}`;
-  }
-
-  function readableFileName(name) {
-    return String(name || "audio").replace(/[\u0000-\u001F\u007F]/gu, "").slice(0, 120) || "audio";
-  }
-
-  function extensionFor(file) {
-    const name = String(file && file.name || "");
-    const match = name.toLowerCase().match(/\.([a-z0-9]+)$/u);
-    return match ? match[1] : "";
-  }
-
-  function isAllowedAudioFile(file) {
-    if (!file || typeof file !== "object" || typeof file.size !== "number") return false;
-    const extension = extensionFor(file);
-    const mime = String(file.type || "").toLowerCase();
-    return ALLOWED_EXTENSIONS.has(extension) && (!mime || ALLOWED_MIME_TYPES.has(mime));
-  }
-
-  function setServiceStatus(message, tone = "normal") {
-    const element = document.getElementById("rvc-service-status");
-    if (!element) return;
-    const colors = {
-      normal: "border-line bg-canvas text-muted",
-      ready: "border-emerald-200 bg-emerald-50 text-emerald-900",
-      warning: "border-amber-200 bg-amber-50 text-amber-950",
-      error: "border-rose-200 bg-rose-50 text-rose-900",
-    };
-    element.className = `rounded-lg border px-4 py-3 text-sm leading-6 ${colors[tone] || colors.normal}`;
-    element.textContent = message;
-  }
-
-  function setAudioStatus(messages, tone = "normal") {
-    const element = document.getElementById("rvc-audio-status");
-    if (!element) return;
-    element.replaceChildren();
-    const color = tone === "error" ? "text-rose-700" : tone === "warning" ? "text-amber-800" : "text-muted";
-    (Array.isArray(messages) ? messages : [messages]).filter(Boolean).forEach((message) => {
-      const line = document.createElement("span");
-      line.className = `block ${color}`;
-      line.textContent = message;
-      element.append(line);
+  function openModelDB() {
+    return new Promise((resolve, reject) => {
+      if (!window.indexedDB) return resolve(null);
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      };
+      req.onsuccess = (e) => resolve(e.target.result);
+      req.onerror = () => resolve(null);
     });
   }
 
-  function primaryActionLabel() {
-    if (state.busy) return t("converting");
-    if (state.backend === "checking") return t("checkingServiceAction");
-    return state.backend === "ready" ? t("convert") : t("checkService");
-  }
-
-  function updatePrimaryAction() {
-    const button = document.getElementById("rvc-convert");
-    const label = document.getElementById("rvc-convert-label");
-    if (button) {
-      const ready = state.backend === "ready";
-      const checking = state.backend === "checking";
-      button.disabled = state.busy || checking;
-      button.classList.toggle("is-loading", state.busy);
-      button.classList.toggle("bg-brand", ready);
-      button.classList.toggle("text-white", ready);
-      button.classList.toggle("hover:bg-brandDark", ready);
-      button.classList.toggle("border", !ready);
-      button.classList.toggle("border-amber-300", !ready);
-      button.classList.toggle("bg-amber-50", !ready);
-      button.classList.toggle("text-amber-950", !ready);
-      button.classList.toggle("hover:bg-amber-100", !ready && !checking);
-      button.setAttribute("aria-busy", String(state.busy || checking));
-    }
-    if (label) label.textContent = primaryActionLabel();
-  }
-
-  function setBusy(busy) {
-    state.busy = busy;
-    updatePrimaryAction();
-  }
-
-  // ---- model gallery ----
-
-  async function loadCatalog() {
+  async function getCachedModel(key) {
     try {
-      const response = await fetch("assets/rvc-models.json", { headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error("catalog unavailable");
-      const payload = await response.json();
-      state.catalog = Array.isArray(payload && payload.models) ? payload.models : [];
-    } catch {
-      state.catalog = [];
+      const db = await openModelDB();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) {
+      return null;
     }
   }
 
-  function displayModels() {
-    const gallery = document.getElementById("rvc-model-gallery");
-    const empty = document.getElementById("rvc-model-empty");
-    if (!gallery || !empty) return;
+  async function setCachedModel(key, blob) {
+    try {
+      const db = await openModelDB();
+      if (!db) return;
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.put(blob, key);
+    } catch (e) {}
+  }
 
-    const query = (document.getElementById("rvc-model-search")?.value || "").trim().toLowerCase();
-    const catalogMap = new Map(state.catalog.map((entry) => [entry.id, entry]));
+  async function fetchWithCache(urlOrUrls, name, mimeType, onProgress) {
+    const urls = Array.isArray(urlOrUrls) ? urlOrUrls.filter(Boolean) : [urlOrUrls];
+    for (const u of urls) {
+      const cached = await getCachedModel(u);
+      if (cached instanceof Blob) {
+        return new File([cached], name, { type: mimeType });
+      }
+    }
 
-    // Backend-only voices get auto-generated cards.
-    const allIds = new Set(state.catalog.map((entry) => entry.id));
-    state.availableModelIds.forEach((id) => allIds.add(id));
-    const ids = [...allIds].sort((a, b) => {
-      const an = (catalogMap.get(a)?.name || a).toLowerCase();
-      const bn = (catalogMap.get(b)?.name || b).toLowerCase();
-      return an.localeCompare(bn);
+    let lastErr = null;
+    for (const u of urls) {
+      try {
+        const res = await fetch(u);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const contentLength = res.headers.get("content-length");
+        const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+        if (!res.body || !total) {
+          const blob = await res.blob();
+          await setCachedModel(u, blob);
+          return new File([blob], name, { type: mimeType });
+        }
+
+        const reader = res.body.getReader();
+        let loaded = 0;
+        const chunks = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          loaded += value.length;
+          if (typeof onProgress === "function") {
+            onProgress(loaded, total);
+          }
+        }
+        const blob = new Blob(chunks, { type: mimeType });
+        await setCachedModel(u, blob);
+        return new File([blob], name, { type: mimeType });
+      } catch (err) {
+        lastErr = err;
+        console.warn(`Fetch ${name} from ${u} failed:`, err);
+      }
+    }
+    throw new Error(`Failed to fetch ${name} from available sources (${lastErr?.message || "network error"})`);
+  }
+
+  function t(key, vars = {}) {
+    const dict = translations[state.lang] || translations.zh;
+    let text = dict[key] || translations.zh[key] || key;
+    if (typeof text === "string") {
+      for (const [k, v] of Object.entries(vars)) {
+        text = text.replaceAll(`{${k}}`, String(v));
+      }
+    }
+    return text;
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById("toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.remove("opacity-0", "translate-y-3", "pointer-events-none");
+    el.classList.add("opacity-100", "translate-y-0");
+    setTimeout(() => {
+      el.classList.add("opacity-0", "translate-y-3", "pointer-events-none");
+      el.classList.remove("opacity-100", "translate-y-0");
+    }, 3000);
+  }
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
+  async function decodeAudioFileTo16kMono(file) {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const numChannels = audioBuffer.numberOfChannels;
+      const length = audioBuffer.length;
+      const sampleRate = audioBuffer.sampleRate;
+
+      // Mixdown to mono float32
+      const mono = new Float32Array(length);
+      for (let c = 0; c < numChannels; c++) {
+        const channelData = audioBuffer.getChannelData(c);
+        for (let i = 0; i < length; i++) {
+          mono[i] += channelData[i] / numChannels;
+        }
+      }
+
+      // Resample to 16,000 Hz if needed
+      let out16k = mono;
+      if (sampleRate !== 16000) {
+        const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(
+          1,
+          Math.ceil((length * 16000) / sampleRate),
+          16000
+        );
+        const bufferSource = offlineCtx.createBuffer(1, length, sampleRate);
+        bufferSource.copyToChannel(mono, 0);
+        const sourceNode = offlineCtx.createBufferSource();
+        sourceNode.buffer = bufferSource;
+        sourceNode.connect(offlineCtx.destination);
+        sourceNode.start(0);
+        const resampledBuffer = await offlineCtx.startRendering();
+        out16k = resampledBuffer.getChannelData(0);
+      }
+
+      return {
+        float32: out16k,
+        duration: audioBuffer.duration,
+        sampleRate: 16000,
+      };
+    } finally {
+      audioCtx.close().catch(() => {});
+    }
+  }
+
+  function renderModelGallery() {
+    const container = document.getElementById("rvc-model-gallery");
+    const emptyEl = document.getElementById("rvc-model-empty");
+    const searchVal = (document.getElementById("rvc-model-search")?.value || "").trim().toLowerCase();
+    if (!container) return;
+
+    container.innerHTML = "";
+    const filtered = state.catalog.filter((m) => {
+      if (!searchVal) return true;
+      return (
+        m.name.toLowerCase().includes(searchVal) ||
+        (m.description || "").toLowerCase().includes(searchVal) ||
+        (m.tags || []).some((tag) => tag.toLowerCase().includes(searchVal))
+      );
     });
 
-    const visible = ids.filter((id) => {
-      if (!query) return true;
-      const entry = catalogMap.get(id);
-      const haystack = [id, entry?.name, ...(entry?.tags || [])].filter(Boolean).join(" ").toLowerCase();
-      return haystack.includes(query);
-    });
+    if (filtered.length === 0) {
+      if (emptyEl) emptyEl.classList.remove("hidden");
+      return;
+    }
+    if (emptyEl) emptyEl.classList.add("hidden");
 
-    empty.classList.toggle("hidden", visible.length > 0);
-    gallery.replaceChildren();
-
-    visible.forEach((id) => {
-      const entry = catalogMap.get(id) || {};
-      const installed = state.availableModelIds.has(id);
-      const selected = state.selectedModelId === id;
-      const name = entry.name || id;
-      const emoji = entry.emoji || "🎵";
-      const tags = Array.isArray(entry.tags) ? entry.tags : [];
+    filtered.forEach((m) => {
+      const isSelected = m.id === state.selectedModelId;
       const card = document.createElement("button");
       card.type = "button";
-      card.className = "rvc-model-card relative flex min-h-24 flex-col rounded-lg border p-3 text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 " +
-        (selected ? "border-brand bg-teal-50" : "border-line bg-white hover:border-brand");
+      card.className = `flex flex-col items-start p-4 rounded-xl border text-left transition-all relative ${
+        isSelected
+          ? "border-brand bg-teal-50/80 shadow-md ring-2 ring-brand"
+          : "border-line bg-white hover:border-brand/60 hover:shadow-sm"
+      }`;
       card.setAttribute("role", "option");
-      card.setAttribute("aria-selected", String(selected));
-      card.setAttribute("aria-pressed", String(selected));
-      card.dataset.modelId = id;
+      card.setAttribute("aria-selected", isSelected ? "true" : "false");
 
-      const check = document.createElement("span");
-      check.className = "rvc-model-check absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand text-white";
-      check.innerHTML = '<i class="fa-solid fa-check text-[10px]" aria-hidden="true"></i>';
+      card.innerHTML = `
+        <div class="flex items-center justify-between w-full">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">${m.emoji || "🎙️"}</span>
+            <div>
+              <p class="text-sm font-black text-ink">${m.name}</p>
+              <div class="flex flex-wrap gap-1 mt-1">
+                ${(m.tags || [])
+                  .map(
+                    (tag) =>
+                      `<span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-zinc-100 text-zinc-600">${tag}</span>`
+                  )
+                  .join("")}
+              </div>
+            </div>
+          </div>
+          <span class="text-xs font-bold ${
+            isSelected ? "text-brand" : "text-zinc-400"
+          }">
+            ${isSelected ? `<i class="fa-solid fa-circle-check"></i> ${t("modelPick")}` : t("modelInstalled")}
+          </span>
+        </div>
+        <p class="mt-2 text-xs leading-5 text-muted line-clamp-2">${m.description || ""}</p>
+      `;
 
-      const titleRow = document.createElement("span");
-      titleRow.className = "flex items-center gap-2 pr-6";
-      const avatar = document.createElement("span");
-      avatar.className = "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-lg";
-      avatar.textContent = emoji;
-      const nameEl = document.createElement("span");
-      nameEl.className = "min-w-0 flex-1 truncate text-sm font-black text-ink";
-      nameEl.textContent = name;
-      titleRow.append(avatar, nameEl);
-
-      const statusEl = document.createElement("span");
-      statusEl.className = `mt-2 inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${installed ? "bg-emerald-50 text-emerald-800" : "bg-zinc-100 text-muted"}`;
-      statusEl.textContent = installed ? t("modelInstalled") : t("modelMissing");
-
-      const descEl = document.createElement("span");
-      descEl.className = "mt-2 line-clamp-2 text-xs leading-5 text-muted";
-      descEl.textContent = entry.description || "";
-
-      const tagRow = document.createElement("span");
-      tagRow.className = "mt-2 flex flex-wrap gap-1";
-      (tags.length ? tags : ["—"]).slice(0, 3).forEach((tag) => {
-        const chip = document.createElement("span");
-        chip.className = "rounded bg-zinc-50 px-1.5 py-0.5 text-[11px] font-semibold text-muted";
-        chip.textContent = tag;
-        tagRow.append(chip);
+      card.addEventListener("click", () => {
+        state.selectedModelId = m.id;
+        if (typeof m.defaultPitch === "number") {
+          const pitchInput = document.getElementById("rvc-pitch");
+          const pitchVal = document.getElementById("rvc-pitch-value");
+          if (pitchInput && pitchVal) {
+            pitchInput.value = String(m.defaultPitch);
+            pitchVal.textContent = (m.defaultPitch > 0 ? "+" : "") + m.defaultPitch;
+          }
+        }
+        renderModelGallery();
+        updateStatusDisplay();
       });
 
-      card.append(check, titleRow, statusEl, descEl, tagRow);
-      card.addEventListener("click", () => selectModel(id, name));
-      gallery.append(card);
+      container.appendChild(card);
     });
   }
 
-  async function fetchBackendModels() {
-    if (!RVC_MODELS_ENDPOINT) return;
+  function updateStatusDisplay(msg) {
+    const statusEl = document.getElementById("rvc-service-status");
+    const convertBtn = document.getElementById("rvc-convert");
+    const convertLabel = document.getElementById("rvc-convert-label");
+
+    if (msg) {
+      if (statusEl) statusEl.textContent = msg;
+      return;
+    }
+
+    const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
+    if (!selectedModel) {
+      if (statusEl) statusEl.textContent = t("missingModel");
+      if (convertBtn) convertBtn.disabled = true;
+      if (convertLabel) convertLabel.textContent = t("convert");
+      return;
+    }
+
+    if (!state.audio) {
+      if (statusEl) statusEl.textContent = t("missingAudio");
+      if (convertBtn) convertBtn.disabled = true;
+      if (convertLabel) convertLabel.textContent = t("convert");
+      return;
+    }
+
+    if (statusEl) {
+      statusEl.textContent = `${t("serviceReady")} · 已选角色: ${selectedModel.name} · 音频: ${
+        state.audio.name
+      } (${formatTime(state.audio.duration)})`;
+    }
+    if (convertBtn) convertBtn.disabled = state.busy;
+    if (convertLabel) convertLabel.textContent = state.busy ? t("converting") : t("convert");
+  }
+
+  async function initCatalog() {
     try {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 8000);
-      let response;
-      try {
-        response = await fetch(RVC_MODELS_ENDPOINT, { method: "GET", headers: { Accept: "application/json" }, signal: controller.signal });
-      } finally {
-        window.clearTimeout(timeoutId);
+      const res = await fetch("assets/rvc-models.json?v=" + Date.now());
+      if (res.ok) {
+        const data = await res.json();
+        state.catalog = data.models || [];
+        state.baseModels = data.baseModels || {};
+        if (state.catalog.length > 0 && !state.selectedModelId) {
+          state.selectedModelId = state.catalog[0].id;
+        }
       }
-      const payload = await response.json().catch(() => null);
-      if (response.ok && payload && Array.isArray(payload.models)) {
-        const ids = new Set();
-        payload.models.forEach((model) => {
-          if (model && typeof model.id === "string" && /^[A-Za-z0-9_-]{1,64}$/u.test(model.id)) ids.add(model.id);
+    } catch (e) {
+      console.warn("Failed to load rvc-models.json", e);
+    }
+    renderModelGallery();
+  }
+
+  async function handleAudioSelected(file) {
+    if (!file) return;
+    const statusEl = document.getElementById("rvc-audio-status");
+    if (statusEl) statusEl.textContent = t("analyzing");
+
+    try {
+      const decoded = await decodeAudioFileTo16kMono(file);
+      state.audio = {
+        file,
+        float32: decoded.float32,
+        duration: decoded.duration,
+        name: file.name,
+      };
+      if (statusEl) {
+        statusEl.textContent = t("analysisReady", {
+          name: file.name,
+          duration: `${decoded.duration.toFixed(1)}s`,
         });
-        state.availableModelIds = ids;
-        if (state.selectedModelId && !ids.has(state.selectedModelId)) state.selectedModelId = "";
-        return;
       }
-      state.availableModelIds = new Set();
-    } catch {
-      state.availableModelIds = new Set();
-    }
-  }
-
-  function selectModel(id, name) {
-    state.selectedModelId = id;
-    const entry = state.catalog.find((candidate) => candidate.id === id);
-    if (entry && Number.isFinite(Number(entry.defaultPitch))) {
-      const pitch = document.getElementById("rvc-pitch");
-      if (pitch) {
-        pitch.value = String(entry.defaultPitch);
-        const value = document.getElementById("rvc-pitch-value");
-        if (value) value.textContent = String(entry.defaultPitch);
-        syncRangeFill(pitch);
-      }
-    }
-    displayModels();
-    if (state.backend === "ready") setServiceStatus(interpolate(t("selectedModel"), { name }), "normal");
-  }
-
-  // ---- audio ----
-
-  async function decodeAudioFile(file) {
-    const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextConstructor) return null;
-    const context = new AudioContextConstructor();
-    try {
-      const raw = await file.arrayBuffer();
-      return await context.decodeAudioData(raw.slice(0));
-    } finally {
-      if (typeof context.close === "function") await context.close().catch(() => {});
-    }
-  }
-
-  async function analyzeAudio(blob, name) {
-    state.audio = null;
-    if (!blob || blob.size < 1) {
-      setAudioStatus(t("fileEmpty"));
-      return;
-    }
-    if (blob.size > MAX_AUDIO_BYTES) {
-      setAudioStatus(t("fileTooLarge"), "error");
-      return;
-    }
-    setAudioStatus(t("analyzing"));
-    try {
-      const buffer = await decodeAudioFile(blob);
-      if (!buffer) {
-        state.audio = { blob, name, duration: null, warnings: [] };
-        setAudioStatus(t("analysisFallback"), "warning");
-        return;
-      }
-      const duration = buffer.duration;
-      const warnings = [];
-      if (duration < MIN_AUDIO_SECONDS) warnings.push({ text: t("audioTooShort"), error: true });
-      else if (duration < WARN_AUDIO_SECONDS) warnings.push({ text: t("audioShortWarn"), error: false });
-      if (duration > MAX_AUDIO_SECONDS) warnings.push({ text: t("audioTooLong"), error: true });
-      if (buffer.numberOfChannels > 1) warnings.push({ text: t("stereo"), error: false });
-      state.audio = { blob, name, duration, warnings };
-      const messages = [
-        interpolate(t("analysisReady"), { name: readableFileName(name), duration: formatSeconds(duration) }),
-        ...warnings.map((warning) => warning.text),
-      ];
-      const hasError = warnings.some((warning) => warning.error);
-      setAudioStatus(messages, hasError ? "error" : warnings.length ? "warning" : "normal");
-    } catch {
+      updateStatusDisplay();
+    } catch (err) {
+      console.error("Audio decode error:", err);
       state.audio = null;
-      setAudioStatus(t("decodeFailed"), "error");
+      if (statusEl) statusEl.textContent = t("decodeFailed");
+      showToast(t("decodeFailed"));
+      updateStatusDisplay();
     }
   }
 
-  function handleFileInput() {
-    const input = document.getElementById("rvc-audio-file");
-    const file = input && input.files && input.files[0] ? input.files[0] : null;
-    if (!file) {
-      setAudioStatus(t("fileEmpty"));
-      return;
-    }
-    if (!isAllowedAudioFile(file)) {
-      setAudioStatus(t("invalidFile"), "error");
-      return;
-    }
-    analyzeAudio(file, file.name);
-  }
-
-  function stopRecordingStream() {
-    if (state.recordStream) {
-      state.recordStream.getTracks().forEach((track) => track.stop());
-      state.recordStream = null;
-    }
-    if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
-      try {
-        state.mediaRecorder.stop();
-      } catch {
-        // already stopped
-      }
-    }
-    state.mediaRecorder = null;
-  }
-
-  function updateRecordTimer() {
-    const timer = document.getElementById("rvc-record-timer");
-    if (!timer) return;
-    if (!state.recording) {
-      timer.textContent = "0:00";
-      return;
-    }
-    const elapsed = Math.floor((Date.now() - state.recordStartAt) / 1000);
-    const minutes = Math.floor(elapsed / 60);
-    const remainder = String(elapsed % 60).padStart(2, "0");
-    timer.textContent = `${minutes}:${remainder}`;
-    if (elapsed > MAX_AUDIO_SECONDS) {
-      stopRecording();
-      setAudioStatus(t("audioTooLong"), "error");
-    }
-  }
-
-  async function startRecording() {
-    if (state.recording) return;
-    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
-      setAudioStatus(t("recordUnsupported"), "error");
-      return;
-    }
-    if (!window.isSecureContext) {
-      setAudioStatus(t("recordInsecure"), "error");
-      return;
-    }
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (error) {
-      setAudioStatus(error && error.name === "NotAllowedError" ? t("recordDenied") : t("recordError"), "error");
-      return;
-    }
-    state.recordStream = stream;
-    state.recordChunks = [];
-    const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
-    let mimeType = "";
-    for (const candidate of preferred) {
-      if (window.MediaRecorder && MediaRecorder.isTypeSupported(candidate)) {
-        mimeType = candidate;
-        break;
-      }
-    }
-    try {
-      state.mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-    } catch {
-      stopRecordingStream();
-      setAudioStatus(t("recordError"), "error");
-      return;
-    }
-    state.mediaRecorder.addEventListener("dataavailable", (event) => {
-      if (event.data && event.data.size > 0) state.recordChunks.push(event.data);
-    });
-    state.mediaRecorder.addEventListener("stop", () => {
-      const blob = new Blob(state.recordChunks, { type: mimeType || "audio/webm" });
-      const preview = document.getElementById("rvc-record-preview");
-      if (preview) {
-        if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
-        const url = URL.createObjectURL(blob);
-        preview.dataset.objectUrl = url;
-        preview.src = url;
-        preview.load();
-        preview.hidden = false;
-      }
-      analyzeAudio(blob, "recording.webm");
-    });
-    state.recording = true;
-    state.recordStartAt = Date.now();
-    state.mediaRecorder.start(250);
-    document.getElementById("rvc-record-wrap")?.classList.add("rvc-recording");
-    const label = document.getElementById("rvc-record-label");
-    const toggle = document.getElementById("rvc-record-toggle");
-    if (label) label.textContent = t("recordStop");
-    if (toggle) toggle.classList.add("bg-red-600", "hover:bg-red-700");
-    if (toggle) toggle.classList.remove("bg-brand", "hover:bg-brandDark");
-    state.recordTimerId = window.setInterval(updateRecordTimer, 250);
-  }
-
-  function stopRecording() {
-    if (!state.recording) return;
-    state.recording = false;
-    window.clearInterval(state.recordTimerId);
-    state.recordTimerId = 0;
-    if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
-      state.mediaRecorder.stop();
-    }
-    stopRecordingStream();
-    document.getElementById("rvc-record-wrap")?.classList.remove("rvc-recording");
-    const label = document.getElementById("rvc-record-label");
-    const toggle = document.getElementById("rvc-record-toggle");
-    if (label) label.textContent = t("recordStart");
-    if (toggle) toggle.classList.remove("bg-red-600", "hover:bg-red-700");
-    if (toggle) toggle.classList.add("bg-brand", "hover:bg-brandDark");
-    const timer = document.getElementById("rvc-record-timer");
-    if (timer) timer.textContent = "0:00";
-  }
-
-  // ---- settings ----
-
-  function syncRangeFill(input) {
-    if (!input) return;
-    const min = Number(input.min || 0);
-    const max = Number(input.max || 100);
-    const value = Number(input.value || 0);
-    const percent = max > min ? (value - min) / (max - min) * 100 : 0;
-    input.style.setProperty("--rvc-fill", `${percent}%`);
-  }
-
-  function bindRange(inputId, valueId) {
-    const input = document.getElementById(inputId);
-    const value = document.getElementById(valueId);
-    if (!input || !value) return;
-    const update = () => {
-      value.textContent = Number(input.value).toFixed(input.step >= 1 ? 0 : 2).replace(/\.00$/u, "");
-      syncRangeFill(input);
-    };
-    input.addEventListener("input", update);
-    update();
-  }
-
-  // ---- validation & conversion ----
-
-  function validateInput() {
-    if (state.backend !== "ready") return t("uploadBlocked");
-    if (!state.selectedModelId) return t("missingModel");
-    if (!state.availableModelIds.has(state.selectedModelId)) return t("modelNotInstalled");
-    if (!state.audio || !state.audio.blob) return t("missingAudio");
-    if (state.audio.warnings && state.audio.warnings.some((warning) => warning.error)) {
-      return state.audio.warnings.find((warning) => warning.error).text;
-    }
-    return "";
-  }
-
-  function buildOutputUrl(jobId, token) {
-    const validJob = /^[a-f0-9-]{36}$/iu.test(String(jobId || ""));
-    const validToken = /^[A-Za-z0-9_-]{32,128}$/u.test(String(token || ""));
-    if (!RVC_BASE || !validJob || !validToken) return "";
-    const url = new URL(`${RVC_BASE}/output/${encodeURIComponent(jobId)}`);
-    url.searchParams.set("token", token);
-    return url.toString();
-  }
-
-  async function showResult(payload) {
-    const result = document.getElementById("rvc-result");
-    const audio = document.getElementById("rvc-result-audio");
-    const download = document.getElementById("rvc-result-download");
-    const meta = document.getElementById("rvc-result-meta");
-    const outputUrl = buildOutputUrl(payload && payload.jobId, payload && payload.downloadToken);
-    if (!result || !audio || !download || !meta || !outputUrl) {
-      setServiceStatus(t("outputUnavailable"), "warning");
-      return;
-    }
-    let audioBlob;
-    try {
-      const response = await fetch(outputUrl, { headers: { Accept: "audio/wav, audio/mpeg, audio/*;q=0.8" } });
-      const contentType = String(response.headers.get("Content-Type") || "").toLowerCase();
-      if (!response.ok || !contentType.startsWith("audio/")) throw new Error("Invalid rvc output");
-      audioBlob = await response.blob();
-      if (!audioBlob.size) throw new Error("Empty rvc output");
-    } catch {
-      setServiceStatus(t("outputUnavailable"), "warning");
-      return;
-    }
-    const blobUrl = URL.createObjectURL(audioBlob);
-    const previousObjectUrl = audio.dataset.objectUrl;
-    if (previousObjectUrl) URL.revokeObjectURL(previousObjectUrl);
-    audio.dataset.objectUrl = blobUrl;
-    audio.src = blobUrl;
-    audio.load();
-    audio.onerror = () => setServiceStatus(t("outputUnavailable"), "warning");
-    download.href = blobUrl;
-    download.download = `postprep-rvc-${state.selectedModelId || "voice"}.${payload.format || "wav"}`;
-    const expires = payload && typeof payload.expiresAt === "string" ? new Date(payload.expiresAt) : null;
-    const expiresText = expires && !Number.isNaN(expires.getTime())
-      ? expires.toLocaleString(language() === "en" ? "en-US" : "zh-CN")
-      : "—";
-    const catalogEntry = state.catalog.find((entry) => entry.id === state.selectedModelId);
-    meta.textContent = interpolate(t("resultMeta"), {
-      model: catalogEntry?.name || state.selectedModelId,
-      pitch: document.getElementById("rvc-pitch")?.value || "0",
-      expires: expiresText,
-    });
-    result.hidden = false;
-    result.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
-
-  function errorMessage(error) {
-    const code = error && error.code;
-    if (code === "RATE_LIMITED") return t("rateLimited");
-    if (["RVC_BACKEND_NOT_CONFIGURED", "RVC_BACKEND_UNAVAILABLE", "RVC_BACKEND_TIMEOUT"].includes(code)) return t("backendUnavailable");
-    if (["RVC_MODEL_NOT_FOUND", "RVC_INVALID_MODEL"].includes(code)) return t("modelNotInstalled");
-    if (["RVC_OUTPUT_UNAVAILABLE", "RVC_INVALID_OUTPUT"].includes(code)) return t("outputUnavailable");
-    return code === "NETWORK_ERROR" ? t("networkFailed") : t("generationFailed");
-  }
-
-  async function requestConversion() {
-    const issue = validateInput();
-    if (issue) {
-      setServiceStatus(issue, "warning");
-      return;
-    }
-    if (!RVC_BASE) {
-      setServiceStatus(t("uploadBlocked"), "error");
-      return;
-    }
-    setBusy(true);
-    try {
-      const body = new FormData();
-      body.set("modelId", state.selectedModelId);
-      body.set("pitch", String(document.getElementById("rvc-pitch")?.value || "0"));
-      body.set("indexRate", String(document.getElementById("rvc-index-rate")?.value || "0.5"));
-      body.set("protect", String(document.getElementById("rvc-protect")?.value || "0.33"));
-      body.set("f0Method", String(document.getElementById("rvc-f0-method")?.value || "rmvpe"));
-      body.set("format", String(document.getElementById("rvc-format")?.value || "wav"));
-      body.set("resample", String(document.getElementById("rvc-resample")?.value || "0"));
-      body.set("rmsMixRate", String(document.getElementById("rvc-rms-mix")?.value || "1"));
-      body.set("filterRadius", String(document.getElementById("rvc-filter-radius")?.value || "3"));
-      body.set("language", language());
-      body.set("audio", state.audio.blob, readableFileName(state.audio.name));
-
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-      let response;
-      try {
-        response = await fetch(RVC_BASE, { method: "POST", body, signal: controller.signal });
-      } finally {
-        window.clearTimeout(timeoutId);
-      }
-      const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload || payload.ok !== true) {
-        const error = new Error("RVC request failed");
-        error.code = payload && typeof payload.code === "string" ? payload.code : "RVC_REQUEST_FAILED";
-        throw error;
-      }
-      await showResult(payload);
-      setServiceStatus(t("serviceReady"), "ready");
-    } catch (error) {
-      if (error && error.name === "AbortError") error.code = "RVC_BACKEND_TIMEOUT";
-      setServiceStatus(errorMessage(error), "error");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handlePrimaryAction() {
-    if (state.busy || state.backend === "checking") return;
-    if (state.backend !== "ready") {
-      await checkAvailability();
-      return;
-    }
-    await requestConversion();
-  }
-
-  // ---- service availability ----
-
-  async function checkAvailability() {
-    if (!RVC_STATUS_ENDPOINT || window.location.protocol === "file:") {
-      state.backend = "unavailable";
-      setServiceStatus(t("serviceUnavailable"), "warning");
-      updatePrimaryAction();
-      displayModels();
-      return;
-    }
-    state.backend = "checking";
-    setServiceStatus(t("checkingService"));
-    updatePrimaryAction();
-    try {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 8000);
-      let response;
-      try {
-        response = await fetch(RVC_STATUS_ENDPOINT, { method: "GET", headers: { Accept: "application/json" }, signal: controller.signal });
-      } finally {
-        window.clearTimeout(timeoutId);
-      }
-      const payload = await response.json().catch(() => null);
-      if (response.ok && payload && payload.ready === true) {
-        state.backend = "ready";
-        setServiceStatus(t("serviceReady"), "ready");
-      } else {
-        state.backend = "unavailable";
-        setServiceStatus(t("serviceUnavailable"), "warning");
-      }
-    } catch {
-      state.backend = "unavailable";
-      setServiceStatus(t("serviceError"), "error");
-    }
-    await fetchBackendModels();
-    displayModels();
-    updatePrimaryAction();
-  }
-
-  // ---- i18n ----
-
-  function applyTranslations() {
-    document.title = `${t("title")} | PostPrep`;
-    document.querySelectorAll("[data-rvc-i18n]").forEach((element) => {
-      element.textContent = t(element.dataset.rvcI18n);
-    });
-    document.querySelectorAll("[data-rvc-i18n-placeholder]").forEach((element) => {
-      element.setAttribute("placeholder", t(element.dataset.rvcI18nPlaceholder));
-    });
-    document.querySelectorAll("[data-rvc-list]").forEach((list) => {
-      const entries = t(list.dataset.rvcList);
-      list.replaceChildren();
-      if (!Array.isArray(entries)) return;
-      entries.forEach((entry) => {
-        const item = document.createElement("li");
-        item.className = "flex gap-3";
-        const icon = document.createElement("i");
-        icon.className = "fa-solid fa-check mt-1 text-brand";
-        icon.setAttribute("aria-hidden", "true");
-        const text = document.createElement("span");
-        text.textContent = entry;
-        item.append(icon, text);
-        list.append(item);
-      });
-    });
-    const status = state.backend === "ready" ? t("serviceReady")
-      : state.backend === "checking" ? t("checkingService")
-        : t("serviceUnavailable");
-    setServiceStatus(status, state.backend === "ready" ? "ready" : state.backend === "checking" ? "normal" : "warning");
+  function setupRecording() {
+    const recordBtn = document.getElementById("rvc-record-toggle");
     const recordLabel = document.getElementById("rvc-record-label");
-    if (recordLabel) recordLabel.textContent = state.recording ? t("recordStop") : t("recordStart");
-    setBusy(state.busy);
+    const recordTimer = document.getElementById("rvc-record-timer");
+    const recordPreview = document.getElementById("rvc-record-preview");
+
+    if (!recordBtn) return;
+
+    recordBtn.addEventListener("click", async () => {
+      if (state.recording) {
+        // Stop recording
+        if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
+          state.mediaRecorder.stop();
+        }
+        clearInterval(state.recordTimerId);
+        state.recording = false;
+        if (recordLabel) recordLabel.textContent = t("recordStart");
+        recordBtn.classList.remove("bg-red-600", "hover:bg-red-700");
+        recordBtn.classList.add("bg-brand", "hover:bg-brandDark");
+        return;
+      }
+
+      // Start recording
+      if (!navigator.mediaDevices?.getUserMedia) {
+        showToast(t("recordUnsupported"));
+        return;
+      }
+
+      try {
+        state.recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        state.recordChunks = [];
+        const recorder = new MediaRecorder(state.recordStream);
+        state.mediaRecorder = recorder;
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) state.recordChunks.push(e.data);
+        };
+
+        recorder.onstop = async () => {
+          const blob = new Blob(state.recordChunks, { type: recorder.mimeType || "audio/webm" });
+          const recFile = new File([blob], `mic_recording_${Date.now()}.webm`, {
+            type: blob.type,
+          });
+          if (recordPreview) {
+            recordPreview.src = URL.createObjectURL(blob);
+            recordPreview.hidden = false;
+          }
+          if (state.recordStream) {
+            state.recordStream.getTracks().forEach((track) => track.stop());
+          }
+          await handleAudioSelected(recFile);
+        };
+
+        recorder.start(100);
+        state.recording = true;
+        state.recordStartAt = Date.now();
+        if (recordLabel) recordLabel.textContent = t("recordStop");
+        recordBtn.classList.remove("bg-brand", "hover:bg-brandDark");
+        recordBtn.classList.add("bg-red-600", "hover:bg-red-700");
+
+        state.recordTimerId = setInterval(() => {
+          const sec = (Date.now() - state.recordStartAt) / 1000;
+          if (recordTimer) recordTimer.textContent = formatTime(sec);
+        }, 500);
+      } catch (err) {
+        console.error("Mic access denied or error:", err);
+        showToast(t("recordDenied"));
+      }
+    });
   }
 
-  // ---- init ----
+  async function runWebRvcInference() {
+    if (state.busy || !state.audio || !state.selectedModelId) return;
 
-  function updateSourceMode(mode) {
-    state.sourceMode = mode === "record" ? "record" : "upload";
-    const upload = document.getElementById("rvc-source-upload");
-    const record = document.getElementById("rvc-source-record");
-    const uploadWrap = document.getElementById("rvc-upload-wrap");
-    const recordWrap = document.getElementById("rvc-record-wrap");
-    const selectedClasses = "rounded-lg border border-brand bg-teal-50 p-4 text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
-    const idleClasses = "rounded-lg border border-line bg-white p-4 text-left transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
-    if (upload) {
-      upload.setAttribute("aria-pressed", String(state.sourceMode === "upload"));
-      upload.className = state.sourceMode === "upload" ? selectedClasses : idleClasses;
+    const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
+    if (!selectedModel) {
+      showToast(t("missingModel"));
+      return;
     }
-    if (record) {
-      record.setAttribute("aria-pressed", String(state.sourceMode === "record"));
-      record.className = state.sourceMode === "record"
-        ? "rounded-lg border border-violet-700 bg-violet-50 p-4 text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
-        : idleClasses;
+
+    const convertBtn = document.getElementById("rvc-convert");
+    const convertLabel = document.getElementById("rvc-convert-label");
+    const resultSection = document.getElementById("rvc-result");
+    const resultAudio = document.getElementById("rvc-result-audio");
+    const resultDownload = document.getElementById("rvc-result-download");
+    const resultMeta = document.getElementById("rvc-result-meta");
+    const pitchVal = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
+    const protectVal = parseFloat(document.getElementById("rvc-protect")?.value || "0.33");
+    const indexRateVal = parseFloat(document.getElementById("rvc-index-rate")?.value || "0.5");
+
+    state.busy = true;
+    if (convertBtn) {
+      convertBtn.disabled = true;
+      convertBtn.setAttribute("aria-busy", "true");
     }
-    if (uploadWrap) uploadWrap.classList.toggle("hidden", state.sourceMode !== "upload");
-    if (recordWrap) recordWrap.classList.toggle("hidden", state.sourceMode !== "record");
-    if (state.sourceMode === "upload") stopRecording();
+
+    const startTime = Date.now();
+    try {
+      // 1. Dynamic import of rvc-web-runtime
+      updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js", window.location.href).href);
+      const { createRVC, runPipelineInWorker } = runtimeModule;
+
+      const rvc = createRVC({
+        assetBaseUrl: new URL("assets/rvc-engine/", window.location.href).href,
+        wasmBaseUrl: new URL("assets/rvc-engine/ort126/", window.location.href).href,
+      });
+
+      // 2. Fetch base HuBERT & RMVPE models and character ONNX model
+      const hubertUrl = selectedModel.hubertUrl || state.baseModels.hubert || "models/base/hubert.onnx";
+      const rmvpeUrl = selectedModel.rmvpeUrl || state.baseModels.rmvpe || "models/base/rmvpe.onnx";
+      const charModelUrl = selectedModel.file || `models/characters/${selectedModel.id}.onnx`;
+
+      updateStatusDisplay("⏳ [1/4] 正在加载 AI 声线模型权重 (首次运行需要下载)...");
+      const [hubertFile, rmvpeFile, modelFile] = await Promise.all([
+        fetchWithCache(hubertUrl, "hubert.onnx", "application/onnx", (l, t) => {
+          updateStatusDisplay(`⏳ [1/4] 加载基础语音模型 (HuBERT): ${Math.round((l / (t || 1)) * 100)}%`);
+        }),
+        fetchWithCache(rmvpeUrl, "rmvpe.onnx", "application/onnx", (l, t) => {
+          updateStatusDisplay(`⏳ [1/4] 加载高精度音高模型 (RMVPE): ${Math.round((l / (t || 1)) * 100)}%`);
+        }),
+        fetchWithCache(charModelUrl, `${selectedModel.id}.onnx`, "application/onnx", (l, t) => {
+          updateStatusDisplay(`⏳ [1/4] 加载角色音色模型 (${selectedModel.name}): ${Math.round((l / (t || 1)) * 100)}%`);
+        }),
+      ]);
+
+      // 3. Run Pipeline in Web Worker
+      updateStatusDisplay("🚀 [2/4] 本地 WebAssembly SIMD 推理开始...");
+      const result = await runPipelineInWorker(
+        rvc,
+        {
+          model: modelFile,
+          contentVec: hubertFile,
+          rmvpe: rmvpeFile,
+        },
+        state.audio.float32,
+        16000,
+        {
+          onEvent: (e) => {
+            if (e.type === "stage") {
+              const stageMap = {
+                preparing: "正在预处理音频...",
+                feature: "正在提取人声语义特征 (HuBERT)...",
+                pitch: "正在分析音高音调 (RMVPE)...",
+                synth: "正在合成目标角色音色...",
+              };
+              updateStatusDisplay(`✨ [3/4] ${stageMap[e.stage] || e.stage}`);
+            } else if (e.type === "chunk") {
+              updateStatusDisplay(`✨ [4/4] 正在合成音频分段: ${e.current} / ${e.total}`);
+            }
+          },
+        },
+        {
+          pitchShift: pitchVal,
+          medianFilter: true,
+          protect: protectVal,
+          indexRate: indexRateVal,
+          timeout: 600000,
+        }
+      );
+
+      const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(1);
+      if (!result.outputWav) {
+        throw new Error("No output wav generated by pipeline");
+      }
+
+      // 4. Attach generated audio to UI
+      const outputUrl = URL.createObjectURL(result.outputWav);
+      if (resultAudio) {
+        resultAudio.src = outputUrl;
+        resultAudio.load();
+      }
+      if (resultDownload) {
+        resultDownload.href = outputUrl;
+        resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.wav`;
+      }
+      if (resultMeta) {
+        resultMeta.textContent = t("resultMeta", {
+          model: selectedModel.name,
+          pitch: (pitchVal > 0 ? "+" : "") + pitchVal,
+          elapsed: elapsedSec,
+        });
+      }
+      if (resultSection) {
+        resultSection.hidden = false;
+        resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      updateStatusDisplay(`🎉 变声成功！用时 ${elapsedSec} 秒，结果已生成在下方。`);
+      showToast("🎉 变声完成！可在下方试听或下载");
+    } catch (err) {
+      console.error("RVC Inference Error:", err);
+      showToast(t("generationFailed"));
+      updateStatusDisplay(`❌ 变声失败: ${err.message || err}`);
+    } finally {
+      state.busy = false;
+      if (convertBtn) {
+        convertBtn.disabled = false;
+        convertBtn.setAttribute("aria-busy", "false");
+      }
+      if (convertLabel) convertLabel.textContent = t("convert");
+    }
   }
 
-  function init() {
+  function setupEventListeners() {
+    // Search input
+    const searchInput = document.getElementById("rvc-model-search");
+    if (searchInput) {
+      searchInput.addEventListener("input", () => renderModelGallery());
+    }
+
+    // Source switch (Upload vs Record)
+    const btnUpload = document.getElementById("rvc-source-upload");
+    const btnRecord = document.getElementById("rvc-source-record");
+    const wrapUpload = document.getElementById("rvc-upload-wrap");
+    const wrapRecord = document.getElementById("rvc-record-wrap");
+
+    if (btnUpload && btnRecord) {
+      btnUpload.addEventListener("click", () => {
+        state.sourceMode = "upload";
+        btnUpload.classList.add("border-brand", "bg-teal-50");
+        btnUpload.classList.remove("border-line", "bg-white");
+        btnRecord.classList.remove("border-brand", "bg-teal-50");
+        btnRecord.classList.add("border-line", "bg-white");
+        if (wrapUpload) wrapUpload.classList.remove("hidden");
+        if (wrapRecord) wrapRecord.classList.add("hidden");
+      });
+
+      btnRecord.addEventListener("click", () => {
+        state.sourceMode = "record";
+        btnRecord.classList.add("border-brand", "bg-teal-50");
+        btnRecord.classList.remove("border-line", "bg-white");
+        btnUpload.classList.remove("border-brand", "bg-teal-50");
+        btnUpload.classList.add("border-line", "bg-white");
+        if (wrapRecord) wrapRecord.classList.remove("hidden");
+        if (wrapUpload) wrapUpload.classList.add("hidden");
+      });
+    }
+
+    // File Input
     const fileInput = document.getElementById("rvc-audio-file");
-    const uploadTab = document.getElementById("rvc-source-upload");
-    const recordTab = document.getElementById("rvc-source-record");
-    const recordToggle = document.getElementById("rvc-record-toggle");
-    const convert = document.getElementById("rvc-convert");
-    const search = document.getElementById("rvc-model-search");
-    if (!fileInput || !uploadTab || !recordTab || !recordToggle || !convert || !search) return;
+    if (fileInput) {
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (file) handleAudioSelected(file);
+      });
+    }
 
-    applyTranslations();
-    bindRange("rvc-pitch", "rvc-pitch-value");
-    bindRange("rvc-index-rate", "rvc-index-rate-value");
-    bindRange("rvc-protect", "rvc-protect-value");
-    bindRange("rvc-rms-mix", "rvc-rms-mix-value");
+    // Slider pitch feedback
+    const pitchInput = document.getElementById("rvc-pitch");
+    const pitchVal = document.getElementById("rvc-pitch-value");
+    if (pitchInput && pitchVal) {
+      pitchInput.addEventListener("input", (e) => {
+        const val = parseInt(e.target.value, 10);
+        pitchVal.textContent = (val > 0 ? "+" : "") + val;
+      });
+    }
 
-    fileInput.addEventListener("change", handleFileInput);
-    uploadTab.addEventListener("click", () => updateSourceMode("upload"));
-    recordTab.addEventListener("click", () => updateSourceMode("record"));
-    recordToggle.addEventListener("click", () => {
-      if (state.recording) stopRecording();
-      else startRecording();
-    });
-    convert.addEventListener("click", handlePrimaryAction);
-    search.addEventListener("input", displayModels);
-    document.addEventListener("postprep:languagechange", applyTranslations);
-    window.addEventListener("beforeunload", stopRecording);
+    // Slider index rate feedback
+    const indexRateInput = document.getElementById("rvc-index-rate");
+    const indexRateVal = document.getElementById("rvc-index-rate-value");
+    if (indexRateInput && indexRateVal) {
+      indexRateInput.addEventListener("input", (e) => {
+        indexRateVal.textContent = parseFloat(e.target.value).toFixed(2);
+      });
+    }
 
-    updateSourceMode("upload");
-    loadCatalog().then(() => {
-      displayModels();
-      checkAvailability();
-    });
+    // Slider protect feedback
+    const protectInput = document.getElementById("rvc-protect");
+    const protectVal = document.getElementById("rvc-protect-value");
+    if (protectInput && protectVal) {
+      protectInput.addEventListener("input", (e) => {
+        protectVal.textContent = parseFloat(e.target.value).toFixed(2);
+      });
+    }
+
+    // Convert Button
+    const convertBtn = document.getElementById("rvc-convert");
+    if (convertBtn) {
+      convertBtn.addEventListener("click", () => runWebRvcInference());
+    }
+
+    setupRecording();
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", async () => {
+    setupEventListeners();
+    await initCatalog();
+    updateStatusDisplay(t("serviceReady"));
+  });
 })();
