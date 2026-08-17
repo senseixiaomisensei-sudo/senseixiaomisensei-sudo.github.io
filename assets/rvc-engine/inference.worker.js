@@ -8408,7 +8408,7 @@ async function prepareInputAudio(file) {
 const DEFAULT_CHUNK_DURATION = 20;
 const DEFAULT_PAD_DURATION = 0.5;
 const DEFAULT_INPUT_SAMPLE_RATE = 16e3;
-const DEFAULT_OUTPUT_SAMPLE_RATE = 48e3;
+const DEFAULT_OUTPUT_SAMPLE_RATE = 40e3;
 function splitAudioIntoChunks(audio, config = {}) {
   const chunkDuration = config.chunkDuration ?? DEFAULT_CHUNK_DURATION;
   const padDuration = config.padDuration ?? DEFAULT_PAD_DURATION;
@@ -12750,7 +12750,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       chunkDuration: options.chunkDuration ?? 20,
       padDuration: options.padDuration ?? 0.5,
       inputSampleRate: options.inputSampleRate ?? 16e3,
-      outputSampleRate: options.outputSampleRate ?? 48e3
+      outputSampleRate: options.outputSampleRate ?? 40e3
     };
     const outputAudio = await processAudioInChunks(
       audio,
@@ -12780,7 +12780,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     ctx.f0 = new Float32Array(0);
     emitStage(PIPELINE_STAGES[5]);
     ctx.outputWav = encodeMonoPcmToWav(ctx.outputAudio, {
-      sampleRate: options.outputSampleRate ?? 48e3
+      sampleRate: options.outputSampleRate ?? 40e3
     });
     emitStage("success");
     return ctx;
