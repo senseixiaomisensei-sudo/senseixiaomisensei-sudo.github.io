@@ -12479,6 +12479,42 @@ function aggressiveMedianFilterF0(f0, windowSize = 5) {
   }
   return result;
 }
+function stabilizeShoutingPitchF0(f0) {
+  const len = f0.length;
+  if (len < 3) return f0;
+  const out = new Float32Array(f0);
+  for (let i = 1; i < len - 1; i++) {
+    const prev = out[i - 1];
+    const curr = out[i];
+    const next = out[i + 1];
+    if (curr > 0 && prev > 0 && next > 0) {
+      const ratioPrev = curr / prev;
+      const ratioNext = curr / next;
+      const neighborRatio = next / prev;
+      if (Math.abs(neighborRatio - 1.0) < 0.30) {
+        if (
+          (ratioPrev > 1.65 && ratioNext > 1.65) ||
+          (ratioPrev < 0.60 && ratioNext < 0.60)
+        ) {
+          out[i] = (prev + next) * 0.5;
+        }
+      }
+    }
+  }
+  const maxSlew = 1.75;
+  const minSlew = 1.0 / maxSlew;
+  for (let i = 1; i < len; i++) {
+    if (out[i] > 0 && out[i - 1] > 0) {
+      const r = out[i] / out[i - 1];
+      if (r > maxSlew) {
+        out[i] = out[i - 1] * maxSlew;
+      } else if (r < minSlew) {
+        out[i] = out[i - 1] * minSlew;
+      }
+    }
+  }
+  return out;
+}
 async function estimatePitch(audio, options) {
   const session = options.rmvpe instanceof File ? await loadRmvpeModel(options.rmvpe) : options.rmvpe;
   const { f0, frameCount } = await runRmvpeInference(session, audio);
@@ -12493,6 +12529,7 @@ async function estimatePitch(audio, options) {
       filteredF0 = medianFilterF0(f0, windowSize);
     }
   }
+  filteredF0 = stabilizeShoutingPitchF0(filteredF0);
   return {
     f0: filteredF0,
     frameCount,
@@ -12663,6 +12700,7 @@ function applyRmsVolumeEnvelope(input16k, synth40k, rmsMixRate = 0.25) {
   if (numWindows === 0) return synth40k;
 
   const output = new Float32Array(synth40k);
+  const targetScales = new Float32Array(numWindows);
   for (let w = 0; w < numWindows; w++) {
     let sumIn = 0;
     const inStart = w * win16k;
@@ -12680,12 +12718,21 @@ function applyRmsVolumeEnvelope(input16k, synth40k, rmsMixRate = 0.25) {
     }
     const rmsSynth = Math.sqrt(sumSynth / win40k + 1e-6);
 
-    const ratio = Math.max(0.6, Math.min(1.8, rmsIn / (rmsSynth + 1e-5)));
-    const scale = (1 - rmsMixRate) + rmsMixRate * ratio;
+    const ratio = Math.max(0.65, Math.min(1.5, rmsIn / (rmsSynth + 1e-5)));
+    targetScales[w] = (1 - rmsMixRate) + rmsMixRate * ratio;
+  }
 
+  let currentScale = targetScales[0];
+  for (let w = 0; w < numWindows; w++) {
+    const startScale = currentScale;
+    const nextTarget = targetScales[w];
+    const synthStart = w * win40k;
     for (let i = 0; i < win40k; i++) {
-      output[synthStart + i] *= scale;
+      const t = (i + 1) / win40k;
+      const sVal = startScale + (nextTarget - startScale) * t;
+      output[synthStart + i] *= sVal;
     }
+    currentScale = nextTarget;
   }
   return output;
 }
@@ -12701,6 +12748,17 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
     const a0 = 1 + alpha / A;
     const a1 = -2 * Math.cos(w0);
     const a2 = 1 - alpha / A;
+    return { b0: b0/a0, b1: b1/a0, b2: b2/a0, a1: a1/a0, a2: a2/a0 };
+  }
+  function createBandpassFilter(fc, q, fs) {
+    const w0 = 2 * Math.PI * fc / fs;
+    const alpha = Math.sin(w0) / (2 * q);
+    const b0 = alpha;
+    const b1 = 0;
+    const b2 = -alpha;
+    const a0 = 1 + alpha;
+    const a1 = -2 * Math.cos(w0);
+    const a2 = 1 - alpha;
     return { b0: b0/a0, b1: b1/a0, b2: b2/a0, a1: a1/a0, a2: a2/a0 };
   }
   function createHighShelfFilter(fc, gainDb, fs) {
@@ -12731,12 +12789,78 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
     }
     return out;
   }
+  // 1. Warmth filter (220Hz +1.2dB, Q=0.7)
   const warmFilter = createPeakingFilter(220, 1.2, 0.7, sampleRate);
-  const stage1 = applyBiquad(audio, warmFilter);
-  const clearFilter = createPeakingFilter(3800, 1.5, 0.8, sampleRate);
-  const stage2 = applyBiquad(stage1, clearFilter);
-  const airFilter = createHighShelfFilter(11000, 1.3, sampleRate);
-  return applyBiquad(stage2, airFilter);
+  let processed = applyBiquad(audio, warmFilter);
+
+  // 2. Dynamic Anti-Metallic Harshness Suppressor (3200Hz - 5200Hz)
+  const harshBp = createBandpassFilter(3900, 1.1, sampleRate);
+  const harshSignal = applyBiquad(processed, harshBp);
+  const bodyBp = createBandpassFilter(1000, 0.5, sampleRate);
+  const bodySignal = applyBiquad(processed, bodyBp);
+
+  const blockSize = Math.floor(sampleRate * 0.005);
+  const numBlocks = Math.floor(processed.length / blockSize);
+  const gainEnv = new Float32Array(processed.length);
+  let smoothedGain = 1.0;
+  const attackCoeff = 0.20;
+  const releaseCoeff = 0.025;
+
+  for (let b = 0; b < numBlocks; b++) {
+    const st = b * blockSize;
+    const en = Math.min(st + blockSize, processed.length);
+    let sumHarsh = 0;
+    let sumBody = 0;
+    for (let i = st; i < en; i++) {
+      sumHarsh += harshSignal[i] * harshSignal[i];
+      sumBody += bodySignal[i] * bodySignal[i];
+    }
+    const rmsHarsh = Math.sqrt(sumHarsh / (en - st) + 1e-6);
+    const rmsBody = Math.sqrt(sumBody / (en - st) + 1e-6);
+    const ratio = rmsHarsh / (rmsBody + 1e-4);
+
+    let targetGain = 1.0;
+    if (ratio > 0.35) {
+      const redDb = Math.min(7.5, (ratio - 0.35) * 15.0);
+      targetGain = Math.pow(10.0, -redDb / 20.0);
+    } else if (rmsHarsh > 0.12) {
+      const redDb = Math.min(6.0, (rmsHarsh - 0.12) * 25.0);
+      targetGain = Math.pow(10.0, -redDb / 20.0);
+    }
+
+    for (let i = st; i < en; i++) {
+      if (targetGain < smoothedGain) {
+        smoothedGain += attackCoeff * (targetGain - smoothedGain);
+      } else {
+        smoothedGain += releaseCoeff * (targetGain - smoothedGain);
+      }
+      gainEnv[i] = smoothedGain;
+    }
+  }
+
+  for (let i = 0; i < processed.length; i++) {
+    const g = i < gainEnv.length ? gainEnv[i] : 1.0;
+    processed[i] = processed[i] - harshSignal[i] * (1.0 - g);
+  }
+
+  // 3. Presence & Air
+  const clearFilter = createPeakingFilter(3600, 0.6, 0.8, sampleRate);
+  processed = applyBiquad(processed, clearFilter);
+  const airFilter = createHighShelfFilter(11000, 1.0, sampleRate);
+  processed = applyBiquad(processed, airFilter);
+
+  // 4. Soft-Knee Vocal Saturation Limiter
+  for (let i = 0; i < processed.length; i++) {
+    const val = processed[i];
+    const absV = Math.abs(val);
+    if (absV > 0.75) {
+      const overshoot = absV - 0.75;
+      const compressed = 0.75 + 0.20 * Math.tanh(overshoot / 0.20);
+      processed[i] = val < 0 ? -compressed : compressed;
+    }
+  }
+
+  return processed;
 }
 function encodeMonoPcmToWav(audio, options = {}) {
   const { sampleRate = 40e3, numChannels = 1, bitsPerSample = 16 } = options;
