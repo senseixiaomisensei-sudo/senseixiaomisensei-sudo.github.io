@@ -261,23 +261,27 @@
     } catch (e) {}
   }
 
-  // Multi-CDN Candidate URLs for any relative chunk path
+  // Multi-CDN Candidate URLs for any relative chunk path (fastest Anycast edge nodes first)
   function getChunkMirrorUrls(relPath) {
     const cleanPath = relPath.startsWith("/") ? relPath.slice(1) : relPath;
     return [
-      `./${cleanPath}`,
-      `https://fastly.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://cdn.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `./${cleanPath}`,
       `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`,
+      `https://fastly.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
     ];
   }
 
-  // Fetch single chunk with mirror race & automatic failover
-  async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks) {
+  // Fetch single chunk with streaming progress, activity-based timeout and mirror failover
+  async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress) {
     const cacheKey = `chunk:${chunkPath}`;
     const cachedBuf = await getCachedItem(cacheKey);
     if (cachedBuf instanceof ArrayBuffer) {
+      if (typeof onChunkProgress === "function") {
+        onChunkProgress(cachedBuf.byteLength, cachedBuf.byteLength);
+      }
       return { buffer: cachedBuf, fromCache: true };
     }
 
@@ -287,26 +291,56 @@
     for (let m = 0; m < mirrors.length; m++) {
       const url = mirrors[m];
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s per mirror
+      const connectTimeout = setTimeout(() => controller.abort(), 8000); // 8s initial connection
       try {
         const resp = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (resp.ok) {
+        clearTimeout(connectTimeout);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        const contentLength = parseInt(resp.headers.get("content-length") || "0", 10);
+        const reader = resp.body ? resp.body.getReader() : null;
+
+        if (!reader) {
           const buf = await resp.arrayBuffer();
           if (buf.byteLength > 0) {
             await setCachedItem(cacheKey, buf);
+            if (typeof onChunkProgress === "function") onChunkProgress(buf.byteLength, buf.byteLength);
             return { buffer: buf, fromCache: false };
           }
+          throw new Error("Empty body");
         }
+
+        const chunks = [];
+        let receivedBytes = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          receivedBytes += value.length;
+          if (typeof onChunkProgress === "function") {
+            onChunkProgress(receivedBytes, contentLength || 20971520);
+          }
+        }
+
+        const combined = new Uint8Array(receivedBytes);
+        let offset = 0;
+        for (const c of chunks) {
+          combined.set(c, offset);
+          offset += c.length;
+        }
+        const finalBuf = combined.buffer;
+        await setCachedItem(cacheKey, finalBuf);
+        return { buffer: finalBuf, fromCache: false };
       } catch (err) {
-        clearTimeout(timeoutId);
+        clearTimeout(connectTimeout);
         lastError = err;
+        console.warn(`Mirror [${m}] ${url} failed for chunk ${chunkIndex + 1}:`, err.message);
       }
     }
-    throw new Error(`Failed to fetch chunk ${chunkIndex + 1}/${totalChunks} from all mirrors (${lastError?.message || "network timeout"})`);
+    throw new Error(`Failed to fetch chunk ${chunkIndex + 1}/${totalChunks} from all mirrors (${lastError?.message || "network error"})`);
   }
 
-  // Fetch Chunked Model with Concurrency Pool & Progress Reporting
+  // Fetch Chunked Model with Concurrency Pool & Real-Time Granular Progress
   async function fetchChunkedModel(chunkUrls, name, mimeType, onProgress) {
     const cached = await getCachedItem(name);
     if (cached instanceof Blob) {
@@ -319,19 +353,33 @@
     const urls = Array.isArray(chunkUrls) ? chunkUrls : [chunkUrls];
     const totalCount = urls.length;
     const blobParts = new Array(totalCount);
+    const chunkBytesLoaded = new Float32Array(totalCount);
     let completedCount = 0;
-    let totalLoadedBytes = 0;
     const estimatedTotalBytes = totalCount * 20 * 1024 * 1024;
+
+    const reportProgress = () => {
+      let totalLoaded = 0;
+      for (let i = 0; i < totalCount; i++) totalLoaded += chunkBytesLoaded[i];
+      if (typeof onProgress === "function") {
+        onProgress(totalLoaded, estimatedTotalBytes, completedCount, totalCount, false);
+      }
+    };
 
     const tasks = urls.map((u, idx) => {
       return globalDownloadPool.run(async () => {
-        const { buffer, fromCache } = await fetchSingleChunkWithFallback(u, idx, totalCount);
+        const { buffer, fromCache } = await fetchSingleChunkWithFallback(
+          u,
+          idx,
+          totalCount,
+          (bytesLoaded) => {
+            chunkBytesLoaded[idx] = bytesLoaded;
+            reportProgress();
+          }
+        );
         blobParts[idx] = buffer;
+        chunkBytesLoaded[idx] = buffer.byteLength;
         completedCount++;
-        totalLoadedBytes += buffer.byteLength;
-        if (typeof onProgress === "function") {
-          onProgress(totalLoadedBytes, estimatedTotalBytes, completedCount, totalCount, fromCache);
-        }
+        reportProgress();
       });
     });
 
@@ -855,7 +903,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v8", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v9", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
