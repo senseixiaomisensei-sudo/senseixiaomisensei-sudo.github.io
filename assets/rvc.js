@@ -296,9 +296,9 @@
     rvcContext: null,
   };
 
-  // High-Performance Concurrency Pool (3 concurrent HTTP streams - optimal for Mobile & Desktop)
+  // High-Performance Concurrency Pool (5 concurrent HTTP streams for max speed)
   class ConcurrencyPool {
-    constructor(limit = 3) {
+    constructor(limit = 5) {
       this.limit = limit;
       this.running = 0;
       this.queue = [];
@@ -320,9 +320,9 @@
     }
   }
 
-  const globalDownloadPool = new ConcurrencyPool(3);
+  const globalDownloadPool = new ConcurrencyPool(5);
 
-  // IndexedDB Persistent Storage for Instant 0-second reloads
+  // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
 
@@ -367,6 +367,16 @@
     } catch (e) {}
   }
 
+  async function removeCachedItem(key) {
+    try {
+      const db = await openModelDB();
+      if (!db) return;
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.delete(key);
+    } catch (e) {}
+  }
+
   // Multi-CDN Candidate URLs for any relative chunk path (Live-Tested Fast Mirror Order)
   function getChunkMirrorUrls(relPath) {
     const cleanPath = relPath.startsWith("/") ? relPath.slice(1) : relPath;
@@ -381,11 +391,20 @@
     ];
   }
 
-  // Fetch single chunk with Multi-Node Concurrent Racing & Automatic Failover
+  // Fetch single chunk with Multi-Node Concurrent Racing, Chunk-Level Resumption & Auto-Retry
   async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress) {
+    const chunkCacheKey = `chunk:${chunkPath}`;
+    const cachedBuf = await getCachedItem(chunkCacheKey);
+    if (cachedBuf instanceof ArrayBuffer && cachedBuf.byteLength > 0) {
+      if (typeof onChunkProgress === "function") {
+        onChunkProgress(cachedBuf.byteLength);
+      }
+      return { buffer: cachedBuf, fromCache: true };
+    }
+
     const mirrors = getChunkMirrorUrls(chunkPath);
 
-    const fetchWithTimeout = (url, timeoutMs = 8000) => {
+    const fetchWithTimeout = (url, timeoutMs = 7000) => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       return fetch(url, { signal: controller.signal })
@@ -403,26 +422,43 @@
     };
 
     let winningBuffer = null;
-    try {
-      winningBuffer = await Promise.any([
-        fetchWithTimeout(mirrors[0], 9000),
-        fetchWithTimeout(mirrors[1], 9000),
-        new Promise((resolve, reject) => setTimeout(() => {
-          fetchWithTimeout(mirrors[2], 9000).then(resolve, reject);
-        }, 1500))
-      ]);
-    } catch (raceErr) {
-      for (let m = 3; m < mirrors.length; m++) {
-        try {
-          winningBuffer = await fetchWithTimeout(mirrors[m], 10000);
-          if (winningBuffer && winningBuffer.byteLength > 0) break;
-        } catch (e) {}
+    let lastError = null;
+
+    // Retry loop: up to 3 attempts with progressive fallbacks
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        winningBuffer = await Promise.any([
+          fetchWithTimeout(mirrors[0], 8000),
+          fetchWithTimeout(mirrors[1], 8000),
+          new Promise((resolve, reject) => setTimeout(() => {
+            fetchWithTimeout(mirrors[2], 8000).then(resolve, reject);
+          }, 1200))
+        ]);
+        if (winningBuffer && winningBuffer.byteLength > 0) break;
+      } catch (raceErr) {
+        lastError = raceErr;
+        // Fallback to secondary mirrors
+        for (let m = 2; m < mirrors.length; m++) {
+          try {
+            winningBuffer = await fetchWithTimeout(mirrors[m], 9000);
+            if (winningBuffer && winningBuffer.byteLength > 0) break;
+          } catch (e) {
+            lastError = e;
+          }
+        }
+        if (winningBuffer && winningBuffer.byteLength > 0) break;
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+        }
       }
     }
 
     if (!winningBuffer || winningBuffer.byteLength === 0) {
-      throw new Error(`无法从所有镜像节点下载分片 ${chunkIndex + 1}/${totalChunks}，请检查网络`);
+      throw new Error(`无法从所有镜像节点下载分片 ${chunkIndex + 1}/${totalChunks} (${lastError?.message || "网络波动"})`);
     }
+
+    // Persist chunk immediately for resumable downloads
+    await setCachedItem(chunkCacheKey, winningBuffer);
 
     if (typeof onChunkProgress === "function") {
       onChunkProgress(winningBuffer.byteLength);
@@ -451,7 +487,7 @@
       let totalLoaded = 0;
       for (let i = 0; i < totalCount; i++) totalLoaded += chunkBytesLoaded[i];
       if (typeof onProgress === "function") {
-        const msg = `⏳ [1/4] 正在下载 ${displayName}: 分片 ${completedCount}/${totalCount} (${(totalLoaded/1024/1024).toFixed(1)}MB / ${(estimatedTotalBytes/1024/1024).toFixed(1)}MB)`;
+        const msg = `⏳ [1/4] 正在下载 ${displayName}: 分片 ${completedCount}/${totalCount} (${(totalLoaded/1024/1024).toFixed(1)}MB / ${(estimatedTotalBytes/1024/1024).toFixed(1)}MB) · 5 线程断点极速加速中`;
         onProgress(totalLoaded, estimatedTotalBytes, completedCount, totalCount, false, msg);
       }
     };
@@ -481,6 +517,10 @@
     const fullBlob = new Blob(blobParts, { type: mimeType });
     try {
       await setCachedItem(name, fullBlob);
+      // Clean up individual chunk entries to keep storage compact
+      for (const u of urls) {
+        removeCachedItem(`chunk:${u}`).catch(() => {});
+      }
     } catch (e) {
       console.warn("Could not save to IndexedDB cache:", e);
     }
@@ -1013,7 +1053,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v15", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v16", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({

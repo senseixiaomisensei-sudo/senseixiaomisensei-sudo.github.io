@@ -12977,18 +12977,18 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     const [contentVecSession, rmvpeSession] = await Promise.all([
       qu.create(contentVecBuffer, {
         executionProviders: ["wasm"],
-        graphOptimizationLevel: "disabled"
+        graphOptimizationLevel: "all"
       }),
       qu.create(rmvpeBuffer, {
         executionProviders: ["wasm"],
-        graphOptimizationLevel: "disabled"
+        graphOptimizationLevel: "all"
       })
     ]);
     ctx.modelSession = rvcSession;
     ctx.backend = "wasm";
     emitStage(PIPELINE_STAGES[2]);
     const chunkingConfig = {
-      chunkDuration: options.chunkDuration ?? 20,
+      chunkDuration: options.chunkDuration ?? 6,
       padDuration: options.padDuration ?? 0.5,
       inputSampleRate: options.inputSampleRate ?? 16e3,
       outputSampleRate: options.outputSampleRate ?? 40e3
