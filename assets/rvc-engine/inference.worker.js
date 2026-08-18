@@ -8522,7 +8522,7 @@ async function processAudioInChunks(audio, processor, config = {}, onProgress) {
   const processedChunks = [];
   for (let i = 0; i < chunks.length; i++) {
     onProgress?.(i + 1, chunks.length);
-    const processed = await processor(chunks[i]);
+    const processed = await processor(chunks[i], i + 1, chunks.length);
     processedChunks.push(processed);
     if (i < chunks.length - 1) {
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -12995,20 +12995,24 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     };
     const outputAudio = await processAudioInChunks(
       audio,
-      async (chunk) => {
+      async (chunk, currentChunk, totalChunks) => {
+        callbacks.onEvent?.({ type: "chunk_step", step: "feature", current: currentChunk, total: totalChunks });
         const features = await extractHubertFeatures(chunk.data, {
           contentVec: contentVecSession
         });
+        callbacks.onEvent?.({ type: "chunk_step", step: "pitch", current: currentChunk, total: totalChunks });
         const pitch = await estimatePitch(chunk.data, {
           rmvpe: rmvpeSession,
           medianFilter: options.medianFilter,
           medianFilterWindow: options.medianFilterWindow,
           aggressiveMedianFilter: options.aggressiveMedianFilter
         });
+        callbacks.onEvent?.({ type: "chunk_step", step: "synth", current: currentChunk, total: totalChunks });
         const synthesized = await synthesizeVoice(rvcSession, features, pitch, {
           speakerId: options.speakerId,
           pitchShift: options.pitchShift
         });
+        callbacks.onEvent?.({ type: "chunk_step", step: "done", current: currentChunk, total: totalChunks });
         return synthesized.audio;
       },
       chunkingConfig,
@@ -13025,6 +13029,8 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     ctx.outputAudio = finalAudio;
     ctx.hiddenStates = new Float32Array(0);
     ctx.f0 = new Float32Array(0);
+    ctx.onnxBuffer = void 0;
+    ctx.inputAudio = void 0;
     emitStage(PIPELINE_STAGES[5]);
     ctx.outputWav = encodeMonoPcmToWav(ctx.outputAudio, {
       sampleRate: options.outputSampleRate ?? 40e3

@@ -536,12 +536,12 @@
           totalCount,
           (bytesLoaded) => {
             chunkBytesLoaded[idx] = bytesLoaded;
-            completedCount++;
             reportProgress();
           }
         );
         blobParts[idx] = buffer;
         chunkBytesLoaded[idx] = buffer.byteLength;
+        completedCount++;
         reportProgress();
       });
     });
@@ -1104,7 +1104,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v18", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v19", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1176,12 +1176,23 @@
           onEvent: (e) => {
             if (e.type === "stage") {
               const stageMap = {
-                preparing: "正在预处理音频...",
-                feature: "正在提取人声语义特征 (HuBERT)...",
-                pitch: "正在分析音高音调 (RMVPE)...",
-                synth: "正在合成目标角色音色...",
+                input_preparation: "正在预处理输入音频...",
+                model_parsing: "正在解析神经生成器模型...",
+                feature_extraction: "正在提取人声语义特征 (HuBERT)...",
+                pitch_estimation: "正在分析音高音调与共鸣 (RMVPE)...",
+                voice_synthesis: "正在合成目标角色音色...",
+                post_processing: "正在进行母带润色与音量跟随...",
+                success: "变声完成，准备输出...",
               };
               updateStatusDisplay(`✨ [3/4] ${stageMap[e.stage] || e.stage}`);
+            } else if (e.type === "chunk_step") {
+              const stepMap = {
+                feature: `[4/4] 提取人声语义 (${e.current}/${e.total})`,
+                pitch: `[4/4] 音高神经追踪 (${e.current}/${e.total})`,
+                synth: `[4/4] 神经网络声线变换中 (${e.current}/${e.total})...`,
+                done: `[4/4] 分段已完成 (${e.current}/${e.total})`,
+              };
+              updateStatusDisplay(`✨ ${stepMap[e.step] || e.step}`);
             } else if (e.type === "chunk") {
               updateStatusDisplay(`✨ [4/4] 正在合成音频分段: ${e.current} / ${e.total}`);
             }
