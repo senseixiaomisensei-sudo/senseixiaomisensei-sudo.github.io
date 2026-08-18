@@ -12491,17 +12491,17 @@ function stabilizeShoutingPitchF0(f0) {
       const ratioPrev = curr / prev;
       const ratioNext = curr / next;
       const neighborRatio = next / prev;
-      if (Math.abs(neighborRatio - 1.0) < 0.30) {
+      if (Math.abs(neighborRatio - 1.0) < 0.35) {
         if (
-          (ratioPrev > 1.65 && ratioNext > 1.65) ||
-          (ratioPrev < 0.60 && ratioNext < 0.60)
+          (ratioPrev > 1.50 && ratioNext > 1.50) ||
+          (ratioPrev < 0.66 && ratioNext < 0.66)
         ) {
           out[i] = (prev + next) * 0.5;
         }
       }
     }
   }
-  const maxSlew = 1.75;
+  const maxSlew = 1.60;
   const minSlew = 1.0 / maxSlew;
   for (let i = 1; i < len; i++) {
     if (out[i] > 0 && out[i - 1] > 0) {
@@ -12560,11 +12560,16 @@ function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift 
   }
 }
 function applyPitchShift(f0, semitones) {
-  if (semitones === 0) return f0;
-  const factor = 2 ** (semitones / 12);
+  const factor = semitones === 0 ? 1.0 : 2 ** (semitones / 12);
   const shifted = new Float32Array(f0.length);
   for (let i = 0; i < f0.length; i++) {
-    shifted[i] = f0[i] * factor;
+    const rawHz = f0[i] * factor;
+    if (rawHz > 0) {
+      // Physiological acoustic ceiling (820Hz) prevents NSF carrier hypersonic comb resonance
+      shifted[i] = Math.min(820, Math.max(50, rawHz));
+    } else {
+      shifted[i] = 0;
+    }
   }
   return shifted;
 }
@@ -12718,7 +12723,7 @@ function applyRmsVolumeEnvelope(input16k, synth40k, rmsMixRate = 0.25) {
     }
     const rmsSynth = Math.sqrt(sumSynth / win40k + 1e-6);
 
-    const ratio = Math.max(0.65, Math.min(1.5, rmsIn / (rmsSynth + 1e-5)));
+    const ratio = Math.max(0.70, Math.min(1.20, rmsIn / (rmsSynth + 1e-5)));
     targetScales[w] = (1 - rmsMixRate) + rmsMixRate * ratio;
   }
 
@@ -12739,46 +12744,7 @@ function applyRmsVolumeEnvelope(input16k, synth40k, rmsMixRate = 0.25) {
 function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
   if (!audio || audio.length === 0) return audio;
 
-  function createBiquad(b0, b1, b2, a1, a2) {
-    return { b0, b1, b2, a1, a2 };
-  }
-  function createLowpassBiquad(fc, q, fs) {
-    const w0 = 2 * Math.PI * fc / fs;
-    const alpha = Math.sin(w0) / (2 * q);
-    const cosW = Math.cos(w0);
-    const b0 = (1 - cosW) / 2;
-    const b1 = 1 - cosW;
-    const b2 = (1 - cosW) / 2;
-    const a0 = 1 + alpha;
-    const a1 = -2 * cosW;
-    const a2 = 1 - alpha;
-    return createBiquad(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
-  }
-  function createHighpassBiquad(fc, q, fs) {
-    const w0 = 2 * Math.PI * fc / fs;
-    const alpha = Math.sin(w0) / (2 * q);
-    const cosW = Math.cos(w0);
-    const b0 = (1 + cosW) / 2;
-    const b1 = -(1 + cosW);
-    const b2 = (1 + cosW) / 2;
-    const a0 = 1 + alpha;
-    const a1 = -2 * cosW;
-    const a2 = 1 - alpha;
-    return createBiquad(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
-  }
-  function createBandpassBiquad(fc, q, fs) {
-    const w0 = 2 * Math.PI * fc / fs;
-    const alpha = Math.sin(w0) / (2 * q);
-    const cosW = Math.cos(w0);
-    const b0 = alpha;
-    const b1 = 0;
-    const b2 = -alpha;
-    const a0 = 1 + alpha;
-    const a1 = -2 * cosW;
-    const a2 = 1 - alpha;
-    return createBiquad(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
-  }
-  function createPeakingBiquad(fc, gainDb, q, fs) {
+  function makePeakingBiquad(fc, gainDb, q, fs) {
     const A = Math.pow(10, gainDb / 40.0);
     const w0 = 2 * Math.PI * fc / fs;
     const alpha = Math.sin(w0) / (2 * q);
@@ -12789,9 +12755,23 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
     const a0 = 1 + alpha / A;
     const a1 = -2 * cosW;
     const a2 = 1 - alpha / A;
-    return createBiquad(b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0);
+    return { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 };
   }
-  function applyBiquad(inAudio, f) {
+
+  function makeBandpassBiquad(fc, q, fs) {
+    const w0 = 2 * Math.PI * fc / fs;
+    const alpha = Math.sin(w0) / (2 * q);
+    const cosW = Math.cos(w0);
+    const b0 = alpha;
+    const b1 = 0;
+    const b2 = -alpha;
+    const a0 = 1 + alpha;
+    const a1 = -2 * cosW;
+    const a2 = 1 - alpha;
+    return { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 };
+  }
+
+  function applyBiquadFilter(inAudio, f) {
     const out = new Float32Array(inAudio.length);
     let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
     for (let i = 0; i < inAudio.length; i++) {
@@ -12806,69 +12786,92 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
     return out;
   }
 
-  // 1. Warmth filter (220Hz +1.2dB, Q=0.7) - Gives vocal chest presence
-  const warmFilter = createPeakingBiquad(220, 1.2, 0.7, sampleRate);
-  let processed = applyBiquad(audio, warmFilter);
+  // 1. Natural Vocal Chest Warmth (200Hz +1.0dB, Q=0.7)
+  const warmF = makePeakingBiquad(200, 1.0, 0.7, sampleRate);
+  const warmed = applyBiquadFilter(audio, warmF);
 
-  // 2. Multiband Dynamic Anti-Metallic Harshness Suppressor (2500Hz - 6500Hz)
-  const lowBq1 = createLowpassBiquad(2500, 0.54, sampleRate);
-  const lowBq2 = createLowpassBiquad(2500, 1.30, sampleRate);
-  const lowBand = applyBiquad(applyBiquad(processed, lowBq1), lowBq2);
+  // 2. Continuous Dynamic Harsh Resonance Detector (3400Hz - 5600Hz vs Voice Body 300Hz - 2000Hz)
+  const harshBp = makeBandpassBiquad(4200, 1.0, sampleRate);
+  const bodyBp = makeBandpassBiquad(800, 0.7, sampleRate);
+  const detHarsh = applyBiquadFilter(warmed, harshBp);
+  const detBody = applyBiquadFilter(warmed, bodyBp);
 
-  const harshBp1 = createBandpassBiquad(4000, 0.9, sampleRate);
-  const harshBp2 = createBandpassBiquad(4000, 0.9, sampleRate);
-  const harshBand = applyBiquad(applyBiquad(processed, harshBp1), harshBp2);
-
-  const highBq1 = createHighpassBiquad(6500, 0.54, sampleRate);
-  const highBq2 = createHighpassBiquad(6500, 1.30, sampleRate);
-  const airBand = applyBiquad(applyBiquad(processed, highBq1), highBq2);
-
-  const blockSize = Math.floor(sampleRate * 0.005);
-  const numBlocks = Math.floor(processed.length / blockSize);
-  const gainEnv = new Float32Array(processed.length);
-  let smoothedGain = 1.0;
-  const attackCoeff = 0.30;
-  const releaseCoeff = 0.02;
+  const blockSize = Math.floor(sampleRate * 0.005); // 5ms analysis windows
+  const numBlocks = Math.floor(warmed.length / blockSize);
+  const gainDbEnv = new Float32Array(warmed.length);
+  let smoothedGainDb = 0.0;
+  const attackCoeff = 0.35;  // Fast attack (<1ms) to catch explosive screams
+  const releaseCoeff = 0.02; // 30ms smooth vocal release
 
   for (let b = 0; b < numBlocks; b++) {
     const st = b * blockSize;
-    const en = Math.min(st + blockSize, processed.length);
-    let sumLow = 0;
-    let sumHarsh = 0;
+    const en = Math.min(st + blockSize, warmed.length);
+    let sumHarsh = 0, sumBody = 0;
     for (let i = st; i < en; i++) {
-      sumLow += lowBand[i] * lowBand[i];
-      sumHarsh += harshBand[i] * harshBand[i];
+      sumHarsh += detHarsh[i] * detHarsh[i];
+      sumBody += detBody[i] * detBody[i];
     }
-    const rmsLow = Math.sqrt(sumLow / (en - st) + 1e-6);
     const rmsHarsh = Math.sqrt(sumHarsh / (en - st) + 1e-6);
-    const ratio = rmsHarsh / (rmsLow + 1e-4);
+    const rmsBody = Math.sqrt(sumBody / (en - st) + 1e-6);
+    const ratio = rmsHarsh / (rmsBody + 1e-4);
 
-    let targetGain = 1.0;
-    if (ratio > 0.20) {
-      const redDb = Math.min(11.0, (ratio - 0.20) * 18.0);
-      targetGain = Math.pow(10.0, -redDb / 20.0);
-    } else if (rmsHarsh > 0.06) {
-      const redDb = Math.min(9.0, (rmsHarsh - 0.06) * 30.0);
-      targetGain = Math.pow(10.0, -redDb / 20.0);
+    let targetGainDb = 0.0;
+    if (ratio > 0.18) {
+      targetGainDb = -Math.min(9.5, (ratio - 0.18) * 22.0);
+    } else if (rmsHarsh > 0.07) {
+      targetGainDb = -Math.min(8.0, (rmsHarsh - 0.07) * 35.0);
     }
 
     for (let i = st; i < en; i++) {
-      if (targetGain < smoothedGain) {
-        smoothedGain += attackCoeff * (targetGain - smoothedGain);
+      if (targetGainDb < smoothedGainDb) {
+        smoothedGainDb += attackCoeff * (targetGainDb - smoothedGainDb);
       } else {
-        smoothedGain += releaseCoeff * (targetGain - smoothedGain);
+        smoothedGainDb += releaseCoeff * (targetGainDb - smoothedGainDb);
       }
-      gainEnv[i] = smoothedGain;
+      gainDbEnv[i] = smoothedGainDb;
     }
   }
 
-  for (let i = 0; i < processed.length; i++) {
-    const g = i < gainEnv.length ? gainEnv[i] : 1.0;
-    const airG = g * 0.4 + 0.6;
-    processed[i] = lowBand[i] + harshBand[i] * g + airBand[i] * airG;
+  // 3. Direct-Form II Transposed Dynamic Peaking Notch
+  // Direct bypass when quiet/normal speaking (100% zero phase distortion & flat)
+  // Smooth dynamic notch at 4200Hz during shouting
+  const w0 = 2 * Math.PI * 4200 / sampleRate;
+  const cosW = Math.cos(w0);
+  const sinW = Math.sin(w0);
+  const alpha = sinW / 2.0;
+
+  const processed = new Float32Array(warmed.length);
+  let s1 = 0, s2 = 0;
+  for (let i = 0; i < warmed.length; i++) {
+    const gDb = gainDbEnv[i];
+    if (Math.abs(gDb) < 0.05) {
+      processed[i] = warmed[i];
+      s1 = 0;
+      s2 = 0;
+    } else {
+      const A = Math.pow(10, gDb / 40.0);
+      const b0 = 1 + alpha * A;
+      const b1 = -2 * cosW;
+      const b2 = 1 - alpha * A;
+      const a0 = 1 + alpha / A;
+      const a1 = -2 * cosW;
+      const a2 = 1 - alpha / A;
+
+      const nb0 = b0 / a0;
+      const nb1 = b1 / a0;
+      const nb2 = b2 / a0;
+      const na1 = a1 / a0;
+      const na2 = a2 / a0;
+
+      const x0 = warmed[i];
+      const y0 = nb0 * x0 + s1;
+      s1 = nb1 * x0 - na1 * y0 + s2;
+      s2 = nb2 * x0 - na2 * y0;
+      processed[i] = y0;
+    }
   }
 
-  // 3. Smooth Soft-Knee Vocal Saturation Limiter
+  // 4. Soft-Knee Saturation Limiter (tanh)
   for (let i = 0; i < processed.length; i++) {
     const val = processed[i];
     const absV = Math.abs(val);
