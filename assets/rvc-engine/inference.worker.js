@@ -12071,7 +12071,13 @@ async function convertPthToOnnx(model) {
   }
 }
 async function prepareModel(file) {
-  const extension = getModelFileExtension(file.name);
+  if (file instanceof ArrayBuffer) {
+    return { onnxBuffer: file };
+  }
+  if (file instanceof Uint8Array) {
+    return { onnxBuffer: file.buffer };
+  }
+  const extension = getModelFileExtension(file?.name || "");
   if (extension === ".onnx") {
     const onnxBuffer = await readModelAsArrayBuffer(file);
     return { onnxBuffer };
@@ -12959,13 +12965,14 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     ctx.inputAudio = audio;
     ctx.sampleRate = sampleRate;
     emitStage(PIPELINE_STAGES[1]);
-    const { onnxBuffer, metaData } = await prepareModel(files.model);
+    const modelBuffer = files.model instanceof ArrayBuffer ? files.model : (files.model instanceof Blob ? await files.model.arrayBuffer() : files.model);
+    const { onnxBuffer, metaData } = await prepareModel(modelBuffer);
     ctx.onnxBuffer = onnxBuffer;
     ctx.modelMetaData = metaData;
     const [rvcSession, contentVecBuffer, rmvpeBuffer] = await Promise.all([
       createSessionFromOnnxBuffer(onnxBuffer).then((r) => r.session),
-      files.contentVec.arrayBuffer(),
-      files.rmvpe.arrayBuffer()
+      files.contentVec instanceof ArrayBuffer ? files.contentVec : files.contentVec.arrayBuffer(),
+      files.rmvpe instanceof ArrayBuffer ? files.rmvpe : files.rmvpe.arrayBuffer()
     ]);
     const [contentVecSession, rmvpeSession] = await Promise.all([
       qu.create(contentVecBuffer, {
@@ -13066,17 +13073,14 @@ self.onmessage = async (event) => {
     ne.wasm.wasmPaths = wasmBaseUrl;
   }
   try {
-    const modelFile = new File([files.model], fileNames.model);
-    const contentVecFile = new File([files.contentVec], fileNames.contentVec);
-    const rmvpeFile = new File([files.rmvpe], fileNames.rmvpe);
     const pipelineFiles = {
-      model: modelFile,
+      model: files.model,
       audio: new File([], "audio.wav"),
-      contentVec: contentVecFile,
-      rmvpe: rmvpeFile
+      contentVec: files.contentVec,
+      rmvpe: files.rmvpe
     };
     if (files.index) {
-      pipelineFiles.index = new File([files.index], fileNames.index ?? "index");
+      pipelineFiles.index = files.index;
     }
     consoleProxy.log("[Worker] Starting pipeline...");
     const callbacks = {

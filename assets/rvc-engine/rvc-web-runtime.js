@@ -3,7 +3,7 @@ const DEFAULT_ORT_CDN_BASE = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${"1.
 function createRVC(config = {}) {
   const rawAsset = config.assetBaseUrl ?? DEFAULT_CDN_BASE;
   const assetBaseUrl = rawAsset.endsWith("/") ? rawAsset : `${rawAsset}/`;
-  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20260818-v11`;
+  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20260818-v12`;
   const rawWasm = config.wasmBaseUrl ?? DEFAULT_ORT_CDN_BASE;
   const wasmBaseUrl = rawWasm.endsWith("/") ? rawWasm : `${rawWasm}/`;
   return {
@@ -79,32 +79,38 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
         }
       }
     };
-    worker.onerror = (error) => {
-      clearTimeout(timeoutId);
-      worker.terminate();
-      reject(error);
-    };
-    worker.postMessage({
-      type: "RUN_PIPELINE",
-      wasmBaseUrl: ctx.wasmBaseUrl,
-      audio: {
-        data: audioData,
-        sampleRate: audioSampleRate
+    const transferables = [
+      modelBuf,
+      contentVecBuf,
+      rmvpeBuf,
+      ...(indexBuf ? [indexBuf] : []),
+      audioData.buffer
+    ].filter(b => b instanceof ArrayBuffer && b.byteLength > 0);
+
+    worker.postMessage(
+      {
+        type: "RUN_PIPELINE",
+        wasmBaseUrl: ctx.wasmBaseUrl,
+        audio: {
+          data: audioData,
+          sampleRate: audioSampleRate
+        },
+        files: {
+          model: modelBuf,
+          contentVec: contentVecBuf,
+          rmvpe: rmvpeBuf,
+          index: indexBuf
+        },
+        fileNames: {
+          model: files.model.name,
+          contentVec: files.contentVec.name,
+          rmvpe: files.rmvpe.name,
+          index: files.index?.name
+        },
+        options: pipelineOptions
       },
-      files: {
-        model: modelBuf,
-        contentVec: contentVecBuf,
-        rmvpe: rmvpeBuf,
-        index: indexBuf
-      },
-      fileNames: {
-        model: files.model.name,
-        contentVec: files.contentVec.name,
-        rmvpe: files.rmvpe.name,
-        index: files.index?.name
-      },
-      options: pipelineOptions
-    });
+      transferables
+    );
   });
 }
 function isWorkerSupported() {
