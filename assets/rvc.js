@@ -367,63 +367,75 @@
     } catch (e) {}
   }
 
-  // Multi-CDN Candidate URLs for any relative chunk path (Same-Origin Direct First)
+  // Multi-CDN Candidate URLs for any relative chunk path (Live-Tested Fast Mirror Order)
   function getChunkMirrorUrls(relPath) {
     const cleanPath = relPath.startsWith("/") ? relPath.slice(1) : relPath;
+    const sameOriginUrl = new URL(cleanPath, window.location.href).href;
     const rawGhUrl = `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`;
     return [
-      `./${cleanPath}`,
-      `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
-      `https://gh-proxy.com/${rawGhUrl}`,
       `https://cdn.jsdmirror.com/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
-      `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      sameOriginUrl,
+      `https://gh-proxy.com/${rawGhUrl}`,
       `https://ghproxy.net/${rawGhUrl}`,
       `https://cdn.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
     ];
   }
 
-  // Fetch single chunk using native C++ arrayBuffer with hard 10s watchdog timeout and mirror failover
+  // Fetch single chunk with Multi-Node Concurrent Racing & Automatic Failover
   async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress) {
     const mirrors = getChunkMirrorUrls(chunkPath);
-    let lastError = null;
 
-    for (let m = 0; m < mirrors.length; m++) {
-      const url = mirrors[m];
+    const fetchWithTimeout = (url, timeoutMs = 8000) => {
       const controller = new AbortController();
-      const watchdog = setTimeout(() => controller.abort(), 10000); // 10s hard timeout per mirror
-      try {
-        const resp = await fetch(url, { signal: controller.signal, cache: "force-cache" });
-        if (!resp.ok) {
-          clearTimeout(watchdog);
-          throw new Error(`HTTP ${resp.status}`);
-        }
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      return fetch(url, { signal: controller.signal })
+        .then(async (resp) => {
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const buf = await resp.arrayBuffer();
+          clearTimeout(timer);
+          if (!buf || buf.byteLength === 0) throw new Error("Empty buffer");
+          return buf;
+        })
+        .catch((err) => {
+          clearTimeout(timer);
+          throw err;
+        });
+    };
 
-        const buf = await resp.arrayBuffer();
-        clearTimeout(watchdog);
-
-        if (buf && buf.byteLength > 0) {
-          if (typeof onChunkProgress === "function") {
-            onChunkProgress(buf.byteLength);
-          }
-          return { buffer: buf, fromCache: false };
-        }
-        throw new Error("Empty buffer received");
-      } catch (err) {
-        clearTimeout(watchdog);
-        lastError = err;
-        console.warn(`[Chunk Fetch] Mirror ${m} (${url}) failed for chunk ${chunkIndex + 1}/${totalChunks}:`, err.message);
+    let winningBuffer = null;
+    try {
+      winningBuffer = await Promise.any([
+        fetchWithTimeout(mirrors[0], 9000),
+        fetchWithTimeout(mirrors[1], 9000),
+        new Promise((resolve, reject) => setTimeout(() => {
+          fetchWithTimeout(mirrors[2], 9000).then(resolve, reject);
+        }, 1500))
+      ]);
+    } catch (raceErr) {
+      for (let m = 3; m < mirrors.length; m++) {
+        try {
+          winningBuffer = await fetchWithTimeout(mirrors[m], 10000);
+          if (winningBuffer && winningBuffer.byteLength > 0) break;
+        } catch (e) {}
       }
     }
 
-    throw new Error(`Failed to fetch chunk ${chunkIndex + 1}/${totalChunks} from all mirrors (${lastError?.message || "network error"})`);
+    if (!winningBuffer || winningBuffer.byteLength === 0) {
+      throw new Error(`无法从所有镜像节点下载分片 ${chunkIndex + 1}/${totalChunks}，请检查网络`);
+    }
+
+    if (typeof onChunkProgress === "function") {
+      onChunkProgress(winningBuffer.byteLength);
+    }
+    return { buffer: winningBuffer, fromCache: false };
   }
 
   // Fetch Chunked Model with Concurrency Pool & Real-Time Granular Progress
-  async function fetchChunkedModel(chunkUrls, name, mimeType, onProgress) {
+  async function fetchChunkedModel(chunkUrls, name, displayName, mimeType, onProgress) {
     const cached = await getCachedItem(name);
     if (cached instanceof Blob && cached.size > 1024 * 1024) {
       if (typeof onProgress === "function") {
-        onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true);
+        onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true, `⚡ ${displayName} 已从本地闪存极速就绪`);
       }
       return new File([cached], name, { type: mimeType });
     }
@@ -439,9 +451,12 @@
       let totalLoaded = 0;
       for (let i = 0; i < totalCount; i++) totalLoaded += chunkBytesLoaded[i];
       if (typeof onProgress === "function") {
-        onProgress(totalLoaded, estimatedTotalBytes, completedCount, totalCount, false);
+        const msg = `⏳ [1/4] 正在下载 ${displayName}: 分片 ${completedCount}/${totalCount} (${(totalLoaded/1024/1024).toFixed(1)}MB / ${(estimatedTotalBytes/1024/1024).toFixed(1)}MB)`;
+        onProgress(totalLoaded, estimatedTotalBytes, completedCount, totalCount, false, msg);
       }
     };
+
+    reportProgress();
 
     const tasks = urls.map((u, idx) => {
       return globalDownloadPool.run(async () => {
@@ -451,12 +466,12 @@
           totalCount,
           (bytesLoaded) => {
             chunkBytesLoaded[idx] = bytesLoaded;
+            completedCount++;
             reportProgress();
           }
         );
         blobParts[idx] = buffer;
         chunkBytesLoaded[idx] = buffer.byteLength;
-        completedCount++;
         reportProgress();
       });
     });
@@ -472,11 +487,11 @@
     return new File([fullBlob], name, { type: mimeType });
   }
 
-  async function loadModelAuto(modelConfig, name, mimeType, onProgress) {
+  async function loadModelAuto(modelConfig, name, displayName, mimeType, onProgress) {
     const cached = await getCachedItem(name);
-    if (cached instanceof Blob) {
+    if (cached instanceof Blob && cached.size > 1024 * 1024) {
       if (typeof onProgress === "function") {
-        onProgress(cached.size, cached.size, 1, 1, true);
+        onProgress(cached.size, cached.size, 1, 1, true, `⚡ ${displayName} 已从本地闪存秒级就绪`);
       }
       return new File([cached], name, { type: mimeType });
     }
@@ -492,7 +507,7 @@
     }
 
     if (Array.isArray(chunks) && chunks.length > 0) {
-      return await fetchChunkedModel(chunks, name, mimeType, onProgress);
+      return await fetchChunkedModel(chunks, name, displayName || name, mimeType, onProgress);
     }
 
     const urls = modelConfig?.urls || (typeof modelConfig === "string" ? [modelConfig] : [name]);
@@ -762,28 +777,29 @@
             try {
               const hubertCfg = state.baseModels?.hubert || { chunks: [] };
               const rmvpeCfg = state.baseModels?.rmvpe || { chunks: [] };
-              let hLoaded = 0, rLoaded = 0;
-              const estTot = (19 + 18) * 20 * 1024 * 1024;
-              const pStart = Date.now();
-              const updatePreloadProgress = () => {
-                const tot = hLoaded + rLoaded;
-                const pct = Math.min(99, Math.round((tot / estTot) * 100));
-                const sec = Math.max(0.1, (Date.now() - pStart) / 1000);
-                const spd = (tot / 1024 / 1024 / sec).toFixed(1);
-                updateProgressBar(pct);
-                updateStatusDisplay(`⏳ 正在后台预热基础模型: ${pct}% (${(tot / 1024 / 1024).toFixed(1)}MB / ${(estTot / 1024 / 1024).toFixed(1)}MB) · ${spd} MB/s`);
-              };
 
-              await Promise.all([
-                loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", (l) => {
-                  hLoaded = l;
-                  updatePreloadProgress();
-                }),
-                loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", (l) => {
-                  rLoaded = l;
-                  updatePreloadProgress();
-                }),
-              ]);
+              await loadModelAuto(
+                hubertCfg,
+                "hubert.onnx",
+                "HuBERT 语义特征模型",
+                "application/onnx",
+                (l, t, cur, tot, fromCache, msg) => {
+                  updateProgressBar(Math.min(50, Math.round((cur / tot) * 50)));
+                  updateStatusDisplay(msg || `⏳ [1/2] 正在预热 HuBERT 语义模型: 分片 ${cur}/${tot}`);
+                }
+              );
+              updateProgressBar(50);
+
+              await loadModelAuto(
+                rmvpeCfg,
+                "rmvpe.onnx",
+                "RMVPE 音高模型",
+                "application/onnx",
+                (l, t, cur, tot, fromCache, msg) => {
+                  updateProgressBar(50 + Math.min(50, Math.round((cur / tot) * 50)));
+                  updateStatusDisplay(msg || `⏳ [2/2] 正在预热 RMVPE 音高模型: 分片 ${cur}/${tot}`);
+                }
+              );
               updateProgressBar(100);
               setTimeout(() => showProgressBar(false), 800);
               showToast("🎉 基础模型已全部下载并缓存至本地！后续变声零等待！");
@@ -794,6 +810,7 @@
               preloadBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i><span>重试预热</span>`;
               preloadBtn.disabled = false;
               showProgressBar(false);
+              updateStatusDisplay(`❌ 预热失败: ${e.message || e}，可直接点击开始变声重试`);
             }
           };
         }
@@ -996,7 +1013,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v13", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v14", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1007,41 +1024,47 @@
       const hubertCfg = state.baseModels?.hubert || { chunks: [] };
       const rmvpeCfg = state.baseModels?.rmvpe || { chunks: [] };
 
-      // Multi-Model Parallel Loading with Combined Progress Tracking
+      // Multi-Model Sequential Loading with Live Milestone Progress Tracking
       updateProgressBar(5);
       showProgressBar(true);
-      updateStatusDisplay("⏳ [1/4] 正在多源极速并发加载模型 (HuBERT / RMVPE / 角色音色)...");
 
-      let hubertLoaded = 0, rmvpeLoaded = 0, charLoaded = 0;
-      const totalEstimated = (19 + 18 + (selectedModel.chunks?.length || 6)) * 20 * 1024 * 1024;
-      const loadStartTime = Date.now();
+      updateStatusDisplay("⏳ [1/4] 正在加载基础语义模型 (HuBERT)...");
+      const hubertFile = await loadModelAuto(
+        hubertCfg,
+        "hubert.onnx",
+        "HuBERT 语义特征模型",
+        "application/onnx",
+        (l, t, cur, tot, fromCache, msg) => {
+          updateProgressBar(Math.min(33, Math.round((cur / tot) * 33)));
+          updateStatusDisplay(msg || `⏳ [1/4] 正在加载 HuBERT 语义模型: 分片 ${cur}/${tot}`);
+        }
+      );
+      updateProgressBar(33);
 
-      function reportCombinedProgress() {
-        const totalLoaded = hubertLoaded + rmvpeLoaded + charLoaded;
-        const totalMb = (totalLoaded / 1024 / 1024).toFixed(1);
-        const estMb = (totalEstimated / 1024 / 1024).toFixed(1);
-        const pct = Math.min(99, Math.max(5, Math.round((totalLoaded / totalEstimated) * 100)));
-        const sec = Math.max(0.1, (Date.now() - loadStartTime) / 1000);
-        const speedVal = totalLoaded / 1024 / 1024 / sec;
-        const speedText = speedVal > 80 ? "本地闪存秒级读取" : `${speedVal.toFixed(1)} MB/s`;
-        updateProgressBar(pct);
-        updateStatusDisplay(`⏳ [1/4] 正在多源极速加载模型: ${pct}% (${totalMb}MB / ${estMb}MB) · ${speedText} · 3 线程并发加速中`);
-      }
+      updateStatusDisplay("⏳ [1/4] 正在加载基础音高模型 (RMVPE)...");
+      const rmvpeFile = await loadModelAuto(
+        rmvpeCfg,
+        "rmvpe.onnx",
+        "RMVPE 音高模型",
+        "application/onnx",
+        (l, t, cur, tot, fromCache, msg) => {
+          updateProgressBar(33 + Math.min(33, Math.round((cur / tot) * 33)));
+          updateStatusDisplay(msg || `⏳ [1/4] 正在加载 RMVPE 音高模型: 分片 ${cur}/${tot}`);
+        }
+      );
+      updateProgressBar(66);
 
-      const [hubertFile, rmvpeFile, modelFile] = await Promise.all([
-        loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", (l, t, cur, tot, fromCache) => {
-          hubertLoaded = l;
-          reportCombinedProgress();
-        }),
-        loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", (l, t, cur, tot, fromCache) => {
-          rmvpeLoaded = l;
-          reportCombinedProgress();
-        }),
-        loadModelAuto(selectedModel, `${selectedModel.id}.onnx`, "application/onnx", (l, t, cur, tot, fromCache) => {
-          charLoaded = l;
-          reportCombinedProgress();
-        }),
-      ]);
+      updateStatusDisplay(`⏳ [1/4] 正在加载角色声音模型 (${selectedModel.name})...`);
+      const modelFile = await loadModelAuto(
+        selectedModel,
+        `${selectedModel.id}.onnx`,
+        selectedModel.name,
+        "application/onnx",
+        (l, t, cur, tot, fromCache, msg) => {
+          updateProgressBar(66 + Math.min(34, Math.round((cur / tot) * 34)));
+          updateStatusDisplay(msg || `⏳ [1/4] 正在加载 ${selectedModel.name} 角色模型: 分片 ${cur}/${tot}`);
+        }
+      );
 
       updateProgressBar(100);
       setTimeout(() => showProgressBar(false), 800);
