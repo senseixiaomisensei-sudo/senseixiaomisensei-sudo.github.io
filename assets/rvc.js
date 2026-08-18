@@ -172,11 +172,117 @@
     },
   };
 
+  const EMBEDDED_BASE_MODELS = {
+    hubert: {
+      name: "hubert.onnx",
+      manifestKey: "hubert.onnx",
+      chunks: Array.from({ length: 19 }, (_, i) => `models/base/hubert/chunk_${i}.bin`)
+    },
+    rmvpe: {
+      name: "rmvpe.onnx",
+      manifestKey: "rmvpe.onnx",
+      chunks: Array.from({ length: 18 }, (_, i) => `models/base/rmvpe/chunk_${i}.bin`)
+    }
+  };
+
+  const EMBEDDED_RVC_CATALOG = [
+    {
+      id: "hoshino",
+      name: "小鸟游星野 (Hoshino)",
+      avatarText: "星野",
+      description: "《蔚蓝档案》阿拜多斯对策委员会副会长 · 哎呀呀~ 慵懒可靠大叔系萌少女音 · RVC v2",
+      tags: ["女声", "蔚蓝档案", "阿拜多斯"],
+      defaultPitch: 1,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/hoshino/chunk_${i}.bin`)
+    },
+    {
+      id: "arisu",
+      name: "天童爱丽丝 (Alice)",
+      avatarText: "爱丽丝",
+      description: "《蔚蓝档案》千年游戏开发部 · 邦邦卡邦~ 纯真机械勇者少女音 · RVC v2",
+      tags: ["女声", "蔚蓝档案", "千年"],
+      defaultPitch: 2,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/arisu/chunk_${i}.bin`)
+    },
+    {
+      id: "shiroko",
+      name: "砂狼白子 (Shiroko)",
+      avatarText: "白子",
+      description: "《蔚蓝档案》阿拜多斯对策委员会 · 沉稳酷飒行动派少女音 · RVC v2",
+      tags: ["女声", "蔚蓝档案", "阿拜多斯"],
+      defaultPitch: 1,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/shiroko/chunk_${i}.bin`)
+    },
+    {
+      id: "yuuka",
+      name: "早濑优香 (Yuuka)",
+      avatarText: "优香",
+      description: "《蔚蓝档案》千年研讨会会计 · 傲娇理智计算系少女音 · RVC v2",
+      tags: ["女声", "蔚蓝档案", "千年"],
+      defaultPitch: 2,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/yuuka/chunk_${i}.bin`)
+    },
+    {
+      id: "hina",
+      name: "空崎日奈 (Hina)",
+      avatarText: "日奈",
+      description: "《蔚蓝档案》格黑娜风纪委员会长 · 威严中带着疲倦的温柔少女音 · RVC v2",
+      tags: ["女声", "蔚蓝档案", "格黑娜"],
+      defaultPitch: 1,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/hina/chunk_${i}.bin`)
+    },
+    {
+      id: "noa",
+      name: "生盐诺亚 (Noa)",
+      avatarText: "诺亚",
+      description: "《蔚蓝档案》千年研讨会书记 · 温柔腹黑记录系少女音 · RVC v2",
+      tags: ["女声", "蔚蓝档案", "千年"],
+      defaultPitch: 2,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/noa/chunk_${i}.bin`)
+    },
+    {
+      id: "koharu",
+      name: "下江小春 (Koharu)",
+      avatarText: "小春",
+      description: "《蔚蓝档案》三一补课部 · 色情是不行的！死刑！傲娇纯情少女音 · RVC v2",
+      tags: ["女声", "蔚蓝档案", "三一"],
+      defaultPitch: 3,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/koharu/chunk_${i}.bin`)
+    },
+    {
+      id: "tomori",
+      name: "高松灯 (Tomori)",
+      avatarText: "灯",
+      description: "《BanG Dream! It's MyGO!!!!!》主唱 · 清澈少年感少女音 · RVC v2",
+      tags: ["女声", "动漫", "MyGO"],
+      defaultPitch: 2,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/tomori/chunk_${i}.bin`)
+    },
+    {
+      id: "rana",
+      name: "要乐奈 (Rana)",
+      avatarText: "乐奈",
+      description: "《BanG Dream! It's MyGO!!!!!》吉他手 · 慵懒灵动猫系少女音 · RVC v2",
+      tags: ["女声", "动漫", "MyGO"],
+      defaultPitch: 2,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/rana/chunk_${i}.bin`)
+    },
+    {
+      id: "teio",
+      name: "东海帝皇 (Tokai Teio)",
+      avatarText: "帝皇",
+      description: "《赛马娘 Pretty Derby》· 活泼元气高辨识度少女音 · RVC v2",
+      tags: ["女声", "动漫", "赛马娘"],
+      defaultPitch: 3,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/teio/chunk_${i}.bin`)
+    }
+  ];
+
   const state = {
     lang: "zh",
     engineReady: false,
     busy: false,
-    selectedModelId: "tomori",
+    selectedModelId: "hoshino",
     audio: null, // { file, buffer, float32, sampleRate, name, duration }
     sourceMode: "upload",
     recording: false,
@@ -185,8 +291,8 @@
     recordStream: null,
     recordStartAt: 0,
     recordTimerId: 0,
-    catalog: [],
-    baseModels: {},
+    catalog: EMBEDDED_RVC_CATALOG,
+    baseModels: EMBEDDED_BASE_MODELS,
     rvcContext: null,
   };
 
@@ -261,16 +367,18 @@
     } catch (e) {}
   }
 
-  // Multi-CDN Candidate URLs for any relative chunk path (fastest Anycast edge nodes first)
+  // Multi-CDN Candidate URLs for any relative chunk path (Mainland China Optimized Direct Nodes)
   function getChunkMirrorUrls(relPath) {
     const cleanPath = relPath.startsWith("/") ? relPath.slice(1) : relPath;
+    const rawGhUrl = `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`;
     return [
       `https://cdn.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
-      `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://gh-proxy.com/${rawGhUrl}`,
+      `https://cdn.jsdmirror.com/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://ghproxy.net/${rawGhUrl}`,
       `./${cleanPath}`,
-      `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`,
-      `https://fastly.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
     ];
   }
 
@@ -399,8 +507,18 @@
       return new File([cached], name, { type: mimeType });
     }
 
-    if (modelConfig && Array.isArray(modelConfig.chunks) && modelConfig.chunks.length > 0) {
-      return await fetchChunkedModel(modelConfig.chunks, name, mimeType, onProgress);
+    let chunks = modelConfig?.chunks;
+    if (!Array.isArray(chunks) || chunks.length === 0) {
+      if (name.includes("hubert")) chunks = EMBEDDED_BASE_MODELS.hubert.chunks;
+      else if (name.includes("rmvpe")) chunks = EMBEDDED_BASE_MODELS.rmvpe.chunks;
+      else {
+        const found = EMBEDDED_RVC_CATALOG.find((m) => name.includes(m.id));
+        if (found) chunks = found.chunks;
+      }
+    }
+
+    if (Array.isArray(chunks) && chunks.length > 0) {
+      return await fetchChunkedModel(chunks, name, mimeType, onProgress);
     }
 
     const urls = modelConfig?.urls || (typeof modelConfig === "string" ? [modelConfig] : [name]);
@@ -744,14 +862,17 @@
   }
 
   async function initCatalog() {
+    renderModelGallery();
+    checkCacheStatus();
     try {
       const res = await fetch("assets/rvc-models.json?v=" + Date.now());
       if (res.ok) {
         const data = await res.json();
-        state.catalog = data.models || [];
-        state.baseModels = data.baseModels || {};
-        if (state.catalog.length > 0 && !state.selectedModelId) {
-          state.selectedModelId = state.catalog[0].id;
+        if (Array.isArray(data.models) && data.models.length > 0) {
+          state.catalog = data.models;
+        }
+        if (data.baseModels) {
+          state.baseModels = data.baseModels;
         }
       }
     } catch (e) {
@@ -762,14 +883,12 @@
     // Silent background pre-warm after 3 seconds of user idle
     setTimeout(() => {
       if (!state.busy) {
-        const hubertCfg = state.baseModels?.hubert;
-        const rmvpeCfg = state.baseModels?.rmvpe;
-        if (hubertCfg && rmvpeCfg) {
-          Promise.all([
-            loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", () => {}),
-            loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", () => {}),
-          ]).then(() => checkCacheStatus()).catch(() => {});
-        }
+        const hubertCfg = state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert;
+        const rmvpeCfg = state.baseModels?.rmvpe || EMBEDDED_BASE_MODELS.rmvpe;
+        Promise.all([
+          loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", () => {}),
+          loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", () => {}),
+        ]).then(() => checkCacheStatus()).catch(() => {});
       }
     }, 3000);
   }
@@ -903,7 +1022,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v9", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v10", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
