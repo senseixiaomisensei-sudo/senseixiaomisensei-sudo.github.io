@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; form-action 'self'">
+  <meta name="description" content="PostPrep 发布可信包：本机检查格式、标签、链接、待确认表述与 AIGC 发布提醒。">
+  <meta name="theme-color" content="#0F766E">
+  <title>发布可信包 | PostPrep</title>
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
+  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260812-trust-passport">
+  <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260812-trust-passport">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="trust" data-title-key="trust.title">
+  <div id="site-header"></div>
+
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <header class="max-w-3xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="trust.eyebrow">PUBLISH TRUST PACK</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="trust.title">发布可信包</h1>
+      <p class="mt-3 text-base leading-7 text-muted" data-i18n="trust.intro">在发布前把格式、来源提醒与 AI 使用声明整理在一起。普通检查只在浏览器完成。</p>
+    </header>
+
+    <div class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
+      <section class="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-7" aria-labelledby="trust-input-heading">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-i18n="trust.inputEyebrow">YOUR DRAFT</p>
+            <h2 id="trust-input-heading" class="mt-2 text-xl font-black" data-i18n="trust.inputTitle">准备发布的内容</h2>
+          </div>
+          <span class="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-brand"><i class="fa-solid fa-laptop" aria-hidden="true"></i><span data-i18n="trust.localBadge">普通检查仅本机</span></span>
+        </div>
+
+        <div class="mt-7">
+          <label class="text-sm font-bold" data-i18n="trust.platformLabel">发布位置</label>
+          <div id="trust-platform-list" class="mt-3 flex flex-wrap gap-2" role="group" data-i18n-aria-label="trust.platformLabel" aria-label="发布位置"></div>
+        </div>
+
+        <div class="mt-7 border-t border-line pt-6">
+          <label for="trust-ai-use" class="text-sm font-bold" data-i18n="trust.aiUseLabel">AI 参与情况</label>
+          <p class="mt-1 text-xs leading-5 text-muted" data-i18n="trust.aiUseHint">这是发布前提醒，不替代平台规则、法律意见或平台审核。</p>
+          <select id="trust-ai-use" class="mt-3 min-h-11 w-full rounded-lg border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
+            <option value="none" data-i18n="trust.aiNone">未使用 AI 生成或合成素材</option>
+            <option value="assisted" data-i18n="trust.aiAssisted">AI 仅辅助编辑或构思</option>
+            <option value="synthetic" data-i18n="trust.aiSynthetic">含 AI 生成或合成的文本、图片、音频或视频</option>
+          </select>
+        </div>
+
+        <div class="mt-7 border-t border-line pt-6">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <label for="trust-input" class="text-sm font-bold" data-i18n="trust.draftLabel">发布文案</label>
+              <p class="mt-1 text-xs leading-5 text-muted" data-i18n="trust.draftHint">事实、链接与声明由你最终确认；本机检查不会上传内容。</p>
+            </div>
+            <button id="trust-clear" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-semibold text-ink transition hover:border-rose-300 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-solid fa-eraser" aria-hidden="true"></i><span data-i18n="shared.clear">清空</span></button>
+          </div>
+          <textarea id="trust-input" maxlength="16000" class="mt-3 min-h-80 w-full resize-y rounded-lg border-line bg-white px-4 py-3 text-base leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="trust.draftPlaceholder" placeholder="粘贴准备发布的正文、标题或说明…"></textarea>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-7" aria-labelledby="trust-check-heading">
+        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-5">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-i18n="trust.checkEyebrow">LOCAL PRE-FLIGHT</p>
+            <h2 id="trust-check-heading" class="mt-2 text-xl font-black" data-i18n="trust.checkTitle">发布前检查</h2>
+          </div>
+          <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-50 text-brand" aria-hidden="true"><i class="fa-solid fa-shield-heart"></i></div>
+        </div>
+
+        <p id="trust-status" class="mt-5 text-sm font-semibold text-muted" role="status" aria-live="polite" data-i18n="trust.empty">粘贴文案后开始本机检查。</p>
+        <ul id="trust-check-list" class="mt-5 divide-y divide-line border-y border-line" aria-live="polite"></ul>
+
+        <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+          <div class="flex gap-3">
+            <i class="fa-solid fa-circle-info mt-1 text-amber-700" aria-hidden="true"></i>
+            <p data-i18n="trust.disclaimer">检查结果用于帮助你整理发布材料，不会验证事实，也不代表平台或监管审核结果。</p>
+          </div>
+        </div>
+
+        <div class="mt-6 border-t border-line pt-6">
+          <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <label for="trust-pack" class="text-sm font-bold" data-i18n="trust.packLabel">可复制的发布包</label>
+              <p class="mt-1 text-xs leading-5 text-muted" data-i18n="trust.packHint">包含正文、检查摘要和待确认事项；生成不保存内容。</p>
+            </div>
+            <button type="button" data-copy-from="trust-pack" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"><i class="fa-regular fa-copy" aria-hidden="true"></i><span data-i18n="shared.copy">复制</span></button>
+          </div>
+          <textarea id="trust-pack" readonly class="mt-3 min-h-52 w-full resize-y rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-i18n-placeholder="trust.packPlaceholder" placeholder="检查结果会整理为可复制的发布包"></textarea>
+        </div>
+
+        <div class="mt-6 border-t border-line pt-6">
+          <div class="flex flex-wrap items-end justify-between gap-4">
+            <div class="max-w-md">
+              <h3 class="text-base font-black" data-i18n="trust.deepTitle">深度编辑建议</h3>
+              <p class="mt-1 text-xs leading-5 text-muted" data-i18n="trust.deepHint">仅在你点击后，当前文案才会发送到受保护的服务端代理进行建议。</p>
+            </div>
+            <button id="trust-deep-action" type="button" class="cloud-action-button inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-busy="false"><i class="fa-solid fa-sparkles" aria-hidden="true"></i><span id="trust-deep-action-label" data-i18n="trust.deepAction">获取深度建议</span></button>
+          </div>
+          <div id="trust-deep-result" class="cloud-result mt-5 rounded-lg border border-teal-100 bg-teal-50/70 p-4" hidden>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-i18n="trust.deepResultLabel">EDITORIAL NOTES</p>
+            <p id="trust-deep-output" class="mt-3 whitespace-pre-wrap text-sm leading-7 text-ink" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
+  <script src="assets/postprep-config.js"></script>
+  <script src="assets/postprep.js?v=20260812-trust-passport"></script>
+</body>
+</html>

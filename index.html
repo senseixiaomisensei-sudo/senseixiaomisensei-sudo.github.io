@@ -8,9 +8,9 @@
   <meta name="theme-color" content="#0F766E">
   <title>PostPrep · 发布前检查</title>
   <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
-  <link rel="stylesheet" href="assets/postprep-tailwind.css">
+  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260812-skills">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-  <link rel="stylesheet" href="assets/postprep-motion.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260812-verify">
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="home" data-title-key="home.title">
   <div id="site-header"></div>
@@ -52,7 +52,7 @@
         <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="home.toolHeading">从你的草稿开始</h2>
       </div>
 
-      <div class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
           <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-xl text-brand"><i class="fa-solid fa-ruler-horizontal" aria-hidden="true"></i></div>
           <h3 class="mt-6 text-xl font-black" data-i18n="home.lengthTitle">文案长度检查</h3>
@@ -88,6 +88,33 @@
             <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
           </a>
         </article>
+
+        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-xl text-amber-700"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i></div>
+          <h3 class="mt-6 text-xl font-black" data-i18n="home.trustTitle">发布可信包</h3>
+          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.trustBody">本机整理发布前检查、待确认事项与 AI 使用提醒。</p>
+          <a href="publish-trust.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
+          </a>
+        </article>
+
+        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-xl text-sky-700"><i class="fa-solid fa-passport" aria-hidden="true"></i></div>
+          <h3 class="mt-6 text-xl font-black" data-i18n="home.passportTitle">Skill 权限护照</h3>
+          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.passportBody">安装前查看 Skill 的来源、版本与静态风险信号。</p>
+          <a href="skill-passport.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
+          </a>
+        </article>
+
+        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
+          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 text-xl text-violet-700"><i class="fa-solid fa-wave-square" aria-hidden="true"></i></div>
+          <h3 class="mt-6 text-xl font-black" data-i18n="home.voiceTitle">声音工作台</h3>
+          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.voiceBody">在明确授权后，为文本朗读或干声音转换做本机预检与受保护生成。</p>
+          <a href="voice-studio.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
+          </a>
+        </article>
       </div>
     </section>
 
@@ -108,6 +135,6 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js"></script>
-  <script src="assets/postprep.js"></script>
+  <script src="assets/postprep.js?v=20260812-trust-passport"></script>
 </body>
 </html>

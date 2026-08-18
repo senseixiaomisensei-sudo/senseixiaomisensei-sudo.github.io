@@ -1,0 +1,21 @@
+import { configuredVoiceBackend, failure, fetchWithTimeout, json, sameOrigin, verifyGateway } from "./_voice-shared.js";
+
+export async function onRequest(context) {
+  const { request, env } = context;
+  if (!sameOrigin(request, env)) return failure(request, env, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed");
+  const gateway = verifyGateway(request, env);
+  if (gateway.error) return failure(request, env, gateway.error.status, gateway.error.code, gateway.error.message);
+  if (request.method.toUpperCase() !== "GET") return failure(request, env, 405, "METHOD_NOT_ALLOWED", "Use GET for voice service status");
+  const backend = configuredVoiceBackend(env);
+  if (!backend) return json(request, env, { ready: false });
+  const healthUrl = new URL("/healthz", backend.url.origin);
+  try {
+    const upstream = await fetchWithTimeout(healthUrl.toString(), {
+      headers: { Authorization: `Bearer ${backend.token}` },
+    }, 4500);
+    const payload = await upstream.json().catch(() => null);
+    return json(request, env, { ready: Boolean(upstream.ok && payload && payload.ready === true) });
+  } catch {
+    return json(request, env, { ready: false });
+  }
+}

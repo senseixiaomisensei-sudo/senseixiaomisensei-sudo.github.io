@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev https://challenges.cloudflare.com; media-src 'self' blob: https://postprep-text-gateway.postprep.workers.dev; frame-src https://challenges.cloudflare.com; form-action 'self'">
+  <meta name="description" content="PostPrep 声音工作台：仅处理你本人、已获书面许可或拥有权利的原创虚构声音；先在本机预检，再通过受保护 GPU 服务生成。">
+  <meta name="theme-color" content="#0F766E">
+  <title>声音工作台 | PostPrep</title>
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
+  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260813-voice">
+  <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
+  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260813-voice">
+</head>
+<body class="bg-canvas text-ink antialiased" data-page="voice">
+  <div id="site-header"></div>
+
+  <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+    <header class="max-w-4xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-voice-i18n="eyebrow">AUTHORIZED VOICE STUDIO</p>
+      <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-voice-i18n="title">声音工作台</h1>
+      <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-voice-i18n="intro">为你本人、已获书面许可的声音，或你拥有权利的原创虚构声音生成文本朗读或干声音转换。选中文件后的质量预检只在本机进行；只有你确认授权并点击生成，且受保护 GPU 服务已就绪时，音频才会上传。</p>
+    </header>
+
+    <section class="mt-8 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm leading-6 text-rose-950 shadow-sm sm:p-6" aria-labelledby="voice-notice-title">
+      <div class="flex items-start gap-3">
+        <i class="fa-solid fa-shield-heart mt-1 shrink-0 text-rose-700" aria-hidden="true"></i>
+        <div class="min-w-0">
+          <h2 id="voice-notice-title" class="font-black" data-voice-i18n="noticeTitle">使用公告：未授权克隆不开放</h2>
+          <ul class="mt-3 list-disc space-y-2 pl-5" data-voice-list="notice">
+            <li>仅可上传你本人、已获得书面许可，或你拥有完整角色与表演权利的原创虚构声音。</li>
+            <li>禁止克隆公众人物、真实他人、演员／主播表演，或没有明确许可的角色与配音。</li>
+            <li>“二次元声”仅限你拥有原创角色与声音表演权利的素材；不是对现有作品角色或配音的例外。</li>
+            <li>所有输出都应明确标注为 AI 合成音频。免责声明不能替代你取得声音、文本、歌词、伴奏和发行所需的权利。</li>
+          </ul>
+          <a class="mt-4 inline-flex items-center gap-2 font-bold text-rose-900 underline decoration-rose-300 underline-offset-4 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-700 focus:ring-offset-2" href="VOICE_USE_POLICY.md" target="_blank" rel="noopener noreferrer"><span data-voice-i18n="noticePolicy">查看完整使用与权利公告</span><i class="fa-solid fa-arrow-up-right-from-square text-xs" aria-hidden="true"></i></a>
+        </div>
+      </div>
+    </section>
+
+    <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.74fr)]">
+      <section class="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-7" aria-labelledby="voice-workflow-heading">
+        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-voice-i18n="workflowEyebrow">VOICE WORKFLOW</p>
+            <h2 id="voice-workflow-heading" class="mt-2 text-xl font-black" data-voice-i18n="workflowTitle">先确认权利，再处理声音</h2>
+          </div>
+          <span class="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-brand"><i class="fa-solid fa-laptop" aria-hidden="true"></i><span data-voice-i18n="localBadge">预检仅本机</span></span>
+        </div>
+
+        <div class="mt-7">
+          <p class="text-sm font-bold" id="voice-mode-label" data-voice-i18n="modeLabel">选择生成方式</p>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2" role="group" aria-labelledby="voice-mode-label">
+            <button id="voice-mode-read" type="button" class="min-h-28 rounded-lg border border-brand bg-teal-50 p-4 text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="true">
+              <span class="flex items-center gap-3"><i class="fa-solid fa-comment-dots text-brand" aria-hidden="true"></i><span class="font-black" data-voice-i18n="modeRead">文本朗读</span></span>
+              <span class="mt-2 block text-xs leading-5 text-muted" data-voice-i18n="modeReadHint">用参考人声朗读你输入的文本；不上传时不会保存声音。</span>
+            </button>
+            <button id="voice-mode-cover" type="button" class="min-h-28 rounded-lg border border-line bg-white p-4 text-left transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="false">
+              <span class="flex items-center gap-3"><i class="fa-solid fa-music text-violet-700" aria-hidden="true"></i><span class="font-black" data-voice-i18n="modeCover">干声音转换</span></span>
+              <span class="mt-2 block text-xs leading-5 text-muted" data-voice-i18n="modeCoverHint">将你拥有权利的干声转换为授权参考声音；不提供伴奏分离或下载。</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-7 border-t border-line pt-6">
+          <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end sm:gap-3">
+            <div class="min-w-0">
+              <label for="voice-reference-file" class="text-sm font-bold" data-voice-i18n="referenceLabel">授权参考人声</label>
+              <p class="mt-1 text-xs leading-5 text-muted" data-voice-i18n="referenceHint">推荐单人、干净、无音乐和强混响的 15–90 秒录音。支持 WAV、MP3、M4A、OGG；最大 20 MB。</p>
+            </div>
+            <span class="text-xs font-bold text-brand" data-voice-i18n="localOnly">仅本机预检</span>
+          </div>
+          <input id="voice-reference-file" type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg" class="mt-3 block w-full overflow-hidden rounded-lg border border-line bg-white px-3 py-2 text-xs text-ink file:mr-2 file:rounded-md file:border-0 file:bg-teal-50 file:px-2 file:py-2 file:text-sm file:font-bold file:text-brand hover:file:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:text-sm sm:file:mr-4 sm:file:px-3">
+          <p id="voice-reference-status" class="mt-3 break-words text-sm leading-6 text-muted" role="status" aria-live="polite" data-voice-i18n="fileEmpty">尚未选择音频文件。</p>
+        </div>
+
+        <div id="voice-source-wrap" class="mt-7 hidden border-t border-line pt-6">
+          <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end sm:gap-3">
+            <div class="min-w-0">
+              <label for="voice-source-file" class="text-sm font-bold" data-voice-i18n="sourceLabel">拥有权利的源干声</label>
+              <p class="mt-1 text-xs leading-5 text-muted" data-voice-i18n="sourceHint">只上传单人干声，不要伴奏、电影对白、下载音轨或他人演唱。建议 5–180 秒，最大 25 MB。</p>
+            </div>
+            <span class="text-xs font-bold text-brand" data-voice-i18n="localOnly">仅本机预检</span>
+          </div>
+          <input id="voice-source-file" type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg" class="mt-3 block w-full overflow-hidden rounded-lg border border-line bg-white px-3 py-2 text-xs text-ink file:mr-2 file:rounded-md file:border-0 file:bg-violet-50 file:px-2 file:py-2 file:text-sm file:font-bold file:text-violet-700 hover:file:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:text-sm sm:file:mr-4 sm:file:px-3">
+          <p id="voice-source-status" class="mt-3 break-words text-sm leading-6 text-muted" role="status" aria-live="polite" data-voice-i18n="fileEmpty">尚未选择音频文件。</p>
+        </div>
+
+        <div id="voice-text-wrap" class="mt-7 border-t border-line pt-6">
+          <label for="voice-text" class="text-sm font-bold" data-voice-i18n="textLabel">要朗读的文本</label>
+          <p class="mt-1 text-xs leading-5 text-muted" data-voice-i18n="textHint">最多 1,000 个字符。请确认文本内容及其使用权；质量会受标点、语言与参考音质影响。</p>
+          <textarea id="voice-text" maxlength="1000" class="mt-3 min-h-44 w-full resize-y rounded-lg border border-line bg-white px-4 py-3 text-base leading-7 text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-voice-i18n-placeholder="textPlaceholder" placeholder="输入需要朗读的文字…"></textarea>
+        </div>
+
+        <fieldset class="mt-7 border-t border-line pt-6">
+          <legend class="text-sm font-bold" data-voice-i18n="rightsLabel">你对声音拥有哪种权利？</legend>
+          <p class="mt-1 text-xs leading-5 text-muted" data-voice-i18n="rightsHint">系统不接受“我不确定”“网络素材”或“只是练习”作为授权依据。</p>
+          <div class="mt-3 space-y-3" id="voice-rights-scope">
+            <label class="flex cursor-pointer gap-3 rounded-lg border border-line bg-white p-3 text-sm leading-6 transition hover:border-brand"><input type="radio" name="voice-rights-scope" value="self" class="mt-1 h-4 w-4 shrink-0 border-line text-brand focus:ring-brand"><span class="min-w-0"><strong data-voice-i18n="rightsSelf">本人声音</strong><span class="mt-1 block text-xs text-muted" data-voice-i18n="rightsSelfHint">我拥有录音与表演使用权。</span></span></label>
+            <label class="flex cursor-pointer gap-3 rounded-lg border border-line bg-white p-3 text-sm leading-6 transition hover:border-brand"><input type="radio" name="voice-rights-scope" value="written-permission" class="mt-1 h-4 w-4 shrink-0 border-line text-brand focus:ring-brand"><span class="min-w-0"><strong data-voice-i18n="rightsPermission">已获书面许可</strong><span class="mt-1 block text-xs text-muted" data-voice-i18n="rightsPermissionHint">许可覆盖克隆、生成、使用范围和本次素材。</span></span></label>
+            <label class="flex cursor-pointer gap-3 rounded-lg border border-line bg-white p-3 text-sm leading-6 transition hover:border-brand"><input type="radio" name="voice-rights-scope" value="original-fictional" class="mt-1 h-4 w-4 shrink-0 border-line text-brand focus:ring-brand"><span class="min-w-0"><strong data-voice-i18n="rightsFictional">原创虚构声音</strong><span class="mt-1 block text-xs text-muted" data-voice-i18n="rightsFictionalHint">我拥有角色、声线表演和本次使用所需的权利。</span></span></label>
+          </div>
+        </fieldset>
+
+        <div class="mt-7 space-y-4 border-t border-line pt-6">
+          <label class="flex cursor-pointer items-start gap-3 text-sm leading-6"><input id="voice-rights-confirmed" type="checkbox" class="mt-1 h-4 w-4 shrink-0 rounded border-line text-brand focus:ring-brand"><span class="min-w-0" data-voice-i18n="rightsConfirm">我确认上述声音和源音频不包含未授权真人、公众人物、演员／主播表演或受保护角色配音，并且我拥有本次生成所需权利。</span></label>
+          <div>
+            <label for="voice-rights-phrase" class="text-sm font-bold" data-voice-i18n="phraseLabel">输入确认短语</label>
+            <p class="mt-1 text-xs leading-5 text-muted" data-voice-i18n="phraseHint">输入 <code class="rounded bg-zinc-100 px-1 py-0.5 font-mono text-ink">I HAVE THE RIGHTS</code> 才能继续。</p>
+            <input id="voice-rights-phrase" autocomplete="off" spellcheck="false" class="mt-3 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand" data-voice-i18n-placeholder="phrasePlaceholder" placeholder="I HAVE THE RIGHTS">
+          </div>
+          <label class="flex cursor-pointer items-start gap-3 text-sm leading-6"><input id="voice-disclosure-confirmed" type="checkbox" class="mt-1 h-4 w-4 shrink-0 rounded border-line text-brand focus:ring-brand"><span class="min-w-0" data-voice-i18n="disclosureConfirm">我会在发布或分享输出时清晰标示为 AI 合成音频，并自行确认文本、歌词、伴奏和发行权利。</span></label>
+        </div>
+
+        <div class="mt-7 border-t border-line pt-6">
+          <p id="voice-service-status" class="break-words rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" role="status" aria-live="polite" data-voice-i18n="checkingService">正在确认受保护声音服务是否可用；此检查不上传音频。</p>
+          <button id="voice-generate" type="button" class="cloud-action-button mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark disabled:cursor-wait disabled:opacity-70 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:w-auto" disabled aria-busy="false" aria-describedby="voice-service-status"><i class="fa-solid fa-wave-square" aria-hidden="true"></i><span id="voice-generate-label" data-voice-i18n="checkingServiceAction">正在检查服务…</span></button>
+        </div>
+      </section>
+
+      <aside class="space-y-6">
+        <section class="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-6" aria-labelledby="voice-quality-title">
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">QUALITY PRE-FLIGHT</p>
+          <h2 id="voice-quality-title" class="mt-2 text-xl font-black" data-voice-i18n="qualityTitle">自然度不能被保证</h2>
+          <p class="mt-3 text-sm leading-7 text-muted" data-voice-i18n="qualityBody">清晰、单人、少噪音的参考音频通常更稳定；音高跨度、伴奏残留、压缩失真和过短样本都可能造成失真、断裂或不像原声。预检只能提示风险，不是质量承诺。</p>
+          <ul class="mt-5 space-y-3 text-sm leading-6 text-muted" data-voice-list="quality">
+            <li class="flex gap-3"><i class="fa-solid fa-check mt-1 text-brand" aria-hidden="true"></i><span>参考音频中只保留一个说话者或演唱者。</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check mt-1 text-brand" aria-hidden="true"></i><span>翻唱／转换前先准备你拥有权利的清晰干声，不上传伴奏或受限音源。</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check mt-1 text-brand" aria-hidden="true"></i><span>先用短片段试听；不要把输出描述为真人原声。</span></li>
+          </ul>
+        </section>
+
+        <section id="voice-result" class="rounded-xl border border-teal-100 bg-teal-50/70 p-4 shadow-sm sm:p-6" hidden aria-labelledby="voice-result-title">
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">AI GENERATED AUDIO</p>
+          <h2 id="voice-result-title" class="mt-2 text-xl font-black" data-voice-i18n="resultTitle">生成结果</h2>
+          <p id="voice-result-meta" class="mt-2 break-words text-sm leading-6 text-muted"></p>
+          <audio id="voice-result-audio" class="mt-5 w-full" controls preload="metadata"></audio>
+          <a id="voice-result-download" class="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-brand bg-white px-4 py-2 text-sm font-bold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 sm:w-auto" href="#" download="postprep-ai-audio.wav"><i class="fa-solid fa-download" aria-hidden="true"></i><span data-voice-i18n="download">下载 AI 合成音频</span></a>
+          <p class="mt-4 text-xs leading-5 text-muted" data-voice-i18n="resultDisclosure">请在发布或分享时标示“AI 合成音频”；不要把结果表示为真实人物原声。</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
+  <script src="assets/postprep-config.js"></script>
+  <script src="assets/postprep.js?v=20260813-voice"></script>
+  <script src="assets/voice-studio.js?v=20260813-voice"></script>
+</body>
+</html>

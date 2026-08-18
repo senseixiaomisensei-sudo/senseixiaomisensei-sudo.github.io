@@ -19,8 +19,21 @@ arrange a private channel.
 - `AGNES_API_KEY` and `TURNSTILE_SECRET_KEY` belong only in the server runtime.
 - Browser configuration may contain a public API endpoint and a public
   Turnstile site key, never a secret key.
-- Third-party scripts, new external network origins, CSP changes, and proxy
-  changes require maintainer review before merge.
+- Public GitHub Skill reading is limited to a fixed `github.com` URL grammar,
+  GitHub's public API, a size limit, timeouts, and a pinned commit SHA; loaded
+  Skill text is untrusted data and must never be executed or treated as
+  instructions.
+- Third-party scripts, new external network origins, CSP changes, proxy
+  changes, and automatic Skill installation or execution require maintainer
+  review before merge.
+- Voice uploads may only pass through the protected Worker and Pages Function
+  after a visible Turnstile check, strict Origin checks, a dedicated voice rate
+  limit, explicit rights confirmation, format/size validation, and a fixed
+  server-configured GPU URL. Never add a browser-to-GPU path, arbitrary URL
+  fetch, long-lived media library, or client-side inference token.
+- The separate GPU adapter must have no browser CORS, must use a server-only
+  bearer token, and must delete source audio after the task plus generated
+  audio after its short token-protected retention period.
 
 ## Response target
 
