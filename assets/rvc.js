@@ -391,7 +391,7 @@
     ];
   }
 
-  // Fetch single chunk with Multi-Node Concurrent Racing, Chunk-Level Resumption & Auto-Retry
+  // Fetch single chunk with Multi-Node Concurrent Racing, Chunk-Level Resumption, Live Streaming & Inactivity Timeout
   async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress) {
     const chunkCacheKey = `chunk:${chunkPath}`;
     const cachedBuf = await getCachedItem(chunkCacheKey);
@@ -404,21 +404,55 @@
 
     const mirrors = getChunkMirrorUrls(chunkPath);
 
-    const fetchWithTimeout = (url, timeoutMs = 7000) => {
+    const fetchWithProgress = async (url) => {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      return fetch(url, { signal: controller.signal })
-        .then(async (resp) => {
-          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      let activityTimer = setTimeout(() => controller.abort(), 18000); // 18s inactivity watchdog
+
+      const resetActivity = () => {
+        clearTimeout(activityTimer);
+        activityTimer = setTimeout(() => controller.abort(), 18000);
+      };
+
+      try {
+        const resp = await fetch(url, { signal: controller.signal });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        const reader = resp.body ? resp.body.getReader() : null;
+        if (!reader) {
           const buf = await resp.arrayBuffer();
-          clearTimeout(timer);
-          if (!buf || buf.byteLength === 0) throw new Error("Empty buffer");
-          return buf;
-        })
-        .catch((err) => {
-          clearTimeout(timer);
-          throw err;
-        });
+          clearTimeout(activityTimer);
+          if (buf && buf.byteLength > 0) {
+            if (typeof onChunkProgress === "function") onChunkProgress(buf.byteLength);
+            return buf;
+          }
+          throw new Error("Empty buffer");
+        }
+
+        const chunks = [];
+        let receivedBytes = 0;
+        while (true) {
+          resetActivity();
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          receivedBytes += value.length;
+          if (typeof onChunkProgress === "function") {
+            onChunkProgress(receivedBytes);
+          }
+        }
+        clearTimeout(activityTimer);
+
+        const combined = new Uint8Array(receivedBytes);
+        let offset = 0;
+        for (const c of chunks) {
+          combined.set(c, offset);
+          offset += c.length;
+        }
+        return combined.buffer;
+      } catch (err) {
+        clearTimeout(activityTimer);
+        throw err;
+      }
     };
 
     let winningBuffer = null;
@@ -428,11 +462,11 @@
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         winningBuffer = await Promise.any([
-          fetchWithTimeout(mirrors[0], 8000),
-          fetchWithTimeout(mirrors[1], 8000),
+          fetchWithProgress(mirrors[0]),
+          fetchWithProgress(mirrors[1]),
           new Promise((resolve, reject) => setTimeout(() => {
-            fetchWithTimeout(mirrors[2], 8000).then(resolve, reject);
-          }, 1200))
+            fetchWithProgress(mirrors[2]).then(resolve, reject);
+          }, 2000))
         ]);
         if (winningBuffer && winningBuffer.byteLength > 0) break;
       } catch (raceErr) {
@@ -440,7 +474,7 @@
         // Fallback to secondary mirrors
         for (let m = 2; m < mirrors.length; m++) {
           try {
-            winningBuffer = await fetchWithTimeout(mirrors[m], 9000);
+            winningBuffer = await fetchWithProgress(mirrors[m]);
             if (winningBuffer && winningBuffer.byteLength > 0) break;
           } catch (e) {
             lastError = e;
@@ -448,7 +482,7 @@
         }
         if (winningBuffer && winningBuffer.byteLength > 0) break;
         if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+          await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
         }
       }
     }
@@ -1053,7 +1087,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v16", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v17", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
