@@ -832,7 +832,24 @@
     const preloadBtn = document.getElementById("rvc-preload-btn");
     try {
       const hubertCached = await getCachedItem("hubert.onnx");
-      const rmvpeCached = await getCachedItem("rmvpe.onnx");
+      const clearBtn = document.getElementById("rvc-clear-cache-btn");
+      if (clearBtn) {
+        clearBtn.onclick = async () => {
+          if (!confirm("确定要重置本地已缓存的模型吗？重置后可重新极速下载。")) return;
+          try {
+            const db = await openModelDB();
+            if (db) {
+              const tx = db.transaction(STORE_NAME, "readwrite");
+              tx.objectStore(STORE_NAME).clear();
+            }
+            showToast("🧹 本地闪存已清空重置");
+            checkCacheStatus();
+          } catch (e) {
+            showToast("清空失败: " + e.message);
+          }
+        };
+      }
+
       if (hubertCached && rmvpeCached) {
         if (cacheStatusEl) {
           cacheStatusEl.innerHTML = `<i class="fa-solid fa-bolt text-emerald-500"></i><span class="text-emerald-700">⚡ 基础模型已在本地就绪 · 秒级极速变声 (0MB 下载)</span>`;
@@ -840,7 +857,7 @@
         if (preloadBtn) preloadBtn.classList.add("hidden");
       } else {
         if (cacheStatusEl) {
-          cacheStatusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-brand"></i><span>本地极速缓存：首次需下载，已开启 3 线程多源加速</span>`;
+          cacheStatusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-brand"></i><span>本地极速缓存：首次需下载，已开启 5 线程断点闪存加速</span>`;
         }
         if (preloadBtn) {
           preloadBtn.classList.remove("hidden");
@@ -1087,7 +1104,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v17", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v18", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({

@@ -18,7 +18,13 @@
 
   <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
     <header class="max-w-4xl">
-      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-rvc-i18n="eyebrow">RVC VOICE CHANGER</p>
+      <div class="flex flex-wrap items-center gap-3">
+        <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-rvc-i18n="eyebrow">RVC VOICE CHANGER</p>
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-xs font-bold text-teal-800">
+          <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>v2026.08.18-v18 · 零拷贝 5 线程断点闪存</span>
+        </span>
+      </div>
       <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
     </header>
@@ -184,10 +190,16 @@
               <i class="fa-solid fa-bolt text-brand"></i>
               <span>本地极速缓存引擎：检测中…</span>
             </div>
-            <button id="rvc-preload-btn" type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand hover:underline cursor-pointer">
-              <i class="fa-solid fa-cloud-arrow-down"></i>
-              <span>一键预热基础模型 (加速秒级变声)</span>
-            </button>
+            <div class="flex items-center gap-3">
+              <button id="rvc-preload-btn" type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-brand hover:underline cursor-pointer">
+                <i class="fa-solid fa-cloud-arrow-down"></i>
+                <span>一键预热基础模型 (加速秒级变声)</span>
+              </button>
+              <button id="rvc-clear-cache-btn" type="button" class="inline-flex items-center gap-1 text-xs text-muted hover:text-red-600 hover:underline cursor-pointer" title="清除本地已下载的模型缓存">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>重置闪存</span>
+              </button>
+            </div>
           </div>
           <div id="rvc-progress-bar-wrap" class="hidden w-full bg-zinc-200 rounded-full h-1.5 mb-3 overflow-hidden">
             <div id="rvc-progress-bar" class="bg-brand h-1.5 rounded-full transition-all duration-200" style="width: 0%"></div>
@@ -232,8 +244,8 @@
 
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
-  <script src="assets/postprep-config.js?v=20260818-v17"></script>
-  <script src="assets/postprep.js?v=20260818-v17"></script>
-  <script src="assets/rvc.js?v=20260818-v17"></script>
+  <script src="assets/postprep-config.js?v=20260818-v18"></script>
+  <script src="assets/postprep.js?v=20260818-v18"></script>
+  <script src="assets/rvc.js?v=20260818-v18"></script>
 </body>
 </html>
