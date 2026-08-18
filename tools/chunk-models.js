@@ -59,6 +59,11 @@ const MODELS = [
     src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\koharu.onnx",
     dstDir: "E:\\大肥鱼\\site\\models\\characters\\koharu",
   },
+  {
+    name: "hoshino.onnx",
+    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\hoshino.onnx",
+    dstDir: "E:\\大肥鱼\\site\\models\\characters\\hoshino",
+  },
 ];
 
 const manifest = {};

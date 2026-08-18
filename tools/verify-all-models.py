@@ -10,6 +10,7 @@ MODELS = [
     ("hina", r"E:\大肥鱼\rvc-local\convert\onnx-models\hina.onnx"),
     ("noa", r"E:\大肥鱼\rvc-local\convert\onnx-models\noa.onnx"),
     ("koharu", r"E:\大肥鱼\rvc-local\convert\onnx-models\koharu.onnx"),
+    ("hoshino", r"E:\大肥鱼\rvc-local\convert\onnx-models\hoshino.onnx"),
 ]
 
 def test_model(name, model_path):

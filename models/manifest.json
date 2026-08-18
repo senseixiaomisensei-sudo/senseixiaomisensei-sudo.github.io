@@ -144,5 +144,16 @@
       "models/characters/koharu/chunk_4.bin",
       "models/characters/koharu/chunk_5.bin"
     ]
+  },
+  "hoshino.onnx": {
+    "totalSize": 110680729,
+    "chunks": [
+      "models/characters/hoshino/chunk_0.bin",
+      "models/characters/hoshino/chunk_1.bin",
+      "models/characters/hoshino/chunk_2.bin",
+      "models/characters/hoshino/chunk_3.bin",
+      "models/characters/hoshino/chunk_4.bin",
+      "models/characters/hoshino/chunk_5.bin"
+    ]
   }
 }

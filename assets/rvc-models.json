@@ -87,6 +87,22 @@
       ]
     },
     {
+      "id": "hoshino",
+      "name": "小鸟游星野 (Hoshino)",
+      "avatarText": "星野",
+      "description": "《蔚蓝档案》阿拜多斯对策委员会副会长 · 哎呀呀~ 慵懒可靠大叔系萌少女音 · RVC v2",
+      "tags": ["女声", "蔚蓝档案", "阿拜多斯"],
+      "defaultPitch": 1,
+      "chunks": [
+        "models/characters/hoshino/chunk_0.bin",
+        "models/characters/hoshino/chunk_1.bin",
+        "models/characters/hoshino/chunk_2.bin",
+        "models/characters/hoshino/chunk_3.bin",
+        "models/characters/hoshino/chunk_4.bin",
+        "models/characters/hoshino/chunk_5.bin"
+      ]
+    },
+    {
       "id": "yuuka",
       "name": "早濑优香 (Yuuka)",
       "avatarText": "优香",
