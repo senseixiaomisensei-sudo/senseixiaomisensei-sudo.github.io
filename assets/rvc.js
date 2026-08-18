@@ -190,12 +190,38 @@
     rvcContext: null,
   };
 
-  // Simple IndexedDB Model Cache for Zero-Download Repeated Runs
-  const DB_NAME = "rvc_web_models_v4_db";
+  // High-Performance Concurrency Pool (6 concurrent HTTP streams)
+  class ConcurrencyPool {
+    constructor(limit = 6) {
+      this.limit = limit;
+      this.running = 0;
+      this.queue = [];
+    }
+    async run(fn) {
+      if (this.running >= this.limit) {
+        await new Promise((resolve) => this.queue.push(resolve));
+      }
+      this.running++;
+      try {
+        return await fn();
+      } finally {
+        this.running--;
+        if (this.queue.length > 0) {
+          const next = this.queue.shift();
+          next();
+        }
+      }
+    }
+  }
+
+  const globalDownloadPool = new ConcurrencyPool(6);
+
+  // IndexedDB Persistent Storage for Instant 0-second reloads
+  const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
 
   function openModelDB() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (!window.indexedDB) return resolve(null);
       const req = indexedDB.open(DB_NAME, 1);
       req.onupgradeneeded = (e) => {
@@ -209,7 +235,7 @@
     });
   }
 
-  async function getCachedModel(key) {
+  async function getCachedItem(key) {
     try {
       const db = await openModelDB();
       if (!db) return null;
@@ -225,58 +251,108 @@
     }
   }
 
-  async function setCachedModel(key, blob) {
+  async function setCachedItem(key, val) {
     try {
       const db = await openModelDB();
       if (!db) return;
       const tx = db.transaction(STORE_NAME, "readwrite");
       const store = tx.objectStore(STORE_NAME);
-      store.put(blob, key);
+      store.put(val, key);
     } catch (e) {}
   }
 
+  // Multi-CDN Candidate URLs for any relative chunk path
+  function getChunkMirrorUrls(relPath) {
+    const cleanPath = relPath.startsWith("/") ? relPath.slice(1) : relPath;
+    return [
+      `./${cleanPath}`,
+      `https://fastly.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`,
+    ];
+  }
+
+  // Fetch single chunk with mirror race & automatic failover
+  async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks) {
+    const cacheKey = `chunk:${chunkPath}`;
+    const cachedBuf = await getCachedItem(cacheKey);
+    if (cachedBuf instanceof ArrayBuffer) {
+      return { buffer: cachedBuf, fromCache: true };
+    }
+
+    const mirrors = getChunkMirrorUrls(chunkPath);
+    let lastError = null;
+
+    for (let m = 0; m < mirrors.length; m++) {
+      const url = mirrors[m];
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s per mirror
+      try {
+        const resp = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (resp.ok) {
+          const buf = await resp.arrayBuffer();
+          if (buf.byteLength > 0) {
+            await setCachedItem(cacheKey, buf);
+            return { buffer: buf, fromCache: false };
+          }
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        lastError = err;
+      }
+    }
+    throw new Error(`Failed to fetch chunk ${chunkIndex + 1}/${totalChunks} from all mirrors (${lastError?.message || "network timeout"})`);
+  }
+
+  // Fetch Chunked Model with Concurrency Pool & Progress Reporting
   async function fetchChunkedModel(chunkUrls, name, mimeType, onProgress) {
-    const cached = await getCachedModel(name);
+    const cached = await getCachedItem(name);
     if (cached instanceof Blob) {
+      if (typeof onProgress === "function") {
+        onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true);
+      }
       return new File([cached], name, { type: mimeType });
     }
 
     const urls = Array.isArray(chunkUrls) ? chunkUrls : [chunkUrls];
-    const blobParts = [];
-    let loadedBytes = 0;
-    const estimatedTotal = urls.length * 20 * 1024 * 1024;
+    const totalCount = urls.length;
+    const blobParts = new Array(totalCount);
+    let completedCount = 0;
+    let totalLoadedBytes = 0;
+    const estimatedTotalBytes = totalCount * 20 * 1024 * 1024;
 
-    for (let i = 0; i < urls.length; i++) {
-      const u = urls[i];
-      const res = await fetch(u);
-      if (!res.ok) {
-        throw new Error(`Failed to load ${name} part ${i + 1}/${urls.length} (HTTP ${res.status})`);
-      }
-      const buf = await res.arrayBuffer();
-      blobParts.push(buf);
-      loadedBytes += buf.byteLength;
-      if (typeof onProgress === "function") {
-        onProgress(loadedBytes, estimatedTotal, i + 1, urls.length);
-      }
-    }
+    const tasks = urls.map((u, idx) => {
+      return globalDownloadPool.run(async () => {
+        const { buffer, fromCache } = await fetchSingleChunkWithFallback(u, idx, totalCount);
+        blobParts[idx] = buffer;
+        completedCount++;
+        totalLoadedBytes += buffer.byteLength;
+        if (typeof onProgress === "function") {
+          onProgress(totalLoadedBytes, estimatedTotalBytes, completedCount, totalCount, fromCache);
+        }
+      });
+    });
+
+    await Promise.all(tasks);
 
     const fullBlob = new Blob(blobParts, { type: mimeType });
-    await setCachedModel(name, fullBlob);
+    await setCachedItem(name, fullBlob);
     return new File([fullBlob], name, { type: mimeType });
   }
 
   async function loadModelAuto(modelConfig, name, mimeType, onProgress) {
-    const cached = await getCachedModel(name);
+    const cached = await getCachedItem(name);
     if (cached instanceof Blob) {
+      if (typeof onProgress === "function") {
+        onProgress(cached.size, cached.size, 1, 1, true);
+      }
       return new File([cached], name, { type: mimeType });
     }
 
     if (modelConfig && Array.isArray(modelConfig.chunks) && modelConfig.chunks.length > 0) {
-      try {
-        return await fetchChunkedModel(modelConfig.chunks, name, mimeType, onProgress);
-      } catch (err) {
-        console.warn(`Chunked fetch for ${name} failed, falling back to URLs:`, err);
-      }
+      return await fetchChunkedModel(modelConfig.chunks, name, mimeType, onProgress);
     }
 
     const urls = modelConfig?.urls || (typeof modelConfig === "string" ? [modelConfig] : [name]);
@@ -286,7 +362,7 @@
   async function fetchWithCache(urlOrUrls, name, mimeType, onProgress) {
     const urls = Array.isArray(urlOrUrls) ? urlOrUrls.filter(Boolean) : [urlOrUrls];
     for (const u of urls) {
-      const cached = await getCachedModel(u);
+      const cached = await getCachedItem(u);
       if (cached instanceof Blob) {
         return new File([cached], name, { type: mimeType });
       }
@@ -305,7 +381,7 @@
 
         if (!res.body || !total) {
           const blob = await res.blob();
-          await setCachedModel(u, blob);
+          await setCachedItem(u, blob);
           return new File([blob], name, { type: mimeType });
         }
 
@@ -322,7 +398,7 @@
           }
         }
         const blob = new Blob(chunks, { type: mimeType });
-        await setCachedModel(u, blob);
+        await setCachedItem(u, blob);
         return new File([blob], name, { type: mimeType });
       } catch (err) {
         clearTimeout(timeoutId);
@@ -507,6 +583,84 @@
     });
   }
 
+  function showProgressBar(show) {
+    const barWrap = document.getElementById("rvc-progress-bar-wrap");
+    if (barWrap) {
+      if (show) barWrap.classList.remove("hidden");
+      else barWrap.classList.add("hidden");
+    }
+  }
+
+  function updateProgressBar(percent) {
+    const bar = document.getElementById("rvc-progress-bar");
+    if (bar) {
+      bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+    }
+  }
+
+  async function checkCacheStatus() {
+    const cacheStatusEl = document.getElementById("rvc-cache-status");
+    const preloadBtn = document.getElementById("rvc-preload-btn");
+    try {
+      const hubertCached = await getCachedItem("hubert.onnx");
+      const rmvpeCached = await getCachedItem("rmvpe.onnx");
+      if (hubertCached && rmvpeCached) {
+        if (cacheStatusEl) {
+          cacheStatusEl.innerHTML = `<i class="fa-solid fa-bolt text-emerald-500"></i><span class="text-emerald-700">⚡ 基础模型已在本地就绪 · 秒级极速变声 (0MB 下载)</span>`;
+        }
+        if (preloadBtn) preloadBtn.classList.add("hidden");
+      } else {
+        if (cacheStatusEl) {
+          cacheStatusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-brand"></i><span>本地极速缓存：首次需下载，已开启 6 线程多源加速</span>`;
+        }
+        if (preloadBtn) {
+          preloadBtn.classList.remove("hidden");
+          preloadBtn.onclick = async () => {
+            preloadBtn.disabled = true;
+            preloadBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span>正在极速预热中…</span>`;
+            showProgressBar(true);
+            try {
+              const hubertCfg = state.baseModels?.hubert || { chunks: [] };
+              const rmvpeCfg = state.baseModels?.rmvpe || { chunks: [] };
+              let hLoaded = 0, rLoaded = 0;
+              const estTot = (19 + 18) * 20 * 1024 * 1024;
+              const pStart = Date.now();
+              const updatePreloadProgress = () => {
+                const tot = hLoaded + rLoaded;
+                const pct = Math.min(99, Math.round((tot / estTot) * 100));
+                const sec = Math.max(0.1, (Date.now() - pStart) / 1000);
+                const spd = (tot / 1024 / 1024 / sec).toFixed(1);
+                updateProgressBar(pct);
+                updateStatusDisplay(`⏳ 正在后台预热基础模型: ${pct}% (${(tot / 1024 / 1024).toFixed(1)}MB / ${(estTot / 1024 / 1024).toFixed(1)}MB) · ${spd} MB/s`);
+              };
+
+              await Promise.all([
+                loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", (l) => {
+                  hLoaded = l;
+                  updatePreloadProgress();
+                }),
+                loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", (l) => {
+                  rLoaded = l;
+                  updatePreloadProgress();
+                }),
+              ]);
+              updateProgressBar(100);
+              setTimeout(() => showProgressBar(false), 800);
+              showToast("🎉 基础模型已全部下载并缓存至本地！后续变声零等待！");
+              updateStatusDisplay(t("serviceReady"));
+              checkCacheStatus();
+            } catch (e) {
+              console.warn("Preload error:", e);
+              preloadBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i><span>重试预热</span>`;
+              preloadBtn.disabled = false;
+              showProgressBar(false);
+            }
+          };
+        }
+      }
+    } catch (e) {}
+  }
+
   function updateStatusDisplay(msg) {
     const statusEl = document.getElementById("rvc-service-status");
     const convertBtn = document.getElementById("rvc-convert");
@@ -556,6 +710,20 @@
       console.warn("Failed to load rvc-models.json", e);
     }
     renderModelGallery();
+    checkCacheStatus();
+    // Silent background pre-warm after 3 seconds of user idle
+    setTimeout(() => {
+      if (!state.busy) {
+        const hubertCfg = state.baseModels?.hubert;
+        const rmvpeCfg = state.baseModels?.rmvpe;
+        if (hubertCfg && rmvpeCfg) {
+          Promise.all([
+            loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", () => {}),
+            loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", () => {}),
+          ]).then(() => checkCacheStatus()).catch(() => {});
+        }
+      }
+    }, 3000);
   }
 
   async function handleAudioSelected(file) {
@@ -698,32 +866,47 @@
       const hubertCfg = state.baseModels?.hubert || { chunks: [] };
       const rmvpeCfg = state.baseModels?.rmvpe || { chunks: [] };
 
-      updateStatusDisplay("⏳ [1/4] 正在准备声线模型 (HuBERT 语义特征)...");
-      const hubertFile = await loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", (l, t, cur, total) => {
-        const mb = (l / 1024 / 1024).toFixed(1);
-        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "377.6";
-        const partText = total ? ` · 分片 ${cur}/${total}` : "";
-        updateStatusDisplay(`⏳ [1/4] 正在加载基础语义模型 (HuBERT): ${Math.min(100, Math.round((l / (t || 1)) * 100))}% (${mb}MB / ${totalMb}MB)${partText}`);
-      });
+      // Multi-Model Parallel Loading with Combined Progress Tracking
+      updateProgressBar(5);
+      showProgressBar(true);
+      updateStatusDisplay("⏳ [1/4] 正在多源极速并发加载模型 (HuBERT / RMVPE / 角色音色)...");
 
-      updateStatusDisplay("⏳ [2/4] 正在准备音高模型 (RMVPE 音高追踪)...");
-      const rmvpeFile = await loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", (l, t, cur, total) => {
-        const mb = (l / 1024 / 1024).toFixed(1);
-        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "361.7";
-        const partText = total ? ` · 分片 ${cur}/${total}` : "";
-        updateStatusDisplay(`⏳ [2/4] 正在加载高精度音高模型 (RMVPE): ${Math.min(100, Math.round((l / (t || 1)) * 100))}% (${mb}MB / ${totalMb}MB)${partText}`);
-      });
+      let hubertLoaded = 0, rmvpeLoaded = 0, charLoaded = 0;
+      const totalEstimated = (19 + 18 + (selectedModel.chunks?.length || 6)) * 20 * 1024 * 1024;
+      const loadStartTime = Date.now();
 
-      updateStatusDisplay(`⏳ [3/4] 正在准备角色模型 (${selectedModel.name})...`);
-      const modelFile = await loadModelAuto(selectedModel, `${selectedModel.id}.onnx`, "application/onnx", (l, t, cur, total) => {
-        const mb = (l / 1024 / 1024).toFixed(1);
-        const totalMb = t ? (t / 1024 / 1024).toFixed(1) : "110.2";
-        const partText = total ? ` · 分片 ${cur}/${total}` : "";
-        updateStatusDisplay(`⏳ [3/4] 正在加载角色音色模型 (${selectedModel.name}): ${Math.min(100, Math.round((l / (t || 1)) * 100))}% (${mb}MB / ${totalMb}MB)${partText}`);
-      });
+      function reportCombinedProgress() {
+        const totalLoaded = hubertLoaded + rmvpeLoaded + charLoaded;
+        const totalMb = (totalLoaded / 1024 / 1024).toFixed(1);
+        const estMb = (totalEstimated / 1024 / 1024).toFixed(1);
+        const pct = Math.min(99, Math.max(5, Math.round((totalLoaded / totalEstimated) * 100)));
+        const sec = Math.max(0.1, (Date.now() - loadStartTime) / 1000);
+        const speed = (totalLoaded / 1024 / 1024 / sec).toFixed(1);
+        updateProgressBar(pct);
+        updateStatusDisplay(`⏳ [1/4] 正在多源极速加载模型: ${pct}% (${totalMb}MB / ${estMb}MB) · ${speed} MB/s · 6 线程并发加速中`);
+      }
+
+      const [hubertFile, rmvpeFile, modelFile] = await Promise.all([
+        loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", (l, t, cur, tot, fromCache) => {
+          hubertLoaded = l;
+          reportCombinedProgress();
+        }),
+        loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", (l, t, cur, tot, fromCache) => {
+          rmvpeLoaded = l;
+          reportCombinedProgress();
+        }),
+        loadModelAuto(selectedModel, `${selectedModel.id}.onnx`, "application/onnx", (l, t, cur, tot, fromCache) => {
+          charLoaded = l;
+          reportCombinedProgress();
+        }),
+      ]);
+
+      updateProgressBar(100);
+      setTimeout(() => showProgressBar(false), 800);
+      checkCacheStatus();
 
       // 3. Run Pipeline in Web Worker
-      updateStatusDisplay("🚀 [4/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
+      updateStatusDisplay("🚀 [2/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
       const result = await runPipelineInWorker(
         rvc,
         {
