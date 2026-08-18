@@ -296,9 +296,9 @@
     rvcContext: null,
   };
 
-  // High-Performance Concurrency Pool (6 concurrent HTTP streams)
+  // High-Performance Concurrency Pool (3 concurrent HTTP streams - optimal for Mobile & Desktop)
   class ConcurrencyPool {
-    constructor(limit = 6) {
+    constructor(limit = 3) {
       this.limit = limit;
       this.running = 0;
       this.queue = [];
@@ -320,7 +320,7 @@
     }
   }
 
-  const globalDownloadPool = new ConcurrencyPool(6);
+  const globalDownloadPool = new ConcurrencyPool(3);
 
   // IndexedDB Persistent Storage for Instant 0-second reloads
   const DB_NAME = "rvc_web_models_v5_db";
@@ -373,84 +373,55 @@
     const rawGhUrl = `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`;
     return [
       `./${cleanPath}`,
-      `https://gh-proxy.com/${rawGhUrl}`,
       `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://gh-proxy.com/${rawGhUrl}`,
+      `https://cdn.jsdmirror.com/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://ghproxy.net/${rawGhUrl}`,
       `https://cdn.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
-      `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
     ];
   }
 
-  // Fetch single chunk with streaming progress, 3.5s connection timeout and instant mirror failover
+  // Fetch single chunk using native C++ arrayBuffer with hard 10s watchdog timeout and mirror failover
   async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress) {
-    const cacheKey = `chunk:${chunkPath}`;
-    const cachedBuf = await getCachedItem(cacheKey);
-    if (cachedBuf instanceof ArrayBuffer) {
-      if (typeof onChunkProgress === "function") {
-        onChunkProgress(cachedBuf.byteLength, cachedBuf.byteLength);
-      }
-      return { buffer: cachedBuf, fromCache: true };
-    }
-
     const mirrors = getChunkMirrorUrls(chunkPath);
     let lastError = null;
 
     for (let m = 0; m < mirrors.length; m++) {
       const url = mirrors[m];
       const controller = new AbortController();
-      const connectTimeout = setTimeout(() => controller.abort(), 3500); // 3.5s fast connection timeout
+      const watchdog = setTimeout(() => controller.abort(), 10000); // 10s hard timeout per mirror
       try {
-        const resp = await fetch(url, { signal: controller.signal });
-        clearTimeout(connectTimeout);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-        const contentLength = parseInt(resp.headers.get("content-length") || "0", 10);
-        const reader = resp.body ? resp.body.getReader() : null;
-
-        if (!reader) {
-          const buf = await resp.arrayBuffer();
-          if (buf.byteLength > 0) {
-            await setCachedItem(cacheKey, buf);
-            if (typeof onChunkProgress === "function") onChunkProgress(buf.byteLength, buf.byteLength);
-            return { buffer: buf, fromCache: false };
-          }
-          throw new Error("Empty body");
+        const resp = await fetch(url, { signal: controller.signal, cache: "force-cache" });
+        if (!resp.ok) {
+          clearTimeout(watchdog);
+          throw new Error(`HTTP ${resp.status}`);
         }
 
-        const chunks = [];
-        let receivedBytes = 0;
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          receivedBytes += value.length;
+        const buf = await resp.arrayBuffer();
+        clearTimeout(watchdog);
+
+        if (buf && buf.byteLength > 0) {
           if (typeof onChunkProgress === "function") {
-            onChunkProgress(receivedBytes, contentLength || 20971520);
+            onChunkProgress(buf.byteLength);
           }
+          return { buffer: buf, fromCache: false };
         }
-
-        const combined = new Uint8Array(receivedBytes);
-        let offset = 0;
-        for (const c of chunks) {
-          combined.set(c, offset);
-          offset += c.length;
-        }
-        const finalBuf = combined.buffer;
-        await setCachedItem(cacheKey, finalBuf);
-        return { buffer: finalBuf, fromCache: false };
+        throw new Error("Empty buffer received");
       } catch (err) {
-        clearTimeout(connectTimeout);
+        clearTimeout(watchdog);
         lastError = err;
-        console.warn(`Mirror [${m}] ${url} failed for chunk ${chunkIndex + 1}:`, err.message);
+        console.warn(`[Chunk Fetch] Mirror ${m} (${url}) failed for chunk ${chunkIndex + 1}/${totalChunks}:`, err.message);
       }
     }
+
     throw new Error(`Failed to fetch chunk ${chunkIndex + 1}/${totalChunks} from all mirrors (${lastError?.message || "network error"})`);
   }
 
   // Fetch Chunked Model with Concurrency Pool & Real-Time Granular Progress
   async function fetchChunkedModel(chunkUrls, name, mimeType, onProgress) {
     const cached = await getCachedItem(name);
-    if (cached instanceof Blob) {
+    if (cached instanceof Blob && cached.size > 1024 * 1024) {
       if (typeof onProgress === "function") {
         onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true);
       }
@@ -474,7 +445,7 @@
 
     const tasks = urls.map((u, idx) => {
       return globalDownloadPool.run(async () => {
-        const { buffer, fromCache } = await fetchSingleChunkWithFallback(
+        const { buffer } = await fetchSingleChunkWithFallback(
           u,
           idx,
           totalCount,
@@ -493,7 +464,11 @@
     await Promise.all(tasks);
 
     const fullBlob = new Blob(blobParts, { type: mimeType });
-    await setCachedItem(name, fullBlob);
+    try {
+      await setCachedItem(name, fullBlob);
+    } catch (e) {
+      console.warn("Could not save to IndexedDB cache:", e);
+    }
     return new File([fullBlob], name, { type: mimeType });
   }
 
@@ -776,7 +751,7 @@
         if (preloadBtn) preloadBtn.classList.add("hidden");
       } else {
         if (cacheStatusEl) {
-          cacheStatusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-brand"></i><span>本地极速缓存：首次需下载，已开启 6 线程多源加速</span>`;
+          cacheStatusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-brand"></i><span>本地极速缓存：首次需下载，已开启 3 线程多源加速</span>`;
         }
         if (preloadBtn) {
           preloadBtn.classList.remove("hidden");
@@ -1021,7 +996,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v12", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v13", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1050,7 +1025,7 @@
         const speedVal = totalLoaded / 1024 / 1024 / sec;
         const speedText = speedVal > 80 ? "本地闪存秒级读取" : `${speedVal.toFixed(1)} MB/s`;
         updateProgressBar(pct);
-        updateStatusDisplay(`⏳ [1/4] 正在多源极速加载模型: ${pct}% (${totalMb}MB / ${estMb}MB) · ${speedText} · 6 线程并发加速中`);
+        updateStatusDisplay(`⏳ [1/4] 正在多源极速加载模型: ${pct}% (${totalMb}MB / ${estMb}MB) · ${speedText} · 3 线程并发加速中`);
       }
 
       const [hubertFile, rmvpeFile, modelFile] = await Promise.all([
