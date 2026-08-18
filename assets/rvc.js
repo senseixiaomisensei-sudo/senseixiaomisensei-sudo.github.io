@@ -367,22 +367,21 @@
     } catch (e) {}
   }
 
-  // Multi-CDN Candidate URLs for any relative chunk path (Mainland China Optimized Direct Nodes)
+  // Multi-CDN Candidate URLs for any relative chunk path (Same-Origin Direct First)
   function getChunkMirrorUrls(relPath) {
     const cleanPath = relPath.startsWith("/") ? relPath.slice(1) : relPath;
     const rawGhUrl = `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`;
     return [
+      `./${cleanPath}`,
+      `https://gh-proxy.com/${rawGhUrl}`,
+      `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://ghproxy.net/${rawGhUrl}`,
       `https://cdn.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
-      `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
-      `https://gh-proxy.com/${rawGhUrl}`,
-      `https://cdn.jsdmirror.com/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
-      `https://ghproxy.net/${rawGhUrl}`,
-      `./${cleanPath}`,
     ];
   }
 
-  // Fetch single chunk with streaming progress, activity-based timeout and mirror failover
+  // Fetch single chunk with streaming progress, 3.5s connection timeout and instant mirror failover
   async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress) {
     const cacheKey = `chunk:${chunkPath}`;
     const cachedBuf = await getCachedItem(cacheKey);
@@ -399,7 +398,7 @@
     for (let m = 0; m < mirrors.length; m++) {
       const url = mirrors[m];
       const controller = new AbortController();
-      const connectTimeout = setTimeout(() => controller.abort(), 8000); // 8s initial connection
+      const connectTimeout = setTimeout(() => controller.abort(), 3500); // 3.5s fast connection timeout
       try {
         const resp = await fetch(url, { signal: controller.signal });
         clearTimeout(connectTimeout);
@@ -1022,7 +1021,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v10", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260818-v11", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1048,9 +1047,10 @@
         const estMb = (totalEstimated / 1024 / 1024).toFixed(1);
         const pct = Math.min(99, Math.max(5, Math.round((totalLoaded / totalEstimated) * 100)));
         const sec = Math.max(0.1, (Date.now() - loadStartTime) / 1000);
-        const speed = (totalLoaded / 1024 / 1024 / sec).toFixed(1);
+        const speedVal = totalLoaded / 1024 / 1024 / sec;
+        const speedText = speedVal > 80 ? "本地闪存秒级读取" : `${speedVal.toFixed(1)} MB/s`;
         updateProgressBar(pct);
-        updateStatusDisplay(`⏳ [1/4] 正在多源极速加载模型: ${pct}% (${totalMb}MB / ${estMb}MB) · ${speed} MB/s · 6 线程并发加速中`);
+        updateStatusDisplay(`⏳ [1/4] 正在多源极速加载模型: ${pct}% (${totalMb}MB / ${estMb}MB) · ${speedText} · 6 线程并发加速中`);
       }
 
       const [hubertFile, rmvpeFile, modelFile] = await Promise.all([
