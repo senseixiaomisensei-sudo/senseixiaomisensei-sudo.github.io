@@ -57,3 +57,34 @@ client-side environment variable.
   temporary, token-protected downloads—not a permanent media library.
 - A clean single-speaker reference helps quality but does not guarantee natural
   output or eliminate artifacts.
+
+## Windows local auto-configuration
+
+`Configure-LocalVoiceHost.ps1` is the repeatable, local-only setup helper for
+this adapter. It creates a high-entropy gateway token outside the repository,
+locks the token files to the current Windows user, builds the pinned image, and
+can run the container on `127.0.0.1:18080` only. It never creates a public GPU
+port, prints the token, or writes secrets into a static site.
+
+The script deliberately stops at two owner-controlled boundaries:
+
+- Docker Desktop's license and first-run setup remain a Docker account-owner
+  action.
+- Downloading model weights requires `-AcknowledgeModelLicense`. The selected
+  model card is tagged Apache-2.0, but its separate content disclaimer still
+  needs an operator's use-case review; the script does not make that decision.
+
+For a China-based host, the helper uses CosyVoice's officially documented
+ModelScope identifier `iic/CosyVoice-300M` rather than silently falling back
+to an overseas mirror. It still requires the same model-license review.
+
+After a model review, a local owner can use:
+
+```powershell
+.\Configure-LocalVoiceHost.ps1 -DownloadModel -AcknowledgeModelLicense -StartService
+```
+
+The public connection is intentionally not automated by this script. Create a
+protected, stable HTTPS tunnel under the owner's Cloudflare account, then place
+only the tunnel's `/v1/jobs` address and the matching token in Cloudflare Pages
+secrets. The browser must continue to talk only to the Pages Function.

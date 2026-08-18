@@ -15,14 +15,17 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends python3.10 python3-pip git ffmpeg libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install --upgrade pip \
-    && python3 -m pip install --index-url ${TORCH_INDEX_URL} torch==2.5.1+cu124 torchaudio==2.5.1+cu124
-
+# The pinned CosyVoice requirements install their tested Torch 2.3.1 / CUDA
+# 12.1 pair. The host's newer NVIDIA driver and CUDA 12.4 runtime image remain
+# backward-compatible; keeping the upstream pair avoids a now-unavailable
+# CUDA 12.4 cuDNN wheel dependency. The pinned Whisper release imports
+# pkg_resources during its build, so a compatible setuptools stays available.
 RUN git clone https://github.com/FunAudioLLM/CosyVoice.git /opt/CosyVoice \
     && cd /opt/CosyVoice \
     && git checkout --detach ${COSYVOICE_COMMIT} \
     && git submodule update --init --recursive \
-    && python3 -m pip install -r requirements.txt
+    && python3 -m pip install --upgrade "pip<26" "setuptools<81" wheel \
+    && python3 -m pip install --no-build-isolation -r requirements.txt
 
 WORKDIR /opt/postprep-voice
 COPY requirements-postprep.txt ./
