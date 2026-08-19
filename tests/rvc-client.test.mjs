@@ -27,10 +27,8 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /MAX_AUDIO_BYTES/);
   assert.match(client, /MediaRecorder/);
   assert.match(client, /getUserMedia/);
-  assert.match(client, /fetchBackendModels/);
-  assert.match(client, /state\.backend !== "ready"/);
-  assert.match(client, /requestConversion/);
-  assert.match(client, /checkAvailability\(\)/);
+  assert.match(client, /loadModelAuto/);
+  assert.match(client, /runWebRvcInference/);
   assert.doesNotMatch(client, /RVC_INFERENCE_TOKEN/);
   assert.doesNotMatch(client, /api\.github\.com/);
   assert.doesNotMatch(client, /I HAVE THE RIGHTS/);
