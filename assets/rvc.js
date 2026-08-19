@@ -1142,7 +1142,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v4", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v5", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1199,6 +1199,17 @@
       setTimeout(() => showProgressBar(false), 800);
       checkCacheStatus();
 
+      // Ensure audio float32 buffer is valid (and not detached from any previous operations)
+      if (!state.audio.float32 || state.audio.float32.byteLength === 0) {
+        if (state.audio.file) {
+          const decoded = await decodeAudioFileTo16kMono(state.audio.file);
+          state.audio.float32 = decoded.float32;
+        } else {
+          throw new Error("音频数据已失效，请重新选择或录制音频");
+        }
+      }
+      const freshAudioInput = new Float32Array(state.audio.float32);
+
       // 3. Run Pipeline in Web Worker
       updateStatusDisplay("🚀 [2/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
       const result = await runPipelineInWorker(
@@ -1208,7 +1219,7 @@
           contentVec: hubertFile,
           rmvpe: rmvpeFile,
         },
-        state.audio.float32,
+        freshAudioInput,
         16000,
         {
           onEvent: (e) => {

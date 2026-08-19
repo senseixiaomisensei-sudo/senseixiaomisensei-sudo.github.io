@@ -3,7 +3,7 @@ const DEFAULT_ORT_CDN_BASE = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${"1.
 function createRVC(config = {}) {
   const rawAsset = config.assetBaseUrl ?? DEFAULT_CDN_BASE;
   const assetBaseUrl = rawAsset.endsWith("/") ? rawAsset : `${rawAsset}/`;
-  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20260819-v4`;
+  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20260819-v5`;
   const rawWasm = config.wasmBaseUrl ?? DEFAULT_ORT_CDN_BASE;
   const wasmBaseUrl = rawWasm.endsWith("/") ? rawWasm : `${rawWasm}/`;
   return {
@@ -79,12 +79,27 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
         }
       }
     };
+
+    // Clone audio buffer for transfer to ensure caller's audio buffer is NEVER detached
+    let audioPayload = audioData;
+    let audioBuf = null;
+    if (audioData instanceof Float32Array) {
+      const copy = new Float32Array(audioData.length);
+      copy.set(audioData);
+      audioPayload = copy;
+      audioBuf = copy.buffer;
+    } else if (audioData?.buffer instanceof ArrayBuffer) {
+      const copyBuf = audioData.buffer.slice(0);
+      audioPayload = new Float32Array(copyBuf);
+      audioBuf = copyBuf;
+    }
+
     const transferables = [
       modelBuf,
       contentVecBuf,
       rmvpeBuf,
       ...(indexBuf ? [indexBuf] : []),
-      audioData.buffer
+      audioBuf
     ].filter(b => b instanceof ArrayBuffer && b.byteLength > 0);
 
     worker.postMessage(
@@ -92,7 +107,7 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
         type: "RUN_PIPELINE",
         wasmBaseUrl: ctx.wasmBaseUrl,
         audio: {
-          data: audioData,
+          data: audioPayload,
           sampleRate: audioSampleRate
         },
         files: {
