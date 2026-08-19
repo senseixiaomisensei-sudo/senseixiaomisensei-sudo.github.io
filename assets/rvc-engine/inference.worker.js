@@ -12136,7 +12136,7 @@ const RMVPE_PARAMS = {
   nFft: 1024,
   hopLength: 160,
   sampleRate: 16e3,
-  fMin: 30,
+  fMin: 0,
   fMax: 8e3,
   nClass: 360,
   // Output dimension of RMVPE
@@ -12394,7 +12394,7 @@ async function runRmvpeInference(session, audio) {
       f0 = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         const hz = i < outputFrames ? data[i] : 0;
-        f0[i] = hz >= 50 && hz <= 1100 ? hz : 0;
+        f0[i] = hz >= 50 && hz <= 1600 ? hz : 0;
       }
     } else if (outputTensor.dims.length === 3 && (outputTensor.dims[1] === RMVPE_PARAMS.nClass || outputTensor.dims[2] === RMVPE_PARAMS.nClass)) {
       const salienceData = outputTensor.data;
@@ -12404,7 +12404,7 @@ async function runRmvpeInference(session, audio) {
       f0 = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         const hz = i < f0All.length ? f0All[i] : 0;
-        f0[i] = hz >= 50 && hz <= 1100 ? hz : 0;
+        f0[i] = hz >= 50 && hz <= 1600 ? hz : 0;
       }
     } else {
       throw new Error(
@@ -12596,7 +12596,7 @@ async function estimatePitch(audio, options) {
   };
 }
 const F0_MIN = 50;
-const F0_MAX = 1100;
+const F0_MAX = 1600;
 const F0_MEL_MIN = 1127 * Math.log(1 + F0_MIN / 700);
 const F0_MEL_MAX = 1127 * Math.log(1 + F0_MAX / 700);
 function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift = 0) {
@@ -12624,8 +12624,8 @@ function applyPitchShift(f0, semitones) {
   for (let i = 0; i < f0.length; i++) {
     const rawHz = f0[i] * factor;
     if (rawHz > 0) {
-      // Physiological acoustic ceiling (820Hz) prevents NSF carrier hypersonic comb resonance
-      shifted[i] = Math.min(820, Math.max(50, rawHz));
+      // Cap at 1600Hz to match NSF carrier range for all voice types including high-pitched characters
+      shifted[i] = Math.min(1600, Math.max(50, rawHz));
     } else {
       shifted[i] = 0;
     }
@@ -12808,12 +12808,13 @@ function applyRmsVolumeEnvelope(input16k, synth40k, rmsMixRate = 0.25) {
 function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
   if (!audio || audio.length === 0) return audio;
   const processed = new Float32Array(audio.length);
+  // Only soft-clip peaks above 0.97 to prevent clipping while preserving natural dynamics
   for (let i = 0; i < audio.length; i++) {
     const val = audio[i];
     const absV = Math.abs(val);
-    if (absV > 0.85) {
-      const overshoot = absV - 0.85;
-      const compressed = 0.85 + 0.12 * Math.tanh(overshoot / 0.12);
+    if (absV > 0.97) {
+      const overshoot = absV - 0.97;
+      const compressed = 0.97 + 0.025 * Math.tanh(overshoot / 0.025);
       processed[i] = val < 0 ? -compressed : compressed;
     } else {
       processed[i] = val;
@@ -12843,19 +12844,12 @@ function encodeMonoPcmToWav(audio, options = {}) {
   writeAscii(view, 36, "data");
   view.setUint32(40, dataSize, true);
 
-  let maxPeak = 0;
-  for (let i = 0; i < audio.length; i += 1) {
-    const val = Math.abs(audio[i]);
-    if (val > maxPeak && !isNaN(val)) maxPeak = val;
-  }
-  const normScale = maxPeak > 0.85 ? 0.85 / maxPeak : 1.0;
-
   let offset = 44;
   for (let i = 0; i < audio.length; i += 1) {
-    let s = audio[i] * normScale;
+    let s = audio[i];
     if (isNaN(s)) s = 0;
-    if (s > 0.99) s = 0.99;
-    else if (s < -0.99) s = -0.99;
+    if (s > 0.999) s = 0.999;
+    else if (s < -0.999) s = -0.999;
     const int16 = s < 0 ? Math.round(s * 32768) : Math.round(s * 32767);
     view.setInt16(offset, int16, true);
     offset += bytesPerSample;

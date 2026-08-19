@@ -72,11 +72,10 @@ server.listen(PORT, async () => {
     console.log("=== Starting 2nd Consecutive Conversion ===");
     await convertBtn.click();
 
-    // Wait for 2nd completion
     await page.waitForFunction(() => {
       const btn = document.getElementById("rvc-convert");
       return btn && !btn.disabled && btn.getAttribute("aria-busy") !== "true";
-    }, { timeout: 120000 });
+    }, null, { timeout: 120000 });
     console.log("✅ 2nd Consecutive Conversion succeeded without detached buffer errors!");
 
     await page.waitForTimeout(1000);

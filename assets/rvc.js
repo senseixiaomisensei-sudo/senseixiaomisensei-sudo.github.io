@@ -835,33 +835,48 @@
       const isHubertReady = hubertCached instanceof Blob && hubertCached.size > 1024 * 1024;
       const isRmvpeReady = rmvpeCached instanceof Blob && rmvpeCached.size > 1024 * 1024;
 
+      // Also check selected character model cache
+      const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
+      let isCharReady = false;
+      let charName = "";
+      if (selectedModel) {
+        const charCached = await getCachedItem(`${selectedModel.id}.onnx`);
+        isCharReady = charCached instanceof Blob && charCached.size > 1024 * 1024;
+        charName = selectedModel.name;
+      }
+
       const cacheStatusEl = document.getElementById("rvc-cache-status");
       const preloadBtn = document.getElementById("rvc-preload-btn");
       const clearBtn = document.getElementById("rvc-clear-cache-btn");
 
-      if (isHubertReady && isRmvpeReady) {
+      const baseReady = isHubertReady && isRmvpeReady;
+      const allReady = baseReady && (!selectedModel || isCharReady);
+
+      if (allReady) {
         if (cacheStatusEl) {
-          const totalMb = ((hubertCached.size + rmvpeCached.size) / (1024 * 1024)).toFixed(0);
-          cacheStatusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 font-bold text-emerald-700"><i class="fa-solid fa-circle-check text-emerald-500"></i>⚡ 基础模型已在本地闪存就绪 (${totalMb}MB) · 变声免下载</span>`;
+          const totalMb = (
+            ((hubertCached?.size || 0) + (rmvpeCached?.size || 0)) / (1024 * 1024)
+          ).toFixed(0);
+          const charInfo = selectedModel && isCharReady ? `、${charName}` : "";
+          cacheStatusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 font-bold text-emerald-700"><i class="fa-solid fa-circle-check text-emerald-500"></i>⚡ 基础模型${charInfo}已在本地闪存就绪 (${totalMb}MB+) · 变声免下载</span>`;
         }
-        if (preloadBtn) {
-          preloadBtn.classList.add("hidden");
-        }
-        if (clearBtn) {
-          clearBtn.classList.remove("hidden");
-        }
+        if (preloadBtn) preloadBtn.classList.add("hidden");
+        if (clearBtn) clearBtn.classList.remove("hidden");
       } else {
         if (cacheStatusEl) {
-          cacheStatusEl.innerHTML = `<span class="text-muted"><i class="fa-solid fa-circle-info text-sky-500 mr-1"></i>基础模型尚未预热。点击右侧按钮可提前下载到本地，变声时免去等待。</span>`;
+          const missingParts = [];
+          if (!isHubertReady) missingParts.push("HuBERT");
+          if (!isRmvpeReady) missingParts.push("RMVPE");
+          if (selectedModel && !isCharReady) missingParts.push(charName || "角色模型");
+          const missingStr = missingParts.length ? `（未缓存：${missingParts.join("、")}）` : "";
+          cacheStatusEl.innerHTML = `<span class="text-muted"><i class="fa-solid fa-circle-info text-sky-500 mr-1"></i>部分模型尚未预热${missingStr}，点击右侧按钮可提前下载到本地，变声时免去等待。</span>`;
         }
         if (preloadBtn) {
           preloadBtn.classList.remove("hidden");
           preloadBtn.disabled = false;
-          preloadBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down mr-1"></i><span>一键预热基础模型</span>`;
+          preloadBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down mr-1"></i><span>一键预热全部模型</span>`;
         }
-        if (clearBtn) {
-          clearBtn.classList.add("hidden");
-        }
+        if (clearBtn) clearBtn.classList.add("hidden");
       }
     } catch (e) {
       console.warn("checkCacheStatus error:", e);
@@ -884,39 +899,55 @@
     try {
       const hubertCfg = state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert;
       const rmvpeCfg = state.baseModels?.rmvpe || EMBEDDED_BASE_MODELS.rmvpe;
+      const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
 
       let hubertLoaded = 0;
       let hubertTotal = (hubertCfg.chunks?.length || 19) * 20 * 1024 * 1024;
       let rmvpeLoaded = 0;
       let rmvpeTotal = (rmvpeCfg.chunks?.length || 18) * 20 * 1024 * 1024;
+      let charLoaded = 0;
+      let charTotal = selectedModel ? (selectedModel.chunks?.length || 6) * 20 * 1024 * 1024 : 0;
 
       const updatePreloadUI = (msg) => {
-        const total = hubertTotal + rmvpeTotal;
-        const loaded = hubertLoaded + rmvpeLoaded;
-        const pct = Math.min(100, Math.round((loaded / total) * 100));
+        const total = hubertTotal + rmvpeTotal + charTotal;
+        const loaded = hubertLoaded + rmvpeLoaded + charLoaded;
+        const pct = Math.min(100, Math.round(total > 0 ? (loaded / total) * 100 : 0));
         if (progressBar) progressBar.style.width = `${pct}%`;
         if (percentText) percentText.textContent = `${pct}%`;
         if (statusText && msg) statusText.textContent = msg;
       };
 
-      await Promise.all([
+      const tasks = [
         loadModelAuto(hubertCfg, "hubert.onnx", "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
           hubertLoaded = loaded;
           if (total) hubertTotal = total;
-          updatePreloadUI(msg || `⏳ 正在下载 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+          updatePreloadUI(msg || `⏳ 正在缓存 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
         }),
         loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE 音高模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
           rmvpeLoaded = loaded;
           if (total) rmvpeTotal = total;
-          updatePreloadUI(msg || `⏳ 正在下载 RMVPE 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+          updatePreloadUI(msg || `⏳ 正在缓存 RMVPE 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
         }),
-      ]);
+      ];
+
+      if (selectedModel) {
+        tasks.push(
+          loadModelAuto(selectedModel, `${selectedModel.id}.onnx`, selectedModel.name, "application/onnx", (loaded, total, c, t, cached, msg) => {
+            charLoaded = loaded;
+            if (total) charTotal = total;
+            updatePreloadUI(msg || `⏳ 正在缓存 ${selectedModel.name} 角色模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+          })
+        );
+      }
+
+      await Promise.all(tasks);
 
       if (progressBar) progressBar.style.width = `100%`;
       if (percentText) percentText.textContent = `100%`;
-      if (statusText) statusText.textContent = `🎉 基础模型预热完成！已存入浏览器闪存。`;
+      const charMsg = selectedModel ? `、${selectedModel.name}` : "";
+      if (statusText) statusText.textContent = `🎉 基础模型${charMsg}预热完成！已存入浏览器闪存。`;
 
-      showToast("🎉 基础模型预热完成！下次变声将直接从闪存秒级启动。");
+      showToast(`🎉 预热完成！下次变声将直接从闪存秒级启动。`);
       await checkCacheStatus();
       setTimeout(() => {
         if (progressWrap) progressWrap.classList.add("hidden");
@@ -1005,10 +1036,15 @@
       if (!state.busy) {
         const hubertCfg = state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert;
         const rmvpeCfg = state.baseModels?.rmvpe || EMBEDDED_BASE_MODELS.rmvpe;
-        Promise.all([
-          loadModelAuto(hubertCfg, "hubert.onnx", "application/onnx", () => {}),
-          loadModelAuto(rmvpeCfg, "rmvpe.onnx", "application/onnx", () => {}),
-        ]).then(() => checkCacheStatus()).catch(() => {});
+        const silentCharModel = state.catalog.find((m) => m.id === state.selectedModelId);
+        const tasks = [
+          loadModelAuto(hubertCfg, "hubert.onnx", "HuBERT", "application/onnx", () => {}),
+          loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE", "application/onnx", () => {}),
+        ];
+        if (silentCharModel) {
+          tasks.push(loadModelAuto(silentCharModel, `${silentCharModel.id}.onnx`, silentCharModel.name, "application/onnx", () => {}));
+        }
+        Promise.all(tasks).then(() => checkCacheStatus()).catch(() => {});
       }
     }, 3000);
   }
@@ -1142,7 +1178,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v5", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v6", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
