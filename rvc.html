@@ -43,8 +43,43 @@
           <span class="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-brand"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-rvc-i18n="privacyBadge">用完即删</span></span>
         </div>
 
+        <!-- 引擎预热与本地加速 -->
+        <div id="rvc-prewarm-card" class="mt-6 rounded-xl border border-teal-100 bg-teal-50/60 p-4 sm:p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-brand text-white text-xs shadow-xs">
+                  <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+                </span>
+                <p class="text-sm font-black text-ink">模型预热与本地加速</p>
+              </div>
+              <p id="rvc-cache-status" class="mt-1.5 text-xs leading-5 text-muted">
+                <i class="fa-solid fa-circle-notch fa-spin text-brand mr-1" aria-hidden="true"></i>正在检查本地模型缓存…
+              </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button id="rvc-preload-btn" type="button" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
+                <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i><span>一键预热基础模型</span>
+              </button>
+              <button id="rvc-clear-cache-btn" type="button" class="hidden inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-2 text-xs font-bold text-zinc-600 shadow-xs transition hover:text-red-600 hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" title="清理浏览器本地已缓存的模型">
+                <i class="fa-solid fa-trash-can" aria-hidden="true"></i><span>清理缓存</span>
+              </button>
+            </div>
+          </div>
+          <!-- 预热进度条 -->
+          <div id="rvc-preload-progress-wrap" class="mt-3 hidden">
+            <div class="flex items-center justify-between text-xs text-muted mb-1.5">
+              <span id="rvc-preload-status-text">⏳ 正在预热基础模型…</span>
+              <span id="rvc-preload-percent-text" class="font-bold text-brand">0%</span>
+            </div>
+            <div class="h-2 w-full overflow-hidden rounded-full bg-teal-100">
+              <div id="rvc-preload-progress-bar" class="h-full bg-brand transition-all duration-150" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Step 1: 选择角色 -->
-        <div class="mt-7">
+        <div class="mt-7 border-t border-line pt-6">
           <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end sm:gap-3">
             <div class="min-w-0">
               <p class="text-sm font-bold" id="rvc-step-model-label" data-rvc-i18n="stepModel">1. 选择角色声音</p>
@@ -233,8 +268,8 @@
 
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
-  <script src="assets/postprep-config.js?v=20260819-v3"></script>
-  <script src="assets/postprep.js?v=20260819-v3"></script>
-  <script src="assets/rvc.js?v=20260819-v3"></script>
+  <script src="assets/postprep-config.js?v=20260819-v4"></script>
+  <script src="assets/postprep.js?v=20260819-v4"></script>
+  <script src="assets/rvc.js?v=20260819-v4"></script>
 </body>
 </html>

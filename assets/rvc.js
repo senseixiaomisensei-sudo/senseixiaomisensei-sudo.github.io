@@ -832,15 +832,119 @@
     try {
       const hubertCached = await getCachedItem("hubert.onnx");
       const rmvpeCached = await getCachedItem("rmvpe.onnx");
+      const isHubertReady = hubertCached instanceof Blob && hubertCached.size > 1024 * 1024;
+      const isRmvpeReady = rmvpeCached instanceof Blob && rmvpeCached.size > 1024 * 1024;
+
       const cacheStatusEl = document.getElementById("rvc-cache-status");
       const preloadBtn = document.getElementById("rvc-preload-btn");
-      if (hubertCached && rmvpeCached) {
+      const clearBtn = document.getElementById("rvc-clear-cache-btn");
+
+      if (isHubertReady && isRmvpeReady) {
         if (cacheStatusEl) {
-          cacheStatusEl.innerHTML = `<i class="fa-solid fa-bolt text-emerald-500"></i><span class="text-emerald-700">⚡ 基础模型已在本地就绪 · 秒级极速变声 (0MB 下载)</span>`;
+          const totalMb = ((hubertCached.size + rmvpeCached.size) / (1024 * 1024)).toFixed(0);
+          cacheStatusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 font-bold text-emerald-700"><i class="fa-solid fa-circle-check text-emerald-500"></i>⚡ 基础模型已在本地闪存就绪 (${totalMb}MB) · 变声免下载</span>`;
         }
-        if (preloadBtn) preloadBtn.classList.add("hidden");
+        if (preloadBtn) {
+          preloadBtn.classList.add("hidden");
+        }
+        if (clearBtn) {
+          clearBtn.classList.remove("hidden");
+        }
+      } else {
+        if (cacheStatusEl) {
+          cacheStatusEl.innerHTML = `<span class="text-muted"><i class="fa-solid fa-circle-info text-sky-500 mr-1"></i>基础模型尚未预热。点击右侧按钮可提前下载到本地，变声时免去等待。</span>`;
+        }
+        if (preloadBtn) {
+          preloadBtn.classList.remove("hidden");
+          preloadBtn.disabled = false;
+          preloadBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-down mr-1"></i><span>一键预热基础模型</span>`;
+        }
+        if (clearBtn) {
+          clearBtn.classList.add("hidden");
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("checkCacheStatus error:", e);
+    }
+  }
+
+  async function startManualPrewarm() {
+    const preloadBtn = document.getElementById("rvc-preload-btn");
+    const progressWrap = document.getElementById("rvc-preload-progress-wrap");
+    const progressBar = document.getElementById("rvc-preload-progress-bar");
+    const statusText = document.getElementById("rvc-preload-status-text");
+    const percentText = document.getElementById("rvc-preload-percent-text");
+
+    if (preloadBtn) {
+      preloadBtn.disabled = true;
+      preloadBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-1"></i><span>正在预热中…</span>`;
+    }
+    if (progressWrap) progressWrap.classList.remove("hidden");
+
+    try {
+      const hubertCfg = state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert;
+      const rmvpeCfg = state.baseModels?.rmvpe || EMBEDDED_BASE_MODELS.rmvpe;
+
+      let hubertLoaded = 0;
+      let hubertTotal = (hubertCfg.chunks?.length || 19) * 20 * 1024 * 1024;
+      let rmvpeLoaded = 0;
+      let rmvpeTotal = (rmvpeCfg.chunks?.length || 18) * 20 * 1024 * 1024;
+
+      const updatePreloadUI = (msg) => {
+        const total = hubertTotal + rmvpeTotal;
+        const loaded = hubertLoaded + rmvpeLoaded;
+        const pct = Math.min(100, Math.round((loaded / total) * 100));
+        if (progressBar) progressBar.style.width = `${pct}%`;
+        if (percentText) percentText.textContent = `${pct}%`;
+        if (statusText && msg) statusText.textContent = msg;
+      };
+
+      await Promise.all([
+        loadModelAuto(hubertCfg, "hubert.onnx", "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
+          hubertLoaded = loaded;
+          if (total) hubertTotal = total;
+          updatePreloadUI(msg || `⏳ 正在下载 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+        }),
+        loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE 音高模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
+          rmvpeLoaded = loaded;
+          if (total) rmvpeTotal = total;
+          updatePreloadUI(msg || `⏳ 正在下载 RMVPE 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+        }),
+      ]);
+
+      if (progressBar) progressBar.style.width = `100%`;
+      if (percentText) percentText.textContent = `100%`;
+      if (statusText) statusText.textContent = `🎉 基础模型预热完成！已存入浏览器闪存。`;
+
+      showToast("🎉 基础模型预热完成！下次变声将直接从闪存秒级启动。");
+      await checkCacheStatus();
+      setTimeout(() => {
+        if (progressWrap) progressWrap.classList.add("hidden");
+      }, 3000);
+    } catch (err) {
+      console.error("Prewarm failed:", err);
+      showToast("❌ 预热失败，请重试");
+      if (statusText) statusText.textContent = `❌ 预热失败: ${err.message || err}`;
+      if (preloadBtn) {
+        preloadBtn.disabled = false;
+        preloadBtn.innerHTML = `<i class="fa-solid fa-rotate-right mr-1"></i><span>重新预热</span>`;
+      }
+    }
+  }
+
+  async function clearModelCache() {
+    try {
+      await removeCachedItem("hubert.onnx");
+      await removeCachedItem("rmvpe.onnx");
+      for (const m of state.catalog) {
+        await removeCachedItem(`${m.id}.onnx`);
+      }
+      showToast("🗑️ 本地模型缓存已清理");
+      await checkCacheStatus();
+    } catch (e) {
+      console.warn("Failed to clear cache:", e);
+      showToast("清理缓存失败");
+    }
   }
 
   function updateStatusDisplay(msg) {
@@ -1038,7 +1142,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v3", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v4", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1312,6 +1416,16 @@
     const convertBtn = document.getElementById("rvc-convert");
     if (convertBtn) {
       convertBtn.addEventListener("click", () => runWebRvcInference());
+    }
+
+    // Preload & Cache Management Buttons
+    const preloadBtn = document.getElementById("rvc-preload-btn");
+    if (preloadBtn) {
+      preloadBtn.addEventListener("click", () => startManualPrewarm());
+    }
+    const clearCacheBtn = document.getElementById("rvc-clear-cache-btn");
+    if (clearCacheBtn) {
+      clearCacheBtn.addEventListener("click", () => clearModelCache());
     }
 
     setupRecording();
