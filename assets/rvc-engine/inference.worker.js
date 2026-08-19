@@ -8494,6 +8494,8 @@ function mergeProcessedChunks(chunks, config = {}) {
   const padDuration = config.padDuration ?? DEFAULT_PAD_DURATION;
   const outputSampleRate = config.outputSampleRate ?? DEFAULT_OUTPUT_SAMPLE_RATE;
   const padSamples = Math.floor(padDuration * outputSampleRate);
+  const crossfadeSamples = Math.min(Math.floor(outputSampleRate * 0.05), Math.floor(padSamples / 2)); // 50ms smooth crossfade
+
   let totalLength = 0;
   const trimmedChunks = [];
   for (let i = 0; i < chunks.length; i++) {
@@ -8509,11 +8511,38 @@ function mergeProcessedChunks(chunks, config = {}) {
     trimmedChunks.push(trimmed);
     totalLength += trimmed.length;
   }
-  const result = new Float32Array(totalLength);
-  let offset = 0;
-  for (const trimmed of trimmedChunks) {
-    result.set(trimmed, offset);
-    offset += trimmed.length;
+
+  if (crossfadeSamples <= 0 || trimmedChunks.length <= 1) {
+    const result = new Float32Array(totalLength);
+    let offset = 0;
+    for (const trimmed of trimmedChunks) {
+      result.set(trimmed, offset);
+      offset += trimmed.length;
+    }
+    return result;
+  }
+
+  const finalLen = totalLength - (trimmedChunks.length - 1) * crossfadeSamples;
+  const result = new Float32Array(Math.max(0, finalLen));
+  let writeOffset = 0;
+
+  for (let i = 0; i < trimmedChunks.length; i++) {
+    const cur = trimmedChunks[i];
+    if (i === 0) {
+      result.set(cur, 0);
+      writeOffset = cur.length - crossfadeSamples;
+    } else {
+      for (let j = 0; j < crossfadeSamples; j++) {
+        const t = j / crossfadeSamples;
+        const wOut = Math.cos(t * Math.PI * 0.5);
+        const wIn = Math.sin(t * Math.PI * 0.5);
+        result[writeOffset + j] = result[writeOffset + j] * wOut + cur[j] * wIn;
+      }
+      if (cur.length > crossfadeSamples) {
+        result.set(cur.subarray(crossfadeSamples), writeOffset + crossfadeSamples);
+      }
+      writeOffset += cur.length - crossfadeSamples;
+    }
   }
   return result;
 }
@@ -12622,12 +12651,17 @@ function buildQuantizedPitch(f0, frameCount) {
 function buildRndTensor(frameCount) {
   const size = 1 * 192 * frameCount;
   const data = new Float32Array(size);
-  for (let i = 0; i < size; i++) {
-    let sum = 0;
-    for (let j = 0; j < 12; j++) {
-      sum += Math.random();
+  const noiseScale = 0.667; // VITS standard noise_scale for natural human vocal timbre
+  for (let i = 0; i < size; i += 2) {
+    let u1 = Math.random();
+    let u2 = Math.random();
+    while (u1 <= 1e-7) u1 = Math.random();
+    const radius = Math.sqrt(-2.0 * Math.log(u1)) * noiseScale;
+    const theta = 2.0 * Math.PI * u2;
+    data[i] = radius * Math.cos(theta);
+    if (i + 1 < size) {
+      data[i + 1] = radius * Math.sin(theta);
     }
-    data[i] = sum - 6;
   }
   return new Te("float32", data, [1, 192, frameCount]);
 }

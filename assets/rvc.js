@@ -377,17 +377,19 @@
     } catch (e) {}
   }
 
-  // Multi-CDN Candidate URLs for any relative chunk path (Live-Tested Fast Mirror Order)
+  // Multi-CDN Candidate URLs for any relative chunk path (Live-Tested Fast Mirror Order in China)
   function getChunkMirrorUrls(relPath) {
     const cleanPath = relPath.startsWith("/") ? relPath.slice(1) : relPath;
     const sameOriginUrl = new URL(cleanPath, window.location.href).href;
     const rawGhUrl = `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`;
     return [
-      `https://cdn.jsdmirror.com/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       sameOriginUrl,
       `https://gh-proxy.com/${rawGhUrl}`,
       `https://ghproxy.net/${rawGhUrl}`,
-      `https://cdn.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://fastly.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://cdn.jsdmirror.com/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
     ];
   }
 
@@ -1037,7 +1039,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-clean", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v2", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1227,13 +1229,65 @@
       });
     }
 
-    // Slider pitch feedback
+    // Voice Preset Buttons (Male->Female +12, Female->Female 0, Female->Male -12)
+    const btnPresetMaleFemale = document.getElementById("rvc-preset-male-female");
+    const btnPresetSame = document.getElementById("rvc-preset-same");
+    const btnPresetFemaleMale = document.getElementById("rvc-preset-female-male");
     const pitchInput = document.getElementById("rvc-pitch");
     const pitchVal = document.getElementById("rvc-pitch-value");
+    const pitchTip = document.getElementById("rvc-pitch-tip");
+
+    const setPitchMode = (pitch, tip, activeBtn) => {
+      if (pitchInput) pitchInput.value = String(pitch);
+      if (pitchVal) pitchVal.textContent = (pitch > 0 ? "+" : "") + pitch;
+      if (pitchTip) pitchTip.textContent = tip;
+      [btnPresetMaleFemale, btnPresetSame, btnPresetFemaleMale].forEach((b) => {
+        if (!b) return;
+        const isActive = b === activeBtn;
+        b.setAttribute("aria-pressed", isActive ? "true" : "false");
+        if (isActive) {
+          b.className = "inline-flex items-center gap-1.5 rounded-lg border border-brand bg-teal-50 px-3 py-1.5 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1";
+        } else {
+          b.className = "inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink shadow-xs transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1";
+        }
+      });
+    };
+
+    if (btnPresetMaleFemale) {
+      btnPresetMaleFemale.addEventListener("click", () => {
+        setPitchMode(12, "✨ 当前已设为 +12 半音：男声变萌妹角色黄金法则，声带频率完美共鸣，彻底告别低频金属电锯音。", btnPresetMaleFemale);
+      });
+    }
+
+    if (btnPresetSame) {
+      btnPresetSame.addEventListener("click", () => {
+        setPitchMode(0, "✨ 当前已设为 0 半音：女声变女角色保持自然原调，还原原汁原味角色音色。", btnPresetSame);
+      });
+    }
+
+    if (btnPresetFemaleMale) {
+      btnPresetFemaleMale.addEventListener("click", () => {
+        setPitchMode(-12, "✨ 当前已设为 -12 半音：女声变男角色降低 1 个八度，沉稳低厚自然。", btnPresetFemaleMale);
+      });
+    }
+
+    // Slider pitch feedback
     if (pitchInput && pitchVal) {
       pitchInput.addEventListener("input", (e) => {
         const val = parseInt(e.target.value, 10);
         pitchVal.textContent = (val > 0 ? "+" : "") + val;
+        [btnPresetMaleFemale, btnPresetSame, btnPresetFemaleMale].forEach((b) => {
+          if (b) {
+            b.setAttribute("aria-pressed", "false");
+            b.className = "inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink shadow-xs transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1";
+          }
+        });
+        if (pitchTip) {
+          if (val === 12) pitchTip.textContent = "✨ 当前已设为 +12 半音：男声变女角色标准黄金音高。";
+          else if (val === 0) pitchTip.textContent = "✨ 当前已设为 0 半音：原调输出。";
+          else if (val === -12) pitchTip.textContent = "✨ 当前已设为 -12 半音：女声变男角色标准音高。";
+          else pitchTip.textContent = `🎛️ 自定义音高偏移: ${(val > 0 ? "+" : "")}${val} 半音。`;
+        }
       });
     }
 

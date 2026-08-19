@@ -90,20 +90,34 @@
 
         <!-- Step 3: 简单设置 -->
         <div class="mt-7 border-t border-line pt-6">
-          <p class="text-sm font-bold" data-rvc-i18n="stepSettings">3. 调节声音（可选）</p>
-          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepSettingsHint">大多数时候保持默认就好。想更贴近角色音色，可以把“相似度”调高一些。</p>
+          <p class="text-sm font-bold" data-rvc-i18n="stepSettings">3. 调节声音与音调匹配</p>
+          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepSettingsHint">为避免变声出现金属嗡鸣，变女声建议选“男声变女声（+12）”；同性别变声选“原声（0）”。</p>
 
-          <div class="mt-5">
+          <!-- 一键声音模式预设 -->
+          <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="输入人声预设">
+            <button id="rvc-preset-male-female" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-brand bg-teal-50 px-3 py-1.5 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" aria-pressed="true">
+              <i class="fa-solid fa-mars" aria-hidden="true"></i><span>男声变女角色 (+12)</span>
+            </button>
+            <button id="rvc-preset-same" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink shadow-xs transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" aria-pressed="false">
+              <i class="fa-solid fa-venus" aria-hidden="true"></i><span>女声变女角色 (0)</span>
+            </button>
+            <button id="rvc-preset-female-male" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink shadow-xs transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" aria-pressed="false">
+              <i class="fa-solid fa-arrows-split-up-and-left" aria-hidden="true"></i><span>女声变男角色 (-12)</span>
+            </button>
+          </div>
+
+          <div class="mt-4">
             <div class="flex items-center justify-between gap-3">
-              <label for="rvc-pitch" class="text-sm font-bold" data-rvc-i18n="pitchLabel">音高</label>
-              <span id="rvc-pitch-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0</span>
+              <label for="rvc-pitch" class="text-sm font-bold" data-rvc-i18n="pitchLabel">音高调节（半音）</label>
+              <span id="rvc-pitch-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">+12</span>
             </div>
-            <input id="rvc-pitch" type="range" min="-12" max="12" step="1" value="0" class="rvc-range mt-3 w-full" aria-describedby="rvc-pitch-hint">
+            <input id="rvc-pitch" type="range" min="-12" max="12" step="1" value="12" class="rvc-range mt-3 w-full" aria-describedby="rvc-pitch-hint">
             <div class="mt-1 flex justify-between text-xs text-muted" id="rvc-pitch-hint">
               <span data-rvc-i18n="pitchLow">低沉（-12）</span>
               <span data-rvc-i18n="pitchDefault">原声（0）</span>
               <span data-rvc-i18n="pitchHigh">清脆（+12）</span>
             </div>
+            <p id="rvc-pitch-tip" class="mt-1 text-xs leading-5 text-brand font-medium">✨ 当前已设为 +12 半音：男声变萌妹角色黄金法则，声带频率完美共鸣，彻底告别低频金属电锯音。</p>
           </div>
 
           <details class="mt-6 rounded-lg border border-line bg-canvas px-4 py-3" id="rvc-advanced">
@@ -219,8 +233,8 @@
 
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
-  <script src="assets/postprep-config.js?v=20260819-clean"></script>
-  <script src="assets/postprep.js?v=20260819-clean"></script>
-  <script src="assets/rvc.js?v=20260819-clean"></script>
+  <script src="assets/postprep-config.js?v=20260819-v2"></script>
+  <script src="assets/postprep.js?v=20260819-v2"></script>
+  <script src="assets/rvc.js?v=20260819-v2"></script>
 </body>
 </html>
