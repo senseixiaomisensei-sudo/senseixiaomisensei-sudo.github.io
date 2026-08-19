@@ -12817,21 +12817,88 @@ function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSa
   }
   return output;
 }
+function createBiquadLowShelf(f0, gainDb, sr) {
+  const w0 = 2.0 * Math.PI * f0 / sr;
+  const A = Math.pow(10.0, gainDb / 40.0);
+  const alpha = Math.sin(w0) / 2.0 * Math.sqrt(2.0);
+  const b0 = A * ((A + 1.0) - (A - 1.0) * Math.cos(w0) + 2.0 * Math.sqrt(A) * alpha);
+  const b1 = 2.0 * A * ((A - 1.0) - (A + 1.0) * Math.cos(w0));
+  const b2 = A * ((A + 1.0) - (A - 1.0) * Math.cos(w0) - 2.0 * Math.sqrt(A) * alpha);
+  const a0 = (A + 1.0) + (A - 1.0) * Math.cos(w0) + 2.0 * Math.sqrt(A) * alpha;
+  const a1 = -2.0 * ((A - 1.0) + (A + 1.0) * Math.cos(w0));
+  const a2 = (A + 1.0) + (A - 1.0) * Math.cos(w0) - 2.0 * Math.sqrt(A) * alpha;
+  return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+
+function createBiquadPeaking(f0, gainDb, Q, sr) {
+  const w0 = 2.0 * Math.PI * f0 / sr;
+  const A = Math.pow(10.0, gainDb / 40.0);
+  const alpha = Math.sin(w0) / (2.0 * Q);
+  const b0 = 1.0 + alpha * A;
+  const b1 = -2.0 * Math.cos(w0);
+  const b2 = 1.0 - alpha * A;
+  const a0 = 1.0 + alpha / A;
+  const a1 = -2.0 * Math.cos(w0);
+  const a2 = 1.0 - alpha / A;
+  return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+
+function createBiquadHighShelf(f0, gainDb, sr) {
+  const w0 = 2.0 * Math.PI * f0 / sr;
+  const A = Math.pow(10.0, gainDb / 40.0);
+  const alpha = Math.sin(w0) / 2.0 * Math.sqrt(2.0);
+  const b0 = A * ((A + 1.0) + (A - 1.0) * Math.cos(w0) + 2.0 * Math.sqrt(A) * alpha);
+  const b1 = -2.0 * A * ((A - 1.0) + (A + 1.0) * Math.cos(w0));
+  const b2 = A * ((A + 1.0) + (A - 1.0) * Math.cos(w0) - 2.0 * Math.sqrt(A) * alpha);
+  const a0 = (A + 1.0) - (A - 1.0) * Math.cos(w0) + 2.0 * Math.sqrt(A) * alpha;
+  const a1 = 2.0 * ((A - 1.0) - (A + 1.0) * Math.cos(w0));
+  const a2 = (A + 1.0) - (A - 1.0) * Math.cos(w0) - 2.0 * Math.sqrt(A) * alpha;
+  return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+
+function applyBiquadFilterInPlace(audio, coeffs) {
+  const [b0, b1, b2, a1, a2] = coeffs;
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < audio.length; i++) {
+    const x0 = audio[i];
+    const y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    audio[i] = y0;
+    x2 = x1;
+    x1 = x0;
+    y2 = y1;
+    y1 = y0;
+  }
+}
+
 function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
   if (!audio || audio.length === 0) return audio;
-  const processed = new Float32Array(audio.length);
-  // Only soft-clip peaks above 0.97 to prevent clipping while preserving natural dynamics
-  for (let i = 0; i < audio.length; i++) {
-    const val = audio[i];
-    const absV = Math.abs(val);
-    if (absV > 0.97) {
-      const overshoot = absV - 0.97;
-      const compressed = 0.97 + 0.025 * Math.tanh(overshoot / 0.025);
-      processed[i] = val < 0 ? -compressed : compressed;
-    } else {
-      processed[i] = val;
+  const processed = new Float32Array(audio);
+
+  // 1. Restore vocal body & human warmth: +3.0dB @ 350Hz low-shelf
+  const lowShelf = createBiquadLowShelf(350, 3.0, sampleRate);
+  applyBiquadFilterInPlace(processed, lowShelf);
+
+  // 2. Eliminate HiFiGAN robotic metallic resonance: -3.8dB @ 4800Hz peaking notch (Q=1.2)
+  const harshNotch = createBiquadPeaking(4800, -3.8, 1.2, sampleRate);
+  applyBiquadFilterInPlace(processed, harshNotch);
+
+  // 3. Smooth ultra-high sibilance sizzle: -2.0dB @ 8000Hz high-shelf
+  const highShelf = createBiquadHighShelf(8000, -2.0, sampleRate);
+  applyBiquadFilterInPlace(processed, highShelf);
+
+  // 4. Transparent peak limiter
+  let maxPeak = 0;
+  for (let i = 0; i < processed.length; i++) {
+    const abs = Math.abs(processed[i]);
+    if (abs > maxPeak && !isNaN(abs)) maxPeak = abs;
+  }
+  if (maxPeak > 0.95) {
+    const scale = 0.95 / maxPeak;
+    for (let i = 0; i < processed.length; i++) {
+      processed[i] *= scale;
     }
   }
+
   return processed;
 }
 function encodeMonoPcmToWav(audio, options = {}) {
