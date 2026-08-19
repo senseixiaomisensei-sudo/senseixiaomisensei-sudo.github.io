@@ -12395,7 +12395,7 @@ async function runRmvpeInference(session, audio) {
       f0 = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         const hz = i < outputFrames ? data[i] : 0;
-        f0[i] = hz >= 50 && hz <= 1600 ? hz : 0;
+        f0[i] = hz >= 50 && hz <= 1100 ? hz : 0;
       }
     } else if (outputTensor.dims.length === 3 && (outputTensor.dims[1] === RMVPE_PARAMS.nClass || outputTensor.dims[2] === RMVPE_PARAMS.nClass)) {
       const salienceData = outputTensor.data;
@@ -12405,7 +12405,7 @@ async function runRmvpeInference(session, audio) {
       f0 = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         const hz = i < f0All.length ? f0All[i] : 0;
-        f0[i] = hz >= 50 && hz <= 1600 ? hz : 0;
+        f0[i] = hz >= 50 && hz <= 1100 ? hz : 0;
       }
     } else {
       throw new Error(
@@ -12597,7 +12597,8 @@ async function estimatePitch(audio, options) {
   };
 }
 const F0_MIN = 50;
-const F0_MAX = 1600;
+const F0_MAX = 1100; // MUST match RVC v2 training constant: nn.Embedding(256) was trained with f0_mel_max=1127*log(1+1100/700)
+const PITCH_SHIFT_CEILING = 1100; // Continuous Hz ceiling for applyPitchShift (must also match training range)
 const F0_MEL_MIN = 1127 * Math.log(1 + F0_MIN / 700);
 const F0_MEL_MAX = 1127 * Math.log(1 + F0_MAX / 700);
 function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift = 0) {
@@ -12625,8 +12626,8 @@ function applyPitchShift(f0, semitones) {
   for (let i = 0; i < f0.length; i++) {
     const rawHz = f0[i] * factor;
     if (rawHz > 0) {
-      // Cap at 1600Hz to match NSF carrier range for all voice types including high-pitched characters
-      shifted[i] = Math.min(1600, Math.max(50, rawHz));
+      // Cap at training range to keep pitch within the model's learned embedding space
+      shifted[i] = Math.min(PITCH_SHIFT_CEILING, Math.max(F0_MIN, rawHz));
     } else {
       shifted[i] = 0;
     }
