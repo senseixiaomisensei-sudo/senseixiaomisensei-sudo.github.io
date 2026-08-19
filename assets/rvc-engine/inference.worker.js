@@ -8492,7 +8492,8 @@ function mergeProcessedChunks(chunks, config = {}) {
     return chunks[0];
   }
   const padDuration = config.padDuration ?? DEFAULT_PAD_DURATION;
-  const outputSampleRate = config.outputSampleRate ?? DEFAULT_OUTPUT_SAMPLE_RATE;
+  const chunkDuration = config.chunkDuration ?? DEFAULT_CHUNK_DURATION;
+  const outputSampleRate = config.outputSampleRate ?? (chunks[0].length > 0 ? Math.round(chunks[0].length / (chunkDuration + 2 * padDuration)) : DEFAULT_OUTPUT_SAMPLE_RATE);
   const padSamples = Math.floor(padDuration * outputSampleRate);
   const crossfadeSamples = Math.min(Math.floor(outputSampleRate * 0.05), Math.floor(padSamples / 2)); // 50ms smooth crossfade
 
@@ -12758,50 +12759,61 @@ async function synthesizeVoice(session, features, pitch, options = {}) {
   const outputs = await runInference(session, feeds);
   return parseSynthesisOutput(outputs);
 }
-function applyRmsVolumeEnvelope(input16k, synth40k, rmsMixRate = 0.25) {
-  if (!input16k || !synth40k || rmsMixRate <= 0) return synth40k;
-  const win16k = 320;
-  const win40k = 800;
-  const numWindows = Math.min(
-    Math.floor(input16k.length / win16k),
-    Math.floor(synth40k.length / win40k)
-  );
-  if (numWindows === 0) return synth40k;
+function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSampleRate = 40000) {
+  if (!input16k || !synthAudio || rmsMixRate <= 0) return synthAudio;
+  const hop16k = 160;
+  const win16k = 640;
+  const hopSynth = Math.round(synthSampleRate / 100);
+  const winSynth = Math.round(synthSampleRate * 0.04); // 40ms window
 
-  const output = new Float32Array(synth40k);
-  const targetScales = new Float32Array(numWindows);
-  for (let w = 0; w < numWindows; w++) {
+  const numFrames = Math.min(
+    Math.floor((input16k.length - win16k) / hop16k) + 1,
+    Math.floor((synthAudio.length - winSynth) / hopSynth) + 1
+  );
+  if (numFrames <= 0) return synthAudio;
+
+  const targetGains = new Float32Array(numFrames);
+  const exponent = 1.0 - rmsMixRate;
+
+  for (let f = 0; f < numFrames; f++) {
     let sumIn = 0;
-    const inStart = w * win16k;
+    const inStart = f * hop16k;
     for (let i = 0; i < win16k; i++) {
       const s = input16k[inStart + i];
       sumIn += s * s;
     }
-    const rmsIn = Math.sqrt(sumIn / win16k + 1e-6);
+    const rmsIn = Math.sqrt(sumIn / win16k + 1e-8);
 
     let sumSynth = 0;
-    const synthStart = w * win40k;
-    for (let i = 0; i < win40k; i++) {
-      const s = synth40k[synthStart + i];
+    const synthStart = f * hopSynth;
+    for (let i = 0; i < winSynth; i++) {
+      const s = synthAudio[synthStart + i];
       sumSynth += s * s;
     }
-    const rmsSynth = Math.sqrt(sumSynth / win40k + 1e-6);
+    const rmsSynth = Math.sqrt(sumSynth / winSynth + 1e-8);
 
-    const ratio = Math.max(0.70, Math.min(1.20, rmsIn / (rmsSynth + 1e-5)));
-    targetScales[w] = (1 - rmsMixRate) + rmsMixRate * ratio;
+    if (rmsIn < 0.003) {
+      targetGains[f] = 1.0;
+    } else {
+      const rawRatio = Math.pow(rmsIn / Math.max(1e-4, rmsSynth), exponent);
+      targetGains[f] = Math.max(0.2, Math.min(4.0, rawRatio));
+    }
   }
 
-  let currentScale = targetScales[0];
-  for (let w = 0; w < numWindows; w++) {
-    const startScale = currentScale;
-    const nextTarget = targetScales[w];
-    const synthStart = w * win40k;
-    for (let i = 0; i < win40k; i++) {
-      const t = (i + 1) / win40k;
-      const sVal = startScale + (nextTarget - startScale) * t;
-      output[synthStart + i] *= sVal;
+  const output = new Float32Array(synthAudio);
+  let currentGain = targetGains[0];
+
+  for (let f = 0; f < numFrames; f++) {
+    const startGain = currentGain;
+    const nextGain = targetGains[f];
+    const synthStart = f * hopSynth;
+    const frameLen = Math.min(hopSynth, output.length - synthStart);
+    for (let i = 0; i < frameLen; i++) {
+      const t = (i + 1) / frameLen;
+      const g = startGain + (nextGain - startGain) * t;
+      output[synthStart + i] *= g;
     }
-    currentScale = nextTarget;
+    currentGain = nextGain;
   }
   return output;
 }
@@ -12918,6 +12930,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       inputSampleRate: options.inputSampleRate ?? 16e3,
       outputSampleRate: options.outputSampleRate ?? 40e3
     };
+    let detectedSampleRate = options.outputSampleRate;
     const outputAudio = await processAudioInChunks(
       audio,
       async (chunk, currentChunk, totalChunks) => {
@@ -12937,6 +12950,9 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
           speakerId: options.speakerId,
           pitchShift: options.pitchShift
         });
+        if (synthesized.sampleRate && !detectedSampleRate) {
+          detectedSampleRate = synthesized.sampleRate;
+        }
         callbacks.onEvent?.({ type: "chunk_step", step: "done", current: currentChunk, total: totalChunks });
         return synthesized.audio;
       },
@@ -12945,11 +12961,12 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
         callbacks.onEvent?.({ type: "chunk", current, total });
       }
     );
+    const finalSr = detectedSampleRate || options.outputSampleRate || 40e3;
     let finalAudio = outputAudio;
-    // 1. Blend RMS Volume Envelope (Soul / Emotion dynamic retention)
-    finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 0.25);
+    // 1. Blend RMS Volume Envelope (Soul / Emotion dynamic retention with dynamic sample rate)
+    finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 0.25, finalSr);
     // 2. Polish Harmonics & Vocal Air
-    finalAudio = applyHarmonicAirAndWarmth(finalAudio, options.outputSampleRate ?? 40e3);
+    finalAudio = applyHarmonicAirAndWarmth(finalAudio, finalSr);
 
     ctx.outputAudio = finalAudio;
     ctx.hiddenStates = new Float32Array(0);
@@ -12958,7 +12975,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     ctx.inputAudio = void 0;
     emitStage(PIPELINE_STAGES[5]);
     ctx.outputWav = encodeMonoPcmToWav(ctx.outputAudio, {
-      sampleRate: options.outputSampleRate ?? 40e3
+      sampleRate: finalSr
     });
     emitStage("success");
     return ctx;
