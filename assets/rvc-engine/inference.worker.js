@@ -13031,8 +13031,8 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     );
     const finalSr = detectedSampleRate || options.outputSampleRate || 40e3;
     let finalAudio = outputAudio;
-    // 1. Blend RMS Volume Envelope (Soul / Emotion dynamic retention with dynamic sample rate)
-    finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 0.25, finalSr);
+    // 1. Blend RMS Volume Envelope (1.0 = 100% natural neural vocoder dynamics, matching official RVC v2 WebUI)
+    finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 1.0, finalSr);
     // 2. Polish Harmonics & Vocal Air
     finalAudio = applyHarmonicAirAndWarmth(finalAudio, finalSr);
 
