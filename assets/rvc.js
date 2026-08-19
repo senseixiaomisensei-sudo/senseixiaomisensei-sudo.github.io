@@ -377,7 +377,7 @@
     } catch (e) {}
   }
 
-  // Multi-CDN Candidate URLs for any relative chunk path (Live-Tested Fast Mirror Order in China)
+  // Multi-CDN Candidate URLs for any relative chunk path (CORS-Enabled Live-Tested Fast Mirror Order in China)
   function getChunkMirrorUrls(relPath) {
     const cleanPath = relPath.startsWith("/") ? relPath.slice(1) : relPath;
     const sameOriginUrl = new URL(cleanPath, window.location.href).href;
@@ -385,7 +385,6 @@
     return [
       sameOriginUrl,
       `https://gh-proxy.com/${rawGhUrl}`,
-      `https://ghproxy.net/${rawGhUrl}`,
       `https://fastly.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
@@ -1039,7 +1038,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v2", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260819-v3", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({

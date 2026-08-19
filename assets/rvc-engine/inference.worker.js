@@ -12174,38 +12174,62 @@ function computeMelSpectrogram(audio) {
   }
   return melSpec;
 }
+function slaneyHzToMel(hz) {
+  const f_min = 0.0;
+  const f_sp = 200.0 / 3.0;
+  const min_log_hz = 1000.0;
+  const min_log_mel = (min_log_hz - f_min) / f_sp;
+  const logstep = Math.log(6.4) / 27.0;
+  if (hz >= min_log_hz) {
+    return min_log_mel + Math.log(hz / min_log_hz) / logstep;
+  }
+  return (hz - f_min) / f_sp;
+}
+
+function slaneyMelToHz(mel) {
+  const f_min = 0.0;
+  const f_sp = 200.0 / 3.0;
+  const min_log_hz = 1000.0;
+  const min_log_mel = (min_log_hz - f_min) / f_sp;
+  const logstep = Math.log(6.4) / 27.0;
+  if (mel >= min_log_mel) {
+    return min_log_hz * Math.exp(logstep * (mel - min_log_mel));
+  }
+  return f_min + f_sp * mel;
+}
+
 function createMelFilterbank(nFft, nMels, sampleRate, fMin, fMax) {
   const nFftHalf = Math.floor(nFft / 2) + 1;
   const fftfreqs = new Float32Array(nFftHalf);
-  for (let j = 0; j < nFftHalf; j++) fftfreqs[j] = j * sampleRate / nFft;
-  const melMin = hzToMel(fMin);
-  const melMax = hzToMel(fMax);
-  const melF = new Float32Array(nMels + 2);
+  for (let j = 0; j < nFftHalf; j++) {
+    fftfreqs[j] = j * sampleRate / nFft;
+  }
+  const melMin = slaneyHzToMel(fMin);
+  const melMax = slaneyHzToMel(fMax);
+  const hzPoints = new Float32Array(nMels + 2);
   for (let i = 0; i < nMels + 2; i++) {
     const mel = melMin + i * (melMax - melMin) / (nMels + 1);
-    melF[i] = melToHz(mel);
+    hzPoints[i] = slaneyMelToHz(mel);
   }
   const fdiff = new Float32Array(nMels + 1);
-  for (let i = 0; i < nMels + 1; i++) fdiff[i] = melF[i + 1] - melF[i];
+  for (let i = 0; i < nMels + 1; i++) {
+    fdiff[i] = hzPoints[i + 1] - hzPoints[i];
+  }
   const filterbank = [];
   for (let mel = 0; mel < nMels; mel++) {
     const filter = new Float32Array(nFftHalf);
     for (let j = 0; j < nFftHalf; j++) {
-      const lower = (fftfreqs[j] - melF[mel]) / fdiff[mel];
-      const upper = (melF[mel + 2] - fftfreqs[j]) / fdiff[mel + 1];
+      const lower = (fftfreqs[j] - hzPoints[mel]) / fdiff[mel];
+      const upper = (hzPoints[mel + 2] - fftfreqs[j]) / fdiff[mel + 1];
       filter[j] = Math.max(0, Math.min(lower, upper));
     }
-    const enorm = 2.0 / (melF[mel + 2] - melF[mel]);
-    for (let j = 0; j < nFftHalf; j++) filter[j] *= enorm;
+    const enorm = 2.0 / (hzPoints[mel + 2] - hzPoints[mel]);
+    for (let j = 0; j < nFftHalf; j++) {
+      filter[j] *= enorm;
+    }
     filterbank.push(filter);
   }
   return filterbank;
-}
-function hzToMel(hz) {
-  return 2595 * Math.log10(1 + hz / 700);
-}
-function melToHz(mel) {
-  return 700 * (Math.pow(10, mel / 2595) - 1);
 }
 function applyHannWindow(audio, start, nFft) {
   const windowed = new Float32Array(nFft);
@@ -12783,145 +12807,18 @@ function applyRmsVolumeEnvelope(input16k, synth40k, rmsMixRate = 0.25) {
 }
 function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
   if (!audio || audio.length === 0) return audio;
-
-  function makePeakingBiquad(fc, gainDb, q, fs) {
-    const A = Math.pow(10, gainDb / 40.0);
-    const w0 = 2 * Math.PI * fc / fs;
-    const alpha = Math.sin(w0) / (2 * q);
-    const cosW = Math.cos(w0);
-    const b0 = 1 + alpha * A;
-    const b1 = -2 * cosW;
-    const b2 = 1 - alpha * A;
-    const a0 = 1 + alpha / A;
-    const a1 = -2 * cosW;
-    const a2 = 1 - alpha / A;
-    return { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 };
-  }
-
-  function makeBandpassBiquad(fc, q, fs) {
-    const w0 = 2 * Math.PI * fc / fs;
-    const alpha = Math.sin(w0) / (2 * q);
-    const cosW = Math.cos(w0);
-    const b0 = alpha;
-    const b1 = 0;
-    const b2 = -alpha;
-    const a0 = 1 + alpha;
-    const a1 = -2 * cosW;
-    const a2 = 1 - alpha;
-    return { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 };
-  }
-
-  function applyBiquadFilter(inAudio, f) {
-    const out = new Float32Array(inAudio.length);
-    let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-    for (let i = 0; i < inAudio.length; i++) {
-      const x0 = inAudio[i];
-      const y0 = f.b0 * x0 + f.b1 * x1 + f.b2 * x2 - f.a1 * y1 - f.a2 * y2;
-      out[i] = y0;
-      x2 = x1;
-      x1 = x0;
-      y2 = y1;
-      y1 = y0;
-    }
-    return out;
-  }
-
-  // 1. Natural Vocal Chest Warmth (200Hz +1.0dB, Q=0.7)
-  const warmF = makePeakingBiquad(200, 1.0, 0.7, sampleRate);
-  const warmed = applyBiquadFilter(audio, warmF);
-
-  // 2. Continuous Dynamic Harsh Resonance Detector (3400Hz - 5600Hz vs Voice Body 300Hz - 2000Hz)
-  const harshBp = makeBandpassBiquad(4200, 1.0, sampleRate);
-  const bodyBp = makeBandpassBiquad(800, 0.7, sampleRate);
-  const detHarsh = applyBiquadFilter(warmed, harshBp);
-  const detBody = applyBiquadFilter(warmed, bodyBp);
-
-  const blockSize = Math.floor(sampleRate * 0.005); // 5ms analysis windows
-  const numBlocks = Math.floor(warmed.length / blockSize);
-  const gainDbEnv = new Float32Array(warmed.length);
-  let smoothedGainDb = 0.0;
-  const attackCoeff = 0.35;  // Fast attack (<1ms) to catch explosive screams
-  const releaseCoeff = 0.02; // 30ms smooth vocal release
-
-  for (let b = 0; b < numBlocks; b++) {
-    const st = b * blockSize;
-    const en = Math.min(st + blockSize, warmed.length);
-    let sumHarsh = 0, sumBody = 0;
-    for (let i = st; i < en; i++) {
-      sumHarsh += detHarsh[i] * detHarsh[i];
-      sumBody += detBody[i] * detBody[i];
-    }
-    const rmsHarsh = Math.sqrt(sumHarsh / (en - st) + 1e-6);
-    const rmsBody = Math.sqrt(sumBody / (en - st) + 1e-6);
-    const ratio = rmsHarsh / (rmsBody + 1e-4);
-
-    let targetGainDb = 0.0;
-    if (ratio > 0.18) {
-      targetGainDb = -Math.min(9.5, (ratio - 0.18) * 22.0);
-    } else if (rmsHarsh > 0.07) {
-      targetGainDb = -Math.min(8.0, (rmsHarsh - 0.07) * 35.0);
-    }
-
-    for (let i = st; i < en; i++) {
-      if (targetGainDb < smoothedGainDb) {
-        smoothedGainDb += attackCoeff * (targetGainDb - smoothedGainDb);
-      } else {
-        smoothedGainDb += releaseCoeff * (targetGainDb - smoothedGainDb);
-      }
-      gainDbEnv[i] = smoothedGainDb;
-    }
-  }
-
-  // 3. Direct-Form II Transposed Dynamic Peaking Notch
-  // Direct bypass when quiet/normal speaking (100% zero phase distortion & flat)
-  // Smooth dynamic notch at 4200Hz during shouting
-  const w0 = 2 * Math.PI * 4200 / sampleRate;
-  const cosW = Math.cos(w0);
-  const sinW = Math.sin(w0);
-  const alpha = sinW / 2.0;
-
-  const processed = new Float32Array(warmed.length);
-  let s1 = 0, s2 = 0;
-  for (let i = 0; i < warmed.length; i++) {
-    const gDb = gainDbEnv[i];
-    if (Math.abs(gDb) < 0.05) {
-      processed[i] = warmed[i];
-      s1 = 0;
-      s2 = 0;
-    } else {
-      const A = Math.pow(10, gDb / 40.0);
-      const b0 = 1 + alpha * A;
-      const b1 = -2 * cosW;
-      const b2 = 1 - alpha * A;
-      const a0 = 1 + alpha / A;
-      const a1 = -2 * cosW;
-      const a2 = 1 - alpha / A;
-
-      const nb0 = b0 / a0;
-      const nb1 = b1 / a0;
-      const nb2 = b2 / a0;
-      const na1 = a1 / a0;
-      const na2 = a2 / a0;
-
-      const x0 = warmed[i];
-      const y0 = nb0 * x0 + s1;
-      s1 = nb1 * x0 - na1 * y0 + s2;
-      s2 = nb2 * x0 - na2 * y0;
-      processed[i] = y0;
-    }
-  }
-
-  // 4. Soft-Knee Saturation Limiter (tanh)
-  for (let i = 0; i < processed.length; i++) {
-    const val = processed[i];
+  const processed = new Float32Array(audio.length);
+  for (let i = 0; i < audio.length; i++) {
+    const val = audio[i];
     const absV = Math.abs(val);
-    if (absV > 0.70) {
-      const overshoot = absV - 0.70;
-      const compressed = 0.70 + 0.18 * Math.tanh(overshoot / 0.18);
+    if (absV > 0.85) {
+      const overshoot = absV - 0.85;
+      const compressed = 0.85 + 0.12 * Math.tanh(overshoot / 0.12);
       processed[i] = val < 0 ? -compressed : compressed;
+    } else {
+      processed[i] = val;
     }
   }
-
   return processed;
 }
 function encodeMonoPcmToWav(audio, options = {}) {
