@@ -5,11 +5,31 @@
   const MIN_AUDIO_SECONDS = 0.5;
   const WARN_AUDIO_SECONDS = 2;
   const MAX_AUDIO_SECONDS = 600;
-  // 本机 edge-tts 服务（rvc-service）地址。可被 postprep.js 注入 window.__RVC_TTS_BASE__ 覆盖，
-  // 也支持"全机适配"场景填局域网 IP（如 http://192.168.1.3:8080）。默认同源。
-  const TTS_BASE = (typeof window !== "undefined" && window.__RVC_TTS_BASE__) || (window.location.origin);
-  const TTS_ENDPOINT = `${TTS_BASE}/v1/tts`;
-  const TTS_HEALTH_ENDPOINT = `${TTS_BASE}/v1/tts-health`;
+  // 本机 edge-tts 服务（rvc-service）地址。
+  // 优先级：locaStorage 里"一键适配"保存的地址 > 全局注入 __RVC_TTS_BASE__（postprep-config.js）> 同源。
+  // 这样"一键适配"写入本地后立即生效，且支持"全机适配"局域网 IP。
+  const TTS_LOCAL_STORAGE_KEY = "rvcTtsBase";
+  const TTS_INJECTED_BASE = (typeof window !== "undefined" && window.__RVC_TTS_BASE__) || "";
+  const TTS_SAME_ORIGIN = (typeof window !== "undefined" && window.location.origin) || "";
+  const getTtsBase = () => {
+    try {
+      const saved = window.localStorage && window.localStorage.getItem(TTS_LOCAL_STORAGE_KEY);
+      if (saved && typeof saved === "string" && saved.trim()) return saved.trim();
+    } catch (e) {}
+    if (TTS_INJECTED_BASE) return TTS_INJECTED_BASE;
+    return TTS_SAME_ORIGIN;
+  };
+  // 候选探测地址（"一键适配"自动尝试）：
+  // 含同源、常见本机回环、以及注入的单一配置，避免浏览器无法知道内网 IP 的限制。
+  const TTS_CANDIDATES = (() => {
+    const set = new Set();
+    if (TTS_SAME_ORIGIN) set.add(TTS_SAME_ORIGIN);
+    if (TTS_INJECTED_BASE) set.add(TTS_INJECTED_BASE);
+    set.add("http://127.0.0.1:8080");
+    set.add("http://localhost:8080");
+    set.add("http://localhost:8124");
+    return [...set];
+  })();
   const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"]);
 
   const translations = {
@@ -302,6 +322,7 @@
     sourceMode: "upload",
     ttsEnabled: false,
     ttsLoading: false,
+    ttsAdapting: false,
     recording: false,
     mediaRecorder: null,
     recordChunks: [],
@@ -1298,7 +1319,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v17", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v18", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1648,18 +1669,26 @@
     };
 
     // 探测端点是否可达（GET /health 或 OPTIONS），仅用于 UI 状态
+    const probeSingleBase = async (base) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      try {
+        const res = await fetch(`${base}/v1/tts-health`, { method: "GET", signal: controller.signal }).catch(() => null);
+        if (res && res.ok) {
+          try { return (await res.json())?.ready === true; } catch { return true; }
+        }
+      } catch (e) {} finally {
+        clearTimeout(timer);
+      }
+      return false;
+    };
+
     const probeTts = async () => {
       if (state.ttsLoading) return;
       state.ttsLoading = true;
       try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 4000);
-        const res = await fetch(TTS_HEALTH_ENDPOINT, { method: "GET", signal: controller.signal }).catch(() => null);
-        clearTimeout(timer);
-        let ok = false;
-        if (res && res.ok) {
-          try { ok = (await res.json())?.ready === true; } catch { ok = true; }
-        }
+        const base = getTtsBase();
+        const ok = await probeSingleBase(base);
         setTtsReady(ok);
       } catch {
         setTtsReady(false);
@@ -1681,7 +1710,7 @@
       }
       setTtsStatus("正在合成中性人声…（本机 edge-tts）", null);
       try {
-        const res = await fetch(TTS_ENDPOINT, {
+        const res = await fetch(`${getTtsBase()}/v1/tts`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),
@@ -1692,7 +1721,7 @@
         const file = new File([blob], `tts_${Date.now()}.mp3`, { type: res.headers.get("Content-Type") || "audio/mpeg" });
         return file;
       } catch (err) {
-        setTtsStatus(`合成失败：${err.message}。请确认 rvc-service 已启动（本机计算模式）。`, "err");
+        setTtsStatus(`合成失败：${err.message}。可用「一键适配」自动连接本机 rvc-service。`, "err");
         return null;
       }
     };
@@ -1737,6 +1766,59 @@
     const ttsBtn = document.getElementById("rvc-source-tts");
     if (ttsBtn) ttsBtn.addEventListener("click", probeTts);
     setTimeout(probeTts, 1000);
+
+    // 一键适配：自动探测本机 rvc-service → 写入 localStorage（立即生效）→ 下载配置文件
+    const adaptBtn = document.getElementById("rvc-tts-adapt");
+    if (adaptBtn) {
+      adaptBtn.addEventListener("click", async () => {
+        if (state.ttsAdapting) return;
+        state.ttsAdapting = true;
+        adaptBtn.disabled = true;
+        adaptBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>正在自动适配…</span>';
+        try {
+          // 依次尝试候选地址，找到第一个能返回 ready:true 的
+          let found = null;
+          for (const base of TTS_CANDIDATES) {
+            const ok = await probeSingleBase(base);
+            if (ok) { found = base; break; }
+          }
+          if (!found) {
+            // 首次未探测到，再给一些常见局域网网段尝试（127.0.0.x 无效，跳过）
+            setTtsStatus("未探测到本机 rvc-service。请先在本机运行 start-rvc.ps1 启动服务，再点一次「一键适配」。", "err");
+            setTtsReady(false);
+            return;
+          }
+          // 写入 localStorage，立即生效
+          try { window.localStorage.setItem(TTS_LOCAL_STORAGE_KEY, found); } catch (e) {}
+          // 生成可下载的配置文件内容（用户可覆盖官方 postprep-config.js，或直接参考）
+          const configContent = [
+            "// 由「一键适配」自动生成的文本朗读(TTS)配置",
+            "// 用法：把下面这一行覆盖到 assets/postprep-config.js 的对应位置，或直接参考。",
+            `globalThis.__RVC_TTS_BASE__ = ${JSON.stringify(found)};`,
+            "",
+          ].join("\n");
+          const blob = new Blob([configContent], { type: "application/javascript;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "postprep-config.rvc-tts.js";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+          // 更新状态徽章
+          setTtsReady(true);
+          setTtsStatus(`✅ 已连接本机 TTS 服务：${found}（已保存到本浏览器，立即生效）。也已下载配置文件备用。`, "ok");
+        } catch (err) {
+          setTtsStatus(`一键适配失败：${err.message}`, "err");
+        } finally {
+          state.ttsAdapting = false;
+          adaptBtn.disabled = false;
+          adaptBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>一键适配（自动配置）</span>';
+        }
+      });
+    }
 
     setupRecording();
   }
