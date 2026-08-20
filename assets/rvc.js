@@ -5,6 +5,11 @@
   const MIN_AUDIO_SECONDS = 0.5;
   const WARN_AUDIO_SECONDS = 2;
   const MAX_AUDIO_SECONDS = 600;
+  // 本机 edge-tts 服务（rvc-service）地址。可被 postprep.js 注入 window.__RVC_TTS_BASE__ 覆盖，
+  // 也支持"全机适配"场景填局域网 IP（如 http://192.168.1.3:8080）。默认同源。
+  const TTS_BASE = (typeof window !== "undefined" && window.__RVC_TTS_BASE__) || (window.location.origin);
+  const TTS_ENDPOINT = `${TTS_BASE}/v1/tts`;
+  const TTS_HEALTH_ENDPOINT = `${TTS_BASE}/v1/tts-health`;
   const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"]);
 
   const translations = {
@@ -295,6 +300,8 @@
     selectedModelId: "hoshino2",
     audio: null, // { file, buffer, float32, sampleRate, name, duration }
     sourceMode: "upload",
+    ttsEnabled: false,
+    ttsLoading: false,
     recording: false,
     mediaRecorder: null,
     recordChunks: [],
@@ -1291,7 +1298,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v16", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v17", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1456,33 +1463,38 @@
       searchInput.addEventListener("input", () => renderModelGallery());
     }
 
-    // Source switch (Upload vs Record)
-    const btnUpload = document.getElementById("rvc-source-upload");
-    const btnRecord = document.getElementById("rvc-source-record");
-    const wrapUpload = document.getElementById("rvc-upload-wrap");
-    const wrapRecord = document.getElementById("rvc-record-wrap");
+    // Source switch (Upload / Record / Text-to-Speech)
+    const sourceButtons = [
+      { elId: "rvc-source-upload", mode: "upload" },
+      { elId: "rvc-source-record", mode: "record" },
+      { elId: "rvc-source-tts", mode: "tts" },
+    ];
+    const SOURCE_WRAPS = { upload: "rvc-upload-wrap", record: "rvc-record-wrap", tts: "rvc-tts-wrap" };
 
-    if (btnUpload && btnRecord) {
-      btnUpload.addEventListener("click", () => {
-        state.sourceMode = "upload";
-        btnUpload.classList.add("border-brand", "bg-teal-50");
-        btnUpload.classList.remove("border-line", "bg-white");
-        btnRecord.classList.remove("border-brand", "bg-teal-50");
-        btnRecord.classList.add("border-line", "bg-white");
-        if (wrapUpload) wrapUpload.classList.remove("hidden");
-        if (wrapRecord) wrapRecord.classList.add("hidden");
+    const setSource = (mode) => {
+      state.sourceMode = mode;
+      sourceButtons.forEach(({ elId, mode: m }) => {
+        const btn = document.getElementById(elId);
+        if (!btn) return;
+        const active = m === mode;
+        btn.setAttribute("aria-pressed", String(active));
+        btn.classList.toggle("border-brand", active);
+        btn.classList.toggle("bg-teal-50", active);
+        btn.classList.toggle("border-line", !active);
+        btn.classList.toggle("bg-white", !active);
       });
+      Object.entries(SOURCE_WRAPS).forEach(([m, id]) => {
+        const wrap = document.getElementById(id);
+        if (wrap) wrap.classList.toggle("hidden", m !== mode);
+      });
+      const statusEl = document.getElementById("rvc-audio-status");
+      if (mode !== "upload" && statusEl) statusEl.textContent = t("fileEmpty");
+    };
 
-      btnRecord.addEventListener("click", () => {
-        state.sourceMode = "record";
-        btnRecord.classList.add("border-brand", "bg-teal-50");
-        btnRecord.classList.remove("border-line", "bg-white");
-        btnUpload.classList.remove("border-brand", "bg-teal-50");
-        btnUpload.classList.add("border-line", "bg-white");
-        if (wrapRecord) wrapRecord.classList.remove("hidden");
-        if (wrapUpload) wrapUpload.classList.add("hidden");
-      });
-    }
+    sourceButtons.forEach(({ elId, mode }) => {
+      const btn = document.getElementById(elId);
+      if (btn) btn.addEventListener("click", () => setSource(mode));
+    });
 
     // File Input
     const fileInput = document.getElementById("rvc-audio-file");
@@ -1608,21 +1620,123 @@
       });
     }
 
-    // 文本朗读（TTS）：模型尚未接入时，按钮给出明确引导，指向上传/录音
+    // 文本朗读（TTS，第三输入源）：探测本机 edge-tts 服务 → 合成中性人声 → 自动用当前角色变声
     const ttsSynth = document.getElementById("rvc-tts-synth");
+    const ttsConvert = document.getElementById("rvc-tts-convert");
     const ttsReady = document.getElementById("rvc-tts-ready");
     const ttsStatus = document.getElementById("rvc-tts-status");
-    if (ttsReady) {
-      ttsReady.innerHTML = '<i class="fa-solid fa-circle-info"></i>未接入本地 TTS 模型';
-      ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700";
-    }
+    const ttsText = document.getElementById("rvc-tts-text");
+
+    const setTtsStatus = (msg, tone) => {
+      if (!ttsStatus) return;
+      ttsStatus.textContent = msg;
+      if (tone === "ok") ttsStatus.className = "text-xs leading-5 text-emerald-600 font-semibold";
+      else if (tone === "err") ttsStatus.className = "text-xs leading-5 text-red-600 font-semibold";
+      else ttsStatus.className = "text-xs leading-5 text-muted";
+    };
+
+    const setTtsReady = (ok) => {
+      state.ttsEnabled = ok;
+      if (!ttsReady) return;
+      if (ok) {
+        ttsReady.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>本机 TTS 服务正常 · 可角色朗读';
+        ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700";
+      } else {
+        ttsReady.innerHTML = '<i class="fa-solid fa-plug-circle-xmark text-red-500"></i>未检测到本机 TTS 服务 (edge-tts)';
+        ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700";
+      }
+    };
+
+    // 探测端点是否可达（GET /health 或 OPTIONS），仅用于 UI 状态
+    const probeTts = async () => {
+      if (state.ttsLoading) return;
+      state.ttsLoading = true;
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(TTS_HEALTH_ENDPOINT, { method: "GET", signal: controller.signal }).catch(() => null);
+        clearTimeout(timer);
+        let ok = false;
+        if (res && res.ok) {
+          try { ok = (await res.json())?.ready === true; } catch { ok = true; }
+        }
+        setTtsReady(ok);
+      } catch {
+        setTtsReady(false);
+      } finally {
+        state.ttsLoading = false;
+      }
+    };
+
+    // 取当前文字，调用本机 /rvc/tts 合成中性人声 WAV，返回 File
+    const synthTts = async () => {
+      const text = (ttsText?.value || "").trim();
+      if (!text) {
+        setTtsStatus("请输入要朗读的文字。", "err");
+        return null;
+      }
+      if (!state.ttsEnabled) {
+        setTtsStatus("本机 TTS 服务未就绪，请先启动 rvc-service（见 tools/ 说明）。", "err");
+        return null;
+      }
+      setTtsStatus("正在合成中性人声…（本机 edge-tts）", null);
+      try {
+        const res = await fetch(TTS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        if (!blob.size) throw new Error("空响应");
+        const file = new File([blob], `tts_${Date.now()}.mp3`, { type: res.headers.get("Content-Type") || "audio/mpeg" });
+        return file;
+      } catch (err) {
+        setTtsStatus(`合成失败：${err.message}。请确认 rvc-service 已启动（本机计算模式）。`, "err");
+        return null;
+      }
+    };
+
+    // 用 handleAudioSelected 把合成 wav 变成当前输入音频，随后可走下方变声
+    const applyTtsAsInput = async (file) => {
+      if (!file) return;
+      await handleAudioSelected(file);
+      const preview = document.getElementById("rvc-tts-preview");
+      if (preview) {
+        preview.src = URL.createObjectURL(file);
+        preview.hidden = false;
+      }
+      const result = document.getElementById("rvc-tts-result");
+      if (result) result.classList.remove("hidden");
+      setTtsStatus(`已合成 ${(file.size / 1024).toFixed(0)} KB，可点击下方「开始变声」用当前角色朗读。`, "ok");
+    };
+
     if (ttsSynth) {
-      ttsSynth.addEventListener("click", () => {
-        if (ttsStatus) {
-          ttsStatus.innerHTML = "⚠️ 本地中文 TTS 模型尚未接入。请先在此页“上传音频/录制声音”，或用上方“🎓 导入我自己的模型”上传角色音频，再走下方三步变声。<br><span class='text-emerald-700 font-semibold'>（部署项：10 分钟上限与训练自己的模型已生效；文本朗读将在 TTS 模型就绪后启用）</span>";
+      ttsSynth.addEventListener("click", async () => {
+        const file = await synthTts();
+        if (file) await applyTtsAsInput(file);
+      });
+    }
+    if (ttsConvert) {
+      ttsConvert.addEventListener("click", async () => {
+        const file = await synthTts();
+        if (!file) return;
+        await applyTtsAsInput(file);
+        runWebRvcInference();
+      });
+    }
+    if (ttsText) {
+      ttsText.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+          ttsConvert?.click();
         }
       });
     }
+
+    // 进入 TTS 源时触发一次探测；页面加载 1s 后台探测一次
+    const ttsBtn = document.getElementById("rvc-source-tts");
+    if (ttsBtn) ttsBtn.addEventListener("click", probeTts);
+    setTimeout(probeTts, 1000);
 
     setupRecording();
   }

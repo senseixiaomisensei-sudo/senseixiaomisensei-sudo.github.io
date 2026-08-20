@@ -13029,6 +13029,14 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
   const highShelf = createBiquadHighShelf(7500, -3.0, sampleRate);
   applyBiquadFilterInPlace(processed, highShelf);
 
+  // 4b. Gentle "studio air" contour: a very light lift around 11-11.5kHz
+  // emphasises the natural breath/open-vowel air band so converted speech
+  // sounds recorded-in-a-real-room rather than flat/synthetic. Strength is
+  // kept tiny so it never re-introduces harshness or sibilance the shelf
+  // just removed. (AI翻唱"像本人录音室录制"的空气感来源之一)
+  const airPeak = createBiquadPeaking(sampleRate * 0.285, 1.5, 1.2, sampleRate);
+  applyBiquadFilterInPlace(processed, airPeak);
+
   // 5. Transparent peak normalization (official RVC style): scale the whole
   //    buffer proportionally instead of per-sample soft-clipping. The old
   //    tanh knee flattened loud waveform crests into plateaus, which is
