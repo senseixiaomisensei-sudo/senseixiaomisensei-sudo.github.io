@@ -4,7 +4,7 @@
   const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
   const MIN_AUDIO_SECONDS = 0.5;
   const WARN_AUDIO_SECONDS = 2;
-  const MAX_AUDIO_SECONDS = 300;
+  const MAX_AUDIO_SECONDS = 600;
   const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"]);
 
   const translations = {
@@ -76,7 +76,7 @@
       fileTooLarge: "文件超过大小限制 (25 MB)。",
       audioTooShort: "音频太短（不足 0.5 秒），请换一段更长的录音。",
       audioShortWarn: "音频不足 2 秒，建议使用稍长的句子获得更自然效果。",
-      audioTooLong: "音频超过 5 分钟，建议裁剪为更短的片段以加快转换速度。",
+      audioTooLong: "音频超过 10 分钟，建议裁剪为更短的片段以加快转换速度。",
       decodeFailed: "无法解码此音频文件。请换成标准 WAV 或 MP3 重试。",
       missingModel: "请先选择一个角色声音。",
       missingAudio: "请先上传或录制一段你的声音。",
@@ -157,7 +157,7 @@
       fileTooLarge: "File exceeds 25 MB limit.",
       audioTooShort: "Audio is too short (under 0.5s).",
       audioShortWarn: "Audio under 2s may sound robotic. Longer speech is recommended.",
-      audioTooLong: "Audio exceeds 5 minutes. Please trim to a shorter clip.",
+      audioTooLong: "Audio exceeds 10 minutes. Please trim to a shorter clip.",
       decodeFailed: "Could not decode audio. Try converting to standard MP3 or WAV.",
       missingModel: "Pick a character voice first.",
       missingAudio: "Upload or record your voice first.",
@@ -1041,6 +1041,85 @@
     if (convertLabel) convertLabel.textContent = state.busy ? t("converting") : t("convert");
   }
 
+  // 用户自己训练/转换的 .onnx 模型（仅本机使用，不回传）：
+  // 以 IndexedDB Blob 存储，key = `own:<id>.onnx`，catalog 项记录 id 便于检索。
+  const OWN_MODEL_PREFIX = "own:";
+
+  async function listOwnModels() {
+    try {
+      const db = await openModelDB();
+      if (!db) return [];
+      return new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.openCursor();
+        const models = [];
+        req.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (cursor) {
+            const key = String(cursor.key);
+            if (key.startsWith(OWN_MODEL_PREFIX) && cursor.value instanceof Blob) {
+              const id = key.replace(/^own:/, "").replace(/\.onnx$/, "");
+              models.push({ id });
+            }
+            cursor.continue();
+          }
+          resolve(models);
+        };
+        req.onerror = () => resolve([]);
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function loadOwnModelsFromDB() {
+    const own = await listOwnModels();
+    if (!own.length) return;
+    const base = state.catalog.filter((m) => !m.id.startsWith(OWN_MODEL_PREFIX));
+    const ownItems = own.map((o) => ({
+      id: `${OWN_MODEL_PREFIX}${o.id}`,
+      name: `${o.id}（我的模型）`,
+      avatarText: "自训",
+      description: "你本地上传训练/转换的 RVC .onnx 模型，仅本机可用",
+      tags: ["女声", "我的模型"],
+      defaultPitch: 12,
+      chunks: [],
+    }));
+    state.catalog = [...base, ...ownItems];
+  }
+
+  async function importOwnModel(file) {
+    try {
+      if (!file || !/\.onnx$/i.test(file.name)) {
+        throw new Error("请选择有效的 .onnx 模型文件");
+      }
+      if (file.size > 200 * 1024 * 1024) {
+        throw new Error("模型文件过大（>200MB），请使用 tools/ 转换脚本分片后再部署");
+      }
+      const id = file.name.replace(/\.onnx$/i, "").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 60);
+      const cacheKey = `${OWN_MODEL_PREFIX}${id}.onnx`;
+      await setCachedItem(cacheKey, file);
+
+      await loadOwnModelsFromDB();
+      const imported = state.catalog.find((m) => m.id === `${OWN_MODEL_PREFIX}${id}`);
+      if (imported) {
+        state.selectedModelId = imported.id;
+      }
+      renderModelGallery();
+      checkCacheStatus();
+
+      const statusEl = document.getElementById("rvc-own-model-status");
+      if (statusEl) {
+        statusEl.textContent = `✅ 已导入「${id}」并设为当前角色（仅本机，可立即变声）。`;
+        statusEl.classList.remove("hidden");
+      }
+      showToast(`🎓 导入成功：${id}`);
+    } catch (err) {
+      showToast(`❌ 导入失败：${err.message}`);
+    }
+  }
+
   async function initCatalog() {
     renderModelGallery();
     checkCacheStatus();
@@ -1058,6 +1137,8 @@
     } catch (e) {
       console.warn("Failed to load rvc-models.json", e);
     }
+    // 合并用户本地上传的 .onnx 模型（仅本机，不回传）
+    await loadOwnModelsFromDB();
     renderModelGallery();
     checkCacheStatus();
     // 页面加载即套用当前选中角色的推荐音高（角色感知，防同质化/过尖）
@@ -1210,7 +1291,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v15-charpitch-soften", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v16", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1515,6 +1596,32 @@
     const clearCacheBtn = document.getElementById("rvc-clear-cache-btn");
     if (clearCacheBtn) {
       clearCacheBtn.addEventListener("click", () => clearModelCache());
+    }
+
+    // 导入自己训练/转换的 .onnx 模型
+    const ownModelFile = document.getElementById("rvc-own-model-file");
+    if (ownModelFile) {
+      ownModelFile.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (file) importOwnModel(file);
+        e.target.value = "";
+      });
+    }
+
+    // 文本朗读（TTS）：模型尚未接入时，按钮给出明确引导，指向上传/录音
+    const ttsSynth = document.getElementById("rvc-tts-synth");
+    const ttsReady = document.getElementById("rvc-tts-ready");
+    const ttsStatus = document.getElementById("rvc-tts-status");
+    if (ttsReady) {
+      ttsReady.innerHTML = '<i class="fa-solid fa-circle-info"></i>未接入本地 TTS 模型';
+      ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700";
+    }
+    if (ttsSynth) {
+      ttsSynth.addEventListener("click", () => {
+        if (ttsStatus) {
+          ttsStatus.innerHTML = "⚠️ 本地中文 TTS 模型尚未接入。请先在此页“上传音频/录制声音”，或用上方“🎓 导入我自己的模型”上传角色音频，再走下方三步变声。<br><span class='text-emerald-700 font-semibold'>（部署项：10 分钟上限与训练自己的模型已生效；文本朗读将在 TTS 模型就绪后启用）</span>";
+        }
+      });
     }
 
     setupRecording();

@@ -22,7 +22,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v20260820-v13 (全角色防破音防电音补丁)
+          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v20260820-v16 (时长10分钟 · 训练导入 · 角色分档音色)
         </span>
       </div>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
@@ -94,6 +94,50 @@
           </div>
           <div id="rvc-model-gallery" class="mt-4 grid max-h-80 gap-3 overflow-y-auto pr-1 sm:grid-cols-2" role="listbox" aria-labelledby="rvc-step-model-label"></div>
           <p id="rvc-model-empty" class="mt-4 hidden rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" data-rvc-i18n="modelEmpty">没有找到匹配的角色。换个关键词试试。</p>
+
+          <!-- 导入我的模型（自己训练/转换的 .onnx，仅本机使用） -->
+          <div class="mt-4 rounded-xl border border-dashed border-brand/40 bg-teal-50/50 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-black text-ink">🎓 导入我自己的模型</p>
+                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="ownModelHint">上传你本地训练/转换好的 <span class="font-bold text-brand">.onnx</span> 角色模型（参考 <code class="rounded bg-zinc-100 px-1 text-[11px]">tools/</code> 转换脚本）。仅供你本机使用，不发布给他人，也不会上传。</p>
+                <p id="rvc-own-model-status" class="mt-1.5 hidden text-xs font-bold text-emerald-700" role="status" aria-live="polite"></p>
+              </div>
+              <label class="inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-brand bg-white px-3.5 py-2 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
+                <i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i><span>选择 .onnx 文件</span>
+                <input id="rvc-own-model-file" type="file" accept=".onnx,application/onnx" class="sr-only">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 1.5: 文本朗读（TTS → 中性人声 → 可选角色变声） -->
+        <div class="mt-7 border-t border-line pt-6">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="min-w-0">
+              <p class="text-sm font-bold">1.5 文本朗读（TTS）</p>
+              <p class="mt-1 text-xs leading-5 text-muted">输入一段文字，先用本地中文 TTS 模型合成为中性人声，再走下方 3 步把它变成所选角色的音色。仅本机处理，不上传。</p>
+            </div>
+            <span id="rvc-tts-ready" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-500">
+              <i class="fa-solid fa-circle-notch fa-spin"></i>检测 TTS 模型…
+            </span>
+          </div>
+
+          <textarea id="rvc-tts-text" rows="3" maxlength="800" placeholder="在这里输入你想让角色朗读的文字…（最多 800 字）" class="mt-3 w-full resize-y rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand"></textarea>
+
+          <div class="mt-3 flex flex-wrap items-center gap-3">
+            <button id="rvc-tts-synth" type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand bg-white px-5 py-2.5 text-sm font-bold text-brand shadow-sm transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>合成朗读（中性）</span>
+            </button>
+            <span id="rvc-tts-status" class="text-xs leading-5 text-muted" role="status" aria-live="polite">把文字变为中性人声，作为下方变声的输入。</span>
+          </div>
+
+          <div id="rvc-tts-result" class="mt-4 hidden">
+            <audio id="rvc-tts-preview" class="w-full" controls preload="metadata"></audio>
+            <button id="rvc-tts-convert" type="button" class="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white shadow-xs transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>② 用当前角色变声这段朗读</span>
+            </button>
+          </div>
         </div>
 
         <!-- Step 2: 你的声音 -->
@@ -276,6 +320,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260820-v10"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-  <script src="assets/rvc.js?v=20260820-v15-charpitch-soften"></script>
+  <script src="assets/rvc.js?v=20260820-v16"></script>
 </body>
 </html>
