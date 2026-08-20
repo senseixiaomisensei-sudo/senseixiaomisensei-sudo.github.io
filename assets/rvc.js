@@ -187,13 +187,13 @@
 
   const EMBEDDED_RVC_CATALOG = [
     {
-      id: "hoshino",
+      id: "hoshino2",
       name: "小鸟游星野 (Hoshino)",
       avatarText: "星野",
-      description: "《蔚蓝档案》阿拜多斯对策委员会副会长 · 哎呀呀~ 慵懒可靠大叔系萌少女音 · RVC v2",
+      description: "《蔚蓝档案》阿拜多斯对策委员会副会长 · 哎呀呀~ 慵懒可靠大叔系萌少女音 · RVC v2 Ov2 音源焕新",
       tags: ["女声", "蔚蓝档案", "阿拜多斯"],
-      defaultPitch: 1,
-      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/hoshino/chunk_${i}.bin`)
+      defaultPitch: 12,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/hoshino2/chunk_${i}.bin`)
     },
     {
       id: "arisu",
@@ -282,7 +282,7 @@
     lang: "zh",
     engineReady: false,
     busy: false,
-    selectedModelId: "hoshino",
+    selectedModelId: "hoshino2",
     audio: null, // { file, buffer, float32, sampleRate, name, duration }
     sourceMode: "upload",
     recording: false,
@@ -1167,6 +1167,7 @@
     const pitchVal = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
     const protectVal = parseFloat(document.getElementById("rvc-protect")?.value || "0.33");
     const indexRateVal = parseFloat(document.getElementById("rvc-index-rate")?.value || "0.5");
+    const rmsMixVal = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1.0");
 
     state.busy = true;
     if (convertBtn) {
@@ -1178,7 +1179,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v10", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v14-antidistort", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1288,6 +1289,7 @@
           medianFilter: true,
           protect: protectVal,
           indexRate: indexRateVal,
+          rmsMixRate: rmsMixVal,
           timeout: 600000,
         }
       );

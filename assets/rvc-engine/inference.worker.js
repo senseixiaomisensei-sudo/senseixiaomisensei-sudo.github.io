@@ -12623,15 +12623,28 @@ function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift 
 function applyPitchShift(f0, semitones) {
   const factor = semitones === 0 ? 1.0 : 2 ** (semitones / 12);
   const shifted = new Float32Array(f0.length);
+  let ceilingHits = 0;
+  let voicedFrames = 0;
   for (let i = 0; i < f0.length; i++) {
     const rawHz = f0[i] * factor;
     if (rawHz > 0) {
+      voicedFrames++;
       // Cap at training range to keep pitch within the model's learned embedding space
+      if (rawHz > PITCH_SHIFT_CEILING) ceilingHits++;
       shifted[i] = Math.min(PITCH_SHIFT_CEILING, Math.max(F0_MIN, rawHz));
     } else {
       shifted[i] = 0;
     }
   }
+  if (ceilingHits > 0 && voicedFrames > 0) {
+    const pct = (ceilingHits / voicedFrames * 100).toFixed(1);
+    consoleProxy.warn(
+      `[F0 Ceiling] ${ceilingHits}/${voicedFrames} frames (${pct}%) hit the 1100Hz cap after ${semitones >= 0 ? "+" : ""}${semitones} semitones. Pitch gets pinned at the cap and may sound metallic/electronic — lowering the shift is recommended.`
+    );
+  }
+  // Note: isolated F0 spikes are already handled by the 3-point median
+  // filter BEFORE the shift (estimatePitch). No post-shift smoothing here:
+  // reining in legitimate momentary high notes would audibly flatten them.
   return shifted;
 }
 function buildPhoneTensor(features, frameCount) {
@@ -12760,6 +12773,42 @@ async function synthesizeVoice(session, features, pitch, options = {}) {
   const outputs = await runInference(session, feeds);
   return parseSynthesisOutput(outputs);
 }
+// Official-RVC-style input conditioning: DC removal + 48Hz 2nd-order
+// Butterworth high-pass + peak normalization to -3dB (0.7). Mic and phone
+// recordings arrive at wildly different levels; clipped inputs get their
+// distortion "learned and amplified" by HuBERT while too-quiet inputs
+// degrade feature quality. Normalizing first keeps both cases safe.
+function conditionInputAudio(audio, sampleRate = 16000) {
+  if (!audio || audio.length === 0) return audio;
+  const out = new Float32Array(audio.length);
+  let sum = 0;
+  for (let i = 0; i < audio.length; i++) sum += audio[i];
+  const mean = sum / audio.length;
+  const w0 = 2.0 * Math.PI * 48 / sampleRate;
+  const cosw0 = Math.cos(w0);
+  const alpha = Math.sin(w0) / (2.0 * 0.7071067811865476);
+  const a0 = 1.0 + alpha;
+  const b0 = (1.0 + cosw0) / 2.0 / a0;
+  const b1 = -(1.0 + cosw0) / a0;
+  const b2 = (1.0 + cosw0) / 2.0 / a0;
+  const a1 = (-2.0 * cosw0) / a0;
+  const a2 = (1.0 - alpha) / a0;
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  let peak = 0;
+  for (let i = 0; i < audio.length; i++) {
+    const x0 = audio[i] - mean;
+    const y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+    out[i] = y0;
+    x2 = x1; x1 = x0; y2 = y1; y1 = y0;
+    const av = Math.abs(y0);
+    if (av > peak) peak = av;
+  }
+  if (peak > 0.02 && isFinite(peak) && peak > 0) {
+    const scale = 0.7 / peak;
+    for (let i = 0; i < out.length; i++) out[i] *= scale;
+  }
+  return out;
+}
 function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSampleRate = 40000) {
   if (!input16k || !synthAudio || rmsMixRate <= 0) return synthAudio;
   const hop16k = 160;
@@ -12797,7 +12846,10 @@ function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSa
       targetGains[f] = 1.0;
     } else {
       const rawRatio = Math.pow(rmsIn / Math.max(1e-4, rmsSynth), exponent);
-      targetGains[f] = Math.max(0.2, Math.min(4.0, rawRatio));
+      // Keep envelope gain conservative: the old [0.2, 4.0] range could
+      // multiply the vocoder output by 4x and slam it into the limiter,
+      // which is a direct cause of audible clipping/distortion.
+      targetGains[f] = Math.max(0.3, Math.min(1.6, rawRatio));
     }
   }
 
@@ -12871,30 +12923,96 @@ function applyBiquadFilterInPlace(audio, coeffs) {
   }
 }
 
+function createBiquadBandpass(f0, Q, sr) {
+  const w0 = 2.0 * Math.PI * f0 / sr;
+  const alpha = Math.sin(w0) / (2.0 * Q);
+  const b0 = alpha;
+  const b1 = 0.0;
+  const b2 = -alpha;
+  const a0 = 1.0 + alpha;
+  const a1 = -2.0 * Math.cos(w0);
+  const a2 = 1.0 - alpha;
+  return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+
+// Dynamic anti-metallic mastering: tames the HiFiGAN "low-end boom + 3-5kHz
+// resonance + over-bright high" signature without dulling the source.
 function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
   if (!audio || audio.length === 0) return audio;
   const processed = new Float32Array(audio);
+  // NaN hygiene: a single NaN sample would propagate through every biquad
+  // and poison the whole buffer; flush them to silence up front.
+  for (let i = 0; i < processed.length; i++) {
+    if (isNaN(processed[i])) processed[i] = 0;
+  }
 
-  // 1. Restore vocal body & human warmth: +3.0dB @ 350Hz low-shelf
-  const lowShelf = createBiquadLowShelf(350, 3.0, sampleRate);
+  // 1. Tame low-end boom: -3.5dB @ 180Hz low-shelf (was +3dB @ 350Hz which added mud)
+  const lowShelf = createBiquadLowShelf(180, -3.5, sampleRate);
   applyBiquadFilterInPlace(processed, lowShelf);
 
-  // 2. Eliminate HiFiGAN robotic metallic resonance: -3.8dB @ 4800Hz peaking notch (Q=1.2)
-  const harshNotch = createBiquadPeaking(4800, -3.8, 1.2, sampleRate);
-  applyBiquadFilterInPlace(processed, harshNotch);
+  // 2. Restore vocal body: +2.5dB @ 1200Hz peaking (Q=0.8)
+  const bodyBoost = createBiquadPeaking(1200, 2.5, 0.8, sampleRate);
+  applyBiquadFilterInPlace(processed, bodyBoost);
 
-  // 3. Smooth ultra-high sibilance sizzle: -2.0dB @ 8000Hz high-shelf
-  const highShelf = createBiquadHighShelf(8000, -2.0, sampleRate);
+  // 3. Dynamic suppression of the 3.0-3.5kHz metallic band, gated by the 1.15k
+  //    vocal-body energy so we only cut when harshness is actually present.
+  const bMetal = createBiquadBandpass(3200, 1.0, sampleRate);
+  const bBody = createBiquadBandpass(1150, 0.6, sampleRate);
+  const metalSig = new Float32Array(processed);
+  const bodySig = new Float32Array(processed);
+  applyBiquadFilterInPlace(metalSig, bMetal);
+  applyBiquadFilterInPlace(bodySig, bBody);
+
+  const blockSize = Math.max(1, Math.round(sampleRate * 0.005));
+  const numBlocks = Math.floor(processed.length / blockSize);
+  const gainEnv = new Float32Array(processed.length);
+  let currentGain = 1.0;
+
+  for (let blk = 0; blk < numBlocks; blk++) {
+    const st = blk * blockSize;
+    const en = Math.min(st + blockSize, processed.length);
+    let sMetal = 0, sBody = 0;
+    for (let i = st; i < en; i++) {
+      sMetal += metalSig[i] * metalSig[i];
+      sBody += bodySig[i] * bodySig[i];
+    }
+    const rmsMetal = Math.sqrt(sMetal / (en - st) + 1e-6);
+    const rmsBody = Math.sqrt(sBody / (en - st) + 1e-6);
+    const ratio = rmsMetal / (rmsBody + 1e-4);
+    let targetGain = 1.0;
+    if (ratio > 0.30) {
+      const redDb = Math.min(8.0, (ratio - 0.30) * 16.0);
+      targetGain = Math.pow(10.0, -redDb / 20.0);
+    } else if (rmsMetal > 0.10) {
+      const redDb = Math.min(6.0, (rmsMetal - 0.10) * 20.0);
+      targetGain = Math.pow(10.0, -redDb / 20.0);
+    }
+    for (let i = st; i < en; i++) {
+      // fast attack, slow release
+      const coeff = targetGain < currentGain ? 0.25 : 0.04;
+      currentGain += coeff * (targetGain - currentGain);
+      gainEnv[i] = currentGain;
+    }
+  }
+  for (let i = 0; i < processed.length; i++) {
+    processed[i] -= metalSig[i] * (1.0 - gainEnv[i]);
+  }
+
+  // 4. Sweep the over-bright top: -3.0dB @ 7500Hz high-shelf
+  const highShelf = createBiquadHighShelf(7500, -3.0, sampleRate);
   applyBiquadFilterInPlace(processed, highShelf);
 
-  // 4. Transparent peak limiter
-  let maxPeak = 0;
+  // 5. Transparent peak normalization (official RVC style): scale the whole
+  //    buffer proportionally instead of per-sample soft-clipping. The old
+  //    tanh knee flattened loud waveform crests into plateaus, which is
+  //    heard as distortion/clipping ("破音").
+  let peak = 0;
   for (let i = 0; i < processed.length; i++) {
-    const abs = Math.abs(processed[i]);
-    if (abs > maxPeak && !isNaN(abs)) maxPeak = abs;
+    const av = Math.abs(processed[i]);
+    if (av > peak) peak = av;
   }
-  if (maxPeak > 0.95) {
-    const scale = 0.95 / maxPeak;
+  if (peak > 0.95 && isFinite(peak) && peak > 0) {
+    const scale = 0.95 / peak;
     for (let i = 0; i < processed.length; i++) {
       processed[i] *= scale;
     }
@@ -12967,6 +13085,10 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       audio = result.audio;
       sampleRate = result.sampleRate;
     }
+    // Condition input (DC removal + 48Hz HPF + peak norm to -3dB) before
+    // feature/pitch extraction — prevents over-driven or too-quiet inputs
+    // from causing clipping and electric-sounding artifacts downstream.
+    audio = conditionInputAudio(audio, sampleRate);
     ctx.inputAudio = audio;
     ctx.sampleRate = sampleRate;
     emitStage(PIPELINE_STAGES[1]);

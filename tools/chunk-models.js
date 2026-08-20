@@ -60,9 +60,9 @@ const MODELS = [
     dstDir: "E:\\大肥鱼\\site\\models\\characters\\koharu",
   },
   {
-    name: "hoshino.onnx",
-    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\hoshino.onnx",
-    dstDir: "E:\\大肥鱼\\site\\models\\characters\\hoshino",
+    name: "hoshino2.onnx",
+    src: "E:\\大肥鱼\\rvc-local\\convert\\onnx-models\\hoshino_ov2.onnx",
+    dstDir: "E:\\大肥鱼\\site\\models\\characters\\hoshino2",
   },
 ];
 
