@@ -163,7 +163,8 @@
           <details class="mt-6 rounded-lg border border-line bg-canvas px-4 py-3" id="rvc-advanced">
             <summary class="cursor-pointer text-sm font-bold text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-rvc-i18n="advancedToggle">高级设置（进阶用户）</summary>
             <div class="mt-5 space-y-6">
-              <div>
+              <!-- 隐藏：相似度/辅音保护滑块当前管线未接线（无 FAISS 索引文件），避免误导用户 -->
+              <div hidden>
                 <div class="flex items-center justify-between gap-3">
                   <label for="rvc-index-rate" class="text-sm font-bold" data-rvc-i18n="indexRateLabel">相似度</label>
                   <span id="rvc-index-rate-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0.5</span>
@@ -171,7 +172,7 @@
                 <input id="rvc-index-rate" type="range" min="0" max="1" step="0.05" value="0.5" class="rvc-range mt-3 w-full">
                 <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="indexRateHint">越高音色越像角色，太高可能不自然。建议 0.3–0.8。</p>
               </div>
-              <div>
+              <div hidden>
                 <div class="flex items-center justify-between gap-3">
                   <label for="rvc-protect" class="text-sm font-bold" data-rvc-i18n="protectLabel">辅音保护</label>
                   <span id="rvc-protect-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0.33</span>
@@ -275,6 +276,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260820-v10"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-  <script src="assets/rvc.js?v=20260820-v14-antidistort"></script>
+  <script src="assets/rvc.js?v=20260820-v15-charpitch-soften"></script>
 </body>
 </html>

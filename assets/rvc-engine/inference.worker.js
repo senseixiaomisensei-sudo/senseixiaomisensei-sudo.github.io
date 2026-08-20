@@ -12956,28 +12956,39 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
 
   // 3. Dynamic suppression of the 3.0-3.5kHz metallic band, gated by the 1.15k
   //    vocal-body energy so we only cut when harshness is actually present.
+  // 3b. Same gating for the 4-5kHz "pinched/shrill" band: large upward pitch
+  //     shifts (+10..+12) stack dense harmonics exactly there, which is heard
+  //     as 声音过尖/不自然. Cutting dynamically (instead of a static EQ dip)
+  //     keeps natural /s/ sibilance intact while taming sustained shrillness.
   const bMetal = createBiquadBandpass(3200, 1.0, sampleRate);
   const bBody = createBiquadBandpass(1150, 0.6, sampleRate);
+  const bSharp = createBiquadBandpass(4600, 1.2, sampleRate);
   const metalSig = new Float32Array(processed);
   const bodySig = new Float32Array(processed);
+  const sharpSig = new Float32Array(processed);
   applyBiquadFilterInPlace(metalSig, bMetal);
   applyBiquadFilterInPlace(bodySig, bBody);
+  applyBiquadFilterInPlace(sharpSig, bSharp);
 
   const blockSize = Math.max(1, Math.round(sampleRate * 0.005));
   const numBlocks = Math.floor(processed.length / blockSize);
   const gainEnv = new Float32Array(processed.length);
+  const sharpEnv = new Float32Array(processed.length);
   let currentGain = 1.0;
+  let currentSharpGain = 1.0;
 
   for (let blk = 0; blk < numBlocks; blk++) {
     const st = blk * blockSize;
     const en = Math.min(st + blockSize, processed.length);
-    let sMetal = 0, sBody = 0;
+    let sMetal = 0, sBody = 0, sSharp = 0;
     for (let i = st; i < en; i++) {
       sMetal += metalSig[i] * metalSig[i];
       sBody += bodySig[i] * bodySig[i];
+      sSharp += sharpSig[i] * sharpSig[i];
     }
     const rmsMetal = Math.sqrt(sMetal / (en - st) + 1e-6);
     const rmsBody = Math.sqrt(sBody / (en - st) + 1e-6);
+    const rmsSharp = Math.sqrt(sSharp / (en - st) + 1e-6);
     const ratio = rmsMetal / (rmsBody + 1e-4);
     let targetGain = 1.0;
     if (ratio > 0.30) {
@@ -12987,15 +12998,31 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
       const redDb = Math.min(6.0, (rmsMetal - 0.10) * 20.0);
       targetGain = Math.pow(10.0, -redDb / 20.0);
     }
+    // Shrillness gate: only engage when 4.6k energy dominates the vocal body
+    // by a clear margin, and cap the cut gentler than the metallic band so
+    // brief sibilants stay crisp.
+    const sharpRatio = rmsSharp / (rmsBody + 1e-4);
+    let targetSharpGain = 1.0;
+    if (sharpRatio > 0.45) {
+      const redDb = Math.min(5.5, (sharpRatio - 0.45) * 12.0);
+      targetSharpGain = Math.pow(10.0, -redDb / 20.0);
+    } else if (rmsSharp > 0.08) {
+      const redDb = Math.min(4.0, (rmsSharp - 0.08) * 16.0);
+      targetSharpGain = Math.pow(10.0, -redDb / 20.0);
+    }
     for (let i = st; i < en; i++) {
       // fast attack, slow release
       const coeff = targetGain < currentGain ? 0.25 : 0.04;
       currentGain += coeff * (targetGain - currentGain);
       gainEnv[i] = currentGain;
+      const sharpCoeff = targetSharpGain < currentSharpGain ? 0.2 : 0.04;
+      currentSharpGain += sharpCoeff * (targetSharpGain - currentSharpGain);
+      sharpEnv[i] = currentSharpGain;
     }
   }
   for (let i = 0; i < processed.length; i++) {
     processed[i] -= metalSig[i] * (1.0 - gainEnv[i]);
+    processed[i] -= sharpSig[i] * (1.0 - sharpEnv[i]);
   }
 
   // 4. Sweep the over-bright top: -3.0dB @ 7500Hz high-shelf

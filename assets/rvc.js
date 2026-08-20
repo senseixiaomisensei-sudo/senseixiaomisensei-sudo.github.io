@@ -192,7 +192,8 @@
       avatarText: "星野",
       description: "《蔚蓝档案》阿拜多斯对策委员会副会长 · 哎呀呀~ 慵懒可靠大叔系萌少女音 · RVC v2 Ov2 音源焕新",
       tags: ["女声", "蔚蓝档案", "阿拜多斯"],
-      defaultPitch: 12,
+      defaultPitch: 8,
+      pitchNote: "慵懒低音域少女：男声输入推荐 +8",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/hoshino2/chunk_${i}.bin`)
     },
     {
@@ -201,7 +202,8 @@
       avatarText: "爱丽丝",
       description: "《蔚蓝档案》千年游戏开发部 · 邦邦卡邦~ 纯真机械勇者少女音 · RVC v2",
       tags: ["女声", "蔚蓝档案", "千年"],
-      defaultPitch: 2,
+      defaultPitch: 12,
+      pitchNote: "明亮高音少女：男声输入推荐 +12",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/arisu/chunk_${i}.bin`)
     },
     {
@@ -210,7 +212,8 @@
       avatarText: "白子",
       description: "《蔚蓝档案》阿拜多斯对策委员会 · 沉稳酷飒行动派少女音 · RVC v2",
       tags: ["女声", "蔚蓝档案", "阿拜多斯"],
-      defaultPitch: 1,
+      defaultPitch: 10,
+      pitchNote: "沉稳中音域少女：男声输入推荐 +10",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/shiroko/chunk_${i}.bin`)
     },
     {
@@ -219,7 +222,8 @@
       avatarText: "优香",
       description: "《蔚蓝档案》千年研讨会会计 · 傲娇理智计算系少女音 · RVC v2",
       tags: ["女声", "蔚蓝档案", "千年"],
-      defaultPitch: 2,
+      defaultPitch: 11,
+      pitchNote: "理智中高音域少女：男声输入推荐 +11",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/yuuka/chunk_${i}.bin`)
     },
     {
@@ -228,7 +232,8 @@
       avatarText: "日奈",
       description: "《蔚蓝档案》格黑娜风纪委员会长 · 威严中带着疲倦的温柔少女音 · RVC v2",
       tags: ["女声", "蔚蓝档案", "格黑娜"],
-      defaultPitch: 1,
+      defaultPitch: 10,
+      pitchNote: "威严中音域少女：男声输入推荐 +10",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/hina/chunk_${i}.bin`)
     },
     {
@@ -237,7 +242,8 @@
       avatarText: "诺亚",
       description: "《蔚蓝档案》千年研讨会书记 · 温柔腹黑记录系少女音 · RVC v2",
       tags: ["女声", "蔚蓝档案", "千年"],
-      defaultPitch: 2,
+      defaultPitch: 11,
+      pitchNote: "温柔中高音域少女：男声输入推荐 +11",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/noa/chunk_${i}.bin`)
     },
     {
@@ -246,7 +252,8 @@
       avatarText: "小春",
       description: "《蔚蓝档案》三一补课部 · 色情是不行的！死刑！傲娇纯情少女音 · RVC v2",
       tags: ["女声", "蔚蓝档案", "三一"],
-      defaultPitch: 3,
+      defaultPitch: 12,
+      pitchNote: "明亮高音域少女：男声输入推荐 +12",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/koharu/chunk_${i}.bin`)
     },
     {
@@ -255,7 +262,8 @@
       avatarText: "灯",
       description: "《BanG Dream! It's MyGO!!!!!》主唱 · 清澈少年感少女音 · RVC v2",
       tags: ["女声", "动漫", "MyGO"],
-      defaultPitch: 2,
+      defaultPitch: 9,
+      pitchNote: "少年感低中音域少女：男声输入推荐 +9",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/tomori/chunk_${i}.bin`)
     },
     {
@@ -264,7 +272,8 @@
       avatarText: "乐奈",
       description: "《BanG Dream! It's MyGO!!!!!》吉他手 · 慵懒灵动猫系少女音 · RVC v2",
       tags: ["女声", "动漫", "MyGO"],
-      defaultPitch: 2,
+      defaultPitch: 10,
+      pitchNote: "慵懒中音域猫系少女：男声输入推荐 +10",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/rana/chunk_${i}.bin`)
     },
     {
@@ -273,7 +282,8 @@
       avatarText: "帝皇",
       description: "《赛马娘 Pretty Derby》· 活泼元气高辨识度少女音 · RVC v2",
       tags: ["女声", "动漫", "赛马娘"],
-      defaultPitch: 3,
+      defaultPitch: 12,
+      pitchNote: "元气高音域少女：男声输入推荐 +12",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/teio/chunk_${i}.bin`)
     }
   ];
@@ -733,6 +743,32 @@
     }
   }
 
+  function getSelectedModel() {
+    return state.catalog.find((m) => m.id === state.selectedModelId);
+  }
+
+  // 角色感知音高：每个角色有独立推荐音域（defaultPitch），
+  // 选中角色时自动套用，避免所有角色共用 +12 导致声音同质化、过尖。
+  function applyCharacterPitch(model) {
+    if (!model || typeof model.defaultPitch !== "number") return;
+    const fmt = (v) => (v > 0 ? "+" : "") + v;
+    const pitchInput = document.getElementById("rvc-pitch");
+    const pitchVal = document.getElementById("rvc-pitch-value");
+    const pitchTip = document.getElementById("rvc-pitch-tip");
+    if (pitchInput && pitchVal) {
+      pitchInput.value = String(model.defaultPitch);
+      pitchVal.textContent = fmt(model.defaultPitch);
+    }
+    if (pitchTip) {
+      pitchTip.textContent = `✨ 已加载「${model.name}」角色推荐音高 ${fmt(model.defaultPitch)} 半音${model.pitchNote ? " · " + model.pitchNote : ""}。`;
+    }
+    const presetBtn = document.getElementById("rvc-preset-male-female");
+    const presetLabel = presetBtn?.querySelector("span");
+    if (presetLabel) {
+      presetLabel.textContent = `男声变女角色 (${fmt(model.defaultPitch)})`;
+    }
+  }
+
   function renderModelGallery() {
     const container = document.getElementById("rvc-model-gallery");
     const emptyEl = document.getElementById("rvc-model-empty");
@@ -797,14 +833,7 @@
 
       card.addEventListener("click", () => {
         state.selectedModelId = m.id;
-        if (typeof m.defaultPitch === "number") {
-          const pitchInput = document.getElementById("rvc-pitch");
-          const pitchVal = document.getElementById("rvc-pitch-value");
-          if (pitchInput && pitchVal) {
-            pitchInput.value = String(m.defaultPitch);
-            pitchVal.textContent = (m.defaultPitch > 0 ? "+" : "") + m.defaultPitch;
-          }
-        }
+        applyCharacterPitch(m);
         renderModelGallery();
         updateStatusDisplay();
       });
@@ -1031,6 +1060,8 @@
     }
     renderModelGallery();
     checkCacheStatus();
+    // 页面加载即套用当前选中角色的推荐音高（角色感知，防同质化/过尖）
+    applyCharacterPitch(getSelectedModel());
     // Silent background pre-warm after 3 seconds of user idle
     setTimeout(() => {
       if (!state.busy) {
@@ -1179,7 +1210,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v14-antidistort", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v15-charpitch-soften", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1407,7 +1438,16 @@
 
     if (btnPresetMaleFemale) {
       btnPresetMaleFemale.addEventListener("click", () => {
-        setPitchMode(12, "✨ 当前已设为 +12 半音：男声变萌妹角色黄金法则，声带频率完美共鸣，彻底告别低频金属电锯音。", btnPresetMaleFemale);
+        const model = getSelectedModel();
+        const pitch = model && typeof model.defaultPitch === "number" ? model.defaultPitch : 12;
+        const fmt = (v) => (v > 0 ? "+" : "") + v;
+        setPitchMode(
+          pitch,
+          model
+            ? `✨ 已为「${model.name}」设置角色推荐音高 ${fmt(pitch)} 半音：贴合角色天然音域，音色区分度最佳，也不会过尖。`
+            : `✨ 当前已设为 ${fmt(pitch)} 半音：男声变女角色推荐音高。`,
+          btnPresetMaleFemale
+        );
       });
     }
 
