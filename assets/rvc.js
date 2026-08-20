@@ -26,23 +26,24 @@
   // 再叠加：同源、常见本机回环、以及管理员在 config 里注入的 __RVC_TTS_BASE__。
   const TTS_CANDIDATES = (() => {
     const collect = () => {
-      const set = new Set();
+      const arr = [];
       const host = (typeof window !== "undefined" && window.location && window.location.hostname) || "";
-      // 1) 由当前访问主机名推导 8080（全机适配关键：手机访问 http://<电脑IP>:8124 时 hostname=电脑IP）
+      // 0) 同源最优先：serve.js 已把 /v1/tts 反向代理到本机 rvc-service，
+      //    所以任何设备连到部署本页面的电脑(8124)后，走同源即可自动成功，无需知道 IP/端口/跨域。
+      if (TTS_SAME_ORIGIN) arr.push(TTS_SAME_ORIGIN);
+      if (TTS_INJECTED_BASE) arr.push(TTS_INJECTED_BASE);
+      // 1) 由当前访问主机名推导 8080（兜底：若未走代理，直连电脑 8080）
       if (host && host !== "localhost" && host !== "127.0.0.1" && host !== "::1") {
-        set.add(`http://${host}:8080`);
+        arr.push(`http://${host}:8080`);
         if (window.location && window.location.protocol === "https:") {
-          set.add(`https://${host}:8080`);
+          arr.push(`https://${host}:8080`);
         }
       }
-      // 2) 同源 + 注入配置
-      if (TTS_SAME_ORIGIN) set.add(TTS_SAME_ORIGIN);
-      if (TTS_INJECTED_BASE) set.add(TTS_INJECTED_BASE);
-      // 3) 本机回环（服务机自己访问自己时）
-      set.add("http://127.0.0.1:8080");
-      set.add("http://localhost:8080");
-      set.add("http://localhost:8124");
-      return [...set].filter(Boolean);
+      // 2) 本机回环（服务机自己访问自己时直连）
+      arr.push("http://127.0.0.1:8080");
+      arr.push("http://localhost:8080");
+      arr.push("http://localhost:8124");
+      return [...new Set(arr.filter(Boolean))];
     };
     return collect();
   })();
@@ -1335,7 +1336,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v20", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v21", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1814,7 +1815,7 @@
         adaptBtn.disabled = true;
         adaptBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>正在自动适配…</span>';
         const priorDisabled = ttsConvert?.disabled;
-        setTtsStatus("正在并行检测候选服务…", null);
+        setTtsStatus("正在自动检测 TTS 服务…", null);
         try {
           // 若已手动填了地址，优先直接用它
           const manual = (manualBaseInput?.value || "").trim().replace(/\/+$/, "");
@@ -1824,11 +1825,18 @@
             setTtsStatus(`手动填入的地址不可达：${manual}。请检查服务是否已启动，或清空改用自动检测。`, "err");
             return;
           }
-          // 并行探测所有候选地址，取第一个可用
-          const results = await Promise.allSettled(
-            TTS_CANDIDATES.map(async (base) => ({ base, ok: await probeSingleBase(base) }))
-          );
-          const found = results.find((r) => r.status === "fulfilled" && r.value.ok)?.value?.base || null;
+          // 优先串行探测同源 + 注入地址（serve.js 反向代理后走同源必成功，最快最稳）
+          const priority = [...new Set([TTS_SAME_ORIGIN, TTS_INJECTED_BASE].filter(Boolean))];
+          let found = null;
+          for (const base of priority) {
+            if (await probeSingleBase(base)) { found = base; break; }
+          }
+          // 其余候选（hostname 推导 / 回环）并行兜底
+          if (!found) {
+            const rest = TTS_CANDIDATES.filter((b) => !priority.includes(b));
+            const results = await Promise.allSettled(rest.map(async (base) => ({ base, ok: await probeSingleBase(base) })));
+            found = results.find((r) => r.status === "fulfilled" && r.value.ok)?.value?.base || null;
+          }
           if (found) { applyFoundBase(found); return; }
           setTtsStatus(
             "⚠️ 未检测到可用的 TTS 服务。请在下方“手动填写服务地址”输入你部署的 TTS 地址（如 http://192.168.1.3:8080），再点一次「一键适配」。", "err"
