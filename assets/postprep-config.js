@@ -11,7 +11,10 @@ globalThis.POSTPREP_RVC_MODELS_ENDPOINT = "https://postprep-text-gateway.postpre
 // Its matching secret is stored only in the server-side deployment environment.
 globalThis.POSTPREP_TURNSTILE_SITE_KEY = "0x4AAAAAAENiWsmUXpTMXimW";
 
-// 本机计算模式：文本朗读 TTS（edge-tts）与训练服务跑在你的电脑（rvc-service）。
-// 留空则与页面同源；若在局域网用手机/其他设备访问，且 rvc-service 跑在本机 8080 端口，
-// 请把下面改成你的电脑局域网 IP，例如 "http://192.168.1.3:8080"。
+// 本机计算模式：文本朗读 TTS（edge-tts）与训练服务跑在部署这台页面的电脑上（rvc-service，绑 0.0.0.0）。
+// 最佳用法（全机共享，无需改这里）：
+//   1) 电脑运行 node serve.js（页面）+ start-rvc.ps1（TTS 服务，绑 0.0.0.0:8080）；
+//   2) 同一 Wi-Fi 下其他设备访问 http://<电脑局域网IP>:8124/rvc.html ；
+//   3) 切到"文本朗读"点"一键适配"，页面会按所访问的局域网 IP 自动推导并连到 <电脑IP>:8080。
+// 只有当你希望不同来源的页面默认连到某个固定服务时，才把下面改成对应地址（如公网 TTS 地址）。
 globalThis.__RVC_TTS_BASE__ = "";

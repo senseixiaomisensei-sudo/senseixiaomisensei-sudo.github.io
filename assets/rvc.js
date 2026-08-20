@@ -19,16 +19,32 @@
     if (TTS_INJECTED_BASE) return TTS_INJECTED_BASE;
     return TTS_SAME_ORIGIN;
   };
-  // 候选探测地址（"一键适配"自动尝试）：
-  // 含同源、常见本机回环、以及注入的单一配置，避免浏览器无法知道内网 IP 的限制。
+  // 候选探测地址（"一键适配"自动尝试）。
+  // 核心思想：如果这个"文本朗读"页面本身就是那台电脑部署的（serve.js 绑 0.0.0.0），
+  // 那么局域网里其他设备访问到的地址主机名(hostname)就是电脑的局域网 IP，
+  // 自动推导 http://<hostname>:8080 即可连上 rvc-service —— 从而全机共享，不只服务机自己能用。
+  // 再叠加：同源、常见本机回环、以及管理员在 config 里注入的 __RVC_TTS_BASE__。
   const TTS_CANDIDATES = (() => {
-    const set = new Set();
-    if (TTS_SAME_ORIGIN) set.add(TTS_SAME_ORIGIN);
-    if (TTS_INJECTED_BASE) set.add(TTS_INJECTED_BASE);
-    set.add("http://127.0.0.1:8080");
-    set.add("http://localhost:8080");
-    set.add("http://localhost:8124");
-    return [...set];
+    const collect = () => {
+      const set = new Set();
+      const host = (typeof window !== "undefined" && window.location && window.location.hostname) || "";
+      // 1) 由当前访问主机名推导 8080（全机适配关键：手机访问 http://<电脑IP>:8124 时 hostname=电脑IP）
+      if (host && host !== "localhost" && host !== "127.0.0.1" && host !== "::1") {
+        set.add(`http://${host}:8080`);
+        if (window.location && window.location.protocol === "https:") {
+          set.add(`https://${host}:8080`);
+        }
+      }
+      // 2) 同源 + 注入配置
+      if (TTS_SAME_ORIGIN) set.add(TTS_SAME_ORIGIN);
+      if (TTS_INJECTED_BASE) set.add(TTS_INJECTED_BASE);
+      // 3) 本机回环（服务机自己访问自己时）
+      set.add("http://127.0.0.1:8080");
+      set.add("http://localhost:8080");
+      set.add("http://localhost:8124");
+      return [...set].filter(Boolean);
+    };
+    return collect();
   })();
   const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"]);
 
@@ -1319,7 +1335,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v19", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v20", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
