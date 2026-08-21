@@ -40,20 +40,45 @@ const server = http.createServer((req, res) => {
 
   const ext = path.extname(filePath).toLowerCase();
   res.setHeader("Content-Type", MIME_MAP[ext] || "application/octet-stream");
+  if (reqPath === "/assets/rvc-models.json" && (process.env.POSTPREP_RVC_NOISE_SCALE || process.env.POSTPREP_RVC_NOISE_SEED)) {
+    const catalog = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    for (const model of catalog.models || []) {
+      if (process.env.POSTPREP_RVC_NOISE_SCALE) model.noiseScale = Number(process.env.POSTPREP_RVC_NOISE_SCALE);
+      if (process.env.POSTPREP_RVC_NOISE_SEED) model.noiseSeed = Number(process.env.POSTPREP_RVC_NOISE_SEED);
+    }
+    res.end(JSON.stringify(catalog));
+    return;
+  }
   fs.createReadStream(filePath).pipe(res);
 });
 
 server.listen(PORT, "127.0.0.1", async () => {
+  let exitCode = 0;
   console.log(`Test server running at http://127.0.0.1:${PORT}`);
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+  const chromeCandidates = [
+    process.env.POSTPREP_CHROME_PATH,
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  ].filter(Boolean);
+  const executablePath = chromeCandidates.find((candidate) => fs.existsSync(candidate));
+  const browser = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) });
+  const page = await browser.newPage(process.env.POSTPREP_RVC_MOBILE ? {
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  } : {});
 
-  page.on("console", (msg) => console.log("[Browser Console]", msg.text()));
+  page.on("console", (msg) => {
+    if (msg.text().includes("ERR_NETWORK_ACCESS_DENIED")) return;
+    console.log("[Browser Console]", msg.text());
+  });
   page.on("pageerror", (err) => console.log("[Browser Error]", String(err)));
 
   try {
     await page.goto(`http://127.0.0.1:${PORT}/rvc.html`, { waitUntil: "domcontentloaded", timeout: 20000 });
     await page.waitForTimeout(1500);
+    const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    if (horizontalOverflow) throw new Error("RVC page has horizontal overflow at the test viewport");
 
     const requestedModelId = process.argv[3];
     if (requestedModelId) {
@@ -69,6 +94,24 @@ server.listen(PORT, "127.0.0.1", async () => {
     await fileInput.setInputFiles(testAudioPath);
 
     await page.waitForTimeout(1000);
+    if (process.env.POSTPREP_RVC_INDEX_RATE) {
+      await page.locator("#rvc-index-rate").evaluate((element, value) => {
+        element.value = value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      }, process.env.POSTPREP_RVC_INDEX_RATE);
+    }
+    if (process.env.POSTPREP_RVC_PROTECT) {
+      await page.locator("#rvc-protect").evaluate((element, value) => {
+        element.value = value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      }, process.env.POSTPREP_RVC_PROTECT);
+    }
+    if (process.env.POSTPREP_RVC_PITCH) {
+      await page.locator("#rvc-pitch").evaluate((element, value) => {
+        element.value = value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      }, process.env.POSTPREP_RVC_PITCH);
+    }
     const audioStatus = await page.locator("#rvc-audio-status").textContent();
     console.log("Audio status:", audioStatus);
 
@@ -116,14 +159,17 @@ server.listen(PORT, "127.0.0.1", async () => {
         }
         console.log("✅ FULL END-TO-END RVC IN-BROWSER INFERENCE PASSED!");
       } else {
-        console.log("⏳ Inference in progress or timed out.");
+        throw new Error("Inference timed out before a result was produced");
       }
+    } else {
+      throw new Error("Convert button stayed disabled after valid audio was selected");
     }
   } catch (err) {
     console.error("Test error:", err);
+    exitCode = 1;
   } finally {
     await browser.close();
     server.close();
-    process.exit(0);
+    process.exit(exitCode);
   }
 });

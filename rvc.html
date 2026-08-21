@@ -22,7 +22,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v20260821-v23 (HuBERT / RMVPE 官方链路校准 · 自然音高修复 · 10分钟)
+          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v20260821-v24（可复现自然激励 · 连续音高修复 · 角色检索码本 · 10分钟）
         </span>
       </div>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
@@ -215,17 +215,16 @@
           <details class="mt-6 rounded-lg border border-line bg-canvas px-4 py-3" id="rvc-advanced">
             <summary class="cursor-pointer text-sm font-bold text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-rvc-i18n="advancedToggle">高级设置（进阶用户）</summary>
             <div class="mt-5 space-y-6">
-              <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">本机浏览器版未加载检索索引，因此“相似度”和“辅音保护”不参与推理；页面不会用无效滑块误导音质调整。</p>
-              <!-- 隐藏：相似度/辅音保护滑块当前管线未接线（无 FAISS 索引文件），避免误导用户 -->
-              <div hidden>
+              <p class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-900">已启用角色专属轻量检索码本。默认 0.30 在角色还原与自然度之间取保守平衡；升高前请先试听，过高仍可能带来颗粒感。</p>
+              <div>
                 <div class="flex items-center justify-between gap-3">
                   <label for="rvc-index-rate" class="text-sm font-bold" data-rvc-i18n="indexRateLabel">相似度</label>
-                  <span id="rvc-index-rate-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0.5</span>
+                  <span id="rvc-index-rate-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0.30</span>
                 </div>
-                <input id="rvc-index-rate" type="range" min="0" max="1" step="0.05" value="0.5" class="rvc-range mt-3 w-full">
-                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="indexRateHint">越高音色越像角色，太高可能不自然。建议 0.3–0.8。</p>
+                <input id="rvc-index-rate" type="range" min="0" max="0.6" step="0.05" value="0.3" class="rvc-range mt-3 w-full">
+                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="indexRateHint">越高音色越贴近角色，但会增加颗粒风险。建议 0.20–0.40。</p>
               </div>
-              <div hidden>
+              <div>
                 <div class="flex items-center justify-between gap-3">
                   <label for="rvc-protect" class="text-sm font-bold" data-rvc-i18n="protectLabel">辅音保护</label>
                   <span id="rvc-protect-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0.33</span>
@@ -310,6 +309,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260820-v10"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-  <script src="assets/rvc.js?v=20260821-v23"></script>
+  <script src="assets/rvc.js?v=20260821-v24"></script>
 </body>
 </html>

@@ -12590,19 +12590,21 @@ async function estimatePitch(audio, options) {
 }
 const F0_MIN = 50;
 const F0_MAX = 1100; // MUST match RVC v2 training constant: nn.Embedding(256) was trained with f0_mel_max=1127*log(1+1100/700)
-const PITCH_SHIFT_CEILING = 1100; // Continuous Hz ceiling for applyPitchShift (must also match training range)
 const F0_MEL_MIN = 1127 * Math.log(1 + F0_MIN / 700);
 const F0_MEL_MAX = 1127 * Math.log(1 + F0_MAX / 700);
-function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift = 0) {
+function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift = 0, options = {}) {
   try {
     const shiftedF0 = applyPitchShift(pitch.f0, pitchShift);
+    const sourceUpp = Math.max(1, Math.round(options.sourceUpp ?? 400));
+    const seed = Number(options.noiseSeed ?? 20260821) >>> 0;
     return {
       phone: buildPhoneTensor(features, frameCount),
       phone_lengths: buildPhoneLengthsTensor(frameCount),
       pitch: buildPitchTensor(shiftedF0, frameCount),
       nsff0: buildNsff0Tensor(shiftedF0, frameCount),
       sid: buildSpeakerTensor(speakerId),
-      rnd: buildRndTensor(frameCount)
+      rnd: buildRndTensor(frameCount, seed, options.noiseScale ?? 0.5),
+      source_noise: buildSourceNoiseTensor(frameCount, sourceUpp, mixNoiseSeed(seed, 0x534f5552))
     };
   } catch (cause) {
     throw new RvcError(
@@ -12615,27 +12617,13 @@ function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift 
 function applyPitchShift(f0, semitones) {
   const factor = semitones === 0 ? 1.0 : 2 ** (semitones / 12);
   const shifted = new Float32Array(f0.length);
-  let ceilingHits = 0;
-  let voicedFrames = 0;
   for (let i = 0; i < f0.length; i++) {
     const rawHz = f0[i] * factor;
-    if (rawHz > 0) {
-      voicedFrames++;
-      // Cap at training range to keep pitch within the model's learned embedding space
-      if (rawHz > PITCH_SHIFT_CEILING) ceilingHits++;
-      shifted[i] = Math.min(PITCH_SHIFT_CEILING, Math.max(F0_MIN, rawHz));
-    } else {
-      shifted[i] = 0;
-    }
+    shifted[i] = Number.isFinite(rawHz) && rawHz > 0 ? rawHz : 0;
   }
-  if (ceilingHits > 0 && voicedFrames > 0) {
-    const pct = (ceilingHits / voicedFrames * 100).toFixed(1);
-    consoleProxy.warn(
-      `[F0 Ceiling] ${ceilingHits}/${voicedFrames} frames (${pct}%) hit the 1100Hz cap after ${semitones >= 0 ? "+" : ""}${semitones} semitones. Pitch gets pinned at the cap and may sound metallic/electronic — lowering the shift is recommended.`
-    );
-  }
-  // No unconditional smoothing: reining in legitimate momentary notes audibly
-  // flattens natural vibrato and consonant transitions.
+  // Match upstream RVC: keep continuous nsf F0 intact. Only the separate
+  // coarse embedding is clamped to 1..255 in buildQuantizedPitch(). Hard
+  // clipping continuous F0 creates flat 1100 Hz plateaus and sharp artefacts.
   return shifted;
 }
 function buildPhoneTensor(features, frameCount) {
@@ -12678,22 +12666,125 @@ function buildQuantizedPitch(f0, frameCount) {
   }
   return values;
 }
-function buildRndTensor(frameCount) {
+function mixNoiseSeed(seed, salt) {
+  let value = (Number(seed) >>> 0) ^ (Number(salt) >>> 0);
+  value = Math.imul(value ^ value >>> 16, 0x21f0aaad);
+  value = Math.imul(value ^ value >>> 15, 0x735a2d97);
+  return (value ^ value >>> 15) >>> 0;
+}
+function createSeededRandom(seed) {
+  let state = Number(seed) >>> 0;
+  if (state === 0) state = 0x6d2b79f5;
+  return () => {
+    state += 0x6d2b79f5;
+    let value = state;
+    value = Math.imul(value ^ value >>> 15, value | 1);
+    value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+    return ((value ^ value >>> 14) >>> 0) / 4294967296;
+  };
+}
+function fillSeededGaussian(data, seed, scale = 1) {
+  const random = createSeededRandom(seed);
+  const finiteScale = Number.isFinite(scale) ? scale : 1;
+  for (let i = 0; i < data.length; i += 2) {
+    const u1 = Math.max(1e-7, random());
+    const u2 = random();
+    const radius = Math.sqrt(-2 * Math.log(u1)) * finiteScale;
+    const theta = 2 * Math.PI * u2;
+    data[i] = radius * Math.cos(theta);
+    if (i + 1 < data.length) data[i + 1] = radius * Math.sin(theta);
+  }
+  return data;
+}
+function buildRndTensor(frameCount, seed = 20260821, noiseScale = 0.5) {
   const size = 1 * 192 * frameCount;
   const data = new Float32Array(size);
-  const noiseScale = 0.667; // VITS standard noise_scale for natural human vocal timbre
-  for (let i = 0; i < size; i += 2) {
-    let u1 = Math.random();
-    let u2 = Math.random();
-    while (u1 <= 1e-7) u1 = Math.random();
-    const radius = Math.sqrt(-2.0 * Math.log(u1)) * noiseScale;
-    const theta = 2.0 * Math.PI * u2;
-    data[i] = radius * Math.cos(theta);
-    if (i + 1 < size) {
-      data[i + 1] = radius * Math.sin(theta);
+  fillSeededGaussian(data, seed, Math.max(0, Math.min(1, Number(noiseScale))));
+  return new Te("float32", data, [1, 192, frameCount]);
+}
+function buildSourceNoiseTensor(frameCount, sourceUpp = 400, seed = 20260821) {
+  const audioLength = frameCount * Math.max(1, Math.round(sourceUpp));
+  const data = new Float32Array(audioLength);
+  fillSeededGaussian(data, seed, 1);
+  return new Te("float32", data, [1, audioLength, 1]);
+}
+
+function parseRetrievalCodebook(input) {
+  const buffer = input instanceof ArrayBuffer
+    ? input
+    : input?.buffer instanceof ArrayBuffer
+      ? input.buffer.slice(input.byteOffset || 0, (input.byteOffset || 0) + input.byteLength)
+      : null;
+  if (!buffer || buffer.byteLength < 16) throw new Error("Invalid retrieval codebook");
+  const view = new DataView(buffer);
+  const magic = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+  const version = view.getUint32(4, true);
+  const count = view.getUint32(8, true);
+  const dimension = view.getUint32(12, true);
+  const expectedBytes = 16 + count * dimension * 4;
+  if (magic !== "PPRI" || version !== 1 || count < 1 || count > 1024 || ![256, 768].includes(dimension) || expectedBytes !== buffer.byteLength) {
+    throw new Error("Unsupported or corrupt retrieval codebook");
+  }
+  return { count, dimension, centers: new Float32Array(buffer, 16, count * dimension) };
+}
+function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect = 0.33) {
+  const rate = Math.max(0, Math.min(1, Number(indexRate)));
+  const consonantRetention = Math.max(0, Math.min(0.5, Number(protect)));
+  if (!codebook || rate <= 0 || codebook.dimension !== features.featureSize) return features;
+  const frameCount = features.upsampledFrameCount;
+  const dimension = features.featureSize;
+  const output = new Float32Array(features.hiddenStates);
+  const distances = new Float64Array(4);
+  const nearest = new Int32Array(4);
+  for (let frame = 0; frame < frameCount; frame += 2) {
+    distances.fill(Infinity);
+    nearest.fill(-1);
+    const featureOffset = frame * dimension;
+    for (let center = 0; center < codebook.count; center++) {
+      const centerOffset = center * dimension;
+      let distance = 0;
+      for (let dim = 0; dim < dimension; dim++) {
+        const delta = features.hiddenStates[featureOffset + dim] - codebook.centers[centerOffset + dim];
+        distance += delta * delta;
+      }
+      if (distance >= distances[3]) continue;
+      let position = 3;
+      while (position > 0 && distance < distances[position - 1]) {
+        distances[position] = distances[position - 1];
+        nearest[position] = nearest[position - 1];
+        position--;
+      }
+      distances[position] = distance;
+      nearest[position] = center;
+    }
+    let weightTotal = 0;
+    const weights = new Float64Array(4);
+    if (distances[0] <= 1e-12) {
+      weights[0] = 1;
+      weightTotal = 1;
+    } else {
+      for (let candidate = 0; candidate < 4 && nearest[candidate] >= 0; candidate++) {
+        const inverseSquared = 1 / Math.max(1e-12, distances[candidate] * distances[candidate]);
+        weights[candidate] = inverseSquared;
+        weightTotal += inverseSquared;
+      }
+    }
+    const voiced = (f0[Math.min(frame, f0.length - 1)] ?? 0) > 0;
+    const effectiveRate = rate * (voiced ? 1 : consonantRetention);
+    for (let paired = frame; paired < Math.min(frame + 2, frameCount); paired++) {
+      const pairedOffset = paired * dimension;
+      for (let dim = 0; dim < dimension; dim++) {
+        let retrieved = 0;
+        for (let candidate = 0; candidate < 4 && nearest[candidate] >= 0; candidate++) {
+          retrieved += codebook.centers[nearest[candidate] * dimension + dim] * weights[candidate];
+        }
+        retrieved /= weightTotal;
+        const original = features.hiddenStates[pairedOffset + dim];
+        output[pairedOffset + dim] = original + (retrieved - original) * effectiveRate;
+      }
     }
   }
-  return new Te("float32", data, [1, 192, frameCount]);
+  return { ...features, hiddenStates: output };
 }
 function parseSynthesisOutput(outputs) {
   try {
@@ -12760,7 +12851,7 @@ async function synthesizeVoice(session, features, pitch, options = {}) {
   const frameCount = computeFrameCount(features, pitch, options.maxFrames);
   const speakerId = options.speakerId ?? 0;
   const pitchShift = options.pitchShift ?? 0;
-  const feeds = buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift);
+  const feeds = buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift, options);
   const outputs = await runInference(session, feeds);
   return parseSynthesisOutput(outputs);
 }
@@ -13154,6 +13245,17 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
         graphOptimizationLevel: "all"
       })
     ]);
+    let retrievalCodebook = null;
+    if (files.index && Number(options.indexRate ?? 0) > 0) {
+      try {
+        const indexBuffer = files.index instanceof ArrayBuffer
+          ? files.index
+          : await files.index.arrayBuffer();
+        retrievalCodebook = parseRetrievalCodebook(indexBuffer);
+      } catch (error) {
+        consoleProxy.warn(`[Retrieval] Ignoring unavailable codebook: ${error instanceof Error ? error.message : "unknown error"}`);
+      }
+    }
     ctx.modelSession = rvcSession;
     ctx.backend = "wasm";
     emitStage(PIPELINE_STAGES[2]);
@@ -13163,7 +13265,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       inputSampleRate: options.inputSampleRate ?? 16e3,
       outputSampleRate: options.outputSampleRate ?? 40e3
     };
-    let detectedSampleRate = options.outputSampleRate;
+    let detectedSampleRate;
     const outputAudio = await processAudioInChunks(
       audio,
       async (chunk, currentChunk, totalChunks) => {
@@ -13178,10 +13280,20 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
           medianFilterWindow: options.medianFilterWindow,
           aggressiveMedianFilter: options.aggressiveMedianFilter
         });
+        const retrievedFeatures = applyRetrievalCodebook(
+          features,
+          pitch.f0,
+          retrievalCodebook,
+          options.indexRate ?? 0,
+          options.protect ?? 0.33
+        );
         callbacks.onEvent?.({ type: "chunk_step", step: "synth", current: currentChunk, total: totalChunks });
-        const synthesized = await synthesizeVoice(rvcSession, features, pitch, {
+        const synthesized = await synthesizeVoice(rvcSession, retrievedFeatures, pitch, {
           speakerId: options.speakerId,
-          pitchShift: options.pitchShift
+          pitchShift: options.pitchShift,
+          noiseSeed: mixNoiseSeed(options.noiseSeed ?? 20260821, currentChunk),
+          noiseScale: options.noiseScale ?? 0.5,
+          sourceUpp: Math.max(1, Math.round((options.outputSampleRate ?? 40e3) / 100))
         });
         if (synthesized.sampleRate && !detectedSampleRate) {
           detectedSampleRate = synthesized.sampleRate;
