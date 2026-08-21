@@ -118,6 +118,49 @@ test("RVC page starts neutral and the pipeline avoids non-official mastering", a
   assert.doesNotMatch(workerSource, /filteredF0 = stabilizeShoutingPitchF0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(client, /v=20260821-v22/u);
-  assert.match(runtime, /v=20260821-v22/u);
+  assert.match(page, /id="rvc-filter-radius"[\s\S]*?<option value="0">0（推荐/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260821-v23/u);
+  assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
+  assert.match(workerSource, /extractHubertFeatures[\s\S]*?normalize: false/u);
+  assert.doesNotMatch(workerSource, /extractHubertFeatures[\s\S]{0,180}?normalize: true/u);
+  assert.match(workerSource, /fMin: 30,/u);
+  assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
+  assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
+  assert.match(client, /v=20260821-v23/u);
+  assert.match(runtime, /v=20260821-v23/u);
+  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260821-v23"/u);
+  assert.match(client, /characterModelCacheKey\(selectedModel\)/u);
+  assert.match(client, /chunks\.map\(versionCharacterChunkPath\)/u);
+});
+
+test("re-exported character models retain the official stochastic latent path", async () => {
+  const reexported = ["arisu", "shiroko", "yuuka", "hina", "noa", "koharu"];
+  const randomNode = Buffer.from("RandomNormalLike");
+
+  for (const id of reexported) {
+    const firstChunk = await readFile(
+      new URL(`models/characters/${id}/chunk_0.bin`, root),
+    );
+    assert.ok(
+      firstChunk.includes(randomNode),
+      `${id} is missing RandomNormalLike and may regress to metallic deterministic synthesis`,
+    );
+  }
+});
+
+test("model export helpers do not collapse the latent distribution to its mean", async () => {
+  const helpers = [
+    "tools/export-blue-archive.py",
+    "tools/batch-ba-models.py",
+    "tools/convert_hoshino_local.py",
+    "tools/export_hoshino.py",
+    "tools/export_hoshino_fast.py",
+    "tools/export_hoshino_v2.py",
+  ];
+
+  for (const helper of helpers) {
+    const source = await readFile(new URL(helper, root), "utf8");
+    assert.doesNotMatch(source, /z_p\s*=\s*m_p\s*\*\s*x_mask/u, helper);
+    assert.match(source, /torch\.randn_like\(m_p\)\s*\*\s*0\.66666/u, helper);
+  }
 });

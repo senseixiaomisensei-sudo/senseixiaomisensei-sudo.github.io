@@ -1,7 +1,7 @@
 {
-  "version": 7,
+  "version": 8,
   "updatedAt": "2026-08-21",
-  "_readme": "RVC 角色声音目录（100% 同源分片静态加速，0 CORS，0 第三方依赖）。defaultPitch 仅是跨音域预设建议，切换角色时不会自动应用；页面默认始终为 0。",
+  "_readme": "RVC 角色声音目录（100% 同源分片静态加速，0 CORS，0 第三方依赖）。v23 统一采用官方 HuBERT 输入分布、HTK/30Hz RMVPE 频谱与未滤波自然音高；爱丽丝、白子、优香、日奈、诺亚和小春已按官方随机潜变量合成路径重新导出。defaultPitch 仅是跨音域预设建议，切换角色时不会自动应用；页面默认始终为 0。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",

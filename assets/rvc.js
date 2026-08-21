@@ -380,6 +380,19 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260821-v23";
+
+  function characterModelCacheKey(model) {
+    const id = String(model?.id || "character");
+    return id.startsWith("own:")
+      ? `${id}.onnx`
+      : `${id}.${CHARACTER_MODEL_ASSET_VERSION}.onnx`;
+  }
+
+  function versionCharacterChunkPath(path) {
+    const separator = String(path).includes("?") ? "&" : "?";
+    return `${path}${separator}model=${CHARACTER_MODEL_ASSET_VERSION}`;
+  }
 
   function openModelDB() {
     return new Promise((resolve) => {
@@ -637,7 +650,11 @@
     }
 
     if (Array.isArray(chunks) && chunks.length > 0) {
-      return await fetchChunkedModel(chunks, name, displayName || name, mimeType, onProgress);
+      const isPublishedCharacter = Boolean(modelConfig?.id) && !String(modelConfig.id).startsWith("own:");
+      const fetchChunks = isPublishedCharacter
+        ? chunks.map(versionCharacterChunkPath)
+        : chunks;
+      return await fetchChunkedModel(fetchChunks, name, displayName || name, mimeType, onProgress);
     }
 
     const urls = modelConfig?.urls || (typeof modelConfig === "string" ? [modelConfig] : [name]);
@@ -912,7 +929,7 @@
       let isCharReady = false;
       let charName = "";
       if (selectedModel) {
-        const charCached = await getCachedItem(`${selectedModel.id}.onnx`);
+        const charCached = await getCachedItem(characterModelCacheKey(selectedModel));
         isCharReady = charCached instanceof Blob && charCached.size > 1024 * 1024;
         charName = selectedModel.name;
       }
@@ -1004,7 +1021,7 @@
 
       if (selectedModel) {
         tasks.push(
-          loadModelAuto(selectedModel, `${selectedModel.id}.onnx`, selectedModel.name, "application/onnx", (loaded, total, c, t, cached, msg) => {
+          loadModelAuto(selectedModel, characterModelCacheKey(selectedModel), selectedModel.name, "application/onnx", (loaded, total, c, t, cached, msg) => {
             charLoaded = loaded;
             if (total) charTotal = total;
             updatePreloadUI(msg || `⏳ 正在缓存 ${selectedModel.name} 角色模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
@@ -1041,6 +1058,11 @@
       await removeCachedItem("rmvpe.onnx");
       for (const m of state.catalog) {
         await removeCachedItem(`${m.id}.onnx`);
+        await removeCachedItem(characterModelCacheKey(m));
+        for (const chunkPath of m.chunks || []) {
+          await removeCachedItem(`chunk:${chunkPath}`);
+          await removeCachedItem(`chunk:${versionCharacterChunkPath(chunkPath)}`);
+        }
       }
       showToast("🗑️ 本地模型缓存已清理");
       await checkCacheStatus();
@@ -1198,7 +1220,7 @@
           loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE", "application/onnx", () => {}),
         ];
         if (silentCharModel) {
-          tasks.push(loadModelAuto(silentCharModel, `${silentCharModel.id}.onnx`, silentCharModel.name, "application/onnx", () => {}));
+          tasks.push(loadModelAuto(silentCharModel, characterModelCacheKey(silentCharModel), silentCharModel.name, "application/onnx", () => {}));
         }
         Promise.all(tasks).then(() => checkCacheStatus()).catch(() => {});
       }
@@ -1321,7 +1343,7 @@
     const resultDownload = document.getElementById("rvc-result-download");
     const resultMeta = document.getElementById("rvc-result-meta");
     const pitchVal = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
-    const filterRadiusVal = parseInt(document.getElementById("rvc-filter-radius")?.value || "3", 10);
+    const filterRadiusVal = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
     const rmsMixVal = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1.0");
 
     state.busy = true;
@@ -1334,7 +1356,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260821-v22", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260821-v23", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1378,7 +1400,7 @@
       updateStatusDisplay(`⏳ [1/4] 正在加载角色声音模型 (${selectedModel.name})...`);
       const modelFile = await loadModelAuto(
         selectedModel,
-        `${selectedModel.id}.onnx`,
+        characterModelCacheKey(selectedModel),
         selectedModel.name,
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {

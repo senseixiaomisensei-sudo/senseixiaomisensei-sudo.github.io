@@ -8562,7 +8562,10 @@ async function processAudioInChunks(audio, processor, config = {}, onProgress) {
 }
 const CONTENTVEC_PAD_MULTIPLE = 160;
 function preprocessForContentVec(audio, options = {}) {
-  const { normalize = true } = options;
+  // The bundled HuBERT export already follows the official RVC feature path.
+  // Whole-clip layer normalization here changes the amplitude distribution the
+  // model was exported with and exaggerates room noise / metallic harmonics.
+  const { normalize = false } = options;
   const processed = normalize ? layerNormalize(audio) : audio;
   return padToMultiple(processed, CONTENTVEC_PAD_MULTIPLE);
 }
@@ -8724,7 +8727,7 @@ function upsampleFeaturesRepeat(features, frameCount, featureSize) {
   return result;
 }
 async function extractHubertFeatures(audio, options) {
-  const processed = preprocessForContentVec(audio, { normalize: true });
+  const processed = preprocessForContentVec(audio, { normalize: false });
   const session = options.contentVec instanceof File ? await loadContentVecModel(options.contentVec, options.onModelProgress) : options.contentVec;
   return await runContentVecInference(session, processed);
 }
@@ -12137,7 +12140,8 @@ const RMVPE_PARAMS = {
   nFft: 1024,
   hopLength: 160,
   sampleRate: 16e3,
-  fMin: 0,
+  // Official RVC RMVPE MelSpectrogram uses 30 Hz and the HTK mel scale.
+  fMin: 30,
   fMax: 8e3,
   nClass: 360,
   // Output dimension of RMVPE
@@ -12175,28 +12179,12 @@ function computeMelSpectrogram(audio) {
   }
   return melSpec;
 }
-function slaneyHzToMel(hz) {
-  const f_min = 0.0;
-  const f_sp = 200.0 / 3.0;
-  const min_log_hz = 1000.0;
-  const min_log_mel = (min_log_hz - f_min) / f_sp;
-  const logstep = Math.log(6.4) / 27.0;
-  if (hz >= min_log_hz) {
-    return min_log_mel + Math.log(hz / min_log_hz) / logstep;
-  }
-  return (hz - f_min) / f_sp;
+function htkHzToMel(hz) {
+  return 2595 * Math.log10(1 + hz / 700);
 }
 
-function slaneyMelToHz(mel) {
-  const f_min = 0.0;
-  const f_sp = 200.0 / 3.0;
-  const min_log_hz = 1000.0;
-  const min_log_mel = (min_log_hz - f_min) / f_sp;
-  const logstep = Math.log(6.4) / 27.0;
-  if (mel >= min_log_mel) {
-    return min_log_hz * Math.exp(logstep * (mel - min_log_mel));
-  }
-  return f_min + f_sp * mel;
+function htkMelToHz(mel) {
+  return 700 * (10 ** (mel / 2595) - 1);
 }
 
 function createMelFilterbank(nFft, nMels, sampleRate, fMin, fMax) {
@@ -12205,12 +12193,12 @@ function createMelFilterbank(nFft, nMels, sampleRate, fMin, fMax) {
   for (let j = 0; j < nFftHalf; j++) {
     fftfreqs[j] = j * sampleRate / nFft;
   }
-  const melMin = slaneyHzToMel(fMin);
-  const melMax = slaneyHzToMel(fMax);
+  const melMin = htkHzToMel(fMin);
+  const melMax = htkHzToMel(fMax);
   const hzPoints = new Float32Array(nMels + 2);
   for (let i = 0; i < nMels + 2; i++) {
     const mel = melMin + i * (melMax - melMin) / (nMels + 1);
-    hzPoints[i] = slaneyMelToHz(mel);
+    hzPoints[i] = htkMelToHz(mel);
   }
   const fdiff = new Float32Array(nMels + 1);
   for (let i = 0; i < nMels + 1; i++) {
@@ -12364,7 +12352,7 @@ function padMelSpectrogram(melSpec, nMels, numFrames, targetFrames) {
 async function runRmvpeInference(session, audio) {
   try {
     const { hopLength, threshold, nMels } = RMVPE_PARAMS;
-    const numFrames = Math.ceil(audio.length / hopLength);
+    let numFrames = 1 + Math.floor(audio.length / hopLength);
     const inputName = session.inputNames[0] ?? "mel";
     let inputTensor;
     if (inputName === "waveform") {
@@ -12372,6 +12360,7 @@ async function runRmvpeInference(session, audio) {
     } else {
       const melSpec = computeMelSpectrogram(audio);
       const computedFrames = Math.floor(melSpec.length / nMels);
+      numFrames = computedFrames;
       const targetFrames = 160 * Math.ceil(computedFrames / 160);
       const paddedMelSpec = padMelSpectrogram(melSpec, nMels, computedFrames, targetFrames);
       inputTensor = new Te("float32", paddedMelSpec, [1, nMels, targetFrames]);
@@ -12579,7 +12568,10 @@ function stabilizeShoutingPitchF0(f0) {
 async function estimatePitch(audio, options) {
   const session = options.rmvpe instanceof File ? await loadRmvpeModel(options.rmvpe) : options.rmvpe;
   const { f0, frameCount } = await runRmvpeInference(session, audio);
-  const medianFilterEnabled = options.medianFilter !== false;
+  // Official RMVPE inference returns its contour directly. Filtering remains
+  // opt-in for genuinely broken pitch tracks; enabling it by default creates
+  // stepped notes and a robotic/electronic delivery.
+  const medianFilterEnabled = options.medianFilter === true;
   const aggressiveMode = options.aggressiveMedianFilter === true;
   const windowSize = options.medianFilterWindow ?? (aggressiveMode ? 5 : 3);
   let filteredF0 = f0;
@@ -12642,9 +12634,8 @@ function applyPitchShift(f0, semitones) {
       `[F0 Ceiling] ${ceilingHits}/${voicedFrames} frames (${pct}%) hit the 1100Hz cap after ${semitones >= 0 ? "+" : ""}${semitones} semitones. Pitch gets pinned at the cap and may sound metallic/electronic — lowering the shift is recommended.`
     );
   }
-  // Note: isolated F0 spikes are already handled by the 3-point median
-  // filter BEFORE the shift (estimatePitch). No post-shift smoothing here:
-  // reining in legitimate momentary high notes would audibly flatten them.
+  // No unconditional smoothing: reining in legitimate momentary notes audibly
+  // flattens natural vibrato and consonant transitions.
   return shifted;
 }
 function buildPhoneTensor(features, frameCount) {
