@@ -1,10 +1,11 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium } from "file:///E:/大肥鱼/rvc-local/convert/node_modules/playwright/index.mjs";
 
 const PORT = 8126;
-const ROOT = "E:\\大肥鱼\\site";
+const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
 const MIME_MAP = {
   ".html": "text/html; charset=utf-8",
@@ -54,8 +55,15 @@ server.listen(PORT, "127.0.0.1", async () => {
     await page.goto(`http://127.0.0.1:${PORT}/rvc.html`, { waitUntil: "domcontentloaded", timeout: 20000 });
     await page.waitForTimeout(1500);
 
+    const requestedModelId = process.argv[3];
+    if (requestedModelId) {
+      const modelCard = page.locator(`[data-model-id="${requestedModelId}"]`);
+      if ((await modelCard.count()) !== 1) throw new Error(`Unknown model id: ${requestedModelId}`);
+      await modelCard.click();
+    }
+
     // Set input file using test audio
-    const testAudioPath = "E:\\大肥鱼\\rvc-local\\convert\\test-input-16k.wav";
+    const testAudioPath = process.env.POSTPREP_RVC_TEST_AUDIO || "E:\\大肥鱼\\rvc-local\\convert\\test-input-16k.wav";
     console.log("Setting input audio file:", testAudioPath);
     const fileInput = await page.locator("#rvc-audio-file");
     await fileInput.setInputFiles(testAudioPath);
@@ -91,6 +99,21 @@ server.listen(PORT, "127.0.0.1", async () => {
       }
 
       if (finished) {
+        const outputPath = process.argv[2];
+        if (outputPath && outputPath !== "-") {
+          const outputBase64 = await page.evaluate(async () => {
+            const audio = document.getElementById("rvc-result-audio");
+            const response = await fetch(audio.src);
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            let binary = "";
+            for (let offset = 0; offset < bytes.length; offset += 0x8000) {
+              binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
+            }
+            return btoa(binary);
+          });
+          fs.writeFileSync(outputPath, Buffer.from(outputBase64, "base64"));
+          console.log(`Saved converted WAV: ${outputPath}`);
+        }
         console.log("✅ FULL END-TO-END RVC IN-BROWSER INFERENCE PASSED!");
       } else {
         console.log("⏳ Inference in progress or timed out.");

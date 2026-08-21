@@ -69,7 +69,7 @@ class ExportWrapper(nn.Module):
     def forward(self, phone, phone_lengths, pitch, nsff0, sid):
         g = self.net.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.net.enc_p(phone, pitch, phone_lengths)
-        z_p = m_p * x_mask
+        z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
         z = self.net.flow(z_p, x_mask, g=g, reverse=True)
         o = self.net.dec(z * x_mask, nsff0, g=g)
         sr = torch.tensor([self.target_sr], dtype=torch.int64)

@@ -8562,7 +8562,10 @@ async function processAudioInChunks(audio, processor, config = {}, onProgress) {
 }
 const CONTENTVEC_PAD_MULTIPLE = 160;
 function preprocessForContentVec(audio, options = {}) {
-  const { normalize = true } = options;
+  // The bundled HuBERT export already follows the official RVC feature path.
+  // Whole-clip layer normalization here changes the amplitude distribution the
+  // model was exported with and exaggerates room noise / metallic harmonics.
+  const { normalize = false } = options;
   const processed = normalize ? layerNormalize(audio) : audio;
   return padToMultiple(processed, CONTENTVEC_PAD_MULTIPLE);
 }
@@ -8724,7 +8727,7 @@ function upsampleFeaturesRepeat(features, frameCount, featureSize) {
   return result;
 }
 async function extractHubertFeatures(audio, options) {
-  const processed = preprocessForContentVec(audio, { normalize: true });
+  const processed = preprocessForContentVec(audio, { normalize: false });
   const session = options.contentVec instanceof File ? await loadContentVecModel(options.contentVec, options.onModelProgress) : options.contentVec;
   return await runContentVecInference(session, processed);
 }
@@ -12137,7 +12140,8 @@ const RMVPE_PARAMS = {
   nFft: 1024,
   hopLength: 160,
   sampleRate: 16e3,
-  fMin: 0,
+  // Official RVC RMVPE MelSpectrogram uses 30 Hz and the HTK mel scale.
+  fMin: 30,
   fMax: 8e3,
   nClass: 360,
   // Output dimension of RMVPE
@@ -12175,28 +12179,12 @@ function computeMelSpectrogram(audio) {
   }
   return melSpec;
 }
-function slaneyHzToMel(hz) {
-  const f_min = 0.0;
-  const f_sp = 200.0 / 3.0;
-  const min_log_hz = 1000.0;
-  const min_log_mel = (min_log_hz - f_min) / f_sp;
-  const logstep = Math.log(6.4) / 27.0;
-  if (hz >= min_log_hz) {
-    return min_log_mel + Math.log(hz / min_log_hz) / logstep;
-  }
-  return (hz - f_min) / f_sp;
+function htkHzToMel(hz) {
+  return 2595 * Math.log10(1 + hz / 700);
 }
 
-function slaneyMelToHz(mel) {
-  const f_min = 0.0;
-  const f_sp = 200.0 / 3.0;
-  const min_log_hz = 1000.0;
-  const min_log_mel = (min_log_hz - f_min) / f_sp;
-  const logstep = Math.log(6.4) / 27.0;
-  if (mel >= min_log_mel) {
-    return min_log_hz * Math.exp(logstep * (mel - min_log_mel));
-  }
-  return f_min + f_sp * mel;
+function htkMelToHz(mel) {
+  return 700 * (10 ** (mel / 2595) - 1);
 }
 
 function createMelFilterbank(nFft, nMels, sampleRate, fMin, fMax) {
@@ -12205,12 +12193,12 @@ function createMelFilterbank(nFft, nMels, sampleRate, fMin, fMax) {
   for (let j = 0; j < nFftHalf; j++) {
     fftfreqs[j] = j * sampleRate / nFft;
   }
-  const melMin = slaneyHzToMel(fMin);
-  const melMax = slaneyHzToMel(fMax);
+  const melMin = htkHzToMel(fMin);
+  const melMax = htkHzToMel(fMax);
   const hzPoints = new Float32Array(nMels + 2);
   for (let i = 0; i < nMels + 2; i++) {
     const mel = melMin + i * (melMax - melMin) / (nMels + 1);
-    hzPoints[i] = slaneyMelToHz(mel);
+    hzPoints[i] = htkMelToHz(mel);
   }
   const fdiff = new Float32Array(nMels + 1);
   for (let i = 0; i < nMels + 1; i++) {
@@ -12307,7 +12295,7 @@ function computeMagnitudesFFT(frame) {
   }
   return magnitudes;
 }
-function decodeSalienceToF0(salience, frameCount, threshold) {
+function decodeSalienceToF0(salience, frameCount, threshold, classFirst = false) {
   const { nClass, centsPerBin, centsOffset } = RMVPE_PARAMS;
   const centsMapping = new Float32Array(nClass + 8);
   for (let i = 0; i < nClass + 8; i++) {
@@ -12315,11 +12303,10 @@ function decodeSalienceToF0(salience, frameCount, threshold) {
   }
   const f0 = new Float32Array(frameCount);
   for (let frame = 0; frame < frameCount; frame++) {
-    const frameOffset = frame * nClass;
     let maxVal = -Infinity;
     let center = 0;
     for (let i = 0; i < nClass; i++) {
-      const val = salience[frameOffset + i];
+      const val = salience[classFirst ? i * frameCount + frame : frame * nClass + i];
       if (val > maxVal) {
         maxVal = val;
         center = i;
@@ -12334,7 +12321,9 @@ function decodeSalienceToF0(salience, frameCount, threshold) {
     let weightSum = 0;
     for (let i = 0; i < 9; i++) {
       const binIdx = startIdx + i;
-      const salienceVal = binIdx >= 0 && binIdx < nClass ? salience[frameOffset + binIdx] : 0;
+      const salienceVal = binIdx >= 0 && binIdx < nClass
+        ? salience[classFirst ? binIdx * frameCount + frame : frame * nClass + binIdx]
+        : 0;
       productSum += salienceVal * (binIdx * centsPerBin + centsOffset);
       weightSum += salienceVal;
     }
@@ -12363,7 +12352,7 @@ function padMelSpectrogram(melSpec, nMels, numFrames, targetFrames) {
 async function runRmvpeInference(session, audio) {
   try {
     const { hopLength, threshold, nMels } = RMVPE_PARAMS;
-    const numFrames = Math.ceil(audio.length / hopLength);
+    let numFrames = 1 + Math.floor(audio.length / hopLength);
     const inputName = session.inputNames[0] ?? "mel";
     let inputTensor;
     if (inputName === "waveform") {
@@ -12371,6 +12360,7 @@ async function runRmvpeInference(session, audio) {
     } else {
       const melSpec = computeMelSpectrogram(audio);
       const computedFrames = Math.floor(melSpec.length / nMels);
+      numFrames = computedFrames;
       const targetFrames = 160 * Math.ceil(computedFrames / 160);
       const paddedMelSpec = padMelSpectrogram(melSpec, nMels, computedFrames, targetFrames);
       inputTensor = new Te("float32", paddedMelSpec, [1, nMels, targetFrames]);
@@ -12401,7 +12391,7 @@ async function runRmvpeInference(session, audio) {
       const salienceData = outputTensor.data;
       const isLastDimClass = outputTensor.dims[2] === RMVPE_PARAMS.nClass;
       const outputFrames = isLastDimClass ? outputTensor.dims[1] : outputTensor.dims[2];
-      const f0All = decodeSalienceToF0(salienceData, outputFrames, threshold);
+      const f0All = decodeSalienceToF0(salienceData, outputFrames, threshold, !isLastDimClass);
       f0 = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         const hz = i < f0All.length ? f0All[i] : 0;
@@ -12578,7 +12568,10 @@ function stabilizeShoutingPitchF0(f0) {
 async function estimatePitch(audio, options) {
   const session = options.rmvpe instanceof File ? await loadRmvpeModel(options.rmvpe) : options.rmvpe;
   const { f0, frameCount } = await runRmvpeInference(session, audio);
-  const medianFilterEnabled = options.medianFilter !== false;
+  // Official RMVPE inference returns its contour directly. Filtering remains
+  // opt-in for genuinely broken pitch tracks; enabling it by default creates
+  // stepped notes and a robotic/electronic delivery.
+  const medianFilterEnabled = options.medianFilter === true;
   const aggressiveMode = options.aggressiveMedianFilter === true;
   const windowSize = options.medianFilterWindow ?? (aggressiveMode ? 5 : 3);
   let filteredF0 = f0;
@@ -12589,7 +12582,6 @@ async function estimatePitch(audio, options) {
       filteredF0 = medianFilterF0(f0, windowSize);
     }
   }
-  filteredF0 = stabilizeShoutingPitchF0(filteredF0);
   return {
     f0: filteredF0,
     frameCount,
@@ -12642,9 +12634,8 @@ function applyPitchShift(f0, semitones) {
       `[F0 Ceiling] ${ceilingHits}/${voicedFrames} frames (${pct}%) hit the 1100Hz cap after ${semitones >= 0 ? "+" : ""}${semitones} semitones. Pitch gets pinned at the cap and may sound metallic/electronic — lowering the shift is recommended.`
     );
   }
-  // Note: isolated F0 spikes are already handled by the 3-point median
-  // filter BEFORE the shift (estimatePitch). No post-shift smoothing here:
-  // reining in legitimate momentary high notes would audibly flatten them.
+  // No unconditional smoothing: reining in legitimate momentary notes audibly
+  // flattens natural vibrato and consonant transitions.
   return shifted;
 }
 function buildPhoneTensor(features, frameCount) {
@@ -12773,11 +12764,9 @@ async function synthesizeVoice(session, features, pitch, options = {}) {
   const outputs = await runInference(session, feeds);
   return parseSynthesisOutput(outputs);
 }
-// Official-RVC-style input conditioning: DC removal + 48Hz 2nd-order
-// Butterworth high-pass + peak normalization to -3dB (0.7). Mic and phone
-// recordings arrive at wildly different levels; clipped inputs get their
-// distortion "learned and amplified" by HuBERT while too-quiet inputs
-// degrade feature quality. Normalizing first keeps both cases safe.
+// Match the official RVC input path: remove DC, apply a 48 Hz high-pass, and
+// only attenuate an over-range signal. Never boost ordinary or quiet input;
+// doing so raises room noise and encoding artefacts before HuBERT/RMVPE.
 function conditionInputAudio(audio, sampleRate = 16000) {
   if (!audio || audio.length === 0) return audio;
   const out = new Float32Array(audio.length);
@@ -12803,14 +12792,18 @@ function conditionInputAudio(audio, sampleRate = 16000) {
     const av = Math.abs(y0);
     if (av > peak) peak = av;
   }
-  if (peak > 0.02 && isFinite(peak) && peak > 0) {
-    const scale = 0.7 / peak;
+  if (peak > 0.95 && isFinite(peak)) {
+    const scale = 0.95 / peak;
     for (let i = 0; i < out.length; i++) out[i] *= scale;
   }
   return out;
 }
 function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSampleRate = 40000) {
-  if (!input16k || !synthAudio || rmsMixRate <= 0) return synthAudio;
+  if (!input16k || !synthAudio) return synthAudio;
+  const mixRate = Math.max(0, Math.min(1, Number(rmsMixRate)));
+  // Official RVC semantics: 1 keeps the synthesized envelope unchanged;
+  // 0 follows the source envelope most strongly.
+  if (!isFinite(mixRate) || mixRate >= 1) return synthAudio;
   const hop16k = 160;
   const win16k = 640;
   const hopSynth = Math.round(synthSampleRate / 100);
@@ -12823,7 +12816,7 @@ function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSa
   if (numFrames <= 0) return synthAudio;
 
   const targetGains = new Float32Array(numFrames);
-  const exponent = 1.0 - rmsMixRate;
+  const exponent = 1.0 - mixRate;
 
   for (let f = 0; f < numFrames; f++) {
     let sumIn = 0;
@@ -13055,6 +13048,23 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
 
   return processed;
 }
+// Transparent final safety gain. This intentionally performs no EQ, dynamic
+// resonance suppression, saturation, or per-band modulation: those custom
+// effects colour every character and can themselves sound metallic.
+function normalizeOutputPeak(audio, targetPeak = 0.95) {
+  if (!audio || audio.length === 0) return audio;
+  let peak = 0;
+  for (let i = 0; i < audio.length; i++) {
+    if (!isFinite(audio[i])) audio[i] = 0;
+    const absolute = Math.abs(audio[i]);
+    if (absolute > peak) peak = absolute;
+  }
+  if (peak > targetPeak) {
+    const scale = targetPeak / peak;
+    for (let i = 0; i < audio.length; i++) audio[i] *= scale;
+  }
+  return audio;
+}
 function encodeMonoPcmToWav(audio, options = {}) {
   const { sampleRate = 40e3, numChannels = 1, bitsPerSample = 16 } = options;
   const bytesPerSample = bitsPerSample / 8;
@@ -13120,9 +13130,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       audio = result.audio;
       sampleRate = result.sampleRate;
     }
-    // Condition input (DC removal + 48Hz HPF + peak norm to -3dB) before
-    // feature/pitch extraction — prevents over-driven or too-quiet inputs
-    // from causing clipping and electric-sounding artifacts downstream.
+    // Condition input without raising ordinary/quiet recordings.
     audio = conditionInputAudio(audio, sampleRate);
     ctx.inputAudio = audio;
     ctx.sampleRate = sampleRate;
@@ -13188,10 +13196,11 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     );
     const finalSr = detectedSampleRate || options.outputSampleRate || 40e3;
     let finalAudio = outputAudio;
-    // 1. Blend RMS Volume Envelope (1.0 = 100% natural neural vocoder dynamics, matching official RVC v2 WebUI)
+    // 1. Blend RMS envelope using official RVC semantics (1 = unchanged).
     finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 1.0, finalSr);
-    // 2. Polish Harmonics & Vocal Air
-    finalAudio = applyHarmonicAirAndWarmth(finalAudio, finalSr);
+    // 2. Apply only a transparent global safety gain. The former always-on
+    // multi-band "anti-metallic" master introduced shared colour/modulation.
+    finalAudio = normalizeOutputPeak(finalAudio);
 
     ctx.outputAudio = finalAudio;
     ctx.hiddenStates = new Float32Array(0);

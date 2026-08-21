@@ -56,7 +56,8 @@ Worker 配置中已有独立的 `POSTPREP_RVC_RATE_LIMITER`（每 Origin/IP 1 �
 ## 添加/更新角色
 
 - 放入 GPU 服务的模型：`E:\大肥鱼\rvc-local\models\<id>\`（`model.pth`/`<id>.pth` + 可选 `model.index`、`meta.json`），重启服务后自动出现在网页角色列表中。
-- 只改展示信息：编辑 `assets/rvc-models.json`（名称、emoji、标签、描述、默认音高）。
+- 只改展示信息：编辑 `assets/rvc-models.json`（名称、emoji、标签、描述、跨音域预设建议值）。`defaultPitch` 不会在切换角色时自动应用，页面安全默认值始终为 `0`。
+- 浏览器推理默认遵循官方 RVC 的 HuBERT 输入分布与 RMVPE `HTK / 30 Hz` 梅尔频谱；RMVPE 后置中值滤波默认关闭，仅在音高轨存在明显孤立跳点时手动启用。
 - 模型权重不要提交到仓库；GitHub 单文件上限 100 MB，且权重各有许可，请确认每个模型的许可后再挂载。
 
 ## 上线核验

@@ -81,7 +81,7 @@
       recordInsecure: "录音需要 HTTPS 环境。当前页面不是安全上下文，请改用上传音频。",
       recordError: "录音启动失败，请改用上传音频。",
       stepSettings: "3. 调节声音（可选）",
-      stepSettingsHint: "大多数时候保持默认就好。男生变女声建议音高设为 +12（女变男设为 -12）。",
+      stepSettingsHint: "默认保持原调（0）。只有输入与角色音域明显不同时再逐步调节；过大的升调会放大金属感和电音。",
       pitchLabel: "音高调整 (变调)",
       pitchLow: "男声化 (-12)",
       pitchDefault: "原调 (0)",
@@ -162,7 +162,7 @@
       recordInsecure: "Recording requires HTTPS. Please upload audio instead.",
       recordError: "Recording could not start. Please upload audio instead.",
       stepSettings: "3. Tune the sound (optional)",
-      stepSettingsHint: "For male-to-female voices, set pitch to +12 (female-to-male to -12).",
+      stepSettingsHint: "Keep the original pitch (0) by default. Shift gradually only when the input and target ranges differ; large upward shifts can sound metallic.",
       pitchLabel: "Pitch Shift",
       pitchLow: "Male (-12)",
       pitchDefault: "Original (0)",
@@ -380,6 +380,19 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260821-v23";
+
+  function characterModelCacheKey(model) {
+    const id = String(model?.id || "character");
+    return id.startsWith("own:")
+      ? `${id}.onnx`
+      : `${id}.${CHARACTER_MODEL_ASSET_VERSION}.onnx`;
+  }
+
+  function versionCharacterChunkPath(path) {
+    const separator = String(path).includes("?") ? "&" : "?";
+    return `${path}${separator}model=${CHARACTER_MODEL_ASSET_VERSION}`;
+  }
 
   function openModelDB() {
     return new Promise((resolve) => {
@@ -637,7 +650,11 @@
     }
 
     if (Array.isArray(chunks) && chunks.length > 0) {
-      return await fetchChunkedModel(chunks, name, displayName || name, mimeType, onProgress);
+      const isPublishedCharacter = Boolean(modelConfig?.id) && !String(modelConfig.id).startsWith("own:");
+      const fetchChunks = isPublishedCharacter
+        ? chunks.map(versionCharacterChunkPath)
+        : chunks;
+      return await fetchChunkedModel(fetchChunks, name, displayName || name, mimeType, onProgress);
     }
 
     const urls = modelConfig?.urls || (typeof modelConfig === "string" ? [modelConfig] : [name]);
@@ -792,20 +809,17 @@
     return state.catalog.find((m) => m.id === state.selectedModelId);
   }
 
-  // 角色感知音高：每个角色有独立推荐音域（defaultPitch），
-  // 选中角色时自动套用，避免所有角色共用 +12 导致声音同质化、过尖。
+  // Character models retain a suggested cross-range pitch, but selecting a
+  // character must never change the user's current pitch. Official RVC starts
+  // at 0 semitones; forcing +8..+12 on every model is a shared source of
+  // metallic/chipmunk artefacts, especially for already-high input voices.
   function applyCharacterPitch(model) {
     if (!model || typeof model.defaultPitch !== "number") return;
     const fmt = (v) => (v > 0 ? "+" : "") + v;
     const pitchInput = document.getElementById("rvc-pitch");
-    const pitchVal = document.getElementById("rvc-pitch-value");
     const pitchTip = document.getElementById("rvc-pitch-tip");
-    if (pitchInput && pitchVal) {
-      pitchInput.value = String(model.defaultPitch);
-      pitchVal.textContent = fmt(model.defaultPitch);
-    }
-    if (pitchTip) {
-      pitchTip.textContent = `✨ 已加载「${model.name}」角色推荐音高 ${fmt(model.defaultPitch)} 半音${model.pitchNote ? " · " + model.pitchNote : ""}。`;
+    if (pitchTip && pitchInput && Number(pitchInput.value) === 0) {
+      pitchTip.textContent = `当前保持 0 半音，不会因切换角色自动变调。若是低音男声输入，可手动试听「${model.name}」建议值 ${fmt(model.defaultPitch)}。`;
     }
     const presetBtn = document.getElementById("rvc-preset-male-female");
     const presetLabel = presetBtn?.querySelector("span");
@@ -847,6 +861,7 @@
       }`;
       card.setAttribute("role", "option");
       card.setAttribute("aria-selected", isSelected ? "true" : "false");
+      card.dataset.modelId = m.id;
 
       const avatarText = m.avatarText || m.name.slice(0, 2);
       card.innerHTML = `
@@ -914,7 +929,7 @@
       let isCharReady = false;
       let charName = "";
       if (selectedModel) {
-        const charCached = await getCachedItem(`${selectedModel.id}.onnx`);
+        const charCached = await getCachedItem(characterModelCacheKey(selectedModel));
         isCharReady = charCached instanceof Blob && charCached.size > 1024 * 1024;
         charName = selectedModel.name;
       }
@@ -1006,7 +1021,7 @@
 
       if (selectedModel) {
         tasks.push(
-          loadModelAuto(selectedModel, `${selectedModel.id}.onnx`, selectedModel.name, "application/onnx", (loaded, total, c, t, cached, msg) => {
+          loadModelAuto(selectedModel, characterModelCacheKey(selectedModel), selectedModel.name, "application/onnx", (loaded, total, c, t, cached, msg) => {
             charLoaded = loaded;
             if (total) charTotal = total;
             updatePreloadUI(msg || `⏳ 正在缓存 ${selectedModel.name} 角色模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
@@ -1043,6 +1058,11 @@
       await removeCachedItem("rmvpe.onnx");
       for (const m of state.catalog) {
         await removeCachedItem(`${m.id}.onnx`);
+        await removeCachedItem(characterModelCacheKey(m));
+        for (const chunkPath of m.chunks || []) {
+          await removeCachedItem(`chunk:${chunkPath}`);
+          await removeCachedItem(`chunk:${versionCharacterChunkPath(chunkPath)}`);
+        }
       }
       showToast("🗑️ 本地模型缓存已清理");
       await checkCacheStatus();
@@ -1186,7 +1206,8 @@
     await loadOwnModelsFromDB();
     renderModelGallery();
     checkCacheStatus();
-    // 页面加载即套用当前选中角色的推荐音高（角色感知，防同质化/过尖）
+    // Only update the recommendation label; preserve the official 0-semitone
+    // default and any value the user selected.
     applyCharacterPitch(getSelectedModel());
     // Silent background pre-warm after 3 seconds of user idle
     setTimeout(() => {
@@ -1199,7 +1220,7 @@
           loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE", "application/onnx", () => {}),
         ];
         if (silentCharModel) {
-          tasks.push(loadModelAuto(silentCharModel, `${silentCharModel.id}.onnx`, silentCharModel.name, "application/onnx", () => {}));
+          tasks.push(loadModelAuto(silentCharModel, characterModelCacheKey(silentCharModel), silentCharModel.name, "application/onnx", () => {}));
         }
         Promise.all(tasks).then(() => checkCacheStatus()).catch(() => {});
       }
@@ -1322,8 +1343,7 @@
     const resultDownload = document.getElementById("rvc-result-download");
     const resultMeta = document.getElementById("rvc-result-meta");
     const pitchVal = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
-    const protectVal = parseFloat(document.getElementById("rvc-protect")?.value || "0.33");
-    const indexRateVal = parseFloat(document.getElementById("rvc-index-rate")?.value || "0.5");
+    const filterRadiusVal = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
     const rmsMixVal = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1.0");
 
     state.busy = true;
@@ -1336,7 +1356,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260820-v21", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260821-v23", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1380,7 +1400,7 @@
       updateStatusDisplay(`⏳ [1/4] 正在加载角色声音模型 (${selectedModel.name})...`);
       const modelFile = await loadModelAuto(
         selectedModel,
-        `${selectedModel.id}.onnx`,
+        characterModelCacheKey(selectedModel),
         selectedModel.name,
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
@@ -1424,7 +1444,7 @@
                 feature_extraction: "正在提取人声语义特征 (HuBERT)...",
                 pitch_estimation: "正在分析音高音调与共鸣 (RMVPE)...",
                 voice_synthesis: "正在合成目标角色音色...",
-                post_processing: "正在进行母带润色与音量跟随...",
+                post_processing: "正在进行透明峰值与音量包络校准...",
                 success: "变声完成，准备输出...",
               };
               updateStatusDisplay(`✨ [3/4] ${stageMap[e.stage] || e.stage}`);
@@ -1443,9 +1463,8 @@
         },
         {
           pitchShift: pitchVal,
-          medianFilter: true,
-          protect: protectVal,
-          indexRate: indexRateVal,
+          medianFilter: filterRadiusVal >= 3,
+          medianFilterWindow: filterRadiusVal >= 3 ? filterRadiusVal : 3,
           rmsMixRate: rmsMixVal,
           timeout: 600000,
         }
@@ -1543,7 +1562,7 @@
       });
     }
 
-    // Voice Preset Buttons (Male->Female +12, Female->Female 0, Female->Male -12)
+    // Voice presets are explicit opt-ins. The page itself starts at 0 semitones.
     const btnPresetMaleFemale = document.getElementById("rvc-preset-male-female");
     const btnPresetSame = document.getElementById("rvc-preset-same");
     const btnPresetFemaleMale = document.getElementById("rvc-preset-female-male");
@@ -1575,7 +1594,7 @@
         setPitchMode(
           pitch,
           model
-            ? `✨ 已为「${model.name}」设置角色推荐音高 ${fmt(pitch)} 半音：贴合角色天然音域，音色区分度最佳，也不会过尖。`
+            ? `已为「${model.name}」设置跨音域建议值 ${fmt(pitch)} 半音。若出现电音或过尖，请向 0 逐步回调。`
             : `✨ 当前已设为 ${fmt(pitch)} 半音：男声变女角色推荐音高。`,
           btnPresetMaleFemale
         );
@@ -1584,7 +1603,7 @@
 
     if (btnPresetSame) {
       btnPresetSame.addEventListener("click", () => {
-        setPitchMode(0, "✨ 当前已设为 0 半音：女声变女角色保持自然原调，还原原汁原味角色音色。", btnPresetSame);
+        setPitchMode(0, "当前已设为 0 半音：保留输入的自然音高，也是 RVC 的安全默认值。", btnPresetSame);
       });
     }
 
@@ -1606,9 +1625,9 @@
           }
         });
         if (pitchTip) {
-          if (val === 12) pitchTip.textContent = "✨ 当前已设为 +12 半音：男声变女角色标准黄金音高。";
-          else if (val === 0) pitchTip.textContent = "✨ 当前已设为 0 半音：原调输出。";
-          else if (val === -12) pitchTip.textContent = "✨ 当前已设为 -12 半音：女声变男角色标准音高。";
+          if (val === 12) pitchTip.textContent = "当前为 +12 半音：仅适合明显跨音域输入；若有金属感，请向 0 回调。";
+          else if (val === 0) pitchTip.textContent = "当前为 0 半音：保留自然原调。";
+          else if (val === -12) pitchTip.textContent = "当前为 -12 半音：仅适合明显跨音域输入；若低沉失真，请向 0 回调。";
           else pitchTip.textContent = `🎛️ 自定义音高偏移: ${(val > 0 ? "+" : "")}${val} 半音。`;
         }
       });
