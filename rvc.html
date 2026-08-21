@@ -22,7 +22,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v20260820-v21 (文本朗读 · 一键适配 · 全机自动共享 · 10分钟)
+          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v20260821-v22 (RVC 官方参数校准 · 自然音质修复 · 10分钟)
         </span>
       </div>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
@@ -183,15 +183,15 @@
         <!-- Step 3: 简单设置 -->
         <div class="mt-7 border-t border-line pt-6">
           <p class="text-sm font-bold" data-rvc-i18n="stepSettings">3. 调节声音与音调匹配</p>
-          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepSettingsHint">为避免变声出现金属嗡鸣，变女声建议选“男声变女声（+12）”；同性别变声选“原声（0）”。</p>
+          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepSettingsHint">默认保持原调（0）。只有输入与角色音域明显不同时再逐步调节；过大的升调会放大金属感和电音。</p>
 
           <!-- 一键声音模式预设 -->
           <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="输入人声预设">
-            <button id="rvc-preset-male-female" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-brand bg-teal-50 px-3 py-1.5 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" aria-pressed="true">
+            <button id="rvc-preset-male-female" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink shadow-xs transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" aria-pressed="false">
               <i class="fa-solid fa-mars" aria-hidden="true"></i><span>男声变女角色 (+12)</span>
             </button>
-            <button id="rvc-preset-same" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink shadow-xs transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" aria-pressed="false">
-              <i class="fa-solid fa-venus" aria-hidden="true"></i><span>女声变女角色 (0)</span>
+            <button id="rvc-preset-same" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-brand bg-teal-50 px-3 py-1.5 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" aria-pressed="true">
+              <i class="fa-solid fa-wave-square" aria-hidden="true"></i><span>保持原调 (0)</span>
             </button>
             <button id="rvc-preset-female-male" type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink shadow-xs transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1" aria-pressed="false">
               <i class="fa-solid fa-arrows-split-up-and-left" aria-hidden="true"></i><span>女声变男角色 (-12)</span>
@@ -201,20 +201,21 @@
           <div class="mt-4">
             <div class="flex items-center justify-between gap-3">
               <label for="rvc-pitch" class="text-sm font-bold" data-rvc-i18n="pitchLabel">音高调节（半音）</label>
-              <span id="rvc-pitch-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">+12</span>
+              <span id="rvc-pitch-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0</span>
             </div>
-            <input id="rvc-pitch" type="range" min="-12" max="12" step="1" value="12" class="rvc-range mt-3 w-full" aria-describedby="rvc-pitch-hint">
+            <input id="rvc-pitch" type="range" min="-12" max="12" step="1" value="0" class="rvc-range mt-3 w-full" aria-describedby="rvc-pitch-hint">
             <div class="mt-1 flex justify-between text-xs text-muted" id="rvc-pitch-hint">
               <span data-rvc-i18n="pitchLow">低沉（-12）</span>
               <span data-rvc-i18n="pitchDefault">原声（0）</span>
               <span data-rvc-i18n="pitchHigh">清脆（+12）</span>
             </div>
-            <p id="rvc-pitch-tip" class="mt-1 text-xs leading-5 text-brand font-medium">✨ 当前已设为 +12 半音：男声变萌妹角色黄金法则，声带频率完美共鸣，彻底告别低频金属电锯音。</p>
+            <p id="rvc-pitch-tip" class="mt-1 text-xs leading-5 text-brand font-medium">当前为 0 半音：先保留输入的自然音高；需要跨音域时再试听小幅调整。</p>
           </div>
 
           <details class="mt-6 rounded-lg border border-line bg-canvas px-4 py-3" id="rvc-advanced">
             <summary class="cursor-pointer text-sm font-bold text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-rvc-i18n="advancedToggle">高级设置（进阶用户）</summary>
             <div class="mt-5 space-y-6">
+              <p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">本机浏览器版未加载检索索引，因此“相似度”和“辅音保护”不参与推理；页面不会用无效滑块误导音质调整。</p>
               <!-- 隐藏：相似度/辅音保护滑块当前管线未接线（无 FAISS 索引文件），避免误导用户 -->
               <div hidden>
                 <div class="flex items-center justify-between gap-3">
@@ -234,31 +235,16 @@
               </div>
               <div class="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <label for="rvc-f0-method" class="text-sm font-bold" data-rvc-i18n="f0Label">音高提取算法</label>
-                  <select id="rvc-f0-method" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
-                    <option value="rmvpe" data-rvc-i18n="f0Rmvpe">RMVPE（推荐）</option>
-                    <option value="crepe" data-rvc-i18n="f0Crepe">Crepe（更准更慢）</option>
-                    <option value="fcpe" data-rvc-i18n="f0Fcpe">FCPE（快）</option>
-                    <option value="harvest" data-rvc-i18n="f0Harvest">Harvest（传统）</option>
-                  </select>
+                  <p class="text-sm font-bold" data-rvc-i18n="f0Label">音高提取算法</p>
+                  <p class="mt-2 min-h-11 rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm" data-rvc-i18n="f0Rmvpe">RMVPE（官方推荐）</p>
                 </div>
                 <div>
-                  <label for="rvc-format" class="text-sm font-bold" data-rvc-i18n="formatLabel">输出格式</label>
-                  <select id="rvc-format" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
-                    <option value="wav" data-rvc-i18n="formatWav">WAV（无损）</option>
-                    <option value="mp3" data-rvc-i18n="formatMp3">MP3（体积小）</option>
-                  </select>
+                  <p class="text-sm font-bold" data-rvc-i18n="formatLabel">输出格式</p>
+                  <p class="mt-2 min-h-11 rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm" data-rvc-i18n="formatWav">WAV（无损）</p>
                 </div>
                 <div>
-                  <label for="rvc-resample" class="text-sm font-bold" data-rvc-i18n="resampleLabel">重采样率</label>
-                  <select id="rvc-resample" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
-                    <option value="0" data-rvc-i18n="resampleKeep">保持原样</option>
-                    <option value="16000">16 kHz</option>
-                    <option value="24000">24 kHz</option>
-                    <option value="32000">32 kHz</option>
-                    <option value="44100">44.1 kHz</option>
-                    <option value="48000">48 kHz</option>
-                  </select>
+                  <p class="text-sm font-bold" data-rvc-i18n="resampleLabel">输出采样率</p>
+                  <p class="mt-2 min-h-11 rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm">跟随角色模型（40 / 48 kHz）</p>
                 </div>
                 <div>
                   <div class="flex items-center justify-between gap-3">
@@ -272,11 +258,7 @@
                   <select id="rvc-filter-radius" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
                     <option value="3">3（推荐）</option>
                     <option value="0">0（关）</option>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="4">4</option>
                     <option value="5">5</option>
-                    <option value="6">6</option>
                     <option value="7">7</option>
                   </select>
                 </div>
@@ -328,6 +310,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260820-v10"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-  <script src="assets/rvc.js?v=20260820-v21"></script>
+  <script src="assets/rvc.js?v=20260821-v22"></script>
 </body>
 </html>

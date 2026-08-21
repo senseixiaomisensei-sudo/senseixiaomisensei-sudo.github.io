@@ -1,7 +1,7 @@
 {
-  "version": 6,
-  "updatedAt": "2026-08-20",
-  "_readme": "RVC 角色声音目录（100% 同源分片静态加速，0 CORS，0 第三方依赖）。",
+  "version": 7,
+  "updatedAt": "2026-08-21",
+  "_readme": "RVC 角色声音目录（100% 同源分片静态加速，0 CORS，0 第三方依赖）。defaultPitch 仅是跨音域预设建议，切换角色时不会自动应用；页面默认始终为 0。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",

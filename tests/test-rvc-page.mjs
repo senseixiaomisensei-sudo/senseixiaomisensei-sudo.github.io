@@ -1,10 +1,11 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium } from "file:///E:/大肥鱼/rvc-local/convert/node_modules/playwright/index.mjs";
 
 const PORT = 8124;
-const ROOT = "E:\\大肥鱼\\site";
+const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
 const MIME_MAP = {
   ".html": "text/html; charset=utf-8",
@@ -44,7 +45,7 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, "127.0.0.1", async () => {
   console.log(`Test server running at http://127.0.0.1:${PORT}`);
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 
   const logs = [];
   const errors = [];
@@ -58,18 +59,24 @@ server.listen(PORT, "127.0.0.1", async () => {
     const title = await page.title();
     const cardsCount = await page.locator("#rvc-model-gallery button").count();
     const statusText = await page.locator("#rvc-service-status").textContent();
+    const pitchValue = await page.locator("#rvc-pitch").inputValue();
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
 
     console.log("=== Page Test Results ===");
     console.log("Title:", title);
     console.log("Character Cards Loaded:", cardsCount);
     console.log("Service Status:", statusText);
+    console.log("Default Pitch:", pitchValue);
+    console.log("Mobile Horizontal Overflow:", hasHorizontalOverflow);
     console.log("Errors Count:", errors.length);
     if (errors.length > 0) {
       console.log("Page Errors:", errors);
     }
     console.log("Console Logs:", logs.slice(0, 10));
 
-    if (cardsCount >= 3 && errors.length === 0) {
+    if (cardsCount >= 3 && pitchValue === "0" && !hasHorizontalOverflow && errors.length === 0) {
       console.log("✅ TEST PASSED: RVC Page initialized perfectly with all models and 0 errors!");
     } else {
       console.log("⚠️ TEST WARNING: Check details above.");
