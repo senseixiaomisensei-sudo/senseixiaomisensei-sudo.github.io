@@ -88,7 +88,7 @@
       pitchHigh: "女声化 (+12)",
       advancedToggle: "高级设置（进阶选项）",
       indexRateLabel: "音色相似度",
-      indexRateHint: "越高音色越贴近角色，太高可能不自然。建议 0.3–0.8。",
+      indexRateHint: "越高音色越贴近角色，但会增加颗粒风险。建议 0.20–0.40。",
       protectLabel: "辅音与呼吸保护",
       protectHint: "保护清辅音和呼吸声，防止破音。0 不保护，0.5 最保守。",
       f0Label: "音高算法",
@@ -169,7 +169,7 @@
       pitchHigh: "Female (+12)",
       advancedToggle: "Advanced settings",
       indexRateLabel: "Similarity",
-      indexRateHint: "Higher matches character timbre more closely. 0.3–0.8 recommended.",
+      indexRateHint: "Higher can match the character more closely but may add grain. 0.20–0.40 recommended.",
       protectLabel: "Consonant protection",
       protectHint: "Protects unvoiced consonants and breaths. 0.33 default.",
       f0Label: "Pitch extraction",
@@ -296,6 +296,7 @@
       tags: ["女声", "蔚蓝档案", "三一"],
       defaultPitch: 12,
       pitchNote: "明亮高音域少女：男声输入推荐 +12",
+      noiseSeed: 1337,
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/koharu/chunk_${i}.bin`)
     },
     {
@@ -330,6 +331,22 @@
     }
   ];
 
+  const CHARACTER_SAMPLE_RATES = Object.freeze({
+    tomori: 48000,
+    rana: 48000,
+  });
+
+  function normalizeCharacterRuntimeConfig(model) {
+    if (!model || String(model.id || "").startsWith("own:")) return model;
+    return {
+      ...model,
+      sampleRate: Number(model.sampleRate) || CHARACTER_SAMPLE_RATES[model.id] || 40000,
+      retrieval: model.retrieval || `models/characters/${model.id}/retrieval.bin`,
+      noiseScale: Number.isFinite(Number(model.noiseScale)) ? Number(model.noiseScale) : 0.5,
+      defaultIndexRate: Number.isFinite(Number(model.defaultIndexRate)) ? Number(model.defaultIndexRate) : 0.3,
+    };
+  }
+
   const state = {
     lang: "zh",
     engineReady: false,
@@ -346,7 +363,7 @@
     recordStream: null,
     recordStartAt: 0,
     recordTimerId: 0,
-    catalog: EMBEDDED_RVC_CATALOG,
+    catalog: EMBEDDED_RVC_CATALOG.map(normalizeCharacterRuntimeConfig),
     baseModels: EMBEDDED_BASE_MODELS,
     rvcContext: null,
   };
@@ -380,7 +397,7 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
-  const CHARACTER_MODEL_ASSET_VERSION = "20260821-v23";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260821-v24";
 
   function characterModelCacheKey(model) {
     const id = String(model?.id || "character");
@@ -392,6 +409,30 @@
   function versionCharacterChunkPath(path) {
     const separator = String(path).includes("?") ? "&" : "?";
     return `${path}${separator}model=${CHARACTER_MODEL_ASSET_VERSION}`;
+  }
+
+  function retrievalCacheKey(model) {
+    return `${model.id}.${CHARACTER_MODEL_ASSET_VERSION}.retrieval.bin`;
+  }
+
+  function deriveStableNoiseSeed(audio, modelId) {
+    let hash = 2166136261;
+    const id = String(modelId || "character");
+    for (let i = 0; i < id.length; i++) {
+      hash ^= id.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    const samples = audio instanceof Float32Array ? audio : new Float32Array(0);
+    const step = Math.max(1, Math.floor(samples.length / 4096));
+    for (let i = 0; i < samples.length; i += step) {
+      const quantized = Math.round(Math.max(-1, Math.min(1, samples[i])) * 32767);
+      hash ^= quantized & 255;
+      hash = Math.imul(hash, 16777619);
+      hash ^= quantized >>> 8 & 255;
+      hash = Math.imul(hash, 16777619);
+    }
+    hash ^= samples.length;
+    return hash >>> 0 || 20260821;
   }
 
   function openModelDB() {
@@ -1059,6 +1100,11 @@
       for (const m of state.catalog) {
         await removeCachedItem(`${m.id}.onnx`);
         await removeCachedItem(characterModelCacheKey(m));
+        await removeCachedItem(retrievalCacheKey(m));
+        if (m.retrieval) {
+          const retrievalPath = versionCharacterChunkPath(m.retrieval);
+          for (const url of getChunkMirrorUrls(retrievalPath)) await removeCachedItem(url);
+        }
         for (const chunkPath of m.chunks || []) {
           await removeCachedItem(`chunk:${chunkPath}`);
           await removeCachedItem(`chunk:${versionCharacterChunkPath(chunkPath)}`);
@@ -1193,7 +1239,7 @@
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.models) && data.models.length > 0) {
-          state.catalog = data.models;
+          state.catalog = data.models.map(normalizeCharacterRuntimeConfig);
         }
         if (data.baseModels) {
           state.baseModels = data.baseModels;
@@ -1345,6 +1391,8 @@
     const pitchVal = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
     const filterRadiusVal = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
     const rmsMixVal = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1.0");
+    const indexRateVal = parseFloat(document.getElementById("rvc-index-rate")?.value || String(selectedModel.defaultIndexRate ?? 0.3));
+    const protectVal = parseFloat(document.getElementById("rvc-protect")?.value || "0.33");
 
     state.busy = true;
     if (convertBtn) {
@@ -1356,7 +1404,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260821-v23", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260821-v24", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1409,6 +1457,23 @@
         }
       );
 
+      let retrievalFile;
+      if (selectedModel.retrieval && indexRateVal > 0) {
+        try {
+          updateStatusDisplay(`⏳ [1/4] 正在加载 ${selectedModel.name} 轻量音色检索码本...`);
+          const retrievalPath = versionCharacterChunkPath(selectedModel.retrieval);
+          retrievalFile = await fetchWithCache(
+            getChunkMirrorUrls(retrievalPath),
+            retrievalCacheKey(selectedModel),
+            "application/octet-stream",
+            () => {}
+          );
+        } catch (error) {
+          console.warn(`音色检索码本不可用，已回退到无检索变声: ${error instanceof Error ? error.message : error}`);
+          retrievalFile = undefined;
+        }
+      }
+
       updateProgressBar(100);
       setTimeout(() => showProgressBar(false), 800);
       checkCacheStatus();
@@ -1432,6 +1497,7 @@
           model: modelFile,
           contentVec: hubertFile,
           rmvpe: rmvpeFile,
+          index: retrievalFile,
         },
         freshAudioInput,
         16000,
@@ -1466,6 +1532,13 @@
           medianFilter: filterRadiusVal >= 3,
           medianFilterWindow: filterRadiusVal >= 3 ? filterRadiusVal : 3,
           rmsMixRate: rmsMixVal,
+          indexRate: indexRateVal,
+          protect: protectVal,
+          noiseSeed: Number.isInteger(selectedModel.noiseSeed)
+            ? selectedModel.noiseSeed >>> 0
+            : deriveStableNoiseSeed(freshAudioInput, selectedModel.id),
+          noiseScale: selectedModel.noiseScale ?? 0.5,
+          outputSampleRate: selectedModel.sampleRate || 40000,
           timeout: 600000,
         }
       );

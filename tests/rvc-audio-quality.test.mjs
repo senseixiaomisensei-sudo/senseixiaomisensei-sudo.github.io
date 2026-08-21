@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
@@ -119,48 +120,102 @@ test("RVC page starts neutral and the pipeline avoids non-official mastering", a
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(page, /id="rvc-filter-radius"[\s\S]*?<option value="0">0（推荐/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260821-v23/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260821-v24/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(workerSource, /extractHubertFeatures[\s\S]*?normalize: false/u);
   assert.doesNotMatch(workerSource, /extractHubertFeatures[\s\S]{0,180}?normalize: true/u);
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260821-v23/u);
-  assert.match(runtime, /v=20260821-v23/u);
-  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260821-v23"/u);
+  assert.match(client, /v=20260821-v24/u);
+  assert.match(runtime, /v=20260821-v24/u);
+  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260821-v24"/u);
   assert.match(client, /characterModelCacheKey\(selectedModel\)/u);
   assert.match(client, /chunks\.map\(versionCharacterChunkPath\)/u);
+  assert.match(page, /id="rvc-index-rate"[^>]*value="0\.3"/u);
+  assert.doesNotMatch(page, /<div hidden>[\s\S]{0,240}?id="rvc-index-rate"/u);
+  assert.match(client, /deriveStableNoiseSeed\(freshAudioInput, selectedModel\.id\)/u);
+  assert.match(client, /indexRate: indexRateVal/u);
 });
 
-test("re-exported character models retain the official stochastic latent path", async () => {
-  const reexported = ["arisu", "shiroko", "yuuka", "hina", "noa", "koharu"];
-  const randomNode = Buffer.from("RandomNormalLike");
-
-  for (const id of reexported) {
-    const firstChunk = await readFile(
-      new URL(`models/characters/${id}/chunk_0.bin`, root),
-    );
-    assert.ok(
-      firstChunk.includes(randomNode),
-      `${id} is missing RandomNormalLike and may regress to metallic deterministic synthesis`,
-    );
+test("all deployed character models expose caller-controlled noise without hidden random operators", async () => {
+  const catalog = JSON.parse(await readFile(new URL("assets/rvc-models.json", root), "utf8"));
+  const manifest = JSON.parse(await readFile(new URL("models/manifest.json", root), "utf8"));
+  assert.equal(catalog.models.length, 10);
+  for (const model of catalog.models) {
+    let hasRndInput = false;
+    let hasSourceNoiseInput = false;
+    let totalSize = 0;
+    const hash = createHash("sha256");
+    for (const chunkPath of model.chunks) {
+      const chunk = await readFile(new URL(chunkPath, root));
+      totalSize += chunk.length;
+      hash.update(chunk);
+      hasRndInput ||= chunk.includes(Buffer.from("rnd"));
+      hasSourceNoiseInput ||= chunk.includes(Buffer.from("source_noise"));
+      assert.equal(chunk.includes(Buffer.from("RandomNormalLike")), false, `${model.id} contains hidden Gaussian randomness`);
+      assert.equal(chunk.includes(Buffer.from("RandomUniformLike")), false, `${model.id} contains hidden phase randomness`);
+    }
+    assert.equal(hasRndInput, true, `${model.id} is missing rnd input`);
+    assert.equal(hasSourceNoiseInput, true, `${model.id} is missing source_noise input`);
+    const manifestEntry = Object.values(manifest).find((entry) => entry.chunks?.[0] === model.chunks[0]);
+    assert.ok(manifestEntry, `${model.id} missing manifest entry`);
+    assert.equal(totalSize, manifestEntry.totalSize, `${model.id} manifest size`);
+    assert.equal(hash.digest("hex"), manifestEntry.sha256, `${model.id} manifest hash`);
+    const retrieval = await readFile(new URL(model.retrieval, root));
+    assert.equal(retrieval.subarray(0, 4).toString("ascii"), "PPRI", `${model.id} retrieval header`);
   }
 });
 
-test("model export helpers do not collapse the latent distribution to its mean", async () => {
-  const helpers = [
-    "tools/export-blue-archive.py",
-    "tools/batch-ba-models.py",
-    "tools/convert_hoshino_local.py",
-    "tools/export_hoshino.py",
-    "tools/export_hoshino_fast.py",
-    "tools/export_hoshino_v2.py",
-  ];
+test("v24 exporter exposes both latent and NSF excitation noise", async () => {
+  const source = await readFile(new URL("tools/export-rvc-explicit-noise.py", root), "utf8");
+  assert.match(source, /z_p = \(m_p \+ torch\.exp\(logs_p\) \* rnd\) \* x_mask/u);
+  assert.match(source, /source_noise/u);
+  assert.doesNotMatch(source, /torch\.randn_like/u);
+});
 
-  for (const helper of helpers) {
-    const source = await readFile(new URL(helper, root), "utf8");
-    assert.doesNotMatch(source, /z_p\s*=\s*m_p\s*\*\s*x_mask/u, helper);
-    assert.match(source, /torch\.randn_like\(m_p\)\s*\*\s*0\.66666/u, helper);
-  }
+test("continuous F0 is not flattened while the coarse embedding stays bounded", () => {
+  const applyPitchShift = evaluateFunction("applyPitchShift");
+  const shifted = applyPitchShift(Float32Array.from([0, 30, 550, 900]), 12);
+  assert.equal(shifted[0], 0);
+  assert.equal(shifted[1], 60);
+  assert.equal(shifted[2], 1100);
+  assert.equal(shifted[3], 1800);
+
+  const buildQuantizedPitch = evaluateFunction(
+    "buildQuantizedPitch",
+    ["F0_MEL_MIN", "F0_MEL_MAX"],
+    [1127 * Math.log(1 + 50 / 700), 1127 * Math.log(1 + 1100 / 700)],
+  );
+  assert.deepEqual([...buildQuantizedPitch(shifted, shifted.length)], [1n, 5n, 255n, 255n]);
+});
+
+test("seeded synthesis noise is finite and exactly reproducible", () => {
+  const createSeededRandom = evaluateFunction("createSeededRandom");
+  const fillSeededGaussian = evaluateFunction(
+    "fillSeededGaussian",
+    ["createSeededRandom"],
+    [createSeededRandom],
+  );
+  const first = fillSeededGaussian(new Float32Array(128), 12345, 0.5);
+  const repeat = fillSeededGaussian(new Float32Array(128), 12345, 0.5);
+  const other = fillSeededGaussian(new Float32Array(128), 12346, 0.5);
+  assert.deepEqual(first, repeat);
+  assert.notDeepEqual(first, other);
+  assert.equal(first.every(Number.isFinite), true);
+});
+
+test("retrieval codebook blends voiced frames and protects unvoiced consonants", () => {
+  const applyRetrievalCodebook = evaluateFunction("applyRetrievalCodebook");
+  const features = {
+    hiddenStates: new Float32Array(4),
+    featureSize: 2,
+    upsampledFrameCount: 2,
+  };
+  const codebook = { count: 1, dimension: 2, centers: Float32Array.from([2, 4]) };
+  const voiced = applyRetrievalCodebook(features, Float32Array.from([200, 200]), codebook, 0.5, 0.33);
+  const unvoiced = applyRetrievalCodebook(features, Float32Array.from([0, 0]), codebook, 0.5, 0.33);
+  assert.deepEqual([...voiced.hiddenStates], [1, 2, 1, 2]);
+  assert.ok(Math.abs(unvoiced.hiddenStates[0] - 0.33) < 1e-6);
+  assert.ok(Math.abs(unvoiced.hiddenStates[1] - 0.66) < 1e-6);
 });

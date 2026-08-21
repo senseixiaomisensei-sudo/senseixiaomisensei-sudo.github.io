@@ -1,7 +1,7 @@
 {
-  "version": 8,
+  "version": 9,
   "updatedAt": "2026-08-21",
-  "_readme": "RVC 角色声音目录（100% 同源分片静态加速，0 CORS，0 第三方依赖）。v23 统一采用官方 HuBERT 输入分布、HTK/30Hz RMVPE 频谱与未滤波自然音高；爱丽丝、白子、优香、日奈、诺亚和小春已按官方随机潜变量合成路径重新导出。defaultPitch 仅是跨音域预设建议，切换角色时不会自动应用；页面默认始终为 0。",
+  "_readme": "RVC 角色声音目录（100% 同源分片静态加速，0 CORS，0 第三方依赖）。v24 保留 HuBERT/RMVPE 官方输入语义，不再硬裁切连续 F0；10 个角色统一改为由客户端控制、可复现的潜变量与 NSF 激励噪声，并接入角色专属轻量检索码本。defaultPitch 仅是跨音域试听建议，切换角色不会自动变调。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",
@@ -62,6 +62,10 @@
       "tags": ["女声", "蔚蓝档案", "千年"],
       "defaultPitch": 12,
       "pitchNote": "明亮高音少女：男声输入推荐 +12",
+      "sampleRate": 40000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/arisu/retrieval.bin",
       "chunks": [
         "models/characters/arisu/chunk_0.bin",
         "models/characters/arisu/chunk_1.bin",
@@ -79,6 +83,10 @@
       "tags": ["女声", "蔚蓝档案", "阿拜多斯"],
       "defaultPitch": 10,
       "pitchNote": "沉稳中音域少女：男声输入推荐 +10",
+      "sampleRate": 40000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/shiroko/retrieval.bin",
       "chunks": [
         "models/characters/shiroko/chunk_0.bin",
         "models/characters/shiroko/chunk_1.bin",
@@ -96,6 +104,10 @@
       "tags": ["女声", "蔚蓝档案", "阿拜多斯"],
       "defaultPitch": 8,
       "pitchNote": "慵懒低音域少女：男声输入推荐 +8，比 +12 更贴角色气质",
+      "sampleRate": 40000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/hoshino2/retrieval.bin",
       "chunks": [
         "models/characters/hoshino2/chunk_0.bin",
         "models/characters/hoshino2/chunk_1.bin",
@@ -113,6 +125,10 @@
       "tags": ["女声", "蔚蓝档案", "千年"],
       "defaultPitch": 11,
       "pitchNote": "理智中高音域少女：男声输入推荐 +11",
+      "sampleRate": 40000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/yuuka/retrieval.bin",
       "chunks": [
         "models/characters/yuuka/chunk_0.bin",
         "models/characters/yuuka/chunk_1.bin",
@@ -130,6 +146,10 @@
       "tags": ["女声", "蔚蓝档案", "格黑娜"],
       "defaultPitch": 10,
       "pitchNote": "威严中音域少女：男声输入推荐 +10",
+      "sampleRate": 40000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/hina/retrieval.bin",
       "chunks": [
         "models/characters/hina/chunk_0.bin",
         "models/characters/hina/chunk_1.bin",
@@ -147,6 +167,10 @@
       "tags": ["女声", "蔚蓝档案", "千年"],
       "defaultPitch": 11,
       "pitchNote": "温柔中高音域少女：男声输入推荐 +11",
+      "sampleRate": 40000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/noa/retrieval.bin",
       "chunks": [
         "models/characters/noa/chunk_0.bin",
         "models/characters/noa/chunk_1.bin",
@@ -164,6 +188,11 @@
       "tags": ["女声", "蔚蓝档案", "三一"],
       "defaultPitch": 12,
       "pitchNote": "明亮高音域少女：男声输入推荐 +12",
+      "sampleRate": 40000,
+      "noiseScale": 0.5,
+      "noiseSeed": 1337,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/koharu/retrieval.bin",
       "chunks": [
         "models/characters/koharu/chunk_0.bin",
         "models/characters/koharu/chunk_1.bin",
@@ -181,6 +210,10 @@
       "tags": ["女声", "动漫", "MyGO"],
       "defaultPitch": 9,
       "pitchNote": "少年感低中音域少女：男声输入推荐 +9",
+      "sampleRate": 48000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/tomori/retrieval.bin",
       "chunks": [
         "models/characters/tomori/chunk_0.bin",
         "models/characters/tomori/chunk_1.bin",
@@ -198,6 +231,10 @@
       "tags": ["女声", "动漫", "MyGO"],
       "defaultPitch": 10,
       "pitchNote": "慵懒中音域猫系少女：男声输入推荐 +10",
+      "sampleRate": 48000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/rana/retrieval.bin",
       "chunks": [
         "models/characters/rana/chunk_0.bin",
         "models/characters/rana/chunk_1.bin",
@@ -215,6 +252,10 @@
       "tags": ["女声", "动漫", "赛马娘"],
       "defaultPitch": 12,
       "pitchNote": "元气高音域少女：男声输入推荐 +12",
+      "sampleRate": 40000,
+      "noiseScale": 0.5,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/teio/retrieval.bin",
       "chunks": [
         "models/characters/teio/chunk_0.bin",
         "models/characters/teio/chunk_1.bin",

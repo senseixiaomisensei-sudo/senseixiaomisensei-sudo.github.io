@@ -47,7 +47,8 @@
     ]
   },
   "tomori.onnx": {
-    "totalSize": 114919487,
+    "totalSize": 115609482,
+    "sha256": "0fa5853a75917ea11f64253c6a6b9be69540cd21a95a20625bbd4832a6fef384",
     "chunks": [
       "models/characters/tomori/chunk_0.bin",
       "models/characters/tomori/chunk_1.bin",
@@ -58,7 +59,8 @@
     ]
   },
   "rana.onnx": {
-    "totalSize": 114919487,
+    "totalSize": 115609482,
+    "sha256": "b018718265565015d639d496d36dbee5a4b266c12e397d18c88bc7233e1f17d2",
     "chunks": [
       "models/characters/rana/chunk_0.bin",
       "models/characters/rana/chunk_1.bin",
@@ -69,7 +71,8 @@
     ]
   },
   "teio.onnx": {
-    "totalSize": 110200895,
+    "totalSize": 110890890,
+    "sha256": "51d2966bdf0ea930b4ef5fefce6e6b35accc09033c56f97de613fc5e7e6a15dd",
     "chunks": [
       "models/characters/teio/chunk_0.bin",
       "models/characters/teio/chunk_1.bin",
@@ -80,7 +83,8 @@
     ]
   },
   "arisu.onnx": {
-    "totalSize": 110680729,
+    "totalSize": 110890890,
+    "sha256": "da65e1a9d4eb4a0fedeff3b16e668182a76d7ce45d3aac96da4a98e3d89c6427",
     "chunks": [
       "models/characters/arisu/chunk_0.bin",
       "models/characters/arisu/chunk_1.bin",
@@ -91,7 +95,8 @@
     ]
   },
   "shiroko.onnx": {
-    "totalSize": 110680729,
+    "totalSize": 110890890,
+    "sha256": "5150a27ffa0de1b83374e1b968fe7bef3bf1a9ac31078828a924e72b9418cff0",
     "chunks": [
       "models/characters/shiroko/chunk_0.bin",
       "models/characters/shiroko/chunk_1.bin",
@@ -102,7 +107,8 @@
     ]
   },
   "yuuka.onnx": {
-    "totalSize": 110680729,
+    "totalSize": 110890890,
+    "sha256": "ecd356272c8056c82d659340a07b95ce3196170d266bba3894127079a8f74e3b",
     "chunks": [
       "models/characters/yuuka/chunk_0.bin",
       "models/characters/yuuka/chunk_1.bin",
@@ -113,7 +119,8 @@
     ]
   },
   "hina.onnx": {
-    "totalSize": 110680729,
+    "totalSize": 110890890,
+    "sha256": "d72c6253d9cea5e755f8c8b1a1828ddbdb107df675755b9010b9cb553221edbf",
     "chunks": [
       "models/characters/hina/chunk_0.bin",
       "models/characters/hina/chunk_1.bin",
@@ -124,7 +131,8 @@
     ]
   },
   "noa.onnx": {
-    "totalSize": 110680729,
+    "totalSize": 110890890,
+    "sha256": "e3635713a35606bb614fe9aa8605d3f7f5c3c019fe60f084be130259a9b867ea",
     "chunks": [
       "models/characters/noa/chunk_0.bin",
       "models/characters/noa/chunk_1.bin",
@@ -135,7 +143,8 @@
     ]
   },
   "koharu.onnx": {
-    "totalSize": 110680729,
+    "totalSize": 110890890,
+    "sha256": "bd54e12c84483fdabfd7142e70f8a31579c7b5e494ae2145837bb00d9425ba4e",
     "chunks": [
       "models/characters/koharu/chunk_0.bin",
       "models/characters/koharu/chunk_1.bin",
@@ -146,7 +155,8 @@
     ]
   },
   "hoshino2.onnx": {
-    "totalSize": 110200895,
+    "totalSize": 110890890,
+    "sha256": "885c4e63a9c6280fd0d9449913053972d5a90ac6ab38ec199dbad92972e28b53",
     "chunks": [
       "models/characters/hoshino2/chunk_0.bin",
       "models/characters/hoshino2/chunk_1.bin",
