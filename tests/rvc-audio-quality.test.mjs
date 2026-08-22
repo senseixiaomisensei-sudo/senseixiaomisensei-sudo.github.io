@@ -119,7 +119,7 @@ test("RVC page starts neutral and public voices use the pinned official service"
   assert.doesNotMatch(workerSource, /filteredF0 = stabilizeShoutingPitchF0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260822-v27/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260822-v28/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);

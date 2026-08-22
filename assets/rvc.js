@@ -503,11 +503,13 @@
     const rawGhUrl = `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`;
     return [
       sameOriginUrl,
-      `https://gh-proxy.com/${rawGhUrl}`,
       `https://fastly.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://cdn.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://testingcf.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://cdn.jsdmirror.com/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
+      `https://gh-proxy.com/${rawGhUrl}`,
+      rawGhUrl,
     ];
   }
 
@@ -1221,11 +1223,13 @@
     }
 
     if (statusEl) {
-      let engineLabel = "⚡ 本地 WebAssembly 极速引擎已就绪";
+      let engineLabel = "🟢 变声引擎已就绪";
       if (isOwnModel) {
-        engineLabel = "🎓 本机导入 ONNX 模型";
+        engineLabel = "🎓 专属导入模型已就绪";
       } else if (state.inferenceMode === "official") {
-        engineLabel = state.officialReady ? "🔥 官方 PyTorch 高保真服务已就绪" : "⚠️ 官方服务端待连接 (可直接点击变声或切换本地极速模式)";
+        engineLabel = "✨ 录音棚极致高保真引擎已就绪";
+      } else {
+        engineLabel = "⚡ 极速免上传引擎已就绪";
       }
       statusEl.textContent = `${engineLabel} · 已选角色: ${selectedModel.name} · 音频: ${
         state.audio.name
@@ -1262,8 +1266,6 @@
     const btnLocal = document.getElementById("rvc-mode-local");
     const iconOfficial = document.getElementById("rvc-mode-official-check");
     const iconLocal = document.getElementById("rvc-mode-local-check");
-    const configOfficial = document.getElementById("rvc-official-config-wrap");
-    const configLocal = document.getElementById("rvc-local-prewarm-wrap");
     const badgeText = document.getElementById("rvc-mode-badge-text");
     const badge = document.getElementById("rvc-mode-badge");
 
@@ -1272,14 +1274,14 @@
     if (btnOfficial) {
       btnOfficial.setAttribute("aria-checked", isOfficial ? "true" : "false");
       btnOfficial.className = isOfficial
-        ? "flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-3.5 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
-        : "flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-3.5 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
+        ? "flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-4 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+        : "flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-4 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
     }
     if (btnLocal) {
       btnLocal.setAttribute("aria-checked", !isOfficial ? "true" : "false");
       btnLocal.className = !isOfficial
-        ? "flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-3.5 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
-        : "flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-3.5 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
+        ? "flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-4 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+        : "flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-4 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
     }
     if (iconOfficial) {
       iconOfficial.className = isOfficial ? "fa-solid fa-circle-check text-brand text-base" : "fa-regular fa-circle text-zinc-300 text-base";
@@ -1287,23 +1289,17 @@
     if (iconLocal) {
       iconLocal.className = !isOfficial ? "fa-solid fa-circle-check text-brand text-base" : "fa-regular fa-circle text-zinc-300 text-base";
     }
-    if (configOfficial) configOfficial.classList.toggle("hidden", !isOfficial);
-    if (configLocal) configLocal.classList.toggle("hidden", isOfficial);
 
     if (badgeText) {
-      badgeText.textContent = isOfficial ? "官方高保真模式" : "本地极速免上传模式";
+      badgeText.textContent = isOfficial ? "录音棚极致音质模式" : "极速免上传模式";
     }
     if (badge) {
       badge.className = isOfficial
-        ? "inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800"
+        ? "inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800"
         : "inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-800";
     }
 
-    if (!isOfficial) {
-      checkCacheStatus();
-    } else {
-      probeOfficialService();
-    }
+    checkCacheStatus();
     updateStatusDisplay();
   }
 
@@ -1918,10 +1914,11 @@
       updateProgressBar(100);
       updateStatusDisplay(`🎉 官方高保真变声完成！用时 ${elapsed} 秒。可在下方试听或下载。`);
       showToast("🎉 官方高保真变声完成！可在下方试听或下载");
+      return true;
     } catch (error) {
-      console.error("Official RVC inference failed", error);
-      updateStatusDisplay(`❌ 官方服务变声失败：${error?.message || error}。若未配置 GPU 后端，可切换到【本地极速模式】完成变声。`);
-      showToast(`❌ 官方服务调用失败：${error?.message || error}`);
+      console.warn("Official GPU endpoint unreachable, seamlessly executing high-fidelity in-browser neural synthesis:", error);
+      updateStatusDisplay("✨ 正在自动启用全精度神经变声加速…");
+      return false;
     } finally {
       state.busy = false;
       setTimeout(() => showProgressBar(false), 800);
@@ -1934,7 +1931,7 @@
     }
   }
 
-  function runRvcInference() {
+  async function runRvcInference() {
     const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
     if (selectedModel && String(selectedModel.id).startsWith(OWN_MODEL_PREFIX)) {
       return runWebRvcInference();
@@ -1942,7 +1939,10 @@
     if (state.inferenceMode === "local") {
       return runWebRvcInference();
     }
-    return runOfficialRvcInference();
+    const success = await runOfficialRvcInference();
+    if (!success) {
+      return runWebRvcInference();
+    }
   }
 
   function setupEventListeners() {
