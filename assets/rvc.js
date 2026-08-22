@@ -1702,12 +1702,28 @@
       body.set("audio", state.audio.file, state.audio.file.name || `input.${extension}`);
 
       updateProgressBar(25);
-      const response = await fetch(OFFICIAL_RVC_ENDPOINT, {
-        method: "POST",
-        credentials: "omit",
-        cache: "no-store",
-        body,
-      });
+      // ponytail: 上行慢时界面看着像卡死，用秒数 ticker + 硬超时代替无限等待。
+      const ticker = setInterval(() => {
+        const sec = Math.round((Date.now() - startedAt) / 1000);
+        updateStatusDisplay(`⏳ 正在上传并推理…已用 ${sec} 秒（大文件上行较慢，最长等待 180 秒）`);
+      }, 1000);
+      let response;
+      try {
+        response = await fetch(OFFICIAL_RVC_ENDPOINT, {
+          method: "POST",
+          credentials: "omit",
+          cache: "no-store",
+          body,
+          signal: AbortSignal.timeout(180000),
+        });
+      } catch (netError) {
+        if (netError?.name === "TimeoutError" || netError?.name === "AbortError") {
+          throw new Error("上传或推理超过 180 秒。请裁短音频或改用 MP3 后重试。");
+        }
+        throw netError;
+      } finally {
+        clearInterval(ticker);
+      }
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.ok || !payload.jobId || !payload.downloadToken) {
         throw new Error(payload?.message || payload?.code || `HTTP ${response.status}`);
