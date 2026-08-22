@@ -8,20 +8,22 @@ after 15 minutes by default.
 
 ## Supported task
 
-- Voice conversion with [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI)
-  via the MIT-licensed [`rvc-python`](https://github.com/daswer123/rvc-python)
-  inference wrapper: pick a mounted model, convert one uploaded/recorded audio
-  file with pitch, index rate, protect, filter radius, resample rate, RMS mix
-  rate and f0-method controls. Output is WAV or MP3.
+- Voice conversion uses the upstream
+  [RVC-Project/Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI)
+  inference source pinned to tag `2.3.260718`, commit
+  `8f2fdbf483955f924b4c87ab34919170d0b704ed`. The path is the upstream
+  HuBERT/ContentVec extractor, RMVPE/FCPE/PM F0, FAISS Top-8 retrieval and
+  PyTorch NSF generator—not the previous browser ONNX approximation and not
+  the `rvc-python` wrapper.
 
 ## Required server environment
 
 ```text
 RVC_GATEWAY_TOKEN=<same high-entropy value as Cloudflare Pages RVC_INFERENCE_TOKEN>
 RVC_MODELS_DIR=/models/rvc
+RVC_OFFICIAL_ROOT=/opt/rvc-official
 RVC_OUTPUT_RETENTION_SECONDS=900
 RVC_MAX_CONCURRENCY=1
-RVC_DEVICE=auto            # auto picks cuda:0 when available
 ```
 
 ## Adding character voices (models)
@@ -44,14 +46,19 @@ Drop RVC model files into `RVC_MODELS_DIR` and restart the container. Every
   "name": "甜美少女",
   "emoji": "🎀",
   "description": "甜美的少女音色。",
-  "tags": ["女声", "甜美"]
+  "tags": ["女声", "甜美"],
+  "license": "SPDX identifier or exact model terms",
+  "source": "https://exact-source-page.example/model",
+  "modelVersion": "source commit or SHA-256"
 }
 ```
 
 Flat files (`/models/rvc/sweet-female.pth` + `sweet-female.index`) also work.
 Never commit model weights to this repository; mount them on the GPU host.
-The static showcase list at `assets/rvc-models.json` is only a display
-catalog — the website merges it with the live `/v1/models` response.
+The static showcase list at `assets/rvc-models.json` is only an offline display
+catalog. Public conversion uses only the live `/v1/models` response. A public
+download page or a generic `License: other` label is not proof that a character
+or performer's voice can be redistributed or used for impersonation.
 
 ## Build and run (GPU host only)
 
@@ -86,5 +93,5 @@ All endpoints require `Authorization: Bearer <RVC_GATEWAY_TOKEN>`.
   token-protected downloads — not a permanent media library.
 - The gateway token must be at least 32 characters; the service refuses to
   start without it and a readable models directory.
-- Model weight licensing is the operator's responsibility. Review each
-  model's license before mounting it.
+- Model weight licensing is the operator's responsibility. Record an exact
+  source URL, revision/hash and the model-specific terms before mounting it.

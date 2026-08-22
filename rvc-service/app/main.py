@@ -54,7 +54,7 @@ ALLOWED_MIME_TYPES = {
     "application/octet-stream",
 }
 ALLOWED_FORMATS = {"wav", "mp3"}
-ALLOWED_F0_METHODS = {"rmvpe", "crepe", "fcpe", "harvest"}
+ALLOWED_F0_METHODS = {"rmvpe", "fcpe", "pm"}
 ALLOWED_RESAMPLE = {0, 16000, 24000, 32000, 44100, 48000}
 
 
@@ -99,6 +99,8 @@ def scan_models() -> list[dict]:
     results: list[dict] = []
     for pth in sorted(MODELS_DIR.rglob("*.pth")):
         relative = pth.relative_to(MODELS_DIR)
+        if any(part.startswith("backup_") or part.endswith("_candidates") for part in relative.parts):
+            continue
         parent = pth.parent
         # models/<name>/<name>.pth or models/<name>/model.pth -> id "<name>";
         # models/<name>.pth (flat) -> id "<name>".
@@ -111,11 +113,15 @@ def scan_models() -> list[dict]:
             continue
         index = pth.with_suffix(".index")
         if not index.is_file():
-            # Also accept <parent>/model.index with a different basename.
-            for candidate in pth.parent.glob("*.index"):
-                if candidate.stem == pth.stem or candidate.stem == "model":
-                    index = candidate
-                    break
+            # Official RVC commonly names indexes added_IVF..._<voice>_v2.index.
+            candidates = [candidate for candidate in pth.parent.glob("*.index") if "trained" not in candidate.name.lower()]
+            if len(candidates) == 1:
+                index = candidates[0]
+            else:
+                for candidate in candidates:
+                    if pth.stem.lower() in candidate.stem.lower() or candidate.stem == "model":
+                        index = candidate
+                        break
         meta: dict = {}
         meta_candidates = [pth.with_suffix(".pth.meta.json"), pth.with_suffix(".meta.json"), pth.parent / "meta.json"]
         for candidate in meta_candidates:
@@ -137,6 +143,9 @@ def scan_models() -> list[dict]:
             "description": str(meta.get("description") or ""),
             "tags": meta.get("tags") if isinstance(meta.get("tags"), list) else [],
             "hasIndex": index.is_file(),
+            "license": str(meta.get("license") or "unverified"),
+            "source": str(meta.get("source") or ""),
+            "modelVersion": str(meta.get("modelVersion") or ""),
             "file": str(relative).replace("\\", "/"),
         })
     return results
@@ -153,6 +162,18 @@ def find_model_path(model_id: str) -> Path:
     for candidate in candidates:
         if candidate.is_file():
             return candidate.resolve()
+    discovered: list[Path] = []
+    for candidate in sorted(MODELS_DIR.rglob("*.pth")):
+        relative = candidate.relative_to(MODELS_DIR)
+        if any(part.startswith("backup_") or part.endswith("_candidates") for part in relative.parts):
+            continue
+        parent = candidate.parent
+        candidate_id = parent.name if parent != MODELS_DIR and candidate.stem in {parent.name, "model"} else candidate.stem
+        candidate_id = "".join(ch for ch in candidate_id if ch.isalnum() or ch in "-_")
+        if candidate_id == model_id:
+            discovered.append(candidate)
+    if len(discovered) == 1:
+        return discovered[0].resolve()
     raise RvcServiceError(404, "RVC_MODEL_NOT_FOUND")
 
 
@@ -160,33 +181,28 @@ def find_index_path(pth: Path) -> str:
     for candidate in (pth.with_suffix(".index"), pth.parent / "model.index"):
         if candidate.is_file():
             return str(candidate)
+    candidates = [candidate for candidate in pth.parent.glob("*.index") if "trained" not in candidate.name.lower()]
+    if len(candidates) == 1:
+        return str(candidates[0])
+    for candidate in candidates:
+        if pth.stem.lower() in candidate.stem.lower():
+            return str(candidate)
     return ""
 
 
 def acquire_model(pth: Path):
-    """Load (or reuse) an RVCInference for one model path. Runs in a thread."""
-    from rvc_python.infer import RVCInference
+    """Load (or reuse) the pinned official RVC WebUI inference runtime."""
+    from app.official_runtime import OfficialRvcModel
 
     cached = model_cache.get(str(pth))
     if cached is not None:
         model_cache.move_to_end(str(pth))
         return cached
-    device = "cuda:0" if _cuda_available() else "cpu"
-    inference = RVCInference(models_dir=str(MODELS_DIR), device=device)
-    inference.load_model(str(pth), version="v2", index_path=find_index_path(pth))
+    inference = OfficialRvcModel(pth, find_index_path(pth))
     model_cache[str(pth)] = inference
     while len(model_cache) > MAX_CACHED_MODELS:
         model_cache.popitem(last=False)
     return inference
-
-
-def _cuda_available() -> bool:
-    try:
-        import torch
-
-        return bool(torch.cuda.is_available())
-    except Exception:
-        return False
 
 
 async def load_model_async(pth: Path):
@@ -299,7 +315,10 @@ def normalize_audio(source: Path, destination: Path) -> None:
     result = subprocess.run(
         [
             "ffmpeg", "-nostdin", "-v", "error", "-i", str(source), "-vn",
-            "-ac", "1", "-ar", "44100", "-c:a", "pcm_s16le", str(destination),
+            # Official RVC consumes mono 16 kHz float audio before HuBERT.
+            # Normalize once here to avoid an unnecessary 44.1 kHz round-trip
+            # and int16 quantization before the upstream loader.
+            "-ac", "1", "-ar", "16000", "-c:a", "pcm_f32le", str(destination),
         ],
         check=False,
         stdout=subprocess.DEVNULL,
@@ -323,16 +342,20 @@ def render_conversion(
     f0_method: str,
 ) -> None:
     inference = acquire_model(model_path)
-    inference.set_params(
-        f0up_key=pitch,
-        f0method=f0_method,
+    # Upstream 2.3.260718 removed the old post-F0 median-filter parameter.
+    # Keep accepting it at the HTTP boundary for backward compatibility, but
+    # use the exact upstream RMVPE/FCPE/PM pipeline without an invented filter.
+    _ = filter_radius
+    inference.infer(
+        input_wav,
+        output_wav,
+        pitch=pitch,
+        f0_method=f0_method,
         index_rate=index_rate,
         protect=protect,
-        filter_radius=filter_radius,
-        resample_sr=resample_rate,
+        resample_rate=resample_rate,
         rms_mix_rate=rms_mix_rate,
     )
-    inference.infer_file(str(input_wav), str(output_wav))
     if not output_wav.is_file() or output_wav.stat().st_size < 1:
         raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
 
@@ -355,9 +378,19 @@ def job_expiry() -> datetime:
 
 
 @app.get("/healthz")
-async def healthz(request: Request) -> dict[str, bool]:
+async def healthz(request: Request) -> dict[str, object]:
     ensure_authorized(request)
-    return {"ready": True}
+    from app.official_runtime import OFFICIAL_COMMIT, OFFICIAL_TAG, runtime_info
+
+    info = await asyncio.to_thread(runtime_info)
+    return {
+        "ready": True,
+        "engine": "RVC-Project/Retrieval-based-Voice-Conversion-WebUI",
+        "tag": OFFICIAL_TAG,
+        "commit": OFFICIAL_COMMIT,
+        "device": info.device,
+        "half": info.is_half,
+    }
 
 
 @app.get("/v1/models")

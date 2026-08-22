@@ -35,7 +35,7 @@ const ALLOWED_MIME_TYPES = new Set([
   "audio/webm",
 ]);
 const ALLOWED_FORMATS = new Set(["wav", "mp3"]);
-const ALLOWED_F0_METHODS = new Set(["rmvpe", "crepe", "fcpe", "harvest"]);
+const ALLOWED_F0_METHODS = new Set(["rmvpe", "fcpe", "pm"]);
 const ALLOWED_RESAMPLE = new Set(["0", "16000", "24000", "32000", "44100", "48000"]);
 
 function declaredRequestIsTooLarge(request) {

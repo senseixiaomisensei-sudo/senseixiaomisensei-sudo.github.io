@@ -191,7 +191,17 @@ test("rvc models passes through the mounted model list only", async () => {
     const response = await rvcModelsRequest({ request, env: BASE_ENV });
     const body = await response.json();
     assert.equal(response.status, 200);
-    assert.deepEqual(body.models, [{ id: "sweet-female" }]);
+    assert.deepEqual(body.models, [{
+      id: "sweet-female",
+      name: "sweet-female",
+      emoji: "🎵",
+      description: "",
+      tags: [],
+      hasIndex: false,
+      license: "unverified",
+      source: "",
+      modelVersion: "",
+    }]);
     assert.equal(forwarded.url, "https://gpu.example/v1/models");
   } finally {
     globalThis.fetch = originalFetch;

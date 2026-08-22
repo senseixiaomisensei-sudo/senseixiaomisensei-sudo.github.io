@@ -4,7 +4,10 @@
   const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
   const MIN_AUDIO_SECONDS = 0.5;
   const WARN_AUDIO_SECONDS = 2;
-  const MAX_AUDIO_SECONDS = 600;
+  const MAX_AUDIO_SECONDS = 180;
+  const OFFICIAL_RVC_ENDPOINT = String(globalThis.POSTPREP_RVC_API_ENDPOINT || "/rvc").trim();
+  const OFFICIAL_RVC_STATUS_ENDPOINT = String(globalThis.POSTPREP_RVC_STATUS_ENDPOINT || "/rvc/status").trim();
+  const OFFICIAL_RVC_MODELS_ENDPOINT = String(globalThis.POSTPREP_RVC_MODELS_ENDPOINT || "/rvc/models").trim();
   // 本机 edge-tts 服务（rvc-service）地址。
   // 优先级：locaStorage 里"一键适配"保存的地址 > 全局注入 __RVC_TTS_BASE__（postprep-config.js）> 同源。
   // 这样"一键适配"写入本地后立即生效，且支持"全机适配"局域网 IP。
@@ -53,12 +56,12 @@
     zh: {
       eyebrow: "RVC VOICE CHANGER · WEB EDITION",
       title: "AI 变声器",
-      intro: "选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。变声计算 100% 在您的浏览器本地运行，不消耗任何服务器算力，零录音泄露风险。",
+      intro: "选一个你有权使用的声音模型，上传或录制一段你自己的声音，使用官方 RVC 推理管线完成变声。输入和结果仅在处理期间发送到受保护的 GPU 服务，并会自动删除。",
       noteTitle: "使用提示",
-      noteBody: "变声计算由您的设备浏览器本地完成（配置好则变声快，配置稍慢则多等几秒，但最终音质完全一致）。请仅将变声结果用于正当合规场景，并清晰标注为 AI 变声。",
+      noteBody: "默认使用固定版本的 RVC-Project 官方 HuBERT、RMVPE、真实 FAISS 索引与生成器推理。请仅处理你有权使用的声音，并清晰标注为 AI 变声；公开可下载不等于拥有再分发或冒充许可。",
       workflowEyebrow: "VOICE WORKFLOW",
       workflowTitle: "三步完成变声",
-      privacyBadge: "纯本地运行 · 零隐私上传",
+      privacyBadge: "受保护 GPU 推理 · 用完即删",
       stepModel: "1. 选择角色声音",
       stepModelHint: "点击卡片即可选中。搜索框可快速筛选角色。",
       searchPlaceholder: "搜索角色…",
@@ -75,7 +78,7 @@
       fileEmpty: "尚未选择音频文件。",
       recordStart: "开始录音",
       recordStop: "停止录音",
-      recordHint: "录音在浏览器本地完成，不会上传至任何云端服务器。",
+      recordHint: "录音先保留在浏览器；只有点击“开始变声”后才发送到受保护的 GPU 服务。",
       recordUnsupported: "当前浏览器不支持录音，请改用上传音频。",
       recordDenied: "麦克风权限被拒绝。请在浏览器设置中允许麦克风后重试，或改用上传音频。",
       recordInsecure: "录音需要 HTTPS 环境。当前页面不是安全上下文，请改用上传音频。",
@@ -98,8 +101,9 @@
       formatWav: "WAV（40kHz 高保真）",
       resampleLabel: "输出采样率",
       resampleKeep: "40 kHz / 48 kHz (标准)",
-      checkingService: "正在初始化本地 AI 变声引擎 (ONNX Runtime Web WASM)...",
-      serviceReady: "🟢 本地 AI 变声引擎已就绪（算力由本机提供 · 零服务器费用）",
+      checkingService: "正在检查官方 RVC GPU 服务；此检查不会上传音频…",
+      serviceReady: "🟢 官方 RVC 2.3.260718 GPU 推理服务已就绪",
+      serviceOffline: "官方 RVC GPU 服务暂不可用。为避免继续输出失真的兼容结果，公开角色变声已停用。",
       serviceLoading: "正在从本地缓存或 CDN 加载模型权重...",
       convert: "开始变声",
       converting: "正在变声中...",
@@ -110,15 +114,15 @@
       tipsTitle: "让效果更好",
       resultTitle: "变声结果",
       download: "下载变声结果",
-      resultDisclosure: "变声音频已保存在浏览器内存中，点击下方按钮即可保存到本地电脑/手机。",
-      resultMeta: "角色：{model} · 音高变调：{pitch} · 耗时：{elapsed}s · 纯本地生成",
+      resultDisclosure: "结果已取回浏览器内存；GPU 服务端的输入临时文件会在任务结束时删除，输出会在短时保留后删除。",
+      resultMeta: "角色：{model} · 音高变调：{pitch} · 耗时：{elapsed}s · 官方 RVC GPU 推理",
       analyzing: "正在分析音频…",
       analysisReady: "音频已就绪：{name} · 时长 {duration} · 可以变声。",
       invalidFile: "请选择有效格式的音频文件 (WAV/MP3/M4A/OGG/WebM)。",
       fileTooLarge: "文件超过大小限制 (25 MB)。",
       audioTooShort: "音频太短（不足 0.5 秒），请换一段更长的录音。",
       audioShortWarn: "音频不足 2 秒，建议使用稍长的句子获得更自然效果。",
-      audioTooLong: "音频超过 10 分钟，建议裁剪为更短的片段以加快转换速度。",
+      audioTooLong: "音频超过 3 分钟。请裁剪后再转换，以免超过受保护网关的任务时限。",
       decodeFailed: "无法解码此音频文件。请换成标准 WAV 或 MP3 重试。",
       missingModel: "请先选择一个角色声音。",
       missingAudio: "请先上传或录制一段你的声音。",
@@ -128,18 +132,18 @@
       tips: [
         "使用安静环境、单人清晰的人声录音效果最佳。",
         "男生转女声角色建议将音高调为 +12（女转男调为 -12）。",
-        "所有变声运算均在您的浏览器本地进行，数据 100% 私密安全。",
+        "点击变声才会上传音频；服务端输入用完即删，输出短时保留后自动删除。",
       ],
     },
     en: {
       eyebrow: "RVC VOICE CHANGER · WEB EDITION",
       title: "AI Voice Changer",
-      intro: "Pick a character voice, upload or record your own audio, and convert it in one click. 100% runs locally in your browser with zero server costs and full privacy.",
+      intro: "Pick a voice model you are authorized to use, upload or record audio you are allowed to use, and convert it with the pinned official RVC inference pipeline.",
       noteTitle: "Notice",
-      noteBody: "Inference runs on your device's browser (faster on powerful hardware, slightly longer on mobile, but audio quality is identical). Use ethically and label AI audio.",
+      noteBody: "The default path uses the pinned RVC-Project HuBERT, RMVPE, real FAISS index, and generator pipeline on a protected GPU service. Public availability is not a redistribution or impersonation license.",
       workflowEyebrow: "VOICE WORKFLOW",
       workflowTitle: "Three steps to a new voice",
-      privacyBadge: "100% Client-Side · Private",
+      privacyBadge: "Protected GPU · Ephemeral files",
       stepModel: "1. Pick a character voice",
       stepModelHint: "Click a card to select it. Use the search box to find a voice.",
       searchPlaceholder: "Search voices…",
@@ -156,7 +160,7 @@
       fileEmpty: "No audio file selected.",
       recordStart: "Start recording",
       recordStop: "Stop recording",
-      recordHint: "Recording is processed locally and never uploaded to any server.",
+      recordHint: "Recording stays in the browser until you explicitly click Convert.",
       recordUnsupported: "Recording is not supported in this browser. Please upload audio instead.",
       recordDenied: "Microphone permission was denied. Allow it in settings or upload a file.",
       recordInsecure: "Recording requires HTTPS. Please upload audio instead.",
@@ -179,8 +183,9 @@
       formatWav: "WAV (40kHz Lossless)",
       resampleLabel: "Output sample rate",
       resampleKeep: "40 kHz / 48 kHz (Standard)",
-      checkingService: "Initializing ONNX Runtime Web WASM engine...",
-      serviceReady: "🟢 Local AI Voice Engine Ready (Powered by your device)",
+      checkingService: "Checking the official RVC GPU service; no audio is uploaded…",
+      serviceReady: "🟢 Official RVC 2.3.260718 GPU service is ready",
+      serviceOffline: "The official RVC GPU service is unavailable. Public voice conversion is disabled instead of falling back to the lower-fidelity compatibility engine.",
       serviceLoading: "Loading model weights...",
       convert: "Convert now",
       converting: "Converting...",
@@ -191,15 +196,15 @@
       tipsTitle: "Tips",
       resultTitle: "Result",
       download: "Download result",
-      resultDisclosure: "Audio generated in your browser. Click below to download.",
-      resultMeta: "Voice: {model} · Pitch: {pitch} · Time: {elapsed}s · Pure Local Inference",
+      resultDisclosure: "The result is back in browser memory. Server input is deleted after the task and output expires shortly.",
+      resultMeta: "Voice: {model} · Pitch: {pitch} · Time: {elapsed}s · Official RVC GPU",
       analyzing: "Analyzing audio…",
       analysisReady: "Audio ready: {name} · Duration {duration} · Ready to convert.",
       invalidFile: "Choose a valid WAV, MP3, M4A, OGG, or WebM file.",
       fileTooLarge: "File exceeds 25 MB limit.",
       audioTooShort: "Audio is too short (under 0.5s).",
       audioShortWarn: "Audio under 2s may sound robotic. Longer speech is recommended.",
-      audioTooLong: "Audio exceeds 10 minutes. Please trim to a shorter clip.",
+      audioTooLong: "Audio exceeds 3 minutes. Trim it to stay within the protected gateway time limit.",
       decodeFailed: "Could not decode audio. Try converting to standard MP3 or WAV.",
       missingModel: "Pick a character voice first.",
       missingAudio: "Upload or record your voice first.",
@@ -209,7 +214,7 @@
       tips: [
         "Use a clear, quiet single-person vocal recording.",
         "Male-to-female conversion works best with pitch +12.",
-        "All calculations run inside your browser. 100% private and free.",
+        "Audio is uploaded only after Convert; source files are deleted after processing and outputs expire shortly.",
       ],
     },
   };
@@ -229,7 +234,7 @@
 
   const EMBEDDED_RVC_CATALOG = [
     {
-      id: "hoshino2",
+      id: "hoshino",
       name: "小鸟游星野 (Hoshino)",
       avatarText: "星野",
       description: "《蔚蓝档案》阿拜多斯对策委员会副会长 · 哎呀呀~ 慵懒可靠大叔系萌少女音 · RVC v2 Ov2 音源焕新",
@@ -350,8 +355,9 @@
   const state = {
     lang: "zh",
     engineReady: false,
+    engineInfo: null,
     busy: false,
-    selectedModelId: "hoshino2",
+    selectedModelId: "hoshino",
     audio: null, // { file, buffer, float32, sampleRate, name, duration }
     sourceMode: "upload",
     ttsEnabled: false,
@@ -366,6 +372,7 @@
     catalog: EMBEDDED_RVC_CATALOG.map(normalizeCharacterRuntimeConfig),
     baseModels: EMBEDDED_BASE_MODELS,
     rvcContext: null,
+    resultUrl: "",
   };
 
   // High-Performance Concurrency Pool (5 concurrent HTTP streams for max speed)
@@ -1118,6 +1125,72 @@
     }
   }
 
+  async function fetchJsonWithTimeout(url, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "omit",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function displayMetadataForRemote(remote) {
+    const local = state.catalog.find((item) => item.id === remote.id) || EMBEDDED_RVC_CATALOG.find((item) => item.id === remote.id);
+    const remoteLicense = typeof remote.license === "string" ? remote.license : "unverified";
+    const license = remoteLicense !== "unverified" ? remoteLicense : (local?.license || "unverified");
+    const remoteTags = Array.isArray(remote.tags) && remote.tags.length ? remote.tags : (local?.tags || []);
+    return normalizeCharacterRuntimeConfig({
+      ...(local || {}),
+      ...remote,
+      id: remote.id,
+      name: remote.name && remote.name !== remote.id ? remote.name : (local?.name || remote.id),
+      avatarText: remote.emoji || local?.avatarText || "RVC",
+      description: remote.description || local?.description || "管理员挂载的官方 RVC 推理模型",
+      tags: license === "unverified" ? [...remoteTags, "许可未核验"] : remoteTags,
+      remote: true,
+      hasIndex: remote.hasIndex === true,
+      license,
+      source: typeof remote.source === "string" && remote.source ? remote.source : (local?.source || ""),
+      modelVersion: typeof remote.modelVersion === "string" && remote.modelVersion ? remote.modelVersion : (local?.modelVersion || ""),
+    });
+  }
+
+  async function refreshOfficialService() {
+    try {
+      const status = await fetchJsonWithTimeout(OFFICIAL_RVC_STATUS_ENDPOINT, 6500);
+      state.engineReady = status?.ready === true;
+      state.engineInfo = state.engineReady ? status : null;
+      if (!state.engineReady) return false;
+      const payload = await fetchJsonWithTimeout(OFFICIAL_RVC_MODELS_ENDPOINT, 10000);
+      const models = Array.isArray(payload?.models)
+        ? payload.models.filter((model) => model && /^[A-Za-z0-9_-]{1,64}$/u.test(String(model.id || "")))
+        : [];
+      if (!models.length) {
+        state.engineReady = false;
+        state.engineInfo = null;
+        return false;
+      }
+      state.catalog = models.map(displayMetadataForRemote);
+      if (!state.catalog.some((model) => model.id === state.selectedModelId)) {
+        state.selectedModelId = state.catalog[0].id;
+      }
+      return true;
+    } catch (error) {
+      console.warn("Official RVC service is unavailable", error);
+      state.engineReady = false;
+      state.engineInfo = null;
+      return false;
+    }
+  }
+
   function updateStatusDisplay(msg) {
     const statusEl = document.getElementById("rvc-service-status");
     const convertBtn = document.getElementById("rvc-convert");
@@ -1136,6 +1209,14 @@
       return;
     }
 
+    const isOwnModel = String(selectedModel.id || "").startsWith(OWN_MODEL_PREFIX);
+    if (!isOwnModel && !state.engineReady) {
+      if (statusEl) statusEl.textContent = t("serviceOffline");
+      if (convertBtn) convertBtn.disabled = true;
+      if (convertLabel) convertLabel.textContent = t("convert");
+      return;
+    }
+
     if (!state.audio) {
       if (statusEl) statusEl.textContent = t("missingAudio");
       if (convertBtn) convertBtn.disabled = true;
@@ -1144,7 +1225,8 @@
     }
 
     if (statusEl) {
-      statusEl.textContent = `${t("serviceReady")} · 已选角色: ${selectedModel.name} · 音频: ${
+      const engineLabel = isOwnModel ? "本机自带 ONNX 兼容模式" : t("serviceReady");
+      statusEl.textContent = `${engineLabel} · 已选角色: ${selectedModel.name} · 音频: ${
         state.audio.name
       } (${formatTime(state.audio.duration)})`;
     }
@@ -1233,7 +1315,6 @@
 
   async function initCatalog() {
     renderModelGallery();
-    checkCacheStatus();
     try {
       const res = await fetch("assets/rvc-models.json?v=" + Date.now());
       if (res.ok) {
@@ -1248,29 +1329,13 @@
     } catch (e) {
       console.warn("Failed to load rvc-models.json", e);
     }
+    await refreshOfficialService();
     // 合并用户本地上传的 .onnx 模型（仅本机，不回传）
     await loadOwnModelsFromDB();
     renderModelGallery();
-    checkCacheStatus();
     // Only update the recommendation label; preserve the official 0-semitone
     // default and any value the user selected.
     applyCharacterPitch(getSelectedModel());
-    // Silent background pre-warm after 3 seconds of user idle
-    setTimeout(() => {
-      if (!state.busy) {
-        const hubertCfg = state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert;
-        const rmvpeCfg = state.baseModels?.rmvpe || EMBEDDED_BASE_MODELS.rmvpe;
-        const silentCharModel = state.catalog.find((m) => m.id === state.selectedModelId);
-        const tasks = [
-          loadModelAuto(hubertCfg, "hubert.onnx", "HuBERT", "application/onnx", () => {}),
-          loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE", "application/onnx", () => {}),
-        ];
-        if (silentCharModel) {
-          tasks.push(loadModelAuto(silentCharModel, characterModelCacheKey(silentCharModel), silentCharModel.name, "application/onnx", () => {}));
-        }
-        Promise.all(tasks).then(() => checkCacheStatus()).catch(() => {});
-      }
-    }, 3000);
   }
 
   async function handleAudioSelected(file) {
@@ -1586,6 +1651,125 @@
     }
   }
 
+  async function runOfficialRvcInference() {
+    if (state.busy || !state.audio?.file || !state.selectedModelId || !state.engineReady) return;
+    const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
+    if (!selectedModel || !selectedModel.remote) {
+      showToast(t("missingModel"));
+      return;
+    }
+
+    const convertBtn = document.getElementById("rvc-convert");
+    const convertLabel = document.getElementById("rvc-convert-label");
+    const resultSection = document.getElementById("rvc-result");
+    const resultAudio = document.getElementById("rvc-result-audio");
+    const resultDownload = document.getElementById("rvc-result-download");
+    const resultMeta = document.getElementById("rvc-result-meta");
+    const pitch = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
+    const indexRate = parseFloat(document.getElementById("rvc-index-rate")?.value || "0.3");
+    const protect = parseFloat(document.getElementById("rvc-protect")?.value || "0.33");
+    const rmsMixRate = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1");
+    const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
+    const extension = String(state.audio.file.name || "").toLowerCase().split(".").pop();
+    if (!["wav", "mp3", "m4a", "ogg", "webm"].includes(extension)) {
+      showToast("官方 GPU 服务当前仅接受 WAV、MP3、M4A、OGG 或 WebM，请先转换格式。");
+      return;
+    }
+
+    state.busy = true;
+    if (convertBtn) {
+      convertBtn.disabled = true;
+      convertBtn.setAttribute("aria-busy", "true");
+    }
+    if (convertLabel) convertLabel.textContent = t("converting");
+    showProgressBar(true);
+    updateProgressBar(12);
+    const startedAt = Date.now();
+
+    try {
+      updateStatusDisplay("⏳ 正在通过受保护网关上传音频；输入会在任务结束后删除…");
+      const body = new FormData();
+      body.set("modelId", selectedModel.id);
+      body.set("pitch", String(pitch));
+      body.set("indexRate", String(selectedModel.hasIndex ? indexRate : 0));
+      body.set("protect", String(protect));
+      body.set("f0Method", "rmvpe");
+      body.set("format", "wav");
+      body.set("resample", "0");
+      body.set("rmsMixRate", String(rmsMixRate));
+      body.set("filterRadius", String(filterRadius));
+      body.set("language", state.lang === "en" ? "en" : "zh");
+      body.set("audio", state.audio.file, state.audio.file.name || `input.${extension}`);
+
+      updateProgressBar(25);
+      const response = await fetch(OFFICIAL_RVC_ENDPOINT, {
+        method: "POST",
+        credentials: "omit",
+        cache: "no-store",
+        body,
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.ok || !payload.jobId || !payload.downloadToken) {
+        throw new Error(payload?.code || `HTTP ${response.status}`);
+      }
+
+      updateProgressBar(82);
+      updateStatusDisplay("⏳ 官方 RVC 推理完成，正在安全取回短时结果…");
+      const outputBase = OFFICIAL_RVC_ENDPOINT.replace(/\/+$/u, "");
+      const outputUrl = `${outputBase}/output/${encodeURIComponent(payload.jobId)}?token=${encodeURIComponent(payload.downloadToken)}`;
+      const outputResponse = await fetch(outputUrl, { credentials: "omit", cache: "no-store" });
+      if (!outputResponse.ok) throw new Error(`RVC_OUTPUT_${outputResponse.status}`);
+      const outputBlob = await outputResponse.blob();
+      if (!outputBlob.size || outputBlob.size > 100 * 1024 * 1024) throw new Error("RVC_INVALID_OUTPUT");
+
+      if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
+      state.resultUrl = URL.createObjectURL(outputBlob);
+      if (resultAudio) {
+        resultAudio.src = state.resultUrl;
+        resultAudio.load();
+      }
+      if (resultDownload) {
+        resultDownload.href = state.resultUrl;
+        resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.wav`;
+      }
+      const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
+      if (resultMeta) {
+        resultMeta.textContent = t("resultMeta", {
+          model: selectedModel.name,
+          pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
+          elapsed,
+        });
+      }
+      if (resultSection) {
+        resultSection.hidden = false;
+        resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      updateProgressBar(100);
+      updateStatusDisplay(`🎉 官方 RVC 变声完成，用时 ${elapsed} 秒。`);
+      showToast("🎉 官方 RVC 变声完成，可试听或下载");
+    } catch (error) {
+      console.error("Official RVC inference failed", error);
+      updateStatusDisplay(`❌ 官方 RVC 变声失败：${error?.message || error}`);
+      showToast(t("generationFailed"));
+      await refreshOfficialService();
+    } finally {
+      state.busy = false;
+      setTimeout(() => showProgressBar(false), 600);
+      if (convertBtn) {
+        convertBtn.setAttribute("aria-busy", "false");
+      }
+      updateStatusDisplay();
+    }
+  }
+
+  function runRvcInference() {
+    const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
+    if (selectedModel && String(selectedModel.id).startsWith(OWN_MODEL_PREFIX)) {
+      return runWebRvcInference();
+    }
+    return runOfficialRvcInference();
+  }
+
   function setupEventListeners() {
     // Search input
     const searchInput = document.getElementById("rvc-model-search");
@@ -1727,7 +1911,7 @@
     // Convert Button
     const convertBtn = document.getElementById("rvc-convert");
     if (convertBtn) {
-      convertBtn.addEventListener("click", () => runWebRvcInference());
+      convertBtn.addEventListener("click", () => runRvcInference());
     }
 
     // Preload & Cache Management Buttons
@@ -1860,7 +2044,7 @@
         const file = await synthTts();
         if (!file) return;
         await applyTtsAsInput(file);
-        runWebRvcInference();
+        runRvcInference();
       });
     }
     if (ttsText) {
@@ -1957,6 +2141,6 @@
   document.addEventListener("DOMContentLoaded", async () => {
     setupEventListeners();
     await initCatalog();
-    updateStatusDisplay(t("serviceReady"));
+    updateStatusDisplay();
   });
 })();
