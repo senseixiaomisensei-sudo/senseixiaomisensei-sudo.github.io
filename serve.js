@@ -8,6 +8,7 @@ const ROOT = "E:\\大肥鱼\\site";
 // serve.js 会把 /v1/tts* 反向代理到这里，从而同一 Wi-Fi 下所有设备只需连 8124 页面即可，
 // 点「一键适配」走同源即可自动配置成功，无需知道这个 8080、也无需跨域。
 const TTS_PROXY_TARGET = process.env.RVC_TTS_TARGET || "http://127.0.0.1:8080";
+const RVC_INFERENCE_TARGET = process.env.RVC_INFERENCE_TARGET || "http://127.0.0.1:8088";
 
 const MIME_MAP = {
   ".html": "text/html; charset=utf-8",
@@ -35,9 +36,9 @@ const server = http.createServer((req, res) => {
   res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
 
   if (req.method === "OPTIONS") {
-    // 允许对 /v1/tts 的跨源预检（保留 CORS，兼容不走代理的直连场景）
+    // 允许对 /v1/tts 及 /v1/convert 的跨源预检
     res.statusCode = 204;
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.end();
     return;
   }
@@ -46,9 +47,15 @@ const server = http.createServer((req, res) => {
 
   // 反向代理：把 /v1/tts* 转发到本机 rvc-service（edge-tts），实现全机免配置共享
   if (reqPath === "/v1/tts" || reqPath === "/v1/tts-health") {
-    proxy(req, res, reqPath);
+    proxy(req, res, reqPath, TTS_PROXY_TARGET);
     return;
   }
+  // 反向代理：把 /rvc, /v1/convert, /v1/models, /v1/output, /healthz 转发到官方 RVC 推理服务
+  if (reqPath === "/rvc" || reqPath === "/healthz" || reqPath.startsWith("/v1/models") || reqPath.startsWith("/v1/convert") || reqPath.startsWith("/v1/output")) {
+    proxy(req, res, reqPath === "/rvc" ? "/v1/convert" : reqPath, RVC_INFERENCE_TARGET);
+    return;
+  }
+
   if (reqPath === "/") reqPath = "/rvc.html";
   const filePath = path.join(ROOT, reqPath.replace(/^\//, ""));
 
@@ -63,13 +70,13 @@ const server = http.createServer((req, res) => {
   fs.createReadStream(filePath).pipe(res);
 });
 
-// 把 /v1/tts* 转发到本机 rvc-service；请求体原样转发，响应原样回传（含 CORS）。
-function proxy(req, res, targetPath) {
-  const target = new URL(TTS_PROXY_TARGET + targetPath);
+// 把请求转发到目标服务；请求体原样转发，响应原样回传（含 CORS）。
+function proxy(req, res, targetPath, baseTarget) {
+  const target = new URL(baseTarget + targetPath);
   const upstream = http.request(
     {
       hostname: target.hostname,
-      port: target.port || 80,
+      port: target.port || (target.protocol === "https:" ? 443 : 80),
       path: target.pathname + (req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""),
       method: req.method,
       headers: { ...req.headers, host: target.host },
@@ -86,7 +93,7 @@ function proxy(req, res, targetPath) {
     res.statusCode = 502;
     res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.end(JSON.stringify({ code: "RVC_TTS_UNAVAILABLE", message: "本机 rvc-service 未启动，请先运行 start-rvc.ps1" }));
+    res.end(JSON.stringify({ code: "RVC_SERVICE_UNAVAILABLE", message: "服务未启动或未连接" }));
   });
   req.pipe(upstream);
 }

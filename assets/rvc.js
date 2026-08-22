@@ -354,7 +354,10 @@
 
   const state = {
     lang: "zh",
-    engineReady: false,
+    inferenceMode: "official", // "official" (需上传，最高音质) | "local" (免上传，本地 WebAssembly)
+    officialEndpoint: "",
+    officialReady: false,
+    engineReady: true,
     engineInfo: null,
     busy: false,
     selectedModelId: "hoshino",
@@ -1218,7 +1221,12 @@
     }
 
     if (statusEl) {
-      const engineLabel = isOwnModel ? "本机导入 ONNX 模型" : t("serviceReady");
+      let engineLabel = "⚡ 本地 WebAssembly 极速引擎已就绪";
+      if (isOwnModel) {
+        engineLabel = "🎓 本机导入 ONNX 模型";
+      } else if (state.inferenceMode === "official") {
+        engineLabel = state.officialReady ? "🔥 官方 PyTorch 高保真服务已就绪" : "⚠️ 官方服务端待连接 (可直接点击变声或切换本地极速模式)";
+      }
       statusEl.textContent = `${engineLabel} · 已选角色: ${selectedModel.name} · 音频: ${
         state.audio.name
       } (${formatTime(state.audio.duration)})`;
@@ -1229,6 +1237,122 @@
 
   // 用户自己训练/转换的 .onnx 模型（仅本机使用，不回传）：
   // 以 IndexedDB Blob 存储，key = `own:<id>.onnx`，catalog 项记录 id 便于检索。
+
+  const RVC_MODE_STORAGE_KEY = "postprep_rvc_inference_mode";
+  const RVC_ENDPOINT_STORAGE_KEY = "postprep_rvc_api_endpoint";
+
+  function getOfficialEndpoint() {
+    try {
+      const stored = window.localStorage.getItem(RVC_ENDPOINT_STORAGE_KEY);
+      if (stored && stored.trim()) return stored.trim().replace(/\/+$/u, "");
+    } catch (e) {}
+    if (globalThis.POSTPREP_RVC_API_ENDPOINT) {
+      return String(globalThis.POSTPREP_RVC_API_ENDPOINT).trim().replace(/\/+$/u, "");
+    }
+    return String(OFFICIAL_RVC_ENDPOINT || "/rvc").trim().replace(/\/+$/u, "");
+  }
+
+  function setInferenceMode(mode) {
+    state.inferenceMode = mode === "local" ? "local" : "official";
+    try {
+      window.localStorage.setItem(RVC_MODE_STORAGE_KEY, state.inferenceMode);
+    } catch (e) {}
+
+    const btnOfficial = document.getElementById("rvc-mode-official");
+    const btnLocal = document.getElementById("rvc-mode-local");
+    const iconOfficial = document.getElementById("rvc-mode-official-check");
+    const iconLocal = document.getElementById("rvc-mode-local-check");
+    const configOfficial = document.getElementById("rvc-official-config-wrap");
+    const configLocal = document.getElementById("rvc-local-prewarm-wrap");
+    const badgeText = document.getElementById("rvc-mode-badge-text");
+    const badge = document.getElementById("rvc-mode-badge");
+
+    const isOfficial = state.inferenceMode === "official";
+
+    if (btnOfficial) {
+      btnOfficial.setAttribute("aria-checked", isOfficial ? "true" : "false");
+      btnOfficial.className = isOfficial
+        ? "flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-3.5 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+        : "flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-3.5 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
+    }
+    if (btnLocal) {
+      btnLocal.setAttribute("aria-checked", !isOfficial ? "true" : "false");
+      btnLocal.className = !isOfficial
+        ? "flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-3.5 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+        : "flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-3.5 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2";
+    }
+    if (iconOfficial) {
+      iconOfficial.className = isOfficial ? "fa-solid fa-circle-check text-brand text-base" : "fa-regular fa-circle text-zinc-300 text-base";
+    }
+    if (iconLocal) {
+      iconLocal.className = !isOfficial ? "fa-solid fa-circle-check text-brand text-base" : "fa-regular fa-circle text-zinc-300 text-base";
+    }
+    if (configOfficial) configOfficial.classList.toggle("hidden", !isOfficial);
+    if (configLocal) configLocal.classList.toggle("hidden", isOfficial);
+
+    if (badgeText) {
+      badgeText.textContent = isOfficial ? "官方高保真模式" : "本地极速免上传模式";
+    }
+    if (badge) {
+      badge.className = isOfficial
+        ? "inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800"
+        : "inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-800";
+    }
+
+    if (!isOfficial) {
+      checkCacheStatus();
+    } else {
+      probeOfficialService();
+    }
+    updateStatusDisplay();
+  }
+
+  async function probeOfficialService(customUrl) {
+    const targetBase = customUrl ? customUrl.trim().replace(/\/+$/u, "") : getOfficialEndpoint();
+    const indicator = document.getElementById("rvc-official-status-indicator");
+    const statusText = document.getElementById("rvc-official-status-text");
+
+    if (indicator) indicator.className = "flex h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400";
+    if (statusText) statusText.textContent = "正在检测官方服务…";
+
+    // Try health/status probes with 3500ms timeout
+    const candidates = [
+      targetBase.endsWith("/v1/convert") ? targetBase.replace(/\/v1\/convert$/u, "/healthz") : `${targetBase}/healthz`,
+      `${targetBase}/v1/models`,
+      `${targetBase}/api/rvc-status`,
+      targetBase,
+    ];
+
+    let ok = false;
+    for (const url of candidates) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(url, { method: "GET", signal: controller.signal, cache: "no-store" }).catch(() => null);
+        clearTimeout(timer);
+        if (res && (res.ok || res.status === 401 || res.status === 405)) {
+          ok = true;
+          break;
+        }
+      } catch (e) {}
+    }
+
+    state.officialReady = ok;
+    if (indicator) {
+      indicator.className = ok
+        ? "flex h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500"
+        : "flex h-2.5 w-2.5 shrink-0 rounded-full bg-red-400";
+    }
+    if (statusText) {
+      const displayUrl = targetBase.replace(/^https?:\/\//u, "");
+      statusText.textContent = ok
+        ? `🟢 官方 RVC 服务已就绪 (${displayUrl}) · 录音棚级音质`
+        : `⚠️ 官方服务端未连接 (${displayUrl}) · 点击右侧“配置地址”或改用本地极速模式`;
+    }
+    updateStatusDisplay();
+    return ok;
+  }
+
   const OWN_MODEL_PREFIX = "own:";
 
   async function listOwnModels() {
@@ -1645,9 +1769,9 @@
   }
 
   async function runOfficialRvcInference() {
-    if (state.busy || !state.audio?.file || !state.selectedModelId || !state.engineReady) return;
+    if (state.busy || !state.audio?.file || !state.selectedModelId) return;
     const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
-    if (!selectedModel || !selectedModel.remote) {
+    if (!selectedModel) {
       showToast(t("missingModel"));
       return;
     }
@@ -1665,7 +1789,7 @@
     const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
     const extension = String(state.audio.file.name || "").toLowerCase().split(".").pop();
     if (!["wav", "mp3", "m4a", "ogg", "webm"].includes(extension)) {
-      showToast("官方 GPU 服务当前仅接受 WAV、MP3、M4A、OGG 或 WebM，请先转换格式。");
+      showToast("官方服务接受 WAV、MP3、M4A、OGG 或 WebM，请先转换格式。");
       return;
     }
 
@@ -1676,15 +1800,18 @@
     }
     if (convertLabel) convertLabel.textContent = t("converting");
     showProgressBar(true);
-    updateProgressBar(12);
+    updateProgressBar(5);
     const startedAt = Date.now();
 
     try {
-      updateStatusDisplay("⏳ 正在通过受保护网关上传音频；输入会在任务结束后删除…");
+      const endpoint = getOfficialEndpoint();
+      const convertUrl = endpoint.endsWith("/v1/convert") ? endpoint : `${endpoint}/v1/convert`;
+      updateStatusDisplay("⏳ [1/3] 正在准备上传音频到官方推理服务端…");
+
       const body = new FormData();
       body.set("modelId", selectedModel.id);
       body.set("pitch", String(pitch));
-      body.set("indexRate", String(selectedModel.hasIndex ? indexRate : 0));
+      body.set("indexRate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("protect", String(protect));
       body.set("f0Method", "rmvpe");
       body.set("format", "wav");
@@ -1694,42 +1821,77 @@
       body.set("language", state.lang === "en" ? "en" : "zh");
       body.set("audio", state.audio.file, state.audio.file.name || `input.${extension}`);
 
-      updateProgressBar(25);
-      // ponytail: 上行慢时界面看着像卡死，用秒数 ticker + 硬超时代替无限等待。
-      const ticker = setInterval(() => {
-        const sec = Math.round((Date.now() - startedAt) / 1000);
-        updateStatusDisplay(`⏳ 正在上传并推理…已用 ${sec} 秒（大文件上行较慢，最长等待 180 秒）`);
-      }, 1000);
-      let response;
-      try {
-        response = await fetch(OFFICIAL_RVC_ENDPOINT, {
-          method: "POST",
-          credentials: "omit",
-          cache: "no-store",
-          body,
-          signal: AbortSignal.timeout(180000),
-        });
-      } catch (netError) {
-        if (netError?.name === "TimeoutError" || netError?.name === "AbortError") {
-          throw new Error("上传或推理超过 180 秒。请裁短音频或改用 MP3 后重试。");
-        }
-        throw netError;
-      } finally {
-        clearInterval(ticker);
-      }
-      const payload = await response.json().catch(() => null);
-      if (!response.ok || !payload?.ok || !payload.jobId || !payload.downloadToken) {
-        throw new Error(payload?.message || payload?.code || `HTTP ${response.status}`);
+      // Perform upload with granular XMLHttpRequest progress monitoring
+      let ticker = null;
+      const uploadAndInfer = () => new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", convertUrl, true);
+        xhr.timeout = 180000;
+
+        xhr.upload.onprogress = (evt) => {
+          if (evt.lengthComputable) {
+            const pct = Math.round((evt.loaded / evt.total) * 100);
+            const loadedMb = (evt.loaded / (1024 * 1024)).toFixed(1);
+            const totalMb = (evt.total / (1024 * 1024)).toFixed(1);
+            updateProgressBar(Math.min(45, Math.round(pct * 0.45)));
+            updateStatusDisplay(`⏳ [1/3] 正在上传音频… ${pct}% (${loadedMb}MB / ${totalMb}MB)`);
+          }
+        };
+
+        xhr.upload.onload = () => {
+          updateProgressBar(50);
+          ticker = setInterval(() => {
+            const sec = Math.round((Date.now() - startedAt) / 1000);
+            updateStatusDisplay(`🧠 [2/3] 官方 PyTorch 神经声线重构中… 已用时 ${sec}s（RMVPE 音高追踪 + FAISS 特征检索）`);
+          }, 1000);
+        };
+
+        xhr.onload = () => {
+          if (ticker) clearInterval(ticker);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const resJson = JSON.parse(xhr.responseText);
+              resolve(resJson);
+            } catch (err) {
+              reject(new Error("服务端返回格式解析失败"));
+            }
+          } else {
+            let errMsg = `HTTP ${xhr.status}`;
+            try {
+              const resJson = JSON.parse(xhr.responseText);
+              if (resJson.message || resJson.code) errMsg = resJson.message || resJson.code;
+            } catch (e) {}
+            reject(new Error(errMsg));
+          }
+        };
+
+        xhr.onerror = () => {
+          if (ticker) clearInterval(ticker);
+          reject(new Error("网络连接失败，请检查官方服务端是否启动或地址是否正确"));
+        };
+
+        xhr.ontimeout = () => {
+          if (ticker) clearInterval(ticker);
+          reject(new Error("上传或推理超时 (180s)，建议裁短音频重试"));
+        };
+
+        xhr.send(body);
+      });
+
+      const payload = await uploadAndInfer();
+      if (!payload || !payload.jobId || !payload.downloadToken) {
+        throw new Error(payload?.message || payload?.code || "未获取到任务标识");
       }
 
       updateProgressBar(82);
-      updateStatusDisplay("⏳ 官方 RVC 推理完成，正在安全取回短时结果…");
-      const outputBase = OFFICIAL_RVC_ENDPOINT.replace(/\/+$/u, "");
-      const outputUrl = `${outputBase}/output/${encodeURIComponent(payload.jobId)}?token=${encodeURIComponent(payload.downloadToken)}`;
+      updateStatusDisplay("📥 [3/3] 官方 RVC 推理完成，正在下载高保真变声结果…");
+
+      const outputBase = endpoint.replace(/\/v1\/convert$/u, "");
+      const outputUrl = `${outputBase}/v1/output/${encodeURIComponent(payload.jobId)}?token=${encodeURIComponent(payload.downloadToken)}`;
       const outputResponse = await fetch(outputUrl, { credentials: "omit", cache: "no-store" });
-      if (!outputResponse.ok) throw new Error(`RVC_OUTPUT_${outputResponse.status}`);
+      if (!outputResponse.ok) throw new Error(`下载音频失败 HTTP ${outputResponse.status}`);
       const outputBlob = await outputResponse.blob();
-      if (!outputBlob.size || outputBlob.size > 100 * 1024 * 1024) throw new Error("RVC_INVALID_OUTPUT");
+      if (!outputBlob.size || outputBlob.size > 100 * 1024 * 1024) throw new Error("返回音频数据异常");
 
       if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
       state.resultUrl = URL.createObjectURL(outputBlob);
@@ -1739,7 +1901,7 @@
       }
       if (resultDownload) {
         resultDownload.href = state.resultUrl;
-        resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.wav`;
+        resultDownload.download = `postprep-official-rvc-${selectedModel.id}-${Date.now()}.wav`;
       }
       const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
       if (resultMeta) {
@@ -1747,35 +1909,108 @@
           model: selectedModel.name,
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        });
+        }) + " · 官方 PyTorch 录音棚级";
       }
       if (resultSection) {
         resultSection.hidden = false;
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       updateProgressBar(100);
-      updateStatusDisplay(`🎉 官方 RVC 变声完成，用时 ${elapsed} 秒。`);
-      showToast("🎉 官方 RVC 变声完成，可试听或下载");
+      updateStatusDisplay(`🎉 官方高保真变声完成！用时 ${elapsed} 秒。可在下方试听或下载。`);
+      showToast("🎉 官方高保真变声完成！可在下方试听或下载");
     } catch (error) {
       console.error("Official RVC inference failed", error);
-      updateStatusDisplay(`❌ 官方 RVC 变声失败：${error?.message || error}`);
-      showToast(t("generationFailed"));
-      await refreshOfficialService();
+      updateStatusDisplay(`❌ 官方服务变声失败：${error?.message || error}。若未配置 GPU 后端，可切换到【本地极速模式】完成变声。`);
+      showToast(`❌ 官方服务调用失败：${error?.message || error}`);
     } finally {
       state.busy = false;
-      setTimeout(() => showProgressBar(false), 600);
+      setTimeout(() => showProgressBar(false), 800);
       if (convertBtn) {
+        convertBtn.disabled = false;
         convertBtn.setAttribute("aria-busy", "false");
       }
+      if (convertLabel) convertLabel.textContent = t("convert");
       updateStatusDisplay();
     }
   }
 
   function runRvcInference() {
-    return runWebRvcInference();
+    const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
+    if (selectedModel && String(selectedModel.id).startsWith(OWN_MODEL_PREFIX)) {
+      return runWebRvcInference();
+    }
+    if (state.inferenceMode === "local") {
+      return runWebRvcInference();
+    }
+    return runOfficialRvcInference();
   }
 
   function setupEventListeners() {
+    // Mode Switcher (Official PyTorch vs Local WebAssembly)
+    const btnOfficial = document.getElementById("rvc-mode-official");
+    const btnLocal = document.getElementById("rvc-mode-local");
+    if (btnOfficial) {
+      btnOfficial.addEventListener("click", () => setInferenceMode("official"));
+    }
+    if (btnLocal) {
+      btnLocal.addEventListener("click", () => setInferenceMode("local"));
+    }
+
+    // Official Endpoint Configuration UI
+    const toggleConfigBtn = document.getElementById("rvc-official-toggle-config");
+    const endpointWrap = document.getElementById("rvc-official-endpoint-wrap");
+    const endpointInput = document.getElementById("rvc-official-endpoint-input");
+    const saveEndpointBtn = document.getElementById("rvc-official-save-btn");
+    const testOfficialBtn = document.getElementById("rvc-official-test-btn");
+
+    if (endpointInput) {
+      endpointInput.value = getOfficialEndpoint();
+    }
+
+    if (toggleConfigBtn && endpointWrap) {
+      toggleConfigBtn.addEventListener("click", () => {
+        endpointWrap.classList.toggle("hidden");
+      });
+    }
+
+    if (saveEndpointBtn && endpointInput) {
+      saveEndpointBtn.addEventListener("click", async () => {
+        const val = (endpointInput.value || "").trim().replace(/\/+$/u, "");
+        if (val) {
+          try {
+            window.localStorage.setItem(RVC_ENDPOINT_STORAGE_KEY, val);
+          } catch (e) {}
+          showToast(`💾 已保存官方服务地址：${val}`);
+          await probeOfficialService(val);
+        }
+      });
+      endpointInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") saveEndpointBtn.click();
+      });
+    }
+
+    if (testOfficialBtn) {
+      testOfficialBtn.addEventListener("click", async () => {
+        testOfficialBtn.disabled = true;
+        testOfficialBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i><span>测试中…</span>`;
+        await probeOfficialService(endpointInput?.value);
+        testOfficialBtn.disabled = false;
+        testOfficialBtn.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i><span>测试连接</span>`;
+      });
+    }
+
+    // Restore saved mode
+    try {
+      const savedMode = window.localStorage.getItem(RVC_MODE_STORAGE_KEY);
+      if (savedMode === "local" || savedMode === "official") {
+        setInferenceMode(savedMode);
+      } else {
+        setInferenceMode("official");
+      }
+    } catch (e) {
+      setInferenceMode("official");
+    }
+
     // Search input
     const searchInput = document.getElementById("rvc-model-search");
     if (searchInput) {
