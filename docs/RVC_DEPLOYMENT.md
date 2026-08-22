@@ -57,7 +57,9 @@ powershell -ExecutionPolicy Bypass -File E:\大肥鱼\rvc-local\start-all.ps1
 手动部署（备用）：
 
 ```powershell
-npx wrangler pages deploy . --project-name postprep --branch main
+# 从干净 git 树部署；工作区里的本地构建产物 (*.onnx) 与一个超 25MiB 的
+# ort126 jsep.wasm 会直接被 Pages 拒绝，必须用此脚本而不是直接 wrangler pages deploy。
+powershell -ExecutionPolicy Bypass -File .\tools\deploy-pages.ps1
 npx wrangler deploy --config worker/wrangler.toml
 ```
 
