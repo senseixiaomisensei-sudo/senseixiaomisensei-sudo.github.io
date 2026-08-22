@@ -1710,7 +1710,7 @@
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.ok || !payload.jobId || !payload.downloadToken) {
-        throw new Error(payload?.code || `HTTP ${response.status}`);
+        throw new Error(payload?.message || payload?.code || `HTTP ${response.status}`);
       }
 
       updateProgressBar(82);

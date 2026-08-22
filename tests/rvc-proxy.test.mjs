@@ -145,6 +145,45 @@ test("rvc endpoint sends only sanitized fields to the fixed GPU backend", async 
   }
 });
 
+test("rvc endpoint surfaces structured upstream error codes instead of masking them", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ code: "RVC_MODEL_NOT_FOUND" }, { status: 404 });
+  try {
+    const response = await rvcRequest(context());
+    const body = await response.json();
+    assert.equal(response.status, 502);
+    assert.equal(body.code, "RVC_MODEL_NOT_FOUND");
+    assert.ok(String(body.message).includes("未挂载"));
+    assert.equal(body.details.upstreamStatus, 404);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rvc endpoint retries once when the backend connection drops before responding", async () => {
+  let attempts = 0;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    attempts += 1;
+    if (attempts === 1) throw new TypeError("fetch failed");
+    return Response.json({
+      jobId: JOB_ID,
+      downloadToken: DOWNLOAD_TOKEN,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      format: "wav",
+    });
+  };
+  try {
+    const response = await rvcRequest(context());
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.ok, true);
+    assert.equal(attempts, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("rvc status remains false when no GPU destination or token is configured", async () => {
   const request = new Request("https://postprep-ae6.pages.dev/api/rvc-status", {
     headers: { Origin: SITE_ORIGIN, "X-PostPrep-Gateway": "gateway-secret" },

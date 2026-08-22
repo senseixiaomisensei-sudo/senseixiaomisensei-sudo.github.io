@@ -12,9 +12,15 @@
 浏览器 rvc.html
   -> Cloudflare Worker 网关 /rvc*（Origin 校验 + 限流）
   -> Pages Function /api/rvc*（网关密钥校验 + 字段/文件校验）
-  -> trycloudflare 快速隧道 -> 本机 GPU 服务 rvc-service /v1/convert
+  -> trycloudflare 快速隧道 -> 本机窄代理 tunnel_proxy.py (127.0.0.1:8090)
+  -> 本机 GPU 服务 rvc-service /v1/convert (127.0.0.1:8088，仅回环)
   -> 结果回传，浏览器经 Worker /rvc/output/<job>?token= 下载
 ```
+
+`rvc-service/tunnel_proxy.py` 是只读白名单反代：仅放行 `/healthz`、`/v1/models`、`/v1/convert`、
+`/v1/output/<job>?token=`，要求与 GPU 服务相同的 Bearer 令牌；泄露的快速隧道地址无法枚举模型或绕过令牌。
+Pages Function 对上游非 200 响应会透传其错误码（如 `RVC_MODEL_NOT_FOUND`）并附中英文说明；
+连接级失败会立即重试一次。
 
 角色模型由 GPU 服务扫描 `RVC_MODELS_DIR` 自动发现（见 `rvc-service/models/README.md`），
 网页通过 `/rvc/models` 实时获取可用角色列表；`assets/rvc-models.json` 只是离线展示目录。GPU 服务不可用时转换按钮关闭，不会把静态角色误标为可用。

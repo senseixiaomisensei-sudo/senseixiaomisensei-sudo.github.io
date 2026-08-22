@@ -105,6 +105,41 @@ function validInferencePayload(payload) {
   return { jobId, downloadToken, expiresAt: expiry.toISOString(), format };
 }
 
+const UPSTREAM_CODE_PATTERN = /^[A-Z][A-Z0-9_]{2,63}$/u;
+const UPSTREAM_ERROR_MESSAGES = Object.freeze({
+  RVC_MODEL_NOT_FOUND: Object.freeze({
+    zh: "所选角色模型未挂载到推理服务，请刷新角色列表后重试",
+    en: "The selected voice model is not mounted on the inference service",
+  }),
+  RVC_INFERENCE_FAILED: Object.freeze({
+    zh: "推理服务处理这段音频失败，请换一段更短更干净的音频重试",
+    en: "The inference service failed on this audio; try a shorter, cleaner clip",
+  }),
+  RVC_EMPTY_OUTPUT: Object.freeze({
+    zh: "推理服务没有产出有效音频，请稍后重试",
+    en: "The inference service produced no usable audio; please retry",
+  }),
+  UNAUTHORIZED: Object.freeze({
+    zh: "推理服务密钥不一致，需要管理员重新同步服务端配置",
+    en: "The inference service token mismatched; an admin must resync the server config",
+  }),
+  UPSTREAM_UNAVAILABLE: Object.freeze({
+    zh: "推理服务暂时不可达，请稍后重试",
+    en: "The inference service is temporarily unreachable; please retry",
+  }),
+});
+
+function backendFailure(request, env, payload, requestedLanguage, upstreamStatus) {
+  const upstreamCode = payload && typeof payload.code === "string" && UPSTREAM_CODE_PATTERN.test(payload.code)
+    ? payload.code
+    : "RVC_BACKEND_UNAVAILABLE";
+  const localized = UPSTREAM_ERROR_MESSAGES[upstreamCode];
+  const message = localized
+    ? (localized[requestedLanguage] || localized.zh)
+    : "Voice conversion is temporarily unavailable";
+  return failure(request, env, 502, upstreamCode, message, { upstreamStatus });
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   if (!sameOrigin(request, env)) return failure(request, env, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed");
@@ -170,8 +205,20 @@ export async function onRequest(context) {
       headers: { Authorization: `Bearer ${backend.token}` },
       body: upstreamBody,
     }, 170000);
-  } catch (error) {
-    return failure(request, env, error && error.name === "AbortError" ? 504 : 502, error && error.name === "AbortError" ? "RVC_BACKEND_TIMEOUT" : "RVC_BACKEND_UNAVAILABLE", "Voice conversion is temporarily unavailable");
+  } catch (firstError) {
+    if (firstError && firstError.name === "AbortError") {
+      return failure(request, env, 504, "RVC_BACKEND_TIMEOUT", "Voice conversion took too long");
+    }
+    // ponytail: trycloudflare 快速隧道偶发瞬断；连接级失败立即重试一次（未到超时，代价小）
+    try {
+      upstream = await fetchWithTimeout(backend.url.toString(), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${backend.token}` },
+        body: upstreamBody,
+      }, 170000);
+    } catch (error) {
+      return failure(request, env, error && error.name === "AbortError" ? 504 : 502, error && error.name === "AbortError" ? "RVC_BACKEND_TIMEOUT" : "RVC_BACKEND_UNAVAILABLE", error && error.name === "AbortError" ? "Voice conversion took too long" : "Voice conversion is temporarily unavailable");
+    }
   }
 
   const declaredResponseLength = Number.parseInt(upstream.headers.get("Content-Length") || "", 10);
@@ -186,7 +233,7 @@ export async function onRequest(context) {
   } catch {
     payload = null;
   }
-  if (!upstream.ok) return failure(request, env, 502, "RVC_BACKEND_UNAVAILABLE", "Voice conversion is temporarily unavailable");
+  if (!upstream.ok) return backendFailure(request, env, payload, requestedLanguage, upstream.status);
   const result = validInferencePayload(payload);
   if (!result) return failure(request, env, 502, "RVC_INVALID_OUTPUT", "Voice conversion returned an invalid response");
   return json(request, env, { ok: true, ...result });
