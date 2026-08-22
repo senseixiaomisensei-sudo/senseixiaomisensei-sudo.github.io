@@ -10,14 +10,14 @@ documentation. It does not replace licenses attached to third-party materials.
 - **Hero image** `assets/hero-postprep-original.png` was generated for this
   repository on 2026-08-12 without an external image input. It replaces the
   prior hero asset whose redistribution rights were not established.
-- The optional separate `rvc-service/` adapter uses the MIT-licensed
-  **rvc-python** inference wrapper
-  (<https://github.com/daswer123/rvc-python>, PyPI `rvc-python` 0.1.5), which
-  wraps the **Retrieval-based-Voice-Conversion-WebUI** inference code. That
-  upstream repository is AGPL-3.0; an operator choosing to run it as a separate
-  network service must independently meet its network-service source-disclosure
-  obligations. Model weights are never bundled with this repository and may
-  carry separate terms that the operator must review before mounting them.
+- The separate `rvc-service/` imports the MIT-licensed
+  **RVC-Project/Retrieval-based-Voice-Conversion-WebUI** source pinned to tag
+  `2.3.260718`, commit `8f2fdbf483955f924b4c87ab34919170d0b704ed`.
+  Official HuBERT and RMVPE assets are downloaded from
+  `lj1995/VoiceConversionWebUI` at a pinned Hugging Face revision and verified
+  by size/SHA-256 where applicable. Character/performer weights are not covered
+  by the upstream code license; operators must separately verify their source,
+  model terms, consent and redistribution rights.
 
 Before publishing a release, the maintainer must confirm that every bundled
 image or media asset is original, permissively licensed, or otherwise cleared

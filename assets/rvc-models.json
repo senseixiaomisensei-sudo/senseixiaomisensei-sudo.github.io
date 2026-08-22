@@ -1,7 +1,7 @@
 {
-  "version": 9,
-  "updatedAt": "2026-08-21",
-  "_readme": "RVC 角色声音目录（100% 同源分片静态加速，0 CORS，0 第三方依赖）。v24 保留 HuBERT/RMVPE 官方输入语义，不再硬裁切连续 F0；10 个角色统一改为由客户端控制、可复现的潜变量与 NSF 激励噪声，并接入角色专属轻量检索码本。defaultPitch 仅是跨音域试听建议，切换角色不会自动变调。",
+  "version": 10,
+  "updatedAt": "2026-08-22",
+  "_readme": "v25 离线展示目录。公开角色转换只使用 GPU 服务实时返回的已挂载 .pth/.index，并走固定到 RVC-Project 2.3.260718 / 8f2fdbf 的官方 HuBERT、RMVPE、FAISS 与 PyTorch 生成器管线；服务离线时不会回退到静态 ONNX 角色。这里的角色名称不构成角色、表演者或权利方授权声明。defaultPitch 仅是跨音域试听建议，切换角色不会自动变调。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",
@@ -97,7 +97,7 @@
       ]
     },
     {
-      "id": "hoshino2",
+      "id": "hoshino",
       "name": "小鸟游星野 (Hoshino)",
       "avatarText": "星野",
       "description": "《蔚蓝档案》阿拜多斯对策委员会副会长 · 哎呀呀~ 慵懒可靠大叔系萌少女音 · RVC v2 Ov2 音源焕新",
@@ -208,6 +208,9 @@
       "avatarText": "灯",
       "description": "《BanG Dream! It's MyGO!!!!!》主唱 · 清澈少年感少女音 · RVC v2",
       "tags": ["女声", "动漫", "MyGO"],
+      "license": "Hugging Face: other; unofficial community model; no character/performer/rightsholder authorization claimed",
+      "source": "https://huggingface.co/TogetsuDo/tomori-rvc",
+      "modelVersion": "sha256:7a19e21e455bc0ffc8af9219dd3aabc0cba9d4c6b9cde4e92a37b17b526ff57e",
       "defaultPitch": 9,
       "pitchNote": "少年感低中音域少女：男声输入推荐 +9",
       "sampleRate": 48000,
@@ -229,6 +232,9 @@
       "avatarText": "乐奈",
       "description": "《BanG Dream! It's MyGO!!!!!》吉他手 · 慵懒灵动猫系少女音 · RVC v2",
       "tags": ["女声", "动漫", "MyGO"],
+      "license": "Hugging Face: other; unofficial community model; no character/performer/rightsholder authorization claimed",
+      "source": "https://huggingface.co/TogetsuDo/rana-rvc",
+      "modelVersion": "sha256:764309604e2b2cde590769d28e4380345a256307af56d27b2fa0cc37fcbc7e13",
       "defaultPitch": 10,
       "pitchNote": "慵懒中音域猫系少女：男声输入推荐 +10",
       "sampleRate": 48000,
@@ -250,6 +256,9 @@
       "avatarText": "帝皇",
       "description": "《赛马娘 Pretty Derby》· 活泼元气高辨识度少女音 · RVC v2",
       "tags": ["女声", "动漫", "赛马娘"],
+      "license": "Hugging Face: other; unofficial community model; no character/performer/rightsholder authorization claimed",
+      "source": "https://huggingface.co/TogetsuDo/teio-rvc",
+      "modelVersion": "sha256:57c9b3b6b65dd7a72ea3dca9f79be42982049b5430cdb6c046dea50627671cd8",
       "defaultPitch": 12,
       "pitchNote": "元气高音域少女：男声输入推荐 +12",
       "sampleRate": 40000,

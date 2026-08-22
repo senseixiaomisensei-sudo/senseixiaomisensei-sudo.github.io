@@ -15,7 +15,19 @@ export async function onRequest(context) {
     }, 8000);
     const payload = await upstream.json().catch(() => null);
     const models = upstream.ok && payload && Array.isArray(payload.models)
-      ? payload.models.filter((model) => model && typeof model.id === "string" && /^[A-Za-z0-9_-]{1,64}$/u.test(model.id))
+      ? payload.models
+        .filter((model) => model && typeof model.id === "string" && /^[A-Za-z0-9_-]{1,64}$/u.test(model.id))
+        .map((model) => ({
+          id: model.id,
+          name: typeof model.name === "string" ? model.name.slice(0, 120) : model.id,
+          emoji: typeof model.emoji === "string" ? model.emoji.slice(0, 8) : "🎵",
+          description: typeof model.description === "string" ? model.description.slice(0, 400) : "",
+          tags: Array.isArray(model.tags) ? model.tags.filter((tag) => typeof tag === "string").slice(0, 8).map((tag) => tag.slice(0, 40)) : [],
+          hasIndex: model.hasIndex === true,
+          license: typeof model.license === "string" ? model.license.slice(0, 120) : "unverified",
+          source: typeof model.source === "string" && /^https:\/\//u.test(model.source) ? model.source.slice(0, 500) : "",
+          modelVersion: typeof model.modelVersion === "string" ? model.modelVersion.slice(0, 40) : "",
+        }))
       : [];
     return json(request, env, { models });
   } catch {

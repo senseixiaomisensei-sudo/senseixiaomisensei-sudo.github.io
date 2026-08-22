@@ -14,7 +14,15 @@ export async function onRequest(context) {
       headers: { Authorization: `Bearer ${backend.token}` },
     }, 4500);
     const payload = await upstream.json().catch(() => null);
-    return json(request, env, { ready: Boolean(upstream.ok && payload && payload.ready === true) });
+    const ready = Boolean(upstream.ok && payload && payload.ready === true);
+    return json(request, env, ready ? {
+      ready: true,
+      engine: typeof payload.engine === "string" ? payload.engine : "",
+      tag: typeof payload.tag === "string" ? payload.tag : "",
+      commit: typeof payload.commit === "string" ? payload.commit : "",
+      device: typeof payload.device === "string" ? payload.device : "",
+      half: payload.half === true,
+    } : { ready: false });
   } catch {
     return json(request, env, { ready: false });
   }

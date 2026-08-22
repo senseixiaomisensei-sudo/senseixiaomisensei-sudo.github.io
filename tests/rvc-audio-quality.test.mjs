@@ -104,7 +104,7 @@ test("RMVPE salience decoder supports class-last and class-first tensors", () =>
   assert.ok(lastResult.every((value) => value > 0));
 });
 
-test("RVC page starts neutral and the pipeline avoids non-official mastering", async () => {
+test("RVC page starts neutral and public voices use the pinned official service", async () => {
   const [page, client, runtime] = await Promise.all([
     readFile(new URL("rvc.html", root), "utf8"),
     readFile(new URL("assets/rvc.js", root), "utf8"),
@@ -119,9 +119,14 @@ test("RVC page starts neutral and the pipeline avoids non-official mastering", a
   assert.doesNotMatch(workerSource, /filteredF0 = stabilizeShoutingPitchF0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /id="rvc-filter-radius"[\s\S]*?<option value="0">0（推荐/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260821-v24/u);
+  assert.match(page, /id="rvc-filter-radius"[^>]*type="hidden"[^>]*value="0"/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260822-v25/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
+  assert.match(client, /function runOfficialRvcInference\(\)/u);
+  assert.match(client, /return runOfficialRvcInference\(\)/u);
+  assert.match(client, /OFFICIAL_RVC_STATUS_ENDPOINT/u);
+  assert.match(client, /OFFICIAL_RVC_MODELS_ENDPOINT/u);
+  assert.match(client, /selectedModel && String\(selectedModel\.id\)\.startsWith\(OWN_MODEL_PREFIX\)/u);
   assert.match(workerSource, /extractHubertFeatures[\s\S]*?normalize: false/u);
   assert.doesNotMatch(workerSource, /extractHubertFeatures[\s\S]{0,180}?normalize: true/u);
   assert.match(workerSource, /fMin: 30,/u);

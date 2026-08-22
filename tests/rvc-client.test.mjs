@@ -74,3 +74,20 @@ test("rvc routes are constrained to the protected gateway and a fixed backend co
   assert.doesNotMatch(workerConfig, /VOICE/);
   assert.match(deployment, /不会把音频发送到一个空地址/);
 });
+
+test("GPU service pins and imports the official RVC inference source", async () => {
+  const [service, runtime, requirements, dockerfile, setup] = await Promise.all([
+    readFile(new URL("rvc-service/app/main.py", root), "utf8"),
+    readFile(new URL("rvc-service/app/official_runtime.py", root), "utf8"),
+    readFile(new URL("rvc-service/requirements.txt", root), "utf8"),
+    readFile(new URL("rvc-service/Dockerfile", root), "utf8"),
+    readFile(new URL("rvc-service/setup-official-rvc.ps1", root), "utf8"),
+  ]);
+  assert.doesNotMatch(service + requirements, /rvc_python|rvc-python/u);
+  assert.match(service, /OfficialRvcModel/u);
+  assert.match(runtime, /from infer\.vc\.modules import VC/u);
+  assert.match(runtime, /8f2fdbf483955f924b4c87ab34919170d0b704ed/u);
+  assert.match(dockerfile, /RVC_COMMIT=8f2fdbf483955f924b4c87ab34919170d0b704ed/u);
+  assert.match(setup, /cc8c20f4b90a520757260197a3ff2505705a7adbd20ad9eeaa4e1a9b38442ef5/u);
+  assert.match(setup, /6d62215f4306e3ca278246188607209f09af3dc77ed4232efdd069798c4ec193/u);
+});
