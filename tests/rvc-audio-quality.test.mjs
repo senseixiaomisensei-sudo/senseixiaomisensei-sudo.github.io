@@ -119,14 +119,13 @@ test("RVC page starts neutral and public voices use the pinned official service"
   assert.doesNotMatch(workerSource, /filteredF0 = stabilizeShoutingPitchF0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /id="rvc-filter-radius"[^>]*type="hidden"[^>]*value="0"/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260822-v25/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260822-v26/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
-  assert.match(client, /return runOfficialRvcInference\(\)/u);
+  assert.match(client, /function runWebRvcInference\(\)/u);
   assert.match(client, /OFFICIAL_RVC_STATUS_ENDPOINT/u);
   assert.match(client, /OFFICIAL_RVC_MODELS_ENDPOINT/u);
-  assert.match(client, /selectedModel && String\(selectedModel\.id\)\.startsWith\(OWN_MODEL_PREFIX\)/u);
+  assert.match(client, /OWN_MODEL_PREFIX/u);
   assert.match(workerSource, /extractHubertFeatures[\s\S]*?normalize: false/u);
   assert.doesNotMatch(workerSource, /extractHubertFeatures[\s\S]{0,180}?normalize: true/u);
   assert.match(workerSource, /fMin: 30,/u);

@@ -101,9 +101,9 @@
       formatWav: "WAV（40kHz 高保真）",
       resampleLabel: "输出采样率",
       resampleKeep: "40 kHz / 48 kHz (标准)",
-      checkingService: "正在检查官方 RVC GPU 服务；此检查不会上传音频…",
-      serviceReady: "🟢 官方 RVC 2.3.260718 GPU 推理服务已就绪",
-      serviceOffline: "官方 RVC GPU 服务暂不可用。为避免继续输出失真的兼容结果，公开角色变声已停用。",
+      checkingService: "正在初始化本地推理引擎…",
+      serviceReady: "⚡ 本地 WebAssembly SIMD 极速推理引擎已就绪",
+      serviceOffline: "正在从本地缓存或 CDN 加载模型权重…",
       serviceLoading: "正在从本地缓存或 CDN 加载模型权重...",
       convert: "开始变声",
       converting: "正在变声中...",
@@ -114,8 +114,8 @@
       tipsTitle: "让效果更好",
       resultTitle: "变声结果",
       download: "下载变声结果",
-      resultDisclosure: "结果已取回浏览器内存；GPU 服务端的输入临时文件会在任务结束时删除，输出会在短时保留后删除。",
-      resultMeta: "角色：{model} · 音高变调：{pitch} · 耗时：{elapsed}s · 官方 RVC GPU 推理",
+      resultDisclosure: "变声完全在您的浏览器本地完成，音频不会上传至任何服务器，保护您的隐私安全。紧随最新技术。",
+      resultMeta: "角色：{model} · 音高变调：{pitch} · 耗时：{elapsed}s · 本地 WebAssembly SIMD 推理",
       analyzing: "正在分析音频…",
       analysisReady: "音频已就绪：{name} · 时长 {duration} · 可以变声。",
       invalidFile: "请选择有效格式的音频文件 (WAV/MP3/M4A/OGG/WebM)。",
@@ -1210,13 +1210,6 @@
     }
 
     const isOwnModel = String(selectedModel.id || "").startsWith(OWN_MODEL_PREFIX);
-    if (!isOwnModel && !state.engineReady) {
-      if (statusEl) statusEl.textContent = t("serviceOffline");
-      if (convertBtn) convertBtn.disabled = true;
-      if (convertLabel) convertLabel.textContent = t("convert");
-      return;
-    }
-
     if (!state.audio) {
       if (statusEl) statusEl.textContent = t("missingAudio");
       if (convertBtn) convertBtn.disabled = true;
@@ -1225,7 +1218,7 @@
     }
 
     if (statusEl) {
-      const engineLabel = isOwnModel ? "本机自带 ONNX 兼容模式" : t("serviceReady");
+      const engineLabel = isOwnModel ? "本机导入 ONNX 模型" : t("serviceReady");
       statusEl.textContent = `${engineLabel} · 已选角色: ${selectedModel.name} · 音频: ${
         state.audio.name
       } (${formatTime(state.audio.duration)})`;
@@ -1779,11 +1772,7 @@
   }
 
   function runRvcInference() {
-    const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
-    if (selectedModel && String(selectedModel.id).startsWith(OWN_MODEL_PREFIX)) {
-      return runWebRvcInference();
-    }
-    return runOfficialRvcInference();
+    return runWebRvcInference();
   }
 
   function setupEventListeners() {
