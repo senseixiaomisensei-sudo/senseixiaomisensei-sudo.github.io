@@ -6,9 +6,9 @@ globalThis.POSTPREP_API_ENDPOINT = "https://postprep-text-gateway.postprep.worke
 // Route browser traffic through the China-reachable Pages domain. Pages invokes
 // the protected Worker through a Cloudflare Service Binding, so clients no longer
 // depend on a direct workers.dev connection during upload, inference, or download.
-globalThis.POSTPREP_RVC_API_ENDPOINT = "https://postprep-ae6.pages.dev/rvc";
-globalThis.POSTPREP_RVC_STATUS_ENDPOINT = "https://postprep-ae6.pages.dev/rvc/status";
-globalThis.POSTPREP_RVC_MODELS_ENDPOINT = "https://postprep-ae6.pages.dev/rvc/models";
+globalThis.POSTPREP_RVC_API_ENDPOINT = "https://postprep-ae6.pages.dev/rvc-api";
+globalThis.POSTPREP_RVC_STATUS_ENDPOINT = "https://postprep-ae6.pages.dev/rvc-api/status";
+globalThis.POSTPREP_RVC_MODELS_ENDPOINT = "https://postprep-ae6.pages.dev/rvc-api/models";
 // Public, short-lived audio playback route. It accepts only an unguessable
 // conversion job/token pair and never exposes the private GPU endpoint token.
 globalThis.POSTPREP_RVC_MEDIA_ENDPOINT = "https://postprep-ae6.pages.dev/rvc-media";

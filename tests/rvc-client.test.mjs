@@ -39,9 +39,9 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.doesNotMatch(client, /api\.github\.com/);
   assert.doesNotMatch(client, /I HAVE THE RIGHTS/);
 
-  assert.match(config, /POSTPREP_RVC_API_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc"/u);
-  assert.match(config, /POSTPREP_RVC_STATUS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc\/status"/u);
-  assert.match(config, /POSTPREP_RVC_MODELS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc\/models"/u);
+  assert.match(config, /POSTPREP_RVC_API_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api"/u);
+  assert.match(config, /POSTPREP_RVC_STATUS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api\/status"/u);
+  assert.match(config, /POSTPREP_RVC_MODELS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api\/models"/u);
   assert.match(config, /POSTPREP_RVC_MEDIA_ENDPOINT/);
   assert.doesNotMatch(config, /POSTPREP_VOICE_API_ENDPOINT/);
 
