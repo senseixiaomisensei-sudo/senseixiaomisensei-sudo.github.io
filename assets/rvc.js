@@ -1774,6 +1774,10 @@
       zh: "音频格式或内容未被云端识别，请转换为 WAV 或 MP3 后重试",
       en: "The cloud service could not read this audio. Convert it to WAV or MP3 and retry",
     }),
+    RVC_NETWORK_INTERRUPTED: Object.freeze({
+      zh: "当前网络连续中断了云端请求，请保持页面在前台，切换 Wi‑Fi 或移动数据后重新提交",
+      en: "The network repeatedly interrupted the cloud request. Keep the page in the foreground, switch networks, and submit again",
+    }),
   });
 
   function cloudRvcFailureMessage(error) {
@@ -2657,22 +2661,33 @@
               errCode = typeof resJson.code === "string" ? resJson.code : "";
               if (resJson.message || errCode) errMsg = resJson.message || errCode;
             } catch (e) {}
+            if (xhr.status === 0) {
+              errCode = "RVC_NETWORK_INTERRUPTED";
+              errMsg = "网络连接在收到云端响应前中断";
+            }
             const error = new Error(errMsg);
             error.code = errCode;
             error.retryAfterSeconds = Math.max(0, parseInt(xhr.getResponseHeader("Retry-After") || "0", 10) || 0);
-            error.retryable = ["UPSTREAM_UNAVAILABLE", "RVC_BACKEND_UNAVAILABLE", "RATE_LIMITER_UNAVAILABLE"].includes(errCode)
-              || (!errCode && [502, 503, 520, 521, 522, 523, 524].includes(xhr.status));
+            error.retryable = attempt < 2 && (
+              ["UPSTREAM_UNAVAILABLE", "RVC_BACKEND_UNAVAILABLE", "RATE_LIMITER_UNAVAILABLE", "RVC_NETWORK_INTERRUPTED"].includes(errCode)
+              || (!errCode && [502, 503, 520, 521, 522, 523, 524].includes(xhr.status))
+            );
             error.httpStatus = xhr.status;
             reject(error);
           }
         };
 
-        xhr.onerror = () => {
+        const rejectNetworkFailure = () => {
           if (ticker) clearInterval(ticker);
-          const error = new Error("网络连接暂时中断，正在保留本次云端请求以便重试");
-          error.retryable = true;
+          const error = new Error(attempt < 2
+            ? "网络连接暂时中断，准备自动重试"
+            : "网络连接连续两次中断");
+          error.code = "RVC_NETWORK_INTERRUPTED";
+          error.retryable = attempt < 2;
           reject(error);
         };
+        xhr.onerror = rejectNetworkFailure;
+        xhr.onabort = rejectNetworkFailure;
 
         xhr.ontimeout = () => {
           if (ticker) clearInterval(ticker);
@@ -2689,8 +2704,9 @@
         payload = await uploadAndInfer(1);
       } catch (firstError) {
         if (!firstError?.retryable) throw firstError;
-        updateStatusDisplay("🔄 云端连接短暂中断，正在自动重试一次…");
-        await waitFor(900);
+        updateProgressBar(8);
+        updateStatusDisplay("🔄 云端连接短暂中断，正在重新连接同一入口并自动重试一次…");
+        await waitFor(1200);
         payload = await uploadAndInfer(2);
       }
       if (!payload || !payload.jobId || !payload.downloadToken) {

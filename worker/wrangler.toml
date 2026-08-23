@@ -23,5 +23,6 @@ name = "POSTPREP_RVC_RATE_LIMITER"
 namespace_id = "2026081501"
 
   [ratelimits.simple]
-  limit = 1
+  # One normal submission plus one automatic mobile-network retry.
+  limit = 2
   period = 60
