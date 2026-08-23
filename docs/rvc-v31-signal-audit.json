@@ -1,0 +1,828 @@
+{
+  "method": "normal-level and 2.5x float over-range source concatenated; service input compressor, official RMVPE RVC conversion, and final limiter all exercised",
+  "limitations": "Signal metrics detect non-finite output, full-scale clipping, abnormal silence/DC, large discontinuities and gross high-band energy. They do not prove subjective naturalness, identity fidelity, absence of every metallic/bubble artifact, or rights/consent.",
+  "count": 20,
+  "passed": 20,
+  "voices": [
+    {
+      "id": "arisu",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8752136,
+        "rms": 0.158409,
+        "dc": 0.00022607,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5653992,
+        "highBandPowerRatio": 0.04274804,
+        "crestFactor": 5.525
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.809082,
+        "rms": 0.1486061,
+        "dc": 0.00020723,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5531616,
+        "highBandPowerRatio": 0.04658797,
+        "crestFactor": 5.4445
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8752136,
+        "rms": 0.1684578,
+        "dc": 0.00024664,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5653992,
+        "highBandPowerRatio": 0.04713447,
+        "crestFactor": 5.1954
+      }
+    },
+    {
+      "id": "arona",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.7997437,
+        "rms": 0.1094515,
+        "dc": 0.00031695,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4840393,
+        "highBandPowerRatio": 0.04342129,
+        "crestFactor": 7.3068
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.6295471,
+        "rms": 0.0962761,
+        "dc": 0.0003091,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4078979,
+        "highBandPowerRatio": 0.05022806,
+        "crestFactor": 6.539
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.7997437,
+        "rms": 0.1222204,
+        "dc": 0.00032551,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4840393,
+        "highBandPowerRatio": 0.0606174,
+        "crestFactor": 6.5435
+      }
+    },
+    {
+      "id": "aru",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1450989,
+        "dc": 2.343e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6798401,
+        "highBandPowerRatio": 0.06365889,
+        "crestFactor": 6.2026
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.7844238,
+        "rms": 0.1317956,
+        "dc": 1.5e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5539551,
+        "highBandPowerRatio": 0.08909388,
+        "crestFactor": 5.9518
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1583473,
+        "dc": 3.264e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6798401,
+        "highBandPowerRatio": 0.10702919,
+        "crestFactor": 5.6837
+      }
+    },
+    {
+      "id": "asuna",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8728333,
+        "rms": 0.1145755,
+        "dc": 0.00029598,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5019836,
+        "highBandPowerRatio": 0.03692685,
+        "crestFactor": 7.618
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8290405,
+        "rms": 0.1024257,
+        "dc": 0.00026836,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3937378,
+        "highBandPowerRatio": 0.0652897,
+        "crestFactor": 8.0941
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8728333,
+        "rms": 0.1265107,
+        "dc": 0.00032612,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5019836,
+        "highBandPowerRatio": 0.07273523,
+        "crestFactor": 6.8993
+      }
+    },
+    {
+      "id": "hina",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8314209,
+        "rms": 0.1485984,
+        "dc": 0.0001851,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4278259,
+        "highBandPowerRatio": 0.0247823,
+        "crestFactor": 5.5951
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8167419,
+        "rms": 0.1386523,
+        "dc": 0.00017102,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.383606,
+        "highBandPowerRatio": 0.02757551,
+        "crestFactor": 5.8906
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8314209,
+        "rms": 0.1587438,
+        "dc": 0.00020047,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4278259,
+        "highBandPowerRatio": 0.02704805,
+        "crestFactor": 5.2375
+      }
+    },
+    {
+      "id": "hoshino",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1334606,
+        "dc": 5.419e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4994202,
+        "highBandPowerRatio": 0.03827934,
+        "crestFactor": 6.7435
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.7433777,
+        "rms": 0.1187447,
+        "dc": 3.931e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.45047,
+        "highBandPowerRatio": 0.05128128,
+        "crestFactor": 6.2603
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1478591,
+        "dc": 7.043e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4994202,
+        "highBandPowerRatio": 0.05576713,
+        "crestFactor": 6.0868
+      }
+    },
+    {
+      "id": "kayoko",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.853363,
+        "rms": 0.1480771,
+        "dc": 0.00010789,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5147095,
+        "highBandPowerRatio": 0.04223714,
+        "crestFactor": 5.763
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.7608643,
+        "rms": 0.1340983,
+        "dc": 0.00011252,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4977722,
+        "highBandPowerRatio": 0.05955299,
+        "crestFactor": 5.6739
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.853363,
+        "rms": 0.161962,
+        "dc": 0.00010283,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5147095,
+        "highBandPowerRatio": 0.06085471,
+        "crestFactor": 5.2689
+      }
+    },
+    {
+      "id": "kirara",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1447727,
+        "dc": 9.691e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3910828,
+        "highBandPowerRatio": 0.03361367,
+        "crestFactor": 6.2166
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8926086,
+        "rms": 0.1353265,
+        "dc": 8.842e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3488464,
+        "highBandPowerRatio": 0.04054976,
+        "crestFactor": 6.596
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1544239,
+        "dc": 0.00010617,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3910828,
+        "highBandPowerRatio": 0.03937454,
+        "crestFactor": 5.8281
+      }
+    },
+    {
+      "id": "koharu",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8786011,
+        "rms": 0.1413657,
+        "dc": 7.512e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4069824,
+        "highBandPowerRatio": 0.02899836,
+        "crestFactor": 6.2151
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8357239,
+        "rms": 0.1280718,
+        "dc": 7.014e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3602295,
+        "highBandPowerRatio": 0.04011397,
+        "crestFactor": 6.5254
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8786011,
+        "rms": 0.1545751,
+        "dc": 8.055e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4069824,
+        "highBandPowerRatio": 0.03779172,
+        "crestFactor": 5.684
+      }
+    },
+    {
+      "id": "koyuki",
+      "sampleRate": 48000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8011475,
+        "rms": 0.1002331,
+        "dc": 0.00012733,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4532166,
+        "highBandPowerRatio": 0.0611059,
+        "crestFactor": 7.9928
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.7383118,
+        "rms": 0.0897566,
+        "dc": 0.00011159,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3399048,
+        "highBandPowerRatio": 0.0917926,
+        "crestFactor": 8.2257
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8011475,
+        "rms": 0.1105395,
+        "dc": 0.00014451,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4532166,
+        "highBandPowerRatio": 0.0856308,
+        "crestFactor": 7.2476
+      }
+    },
+    {
+      "id": "midori",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8681946,
+        "rms": 0.1084353,
+        "dc": 6.103e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4700928,
+        "highBandPowerRatio": 0.05494205,
+        "crestFactor": 8.0066
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8190002,
+        "rms": 0.1000476,
+        "dc": 5.926e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4552612,
+        "highBandPowerRatio": 0.0738744,
+        "crestFactor": 8.1861
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8681946,
+        "rms": 0.1169046,
+        "dc": 6.296e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4700928,
+        "highBandPowerRatio": 0.07210479,
+        "crestFactor": 7.4265
+      }
+    },
+    {
+      "id": "mika",
+      "sampleRate": 32000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1662858,
+        "dc": 0.00038116,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6939392,
+        "highBandPowerRatio": 0.05685381,
+        "crestFactor": 5.4123
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1559263,
+        "dc": 0.0003465,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6455383,
+        "highBandPowerRatio": 0.06339233,
+        "crestFactor": 5.7719
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1769008,
+        "dc": 0.000419,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6939392,
+        "highBandPowerRatio": 0.06485007,
+        "crestFactor": 5.0876
+      }
+    },
+    {
+      "id": "momoi",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.84375,
+        "rms": 0.1076078,
+        "dc": 0.00024377,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4085388,
+        "highBandPowerRatio": 0.03134462,
+        "crestFactor": 7.841
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.6752014,
+        "rms": 0.0952186,
+        "dc": 0.00028825,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.2852783,
+        "highBandPowerRatio": 0.04802876,
+        "crestFactor": 7.0911
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.84375,
+        "rms": 0.1196741,
+        "dc": 0.00019523,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4085388,
+        "highBandPowerRatio": 0.05206217,
+        "crestFactor": 7.0504
+      }
+    },
+    {
+      "id": "noa",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8226929,
+        "rms": 0.1575004,
+        "dc": 0.00020435,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6158447,
+        "highBandPowerRatio": 0.04801434,
+        "crestFactor": 5.2234
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.76474,
+        "rms": 0.1456017,
+        "dc": 0.00019261,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5521545,
+        "highBandPowerRatio": 0.05466936,
+        "crestFactor": 5.2523
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8226929,
+        "rms": 0.169536,
+        "dc": 0.00021716,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6158447,
+        "highBandPowerRatio": 0.05831792,
+        "crestFactor": 4.8526
+      }
+    },
+    {
+      "id": "reisa",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1777875,
+        "dc": 2.45e-06,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5541992,
+        "highBandPowerRatio": 0.02729006,
+        "crestFactor": 5.0622
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1633535,
+        "dc": 1.376e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5084229,
+        "highBandPowerRatio": 0.03795785,
+        "crestFactor": 5.5095
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.192308,
+        "dc": 9.9e-06,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5541992,
+        "highBandPowerRatio": 0.03599812,
+        "crestFactor": 4.68
+      }
+    },
+    {
+      "id": "seia",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8071594,
+        "rms": 0.1736836,
+        "dc": 2.273e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3868713,
+        "highBandPowerRatio": 0.00931839,
+        "crestFactor": 4.6473
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.741272,
+        "rms": 0.1616124,
+        "dc": 3.454e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3222351,
+        "highBandPowerRatio": 0.01152079,
+        "crestFactor": 4.5867
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8071594,
+        "rms": 0.1859658,
+        "dc": 9.83e-06,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3868713,
+        "highBandPowerRatio": 0.00987909,
+        "crestFactor": 4.3404
+      }
+    },
+    {
+      "id": "shiroko",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.7147217,
+        "rms": 0.1141778,
+        "dc": 8.126e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5673828,
+        "highBandPowerRatio": 0.1242597,
+        "crestFactor": 6.2597
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.6227112,
+        "rms": 0.1024204,
+        "dc": 6.314e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5466614,
+        "highBandPowerRatio": 0.16279966,
+        "crestFactor": 6.08
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.7147217,
+        "rms": 0.1257613,
+        "dc": 0.00010103,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5673828,
+        "highBandPowerRatio": 0.15292774,
+        "crestFactor": 5.6832
+      }
+    },
+    {
+      "id": "toki",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1609442,
+        "dc": 0.00022984,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6053162,
+        "highBandPowerRatio": 0.04356936,
+        "crestFactor": 5.592
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.147362,
+        "dc": 0.00020743,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5361938,
+        "highBandPowerRatio": 0.05410746,
+        "crestFactor": 6.1074
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1745656,
+        "dc": 0.00025429,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.6053162,
+        "highBandPowerRatio": 0.05907641,
+        "crestFactor": 5.1556
+      }
+    },
+    {
+      "id": "yuuka",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1625619,
+        "dc": 8.58e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3355103,
+        "highBandPowerRatio": 0.01054545,
+        "crestFactor": 5.5363
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8616028,
+        "rms": 0.1461664,
+        "dc": 6.952e-05,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.248291,
+        "highBandPowerRatio": 0.01324719,
+        "crestFactor": 5.8947
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1787474,
+        "dc": 0.00010358,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.3355103,
+        "highBandPowerRatio": 0.01393243,
+        "crestFactor": 5.035
+      }
+    },
+    {
+      "id": "yuzu",
+      "sampleRate": 40000,
+      "passedSignalChecks": true,
+      "overall": {
+        "seconds": 11.42,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1755309,
+        "dc": 0.00038621,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5071106,
+        "highBandPowerRatio": 0.02521773,
+        "crestFactor": 5.1273
+      },
+      "normal": {
+        "seconds": 5.9595,
+        "nonFinite": 0,
+        "peak": 0.8963318,
+        "rms": 0.1635355,
+        "dc": 0.00029321,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.5071106,
+        "highBandPowerRatio": 0.03007832,
+        "crestFactor": 5.481
+      },
+      "shoutStress": {
+        "seconds": 5.4605,
+        "nonFinite": 0,
+        "peak": 0.8999939,
+        "rms": 0.1877497,
+        "dc": 0.00048771,
+        "samplesAtFullScale": 0,
+        "samplesAtLimiterCeiling": 0,
+        "maxAdjacentStep": 0.4871826,
+        "highBandPowerRatio": 0.03013701,
+        "crestFactor": 4.7936
+      }
+    }
+  ]
+}

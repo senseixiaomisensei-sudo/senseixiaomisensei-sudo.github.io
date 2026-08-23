@@ -46,45 +46,21 @@
       "models/base/rmvpe/chunk_17.bin"
     ]
   },
-  "tomori.onnx": {
-    "totalSize": 115609482,
-    "sha256": "0fa5853a75917ea11f64253c6a6b9be69540cd21a95a20625bbd4832a6fef384",
+  "arona.onnx": {
+    "totalSize": 110813613,
+    "sha256": "4ab84300f66aa0c1caef47673e2a736c7e884debfa852061acdd48b7c35befd9",
     "chunks": [
-      "models/characters/tomori/chunk_0.bin",
-      "models/characters/tomori/chunk_1.bin",
-      "models/characters/tomori/chunk_2.bin",
-      "models/characters/tomori/chunk_3.bin",
-      "models/characters/tomori/chunk_4.bin",
-      "models/characters/tomori/chunk_5.bin"
-    ]
-  },
-  "rana.onnx": {
-    "totalSize": 115609482,
-    "sha256": "b018718265565015d639d496d36dbee5a4b266c12e397d18c88bc7233e1f17d2",
-    "chunks": [
-      "models/characters/rana/chunk_0.bin",
-      "models/characters/rana/chunk_1.bin",
-      "models/characters/rana/chunk_2.bin",
-      "models/characters/rana/chunk_3.bin",
-      "models/characters/rana/chunk_4.bin",
-      "models/characters/rana/chunk_5.bin"
-    ]
-  },
-  "teio.onnx": {
-    "totalSize": 110890890,
-    "sha256": "51d2966bdf0ea930b4ef5fefce6e6b35accc09033c56f97de613fc5e7e6a15dd",
-    "chunks": [
-      "models/characters/teio/chunk_0.bin",
-      "models/characters/teio/chunk_1.bin",
-      "models/characters/teio/chunk_2.bin",
-      "models/characters/teio/chunk_3.bin",
-      "models/characters/teio/chunk_4.bin",
-      "models/characters/teio/chunk_5.bin"
+      "models/characters/arona/chunk_0.bin",
+      "models/characters/arona/chunk_1.bin",
+      "models/characters/arona/chunk_2.bin",
+      "models/characters/arona/chunk_3.bin",
+      "models/characters/arona/chunk_4.bin",
+      "models/characters/arona/chunk_5.bin"
     ]
   },
   "arisu.onnx": {
-    "totalSize": 110890890,
-    "sha256": "da65e1a9d4eb4a0fedeff3b16e668182a76d7ce45d3aac96da4a98e3d89c6427",
+    "totalSize": 110813613,
+    "sha256": "64385b433dc1e098e9fd19e46679f058a36468ad2545abd17414325659031a3b",
     "chunks": [
       "models/characters/arisu/chunk_0.bin",
       "models/characters/arisu/chunk_1.bin",
@@ -95,8 +71,8 @@
     ]
   },
   "shiroko.onnx": {
-    "totalSize": 110890890,
-    "sha256": "5150a27ffa0de1b83374e1b968fe7bef3bf1a9ac31078828a924e72b9418cff0",
+    "totalSize": 110813613,
+    "sha256": "d04be7351d424d1e8c2c209326c83a5bf556097b3d0019e89da50e67c2bf0d8f",
     "chunks": [
       "models/characters/shiroko/chunk_0.bin",
       "models/characters/shiroko/chunk_1.bin",
@@ -106,9 +82,21 @@
       "models/characters/shiroko/chunk_5.bin"
     ]
   },
+  "hoshino.onnx": {
+    "totalSize": 110813613,
+    "sha256": "f3e72012e4e116c59f2a8cae8daf241f13f46ee060612d09faae50c0f4b914e5",
+    "chunks": [
+      "models/characters/hoshino/chunk_0.bin",
+      "models/characters/hoshino/chunk_1.bin",
+      "models/characters/hoshino/chunk_2.bin",
+      "models/characters/hoshino/chunk_3.bin",
+      "models/characters/hoshino/chunk_4.bin",
+      "models/characters/hoshino/chunk_5.bin"
+    ]
+  },
   "yuuka.onnx": {
-    "totalSize": 110890890,
-    "sha256": "ecd356272c8056c82d659340a07b95ce3196170d266bba3894127079a8f74e3b",
+    "totalSize": 110813613,
+    "sha256": "00c9274c8d36eebfef316fb71c014e57e5a12cc973c2c60aa021e2081f7c362f",
     "chunks": [
       "models/characters/yuuka/chunk_0.bin",
       "models/characters/yuuka/chunk_1.bin",
@@ -119,8 +107,8 @@
     ]
   },
   "hina.onnx": {
-    "totalSize": 110890890,
-    "sha256": "d72c6253d9cea5e755f8c8b1a1828ddbdb107df675755b9010b9cb553221edbf",
+    "totalSize": 110813613,
+    "sha256": "bfc0ddf0f8207bb83803f527c822a354d3c20e23824d74b6ce50f6aa95820ea5",
     "chunks": [
       "models/characters/hina/chunk_0.bin",
       "models/characters/hina/chunk_1.bin",
@@ -131,8 +119,8 @@
     ]
   },
   "noa.onnx": {
-    "totalSize": 110890890,
-    "sha256": "e3635713a35606bb614fe9aa8605d3f7f5c3c019fe60f084be130259a9b867ea",
+    "totalSize": 110813613,
+    "sha256": "05e04612f23662b1a01d2b7318e42fff3a0cc1f117506e525cbe5e026d3ce206",
     "chunks": [
       "models/characters/noa/chunk_0.bin",
       "models/characters/noa/chunk_1.bin",
@@ -143,8 +131,8 @@
     ]
   },
   "koharu.onnx": {
-    "totalSize": 110890890,
-    "sha256": "bd54e12c84483fdabfd7142e70f8a31579c7b5e494ae2145837bb00d9425ba4e",
+    "totalSize": 110813613,
+    "sha256": "f39f5e389efede17cc36cd9c431545b50bfa07f0ac8db1d02fc8bc6667d09016",
     "chunks": [
       "models/characters/koharu/chunk_0.bin",
       "models/characters/koharu/chunk_1.bin",
@@ -154,21 +142,9 @@
       "models/characters/koharu/chunk_5.bin"
     ]
   },
-  "hoshino2.onnx": {
-    "totalSize": 110890890,
-    "sha256": "885c4e63a9c6280fd0d9449913053972d5a90ac6ab38ec199dbad92972e28b53",
-    "chunks": [
-      "models/characters/hoshino2/chunk_0.bin",
-      "models/characters/hoshino2/chunk_1.bin",
-      "models/characters/hoshino2/chunk_2.bin",
-      "models/characters/hoshino2/chunk_3.bin",
-      "models/characters/hoshino2/chunk_4.bin",
-      "models/characters/hoshino2/chunk_5.bin"
-    ]
-  },
   "momoi.onnx": {
     "totalSize": 110813613,
-    "sha256": "26266f47efedf52c207332f684717d61cb4b82d0ecf3a2ac7b015f17474ce52a",
+    "sha256": "cb44ac1b8ea8d79976322a870d0189dd81ecd378c31c6638b25be9e1f99b7b38",
     "chunks": [
       "models/characters/momoi/chunk_0.bin",
       "models/characters/momoi/chunk_1.bin",
@@ -178,9 +154,21 @@
       "models/characters/momoi/chunk_5.bin"
     ]
   },
+  "midori.onnx": {
+    "totalSize": 110813613,
+    "sha256": "39c397dae8d1e52fe54235e6f9833021c3956acc6af4beea75bc5db507836369",
+    "chunks": [
+      "models/characters/midori/chunk_0.bin",
+      "models/characters/midori/chunk_1.bin",
+      "models/characters/midori/chunk_2.bin",
+      "models/characters/midori/chunk_3.bin",
+      "models/characters/midori/chunk_4.bin",
+      "models/characters/midori/chunk_5.bin"
+    ]
+  },
   "reisa.onnx": {
-    "totalSize": 112894381,
-    "sha256": "22bc8cdaa447a2d5791cc7c64ae369a651660da11bd5dee6623f38822dd87407",
+    "totalSize": 110813613,
+    "sha256": "8452610c853dbc3dc8de8216511b9d3ffdb9c16487bf8d0dad7dd16d929e9a22",
     "chunks": [
       "models/characters/reisa/chunk_0.bin",
       "models/characters/reisa/chunk_1.bin",
@@ -188,6 +176,114 @@
       "models/characters/reisa/chunk_3.bin",
       "models/characters/reisa/chunk_4.bin",
       "models/characters/reisa/chunk_5.bin"
+    ]
+  },
+  "yuzu.onnx": {
+    "totalSize": 110813613,
+    "sha256": "4c5a0fd73a9885fc103ad499e7d37bcdd82c11b88141695acbcdf4d4e9169345",
+    "chunks": [
+      "models/characters/yuzu/chunk_0.bin",
+      "models/characters/yuzu/chunk_1.bin",
+      "models/characters/yuzu/chunk_2.bin",
+      "models/characters/yuzu/chunk_3.bin",
+      "models/characters/yuzu/chunk_4.bin",
+      "models/characters/yuzu/chunk_5.bin"
+    ]
+  },
+  "toki.onnx": {
+    "totalSize": 110813613,
+    "sha256": "7651f54515928c7abd82d7351009288c441e0a86160b8c4f20908d5e604aad97",
+    "chunks": [
+      "models/characters/toki/chunk_0.bin",
+      "models/characters/toki/chunk_1.bin",
+      "models/characters/toki/chunk_2.bin",
+      "models/characters/toki/chunk_3.bin",
+      "models/characters/toki/chunk_4.bin",
+      "models/characters/toki/chunk_5.bin"
+    ]
+  },
+  "asuna.onnx": {
+    "totalSize": 110813613,
+    "sha256": "af5baa9b1c951675bf936a9283ad37714e7698b3d6b6a1762f8dce1a2ab7e05d",
+    "chunks": [
+      "models/characters/asuna/chunk_0.bin",
+      "models/characters/asuna/chunk_1.bin",
+      "models/characters/asuna/chunk_2.bin",
+      "models/characters/asuna/chunk_3.bin",
+      "models/characters/asuna/chunk_4.bin",
+      "models/characters/asuna/chunk_5.bin"
+    ]
+  },
+  "aru.onnx": {
+    "totalSize": 110813613,
+    "sha256": "eb94d0798cf94f12ba4da11965e5d1d332c9896e6186a3fc0a98e3bfa5f1e34a",
+    "chunks": [
+      "models/characters/aru/chunk_0.bin",
+      "models/characters/aru/chunk_1.bin",
+      "models/characters/aru/chunk_2.bin",
+      "models/characters/aru/chunk_3.bin",
+      "models/characters/aru/chunk_4.bin",
+      "models/characters/aru/chunk_5.bin"
+    ]
+  },
+  "kirara.onnx": {
+    "totalSize": 110813613,
+    "sha256": "e8421e86899db0c1de677d5d5b0312667434582c4d55b789f940b47fb72a00b5",
+    "chunks": [
+      "models/characters/kirara/chunk_0.bin",
+      "models/characters/kirara/chunk_1.bin",
+      "models/characters/kirara/chunk_2.bin",
+      "models/characters/kirara/chunk_3.bin",
+      "models/characters/kirara/chunk_4.bin",
+      "models/characters/kirara/chunk_5.bin"
+    ]
+  },
+  "koyuki.onnx": {
+    "totalSize": 115532205,
+    "sha256": "56fd2819decb6a51ba77bbf434a94ee3b4997da97bf6b3e756e0b1c10a886944",
+    "chunks": [
+      "models/characters/koyuki/chunk_0.bin",
+      "models/characters/koyuki/chunk_1.bin",
+      "models/characters/koyuki/chunk_2.bin",
+      "models/characters/koyuki/chunk_3.bin",
+      "models/characters/koyuki/chunk_4.bin",
+      "models/characters/koyuki/chunk_5.bin"
+    ]
+  },
+  "kayoko.onnx": {
+    "totalSize": 110813613,
+    "sha256": "60c1387f368099da08a3aacb84cccf9cd2d2c8ac8fcce7e589da539946da1a9a",
+    "chunks": [
+      "models/characters/kayoko/chunk_0.bin",
+      "models/characters/kayoko/chunk_1.bin",
+      "models/characters/kayoko/chunk_2.bin",
+      "models/characters/kayoko/chunk_3.bin",
+      "models/characters/kayoko/chunk_4.bin",
+      "models/characters/kayoko/chunk_5.bin"
+    ]
+  },
+  "seia.onnx": {
+    "totalSize": 110813613,
+    "sha256": "50c78090f819d694307574f320a369198907707643e0be5d4bd077fa179b1d99",
+    "chunks": [
+      "models/characters/seia/chunk_0.bin",
+      "models/characters/seia/chunk_1.bin",
+      "models/characters/seia/chunk_2.bin",
+      "models/characters/seia/chunk_3.bin",
+      "models/characters/seia/chunk_4.bin",
+      "models/characters/seia/chunk_5.bin"
+    ]
+  },
+  "mika.onnx": {
+    "totalSize": 112894381,
+    "sha256": "98ce094ab053b039c0339269089691f05ac385c91a7505d9c3a708225056663b",
+    "chunks": [
+      "models/characters/mika/chunk_0.bin",
+      "models/characters/mika/chunk_1.bin",
+      "models/characters/mika/chunk_2.bin",
+      "models/characters/mika/chunk_3.bin",
+      "models/characters/mika/chunk_4.bin",
+      "models/characters/mika/chunk_5.bin"
     ]
   }
 }

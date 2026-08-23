@@ -62,10 +62,27 @@ ALLOWED_RESAMPLE = {0, 16000, 24000, 32000, 44100, 48000}
 # the source recording.
 INPUT_SAFETY_FILTER = (
     "highpass=f=45:p=2,"
-    "acompressor=threshold=0.72:ratio=5:attack=3:release=90:makeup=1,"
-    "alimiter=limit=0.94:attack=5:release=80:level=0"
+    "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
+    "alimiter=limit=0.90:attack=5:release=100:level=0"
 )
-OUTPUT_SAFETY_FILTER = "alimiter=limit=0.95:attack=5:release=80:level=0"
+# RVC generators can emit isolated full-band impulses or an over-bright upper
+# spectrum on high-energy input.  Repair clicks first, then apply a restrained
+# de-esser/anti-alias low-pass before the final true-peak guard.  Four public
+# checkpoints need a narrower band because the same shout-stress fixture
+# produced >0.85 adjacent-sample jumps with the 12 kHz profile.
+OUTPUT_SAFETY_FILTER = (
+    "adeclick=threshold=2.5:burst=2,"
+    "deesser=i=0.15:m=0.3:f=0.55,"
+    "lowpass=f=12000:p=1,"
+    "alimiter=limit=0.90:attack=5:release=100:level=0"
+)
+SHOUT_HARSHNESS_GUARD_MODELS = frozenset({"midori", "mika", "shiroko", "toki", "yuzu"})
+SHOUT_HARSHNESS_FILTER = (
+    "adeclick=threshold=2:burst=2,"
+    "deesser=i=0.25:m=0.35:f=0.52,"
+    "lowpass=f=10000:p=2,"
+    "alimiter=limit=0.90:attack=5:release=100:level=0"
+)
 
 
 class RvcServiceError(Exception):
@@ -373,10 +390,16 @@ def render_conversion(
     # The upstream generator writes PCM; a final transparent limiter prevents
     # a very loud synthesized peak from clipping in the browser/player.
     limited_output = output_wav.with_name(f"{output_wav.stem}-limited{output_wav.suffix}")
+    model_id = model_path.parent.name if model_path.parent != MODELS_DIR else model_path.stem
+    output_filter = (
+        SHOUT_HARSHNESS_FILTER
+        if model_id in SHOUT_HARSHNESS_GUARD_MODELS
+        else OUTPUT_SAFETY_FILTER
+    )
     result = subprocess.run(
         [
             "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(output_wav),
-            "-af", OUTPUT_SAFETY_FILTER, "-c:a", "pcm_s16le", str(limited_output),
+            "-af", output_filter, "-c:a", "pcm_s16le", str(limited_output),
         ],
         check=False,
         stdout=subprocess.DEVNULL,
@@ -436,7 +459,7 @@ async def create_job(
     model_id: str = Form(...),
     pitch: str = Form("0"),
     index_rate: str = Form("0.5"),
-    protect: str = Form("0.33"),
+    protect: str = Form("0.25"),
     filter_radius: str = Form("3"),
     resample: str = Form("0"),
     rms_mix_rate: str = Form("1"),

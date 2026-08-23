@@ -18,6 +18,11 @@ documentation. It does not replace licenses attached to third-party materials.
   by size/SHA-256 where applicable. Character/performer weights are not covered
   by the upstream code license; operators must separately verify their source,
   model terms, consent and redistribution rights.
+- The v31 public community character-model source URLs, pinned checkpoint/index
+  SHA-256 values and technical acceptance evidence are listed in
+  `docs/RVC_V31_MODEL_SOURCES.md` and `docs/rvc-v31-quality-evidence.json`.
+  Their inclusion records provenance and technical compatibility only; it does
+  not assert copyright, performer consent, trademark permission or endorsement.
 
 Before publishing a release, the maintainer must confirm that every bundled
 image or media asset is original, permissively licensed, or otherwise cleared

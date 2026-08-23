@@ -145,7 +145,29 @@ class OfficialRvcModel:
         rms_mix_rate: float,
         protect: float,
     ) -> None:
+        import random
+
+        import numpy as np
         import soundfile as sf
+        import torch
+
+        # Upstream synthesizers sample excitation noise internally. Reset the
+        # relevant RNGs and deterministic CUDA preferences to reduce run-to-run
+        # spread. GPU inference is not promised to be bit-identical, so the
+        # measured click/de-esser/limiter guard remains mandatory afterwards.
+        seed = 20260823
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+        if hasattr(torch.backends, "cudnn"):
+            torch.backends.cudnn.benchmark = False
+            torch.backends.cudnn.deterministic = True
+        try:
+            torch.use_deterministic_algorithms(True, warn_only=True)
+        except TypeError:
+            torch.use_deterministic_algorithms(True)
 
         status, result = self._vc.vc_single(
             0,

@@ -50,10 +50,22 @@ test("RVC keeps ordinary input level and applies the shout guard before peak pro
   assert.ok(maxAbs(ordinary) < 0.13);
 
   const overRange = conditionInputAudio(sine(16000, 1.4), 16000);
-  assert.ok(maxAbs(overRange) <= 0.951);
+  assert.ok(maxAbs(overRange) <= 0.901);
   assert.ok(maxAbs(overRange) > 0.7);
   const sustainedPeak = maxAbs(overRange.subarray(4000));
-  assert.ok(sustainedPeak < 0.91, "sustained shouted audio should be gently contained");
+  assert.ok(sustainedPeak < 0.86, "sustained shouted audio should be gently contained");
+});
+
+test("shout F0 repair only removes isolated octave errors", () => {
+  const hasShoutDynamics = evaluateFunction("hasShoutDynamics");
+  const repairIsolatedShoutF0Errors = evaluateFunction("repairIsolatedShoutF0Errors");
+  assert.equal(hasShoutDynamics(sine(16000, 0.1)), false);
+  assert.equal(hasShoutDynamics(sine(16000, 0.8)), true);
+  const contour = Float32Array.from([220, 222, 440, 224, 226, 300, 380, 480]);
+  const repaired = repairIsolatedShoutF0Errors(contour);
+  assert.ok(repaired[2] > 220 && repaired[2] < 230, "isolated octave hop should be repaired");
+  assert.equal(repaired[5], 300, "sustained pitch motion must remain untouched");
+  assert.equal(repaired[6], 380, "sustained pitch motion must remain untouched");
 });
 
 test("RMS mix follows official semantics: 1 is unchanged and 0 follows source", () => {
@@ -107,21 +119,24 @@ test("RMVPE salience decoder supports class-last and class-first tensors", () =>
 });
 
 test("RVC page starts neutral and public voices use the pinned official service", async () => {
-  const [page, client, runtime] = await Promise.all([
+  const [page, client, runtime, service] = await Promise.all([
     readFile(new URL("rvc.html", root), "utf8"),
     readFile(new URL("assets/rvc.js", root), "utf8"),
     readFile(new URL("assets/rvc-engine/rvc-web-runtime.js", root), "utf8"),
+    readFile(new URL("rvc-service/app/main.py", root), "utf8"),
   ]);
 
   assert.match(page, /id="rvc-pitch"[^>]*value="0"/u);
+  assert.match(page, /id="rvc-protect"[^>]*value="0\.25"/u);
   assert.match(page, /id="rvc-preset-same"[^>]*aria-pressed="true"/u);
   assert.match(page, /id="rvc-preset-male-female"[^>]*aria-pressed="false"/u);
   assert.doesNotMatch(page, /value="crepe"|value="fcpe"|value="harvest"/u);
   assert.doesNotMatch(client, /pitchInput\.value = String\(model\.defaultPitch\)/u);
   assert.doesNotMatch(workerSource, /filteredF0 = stabilizeShoutingPitchF0/u);
+  assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260823-v30/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260823-v31/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);
@@ -136,21 +151,24 @@ test("RVC page starts neutral and public voices use the pinned official service"
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260823-v30/u);
-  assert.match(runtime, /v=20260823-v30/u);
-  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260823-v30"/u);
+  assert.match(client, /v=20260823-v31/u);
+  assert.match(runtime, /v=20260823-v31/u);
+  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260823-v31"/u);
   assert.match(client, /characterModelCacheKey\(selectedModel\)/u);
   assert.match(client, /chunks\.map\(versionCharacterChunkPath\)/u);
   assert.match(page, /id="rvc-index-rate"[^>]*value="0\.3"/u);
   assert.doesNotMatch(page, /<div hidden>[\s\S]{0,240}?id="rvc-index-rate"/u);
   assert.match(client, /deriveStableNoiseSeed\(freshAudioInput, selectedModel\.id\)/u);
   assert.match(client, /indexRate: indexRateVal/u);
+  assert.match(service, /adeclick=threshold=2\.5:burst=2/u);
+  assert.match(service, /SHOUT_HARSHNESS_GUARD_MODELS = frozenset\(\{"midori", "mika", "shiroko", "toki", "yuzu"\}\)/u);
+  assert.match(service, /lowpass=f=10000:p=2/u);
 });
 
 test("all deployed character models expose caller-controlled noise without hidden random operators", async () => {
   const catalog = JSON.parse(await readFile(new URL("assets/rvc-models.json", root), "utf8"));
   const manifest = JSON.parse(await readFile(new URL("models/manifest.json", root), "utf8"));
-  assert.equal(catalog.models.length, 12);
+  assert.equal(catalog.models.length, 20);
   assert.ok(catalog.models.some((model) => model.id === "momoi"));
   assert.ok(catalog.models.some((model) => model.id === "reisa"));
   for (const model of catalog.models) {
@@ -226,7 +244,9 @@ test("retrieval codebook blends voiced frames and protects unvoiced consonants",
   const codebook = { count: 1, dimension: 2, centers: Float32Array.from([2, 4]) };
   const voiced = applyRetrievalCodebook(features, Float32Array.from([200, 200]), codebook, 0.5, 0.33);
   const unvoiced = applyRetrievalCodebook(features, Float32Array.from([0, 0]), codebook, 0.5, 0.33);
+  const protectionDisabled = applyRetrievalCodebook(features, Float32Array.from([0, 0]), codebook, 0.5, 0.5);
   assert.deepEqual([...voiced.hiddenStates], [1, 2, 1, 2]);
   assert.ok(Math.abs(unvoiced.hiddenStates[0] - 0.33) < 1e-6);
   assert.ok(Math.abs(unvoiced.hiddenStates[1] - 0.66) < 1e-6);
+  assert.deepEqual([...protectionDisabled.hiddenStates], [1, 2, 1, 2]);
 });

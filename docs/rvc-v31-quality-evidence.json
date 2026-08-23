@@ -1,0 +1,224 @@
+{
+  "models": [
+    {
+      "id": "arona",
+      "sampleRate": 40000,
+      "checkpointSha256": "152ce87951192224b08efdedf2b487fb57509420626437df7d21ef2c74307118",
+      "indexSha256": "735227b51d2928509a15aeb3ccb3415188a979138b93bc0b597013986dda7377",
+      "indexDimension": 768,
+      "indexVectors": 47213,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "215epoch"
+    },
+    {
+      "id": "arisu",
+      "sampleRate": 40000,
+      "checkpointSha256": "2ec7e8c4050c06b1ad2964695ed40d2deab9d8f8c43065f3ffbdf70e02c016cf",
+      "indexSha256": "1dcef1f47371b506051ad30c476b0fa6fcd291ac38dd5e5924baeb203d848240",
+      "indexDimension": 768,
+      "indexVectors": 36389,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "shiroko",
+      "sampleRate": 40000,
+      "checkpointSha256": "f0f672b2251fff17fe801531e18c38fa9902d387cb45c7c0c687cf9184a4360c",
+      "indexSha256": "fc78b75cf68bbba4130867b8082c2b3a1ab27faaf21d271d824c835d853a62a1",
+      "indexDimension": 768,
+      "indexVectors": 34081,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "230epoch"
+    },
+    {
+      "id": "hoshino",
+      "sampleRate": 40000,
+      "checkpointSha256": "56cc39ce5a4042ec0954fe1a47f8d30b1900f6fb185ba28a161397762aa52230",
+      "indexSha256": "d287b69451c5d2725ccf4e51942d032a6aff252ddcb4b46ad68f96dc515be544",
+      "indexDimension": 768,
+      "indexVectors": 36618,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "300epoch"
+    },
+    {
+      "id": "yuuka",
+      "sampleRate": 40000,
+      "checkpointSha256": "bdd7b78638e95ad2f6ca5995408721bc7f058374ace8ba3fe51da2982d5f1986",
+      "indexSha256": "154e86b7e0ffbf570048860fb10f7ba8a7bd3e14d9fe4cd211560e9c784950c9",
+      "indexDimension": 768,
+      "indexVectors": 49891,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "360epoch"
+    },
+    {
+      "id": "hina",
+      "sampleRate": 40000,
+      "checkpointSha256": "ebc6edcb2b657f57937156eff878e51bf392d7c9c65c3d23a7aef7eb2f3eaf16",
+      "indexSha256": "189e199f6e33ddfca5e1c6351bcc331dc3a71a0680ad7565ef6d05c3b07c593a",
+      "indexDimension": 768,
+      "indexVectors": 32096,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "noa",
+      "sampleRate": 40000,
+      "checkpointSha256": "4f0d38867fafc07487026981175d2eefb2d28a9c731dcdbab808b41bc069016d",
+      "indexSha256": "a2baefac31b22c26474b57f9e15ffd09b0e5248ffee8a48a7a69234302b4ee94",
+      "indexDimension": 768,
+      "indexVectors": 23815,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "koharu",
+      "sampleRate": 40000,
+      "checkpointSha256": "ec375a8ccae860747f2e9e06f80f92127502550c8e89fa44b9e70af5ac3db57d",
+      "indexSha256": "507b54bb32721696ea3850a53eff9965a601bfa37f85fa4cefb29998740d9cef",
+      "indexDimension": 768,
+      "indexVectors": 28905,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "momoi",
+      "sampleRate": 40000,
+      "checkpointSha256": "a500a4987abb793783ac2a54ff96908c31eb61fa1d0ca25b33a149c46ac81aeb",
+      "indexSha256": "367e1103527003a48ba5b1e5dd0f8b6b5a22b1b78fe352b1b88aeb8ea0e33258",
+      "indexDimension": 768,
+      "indexVectors": 22643,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "200epoch"
+    },
+    {
+      "id": "midori",
+      "sampleRate": 40000,
+      "checkpointSha256": "5d7c9728c94abb58dd3c5b0fc111550f4acb1ccb0fb3c713bf1ae04a7af86de1",
+      "indexSha256": "3aabf9bd4633c705186f7b5d94d7317ee4e0adb7ae9f610eb1fb530a4d8ef7cb",
+      "indexDimension": 768,
+      "indexVectors": 15658,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "reisa",
+      "sampleRate": 40000,
+      "checkpointSha256": "e0d4a0f14bf334cfb5009b6d9ee59ea540a8471934d8b9064d5990b10b81a18a",
+      "indexSha256": "deb1cfff28cbd7e645decd2a7a3e79d4b8e05bbc8b32cefb7aec66c94b624b9d",
+      "indexDimension": 768,
+      "indexVectors": 4356,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 341008,
+      "checkpointInfo": "300epoch"
+    },
+    {
+      "id": "yuzu",
+      "sampleRate": 40000,
+      "checkpointSha256": "c8aa31f36a5ee5fae466217d3a6ed931e6512ed58f78f1ee535e52a7d22f1aec",
+      "indexSha256": "0764aeed793827e30e8c4b7687a733acf27ed9afacbb3dbc0ac4353e45d634be",
+      "indexDimension": 768,
+      "indexVectors": 39723,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "toki",
+      "sampleRate": 40000,
+      "checkpointSha256": "9e9b8deaa840620047a78c71f8aeb22fa46b4c12b43906ed0b9f20880928c939",
+      "indexSha256": "2db922d0d1bfb4b911ecd5c81d9404560d6207e1efac060742c7491181a6da75",
+      "indexDimension": 768,
+      "indexVectors": 36294,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "asuna",
+      "sampleRate": 40000,
+      "checkpointSha256": "3aba85f50b6817d58c26e5653b3d22c71a3cead759c0d1d709399cd80fd791b4",
+      "indexSha256": "ba4c6becfc53c0d6c6d8b14c72913c5341d5bce4b678459ff983808d455b3ede",
+      "indexDimension": 768,
+      "indexVectors": 32643,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "aru",
+      "sampleRate": 40000,
+      "checkpointSha256": "a543c781358021d2436df894fda1605fed005209b8a28746b1d4d88c8ec01781",
+      "indexSha256": "206816de6751786dc09a9bf5d76ba17c719ae40155bf5e2faae824133f632395",
+      "indexDimension": 768,
+      "indexVectors": 52309,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "340epoch"
+    },
+    {
+      "id": "kirara",
+      "sampleRate": 40000,
+      "checkpointSha256": "16af2edf48f9996112eb1888fe31d308ea9b63eb343068e26f5d5b6639d32142",
+      "indexSha256": "2047677dc16cf48ae713b438e40c7bb039b0e64c6af6567cac93d6588bbd8cec",
+      "indexDimension": 768,
+      "indexVectors": 10000,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "300epoch"
+    },
+    {
+      "id": "koyuki",
+      "sampleRate": 48000,
+      "checkpointSha256": "d73d3ce1403178bb064300a9cf3daa69c77dec4af686d42713754ef76eea032a",
+      "indexSha256": "0f66eb4acd0e3b88ef4a4b36f7b64f5473df48b3cd75a1bc094daa739bd80f0a",
+      "indexDimension": 768,
+      "indexVectors": 16199,
+      "browserModelBytes": 115532205,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "500epoch"
+    },
+    {
+      "id": "kayoko",
+      "sampleRate": 40000,
+      "checkpointSha256": "bfe47515acd3372b29b4224e0c7d626def0806cec5b1d263969e8267860e8c42",
+      "indexSha256": "12d47f208e26adc23db83855f7902ed9f98dc89f9ccb11f36bb1df3871438b69",
+      "indexDimension": 768,
+      "indexVectors": 32879,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": "300epoch"
+    },
+    {
+      "id": "seia",
+      "sampleRate": 40000,
+      "checkpointSha256": "a3d27a43a7c58b369d868363c4557e65fc82fa2db7c86678f9058af189ab849b",
+      "indexSha256": "1806c1f43a78f0b86360d794d743b6593df6082fc60f1b9e0516a53f7f3c4ce8",
+      "indexDimension": 768,
+      "indexVectors": 38484,
+      "browserModelBytes": 110813613,
+      "retrievalBytes": 589840,
+      "checkpointInfo": ""
+    },
+    {
+      "id": "mika",
+      "sampleRate": 32000,
+      "checkpointSha256": "0d8b3aa3ec3e768743d8b7ed4df1e66c9de89d985c873e45b15f2a588b3c8fd4",
+      "indexSha256": "f0f95e71508bcc0d227e0d2eccff229939ace4f79e0b5e0e72ead7d2a12f30f1",
+      "indexDimension": 768,
+      "indexVectors": 2392,
+      "browserModelBytes": 112894381,
+      "retrievalBytes": 187408,
+      "checkpointInfo": "300epoch"
+    }
+  ]
+}

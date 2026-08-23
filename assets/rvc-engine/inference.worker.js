@@ -12529,7 +12529,7 @@ function aggressiveMedianFilterF0(f0, windowSize = 5) {
   }
   return result;
 }
-function stabilizeShoutingPitchF0(f0) {
+function repairIsolatedShoutF0Errors(f0) {
   const len = f0.length;
   if (len < 3) return f0;
   const out = new Float32Array(f0);
@@ -12551,19 +12551,19 @@ function stabilizeShoutingPitchF0(f0) {
       }
     }
   }
-  const maxSlew = 1.60;
-  const minSlew = 1.0 / maxSlew;
-  for (let i = 1; i < len; i++) {
-    if (out[i] > 0 && out[i - 1] > 0) {
-      const r = out[i] / out[i - 1];
-      if (r > maxSlew) {
-        out[i] = out[i - 1] * maxSlew;
-      } else if (r < minSlew) {
-        out[i] = out[i - 1] * minSlew;
-      }
-    }
-  }
   return out;
+}
+function hasShoutDynamics(audio) {
+  if (!audio || audio.length === 0) return false;
+  let sumSquares = 0;
+  let loudSamples = 0;
+  for (let i = 0; i < audio.length; i++) {
+    const magnitude = Math.abs(audio[i]);
+    sumSquares += audio[i] * audio[i];
+    if (magnitude >= 0.55) loudSamples++;
+  }
+  const rms = Math.sqrt(sumSquares / audio.length);
+  return rms >= 0.18 && loudSamples / audio.length >= 0.01;
 }
 async function estimatePitch(audio, options) {
   const session = options.rmvpe instanceof File ? await loadRmvpeModel(options.rmvpe) : options.rmvpe;
@@ -12574,7 +12574,10 @@ async function estimatePitch(audio, options) {
   const medianFilterEnabled = options.medianFilter === true;
   const aggressiveMode = options.aggressiveMedianFilter === true;
   const windowSize = options.medianFilterWindow ?? (aggressiveMode ? 5 : 3);
-  let filteredF0 = f0;
+  // A shout may cause a one-frame octave hop that sounds like a bubble or
+  // electronic chirp. Repair only isolated outliers; never smooth a sustained
+  // pitch move or vibrato.
+  let filteredF0 = hasShoutDynamics(audio) ? repairIsolatedShoutF0Errors(f0) : f0;
   if (medianFilterEnabled) {
     if (aggressiveMode) {
       filteredF0 = aggressiveMedianFilterF0(f0, windowSize);
@@ -12770,7 +12773,9 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
       }
     }
     const voiced = (f0[Math.min(frame, f0.length - 1)] ?? 0) > 0;
-    const effectiveRate = rate * (voiced ? 1 : consonantRetention);
+    // Match upstream RVC: protect=0.5 disables protection, while lower values
+    // retain progressively more of the original unvoiced HuBERT features.
+    const effectiveRate = rate * (voiced || consonantRetention >= 0.5 ? 1 : consonantRetention);
     for (let paired = frame; paired < Math.min(frame + 2, frameCount); paired++) {
       const pairedOffset = paired * dimension;
       for (let dim = 0; dim < dimension; dim++) {
@@ -12888,11 +12893,11 @@ function conditionInputAudio(audio, sampleRate = 16000) {
   // release safety guard before inference. It only engages above a high
   // envelope, so normal speech is passed through intact; it is not a pitch
   // smoother and cannot recreate detail clipped by the source recorder.
-  const threshold = 0.72;
-  const compressionRatio = 5;
-  const envelopeAttack = Math.exp(-1 / Math.max(1, sampleRate * 0.002));
-  const envelopeRelease = Math.exp(-1 / Math.max(1, sampleRate * 0.09));
-  const gainRelease = Math.exp(-1 / Math.max(1, sampleRate * 0.12));
+  const threshold = 0.58;
+  const compressionRatio = 4;
+  const envelopeAttack = Math.exp(-1 / Math.max(1, sampleRate * 0.0015));
+  const envelopeRelease = Math.exp(-1 / Math.max(1, sampleRate * 0.12));
+  const gainRelease = Math.exp(-1 / Math.max(1, sampleRate * 0.15));
   let envelope = 0;
   let gain = 1;
   for (let i = 0; i < out.length; i++) {
@@ -12911,8 +12916,8 @@ function conditionInputAudio(audio, sampleRate = 16000) {
 
   peak = 0;
   for (let i = 0; i < out.length; i++) peak = Math.max(peak, Math.abs(out[i]));
-  if (peak > 0.95 && isFinite(peak)) {
-    const scale = 0.95 / peak;
+  if (peak > 0.90 && isFinite(peak)) {
+    const scale = 0.90 / peak;
     for (let i = 0; i < out.length; i++) out[i] *= scale;
   }
   return out;
@@ -13170,7 +13175,7 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
 // Transparent final safety gain. This intentionally performs no EQ, dynamic
 // resonance suppression, saturation, or per-band modulation: those custom
 // effects colour every character and can themselves sound metallic.
-function normalizeOutputPeak(audio, targetPeak = 0.95) {
+function normalizeOutputPeak(audio, targetPeak = 0.90) {
   if (!audio || audio.length === 0) return audio;
   let peak = 0;
   for (let i = 0; i < audio.length; i++) {
