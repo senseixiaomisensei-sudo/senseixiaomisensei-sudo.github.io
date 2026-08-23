@@ -1709,6 +1709,52 @@
     throw lastError || new Error("下载音频失败");
   }
 
+  const CLOUD_RVC_ERROR_MESSAGES = Object.freeze({
+    RATE_LIMITED: Object.freeze({
+      zh: "当前网络 60 秒内已经提交过任务，请等待 60 秒后再试",
+      en: "This network already submitted a job in the last 60 seconds. Please wait and retry",
+    }),
+    RVC_INFERENCE_FAILED: Object.freeze({
+      zh: "这段音频未通过本次推理，请裁成 5–30 秒、去掉伴奏或强混响后重试",
+      en: "Inference failed on this clip. Try a clean 5–30 second voice-only clip",
+    }),
+    RVC_MODEL_NOT_FOUND: Object.freeze({
+      zh: "所选角色模型暂未挂载，请刷新页面后重新选择角色",
+      en: "The selected voice model is not mounted. Refresh and choose the voice again",
+    }),
+    RVC_BACKEND_TIMEOUT: Object.freeze({
+      zh: "云端推理排队超时，请裁短音频后重试",
+      en: "Cloud inference timed out. Shorten the clip and retry",
+    }),
+    RVC_BACKEND_UNAVAILABLE: Object.freeze({
+      zh: "云端 RVC 连接刚刚中断，请稍后重新提交",
+      en: "The cloud RVC connection dropped. Please submit the job again",
+    }),
+    UPSTREAM_UNAVAILABLE: Object.freeze({
+      zh: "云端 RVC 连接刚刚中断，请稍后重新提交",
+      en: "The cloud RVC connection dropped. Please submit the job again",
+    }),
+    RVC_AUDIO_TOO_LARGE: Object.freeze({
+      zh: "音频文件超过 25 MB，请压缩或裁短后重试",
+      en: "The audio exceeds 25 MB. Compress or shorten it before retrying",
+    }),
+    RVC_INVALID_AUDIO: Object.freeze({
+      zh: "音频格式或内容未被云端识别，请转换为 WAV 或 MP3 后重试",
+      en: "The cloud service could not read this audio. Convert it to WAV or MP3 and retry",
+    }),
+  });
+
+  function cloudRvcFailureMessage(error) {
+    const code = String(error?.code || "");
+    const localized = CLOUD_RVC_ERROR_MESSAGES[code];
+    if (localized) return localized[state.lang === "en" ? "en" : "zh"];
+    const message = String(error?.message || "").trim();
+    if (message && !/^HTTP \d+$/u.test(message)) return message;
+    return state.lang === "en"
+      ? "The cloud RVC request did not finish. Check the audio and retry"
+      : "云端 RVC 本次请求未完成，请检查音频后重试";
+  }
+
   function preferredCloudOutputFormat() {
     try {
       const ua = String(globalThis.navigator?.userAgent || "");
@@ -2549,12 +2595,17 @@
             }
           } else {
             let errMsg = `HTTP ${xhr.status}`;
+            let errCode = "";
             try {
               const resJson = JSON.parse(xhr.responseText);
-              if (resJson.message || resJson.code) errMsg = resJson.message || resJson.code;
+              errCode = typeof resJson.code === "string" ? resJson.code : "";
+              if (resJson.message || errCode) errMsg = resJson.message || errCode;
             } catch (e) {}
             const error = new Error(errMsg);
-            error.retryable = [502, 503, 520, 521, 522, 523, 524].includes(xhr.status);
+            error.code = errCode;
+            error.retryAfterSeconds = Math.max(0, parseInt(xhr.getResponseHeader("Retry-After") || "0", 10) || 0);
+            error.retryable = ["UPSTREAM_UNAVAILABLE", "RVC_BACKEND_UNAVAILABLE", "RATE_LIMITER_UNAVAILABLE"].includes(errCode)
+              || (!errCode && [502, 503, 520, 521, 522, 523, 524].includes(xhr.status));
             error.httpStatus = xhr.status;
             reject(error);
           }
@@ -2626,8 +2677,9 @@
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
-      updateStatusDisplay(`云端 RVC 引擎转换失败：${error?.message || error}`);
-      showToast("云端 RVC 引擎暂未完成本次请求，请重试；页面不会自动改用本地模式");
+      const failureMessage = cloudRvcFailureMessage(error);
+      updateStatusDisplay(`❌ ${failureMessage}${error?.code ? `（${error.code}）` : ""}`);
+      showToast(`❌ ${failureMessage}`);
       return false;
     } finally {
       state.busy = false;
@@ -2637,7 +2689,6 @@
         convertBtn.setAttribute("aria-busy", "false");
       }
       if (convertLabel) convertLabel.textContent = t("convert");
-      updateStatusDisplay();
     }
   }
 

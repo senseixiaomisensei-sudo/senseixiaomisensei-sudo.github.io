@@ -58,6 +58,7 @@ test("gateway stops a limited request before it reaches the Pages Function", asy
     const body = await response.json();
     assert.equal(response.status, 429);
     assert.equal(body.code, "RATE_LIMITED");
+    assert.equal(response.headers.get("Retry-After"), "60");
     assert.equal(upstreamCalls, 0);
   } finally {
     globalThis.fetch = originalFetch;

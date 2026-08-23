@@ -209,7 +209,11 @@ export default {
     }
 
     const rateLimit = await enforceRateLimit(request, env, route.rateBinding, route.ratePrefix);
-    if (rateLimit.error) return failure(request, env, rateLimit.error.status, rateLimit.error.code, rateLimit.error.message);
+    if (rateLimit.error) {
+      const response = failure(request, env, rateLimit.error.status, rateLimit.error.code, rateLimit.error.message);
+      if (rateLimit.error.status === 429) response.headers.set("Retry-After", "60");
+      return response;
+    }
 
     const headers = new Headers();
     const contentType = request.headers.get("Content-Type");

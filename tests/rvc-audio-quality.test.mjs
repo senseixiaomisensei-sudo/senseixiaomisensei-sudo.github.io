@@ -136,7 +136,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260823-v34/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260823-v35/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);
@@ -150,6 +150,9 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /postprep_rvc_inference_mode_v32/u);
   assert.match(client, /CLOUD_STATUS_TIMEOUT_MS = 15000/u);
   assert.match(client, /CLOUD_CONVERT_TIMEOUT_MS = 220000/u);
+  assert.match(client, /function cloudRvcFailureMessage\(error\)/u);
+  assert.match(client, /error\.code = errCode/u);
+  assert.doesNotMatch(client, /云端 RVC 引擎暂未完成本次请求，请重试/u);
   assert.doesNotMatch(client, /官方 RVC GPU 服务暂不可用/u);
   assert.match(client, /OWN_MODEL_PREFIX/u);
   assert.match(workerSource, /extractHubertFeatures[\s\S]*?normalize: false/u);
