@@ -1,7 +1,7 @@
 {
-  "version": 10,
-  "updatedAt": "2026-08-22",
-  "_readme": "v25 离线展示目录。公开角色转换只使用 GPU 服务实时返回的已挂载 .pth/.index，并走固定到 RVC-Project 2.3.260718 / 8f2fdbf 的官方 HuBERT、RMVPE、FAISS 与 PyTorch 生成器管线；服务离线时不会回退到静态 ONNX 角色。这里的角色名称不构成角色、表演者或权利方授权声明。defaultPitch 仅是跨音域试听建议，切换角色不会自动变调。",
+  "version": 11,
+  "updatedAt": "2026-08-23",
+  "_readme": "v30 离线展示目录。公开角色转换只使用 GPU 服务实时返回的已挂载 .pth/.index，并走固定到 RVC-Project 2.3.260718 / 8f2fdbf 的官方 HuBERT、RMVPE、FAISS 与 PyTorch 生成器管线；服务离线时不会回退到静态 ONNX 角色。这里的角色名称不构成角色、表演者或权利方授权声明。才羽桃井与宇泽玲纱均为可追溯的社区模型，许可证与角色/表演者授权未核验；两种模式使用的公开模型版本在目录元数据中分别标明。defaultPitch 仅是跨音域试听建议，切换角色不会自动变调。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",
@@ -272,6 +272,54 @@
         "models/characters/teio/chunk_3.bin",
         "models/characters/teio/chunk_4.bin",
         "models/characters/teio/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "momoi",
+      "name": "才羽桃井 (Momoi)",
+      "avatarText": "桃井",
+      "description": "《蔚蓝档案》千年游戏开发部 · 轻快明亮少女音 · 社区 RVC v2",
+      "tags": ["女声", "蔚蓝档案", "千年"],
+      "license": "Community model; license and character/performer authorization unverified",
+      "source": "https://www.voice-models.com/model/1m9xfSNza5Q",
+      "modelVersion": "sha256:0c746d5b819ae63319b2068a5d37e107c08db1c336fe750c6d67ef0dd2c93b09",
+      "defaultPitch": 11,
+      "pitchNote": "明亮中高音域少女：男声输入推荐 +11",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/momoi/retrieval.bin",
+      "chunks": [
+        "models/characters/momoi/chunk_0.bin",
+        "models/characters/momoi/chunk_1.bin",
+        "models/characters/momoi/chunk_2.bin",
+        "models/characters/momoi/chunk_3.bin",
+        "models/characters/momoi/chunk_4.bin",
+        "models/characters/momoi/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "reisa",
+      "name": "宇泽玲纱 (Uzawa Reisa)",
+      "avatarText": "玲纱",
+      "description": "《蔚蓝档案》SRT 特殊班 · 清亮中高音少女音 · 社区 RVC v2/Ov2",
+      "tags": ["女声", "蔚蓝档案", "SRT"],
+      "license": "Community model; license and character/performer authorization unverified",
+      "source": "https://voice-models.com/model/1taPEbqsVis",
+      "modelVersion": "sha256:81ff1f4bdce77ab1f156fcdc109bb5f32b05dff4e0f73d9577f09d7fdfc4f284",
+      "defaultPitch": 10,
+      "pitchNote": "清亮中高音域少女：男声输入推荐 +10",
+      "sampleRate": 32000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.3,
+      "retrieval": "models/characters/reisa/retrieval.bin",
+      "chunks": [
+        "models/characters/reisa/chunk_0.bin",
+        "models/characters/reisa/chunk_1.bin",
+        "models/characters/reisa/chunk_2.bin",
+        "models/characters/reisa/chunk_3.bin",
+        "models/characters/reisa/chunk_4.bin",
+        "models/characters/reisa/chunk_5.bin"
       ]
     }
   ]

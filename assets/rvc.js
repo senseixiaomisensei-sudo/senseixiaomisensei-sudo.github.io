@@ -333,12 +333,44 @@
       defaultPitch: 12,
       pitchNote: "元气高音域少女：男声输入推荐 +12",
       chunks: Array.from({ length: 6 }, (_, i) => `models/characters/teio/chunk_${i}.bin`)
+    },
+    {
+      id: "momoi",
+      name: "才羽桃井 (Momoi)",
+      avatarText: "桃井",
+      description: "《蔚蓝档案》千年游戏开发部 · 轻快明亮少女音 · 社区 RVC v2",
+      tags: ["女声", "蔚蓝档案", "千年"],
+      license: "Community model; license and character/performer authorization unverified",
+      source: "https://www.voice-models.com/model/1m9xfSNza5Q",
+      modelVersion: "sha256:0c746d5b819ae63319b2068a5d37e107c08db1c336fe750c6d67ef0dd2c93b09",
+      defaultPitch: 11,
+      pitchNote: "明亮中高音域少女：男声输入推荐 +11",
+      noiseScale: 0.35,
+      defaultIndexRate: 0.3,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/momoi/chunk_${i}.bin`)
+    },
+    {
+      id: "reisa",
+      name: "宇泽玲纱 (Uzawa Reisa)",
+      avatarText: "玲纱",
+      description: "《蔚蓝档案》SRT 特殊班 · 清亮中高音少女音 · 社区 RVC v2/Ov2",
+      tags: ["女声", "蔚蓝档案", "SRT"],
+      license: "Community model; license and character/performer authorization unverified",
+      source: "https://voice-models.com/model/1taPEbqsVis",
+      modelVersion: "sha256:81ff1f4bdce77ab1f156fcdc109bb5f32b05dff4e0f73d9577f09d7fdfc4f284",
+      defaultPitch: 10,
+      pitchNote: "清亮中高音域少女：男声输入推荐 +10",
+      sampleRate: 32000,
+      noiseScale: 0.35,
+      defaultIndexRate: 0.3,
+      chunks: Array.from({ length: 6 }, (_, i) => `models/characters/reisa/chunk_${i}.bin`)
     }
   ];
 
   const CHARACTER_SAMPLE_RATES = Object.freeze({
     tomori: 48000,
     rana: 48000,
+    reisa: 32000,
   });
 
   function normalizeCharacterRuntimeConfig(model) {
@@ -407,7 +439,7 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
-  const CHARACTER_MODEL_ASSET_VERSION = "20260821-v24";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260823-v30";
 
   function characterModelCacheKey(model) {
     const id = String(model?.id || "character");
@@ -1373,7 +1405,7 @@
     if (statusText) {
       const displayUrl = targetBase.replace(/^https?:\/\//u, "");
       statusText.textContent = ok
-        ? `🟢 官方 RVC 服务已就绪 (${displayUrl}) · 录音棚级音质`
+        ? `🟢 官方 RVC 服务已就绪 (${displayUrl}) · 官方 PyTorch RVC`
         : `⚠️ 官方服务端未连接 (${displayUrl}) · 点击右侧“配置地址”或改用本地极速模式`;
     }
     updateStatusDisplay();
@@ -1613,7 +1645,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260821-v24", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v30", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -1935,15 +1967,15 @@
           model: selectedModel.name,
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        }) + " · 官方 PyTorch 录音棚级";
+        }) + " · 官方 PyTorch RVC";
       }
       if (resultSection) {
         resultSection.hidden = false;
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       updateProgressBar(100);
-      updateStatusDisplay(`🎉 官方高保真变声完成！用时 ${elapsed} 秒。可在下方试听或下载。`);
-      showToast("🎉 官方高保真变声完成！可在下方试听或下载");
+      updateStatusDisplay(`🎉 官方 RVC 变声完成！用时 ${elapsed} 秒。可在下方试听或下载。`);
+      showToast("🎉 官方 RVC 变声完成！可在下方试听或下载");
       return true;
     } catch (error) {
       console.warn("Official RVC inference failed", error);

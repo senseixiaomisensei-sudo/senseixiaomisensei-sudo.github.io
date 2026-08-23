@@ -12883,6 +12883,34 @@ function conditionInputAudio(audio, sampleRate = 16000) {
     const av = Math.abs(y0);
     if (av > peak) peak = av;
   }
+  // Loud shouting can create a discontinuous envelope that causes an RVC
+  // generator to excite noisy consonant frames. Use a transparent, slow
+  // release safety guard before inference. It only engages above a high
+  // envelope, so normal speech is passed through intact; it is not a pitch
+  // smoother and cannot recreate detail clipped by the source recorder.
+  const threshold = 0.72;
+  const compressionRatio = 5;
+  const envelopeAttack = Math.exp(-1 / Math.max(1, sampleRate * 0.002));
+  const envelopeRelease = Math.exp(-1 / Math.max(1, sampleRate * 0.09));
+  const gainRelease = Math.exp(-1 / Math.max(1, sampleRate * 0.12));
+  let envelope = 0;
+  let gain = 1;
+  for (let i = 0; i < out.length; i++) {
+    const magnitude = Math.abs(out[i]);
+    const coefficient = magnitude > envelope ? envelopeAttack : envelopeRelease;
+    envelope = coefficient * envelope + (1 - coefficient) * magnitude;
+    const desiredGain = envelope > threshold
+      ? (threshold + (envelope - threshold) / compressionRatio) / envelope
+      : 1;
+    // Fast enough attack to protect an excited frame, but a much slower
+    // recovery so adjacent syllables do not pump audibly.
+    const gainCoefficient = desiredGain < gain ? envelopeAttack : gainRelease;
+    gain = gainCoefficient * gain + (1 - gainCoefficient) * desiredGain;
+    out[i] *= gain;
+  }
+
+  peak = 0;
+  for (let i = 0; i < out.length; i++) peak = Math.max(peak, Math.abs(out[i]));
   if (peak > 0.95 && isFinite(peak)) {
     const scale = 0.95 / peak;
     for (let i = 0; i < out.length; i++) out[i] *= scale;

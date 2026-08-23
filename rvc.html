@@ -22,7 +22,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v29（官方 RVC GPU + 本地 WebAssembly 双模式）
+          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v30（官方 RVC GPU + 本地 WebAssembly 双模式）
         </span>
       </div>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
@@ -48,7 +48,7 @@
           <span class="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-brand"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-rvc-i18n="privacyBadge">用完即删</span></span>
         </div>
 
-        <!-- 变声引擎模式选择 (双模式：录音棚极致音质模式 vs 极速免上传模式) -->
+        <!-- 双模式：官方 RVC GPU 与浏览器本地兼容推理 -->
         <div class="mt-6 rounded-xl border border-line bg-zinc-50/60 p-4 sm:p-5">
           <div class="flex items-center justify-between gap-2">
             <div>
@@ -61,7 +61,7 @@
           </div>
 
           <div class="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="变声引擎模式">
-            <!-- 模式 1: 录音棚极致音质模式 -->
+            <!-- 模式 1: 官方 RVC GPU -->
             <button id="rvc-mode-official" type="button" class="flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-4 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="true" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
@@ -69,7 +69,7 @@
                 </span>
                 <i id="rvc-mode-official-check" class="fa-solid fa-circle-check text-brand text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted">官方 PyTorch + HuBERT + RMVPE + FAISS 检索。音频经受保护网关发送到你的本机 GPU；服务离线时不会伪装成本地模式。</p>
+              <p class="mt-2 text-xs leading-5 text-muted">官方 PyTorch + HuBERT + RMVPE + FAISS 检索。高动态输入会先做峰值保护，以降低削波和气泡音风险；已在原录音中削波的细节无法恢复。</p>
             </button>
 
             <!-- 模式 2: 极速免上传模式 -->
@@ -80,7 +80,7 @@
                 </span>
                 <i id="rvc-mode-local-check" class="fa-regular fa-circle text-zinc-300 text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted">纯浏览器 WebAssembly 兼容推理。音频不上传，但模型和效果受设备性能、浏览器与缓存状态影响。</p>
+              <p class="mt-2 text-xs leading-5 text-muted">纯浏览器 WebAssembly 兼容推理。音频不上传；同样使用输入峰值保护，模型和效果仍受设备性能、浏览器与缓存状态影响。</p>
             </button>
           </div>
 
@@ -332,6 +332,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260820-v10"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-  <script src="assets/rvc.js?v=20260823-v29"></script>
+  <script src="assets/rvc.js?v=20260823-v30"></script>
 </body>
 </html>

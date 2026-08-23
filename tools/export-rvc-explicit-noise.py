@@ -9,15 +9,34 @@ from __future__ import annotations
 
 import argparse
 import io
+import os
+import sys
 from pathlib import Path
 
 import torch
 from torch import nn
 from torch.nn import functional as F
-from rvc_python.lib.infer_pack.models import (
-    SynthesizerTrnMs256NSFsid,
-    SynthesizerTrnMs768NSFsid,
-)
+try:
+    from rvc_python.lib.infer_pack.models import (
+        SynthesizerTrnMs256NSFsid,
+        SynthesizerTrnMs768NSFsid,
+    )
+except ModuleNotFoundError:
+    # The production service is pinned to the official RVC checkout rather
+    # than the third-party rvc-python wrapper.  Reuse that checked-out source
+    # when exporting browser ONNX assets, so both engines use matching model
+    # definitions.  The root is supplied by the local operator, never by a
+    # browser request.
+    official_root = Path(os.environ.get("RVC_OFFICIAL_ROOT", "")).resolve()
+    if not official_root.is_dir():
+        raise RuntimeError(
+            "Set RVC_OFFICIAL_ROOT to the pinned official RVC checkout, or install rvc-python."
+        )
+    sys.path.insert(0, str(official_root))
+    from infer.module.models import (  # type: ignore[no-redef]
+        SynthesizerTrnMs256NSFsid,
+        SynthesizerTrnMs768NSFsid,
+    )
 
 
 class ExplicitNoiseRvc(nn.Module):
@@ -106,7 +125,12 @@ def read_checkpoint(path: Path) -> dict:
     # Passing a file object also works for Windows paths containing non-ASCII
     # characters in older PyTorch builds.
     with path.open("rb") as checkpoint_file:
-        return torch.load(io.BytesIO(checkpoint_file.read()), map_location="cpu")
+        # Community checkpoints are untrusted pickle containers.  Explicitly
+        # keep PyTorch's safe weights-only loader enabled; model code is never
+        # deserialized from a checkpoint.
+        return torch.load(
+            io.BytesIO(checkpoint_file.read()), map_location="cpu", weights_only=True
+        )
 
 
 def parse_sample_rate(value: object, config: list[object]) -> int:
@@ -122,6 +146,11 @@ def export_model(checkpoint_path: Path, output_path: Path, frame_count: int) -> 
     checkpoint = read_checkpoint(checkpoint_path)
     config = list(checkpoint["config"])
     version = str(checkpoint.get("version", "v1")).lower()
+    # A few RVC v2/Applio exports include the fixed ContentVec feature width
+    # just before the sample-rate item.  The official v2 model already fixes
+    # that value at 768, so normalize the serialised config before building it.
+    if version == "v2" and len(config) == 19 and config[-2] == 768:
+        config = [*config[:-2], config[-1]]
     feature_size = 256 if version == "v1" or int(config[4]) == 256 else 768
     model_class = SynthesizerTrnMs256NSFsid if feature_size == 256 else SynthesizerTrnMs768NSFsid
 

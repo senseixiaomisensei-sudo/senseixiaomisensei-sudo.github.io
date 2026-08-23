@@ -192,7 +192,10 @@ def _stage_checkpoint(model_path: Path, index_path: Path | None, torch):
     stage.mkdir(parents=True, exist_ok=True)
     staged_model = stage / "model.pth"
     if not staged_model.is_file():
-        checkpoint = torch.load(model_path, map_location="cpu")
+        # `.pth` files are third-party model containers.  Pin this to the
+        # safe tensor-only loader instead of relying on PyTorch's version
+        # default, so arbitrary pickle payloads are never deserialised.
+        checkpoint = torch.load(model_path, map_location="cpu", weights_only=True)
         config = checkpoint.get("config") if isinstance(checkpoint, dict) else None
         version = checkpoint.get("version") if isinstance(checkpoint, dict) else None
         # Applio/RVC exports sometimes append the ContentVec output dimension

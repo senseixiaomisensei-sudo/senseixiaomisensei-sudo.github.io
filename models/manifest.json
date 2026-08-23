@@ -165,5 +165,29 @@
       "models/characters/hoshino2/chunk_4.bin",
       "models/characters/hoshino2/chunk_5.bin"
     ]
+  },
+  "momoi.onnx": {
+    "totalSize": 110813613,
+    "sha256": "26266f47efedf52c207332f684717d61cb4b82d0ecf3a2ac7b015f17474ce52a",
+    "chunks": [
+      "models/characters/momoi/chunk_0.bin",
+      "models/characters/momoi/chunk_1.bin",
+      "models/characters/momoi/chunk_2.bin",
+      "models/characters/momoi/chunk_3.bin",
+      "models/characters/momoi/chunk_4.bin",
+      "models/characters/momoi/chunk_5.bin"
+    ]
+  },
+  "reisa.onnx": {
+    "totalSize": 112894381,
+    "sha256": "22bc8cdaa447a2d5791cc7c64ae369a651660da11bd5dee6623f38822dd87407",
+    "chunks": [
+      "models/characters/reisa/chunk_0.bin",
+      "models/characters/reisa/chunk_1.bin",
+      "models/characters/reisa/chunk_2.bin",
+      "models/characters/reisa/chunk_3.bin",
+      "models/characters/reisa/chunk_4.bin",
+      "models/characters/reisa/chunk_5.bin"
+    ]
   }
 }

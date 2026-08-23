@@ -56,6 +56,16 @@ ALLOWED_MIME_TYPES = {
 ALLOWED_FORMATS = {"wav", "mp3"}
 ALLOWED_F0_METHODS = {"rmvpe", "fcpe", "pm"}
 ALLOWED_RESAMPLE = {0, 16000, 24000, 32000, 44100, 48000}
+# A high threshold keeps ordinary speech untouched. The compressor and
+# look-ahead limiter only guard loud/near-clipped shouts before the official
+# RVC feature extractor; they cannot reconstruct clipping already baked into
+# the source recording.
+INPUT_SAFETY_FILTER = (
+    "highpass=f=45:p=2,"
+    "acompressor=threshold=0.72:ratio=5:attack=3:release=90:makeup=1,"
+    "alimiter=limit=0.94:attack=5:release=80:level=0"
+)
+OUTPUT_SAFETY_FILTER = "alimiter=limit=0.95:attack=5:release=80:level=0"
 
 
 class RvcServiceError(Exception):
@@ -316,8 +326,10 @@ def normalize_audio(source: Path, destination: Path) -> None:
         [
             "ffmpeg", "-nostdin", "-v", "error", "-i", str(source), "-vn",
             # Official RVC consumes mono 16 kHz float audio before HuBERT.
-            # Normalize once here to avoid an unnecessary 44.1 kHz round-trip
-            # and int16 quantization before the upstream loader.
+            # The high-threshold guard contains excessive shout peaks before
+            # feature extraction without applying a cosmetic EQ to normal
+            # speech.
+            "-af", INPUT_SAFETY_FILTER,
             "-ac", "1", "-ar", "16000", "-c:a", "pcm_f32le", str(destination),
         ],
         check=False,
@@ -358,6 +370,25 @@ def render_conversion(
     )
     if not output_wav.is_file() or output_wav.stat().st_size < 1:
         raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
+    # The upstream generator writes PCM; a final transparent limiter prevents
+    # a very loud synthesized peak from clipping in the browser/player.
+    limited_output = output_wav.with_name(f"{output_wav.stem}-limited{output_wav.suffix}")
+    result = subprocess.run(
+        [
+            "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(output_wav),
+            "-af", OUTPUT_SAFETY_FILTER, "-c:a", "pcm_s16le", str(limited_output),
+        ],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=120,
+    )
+    if result.returncode == 0 and limited_output.is_file() and limited_output.stat().st_size > 44:
+        limited_output.replace(output_wav)
+    else:
+        # Keep a valid RVC result even when a host ffmpeg build lacks the
+        # optional limiter filter.
+        limited_output.unlink(missing_ok=True)
 
 
 def transcode(source: Path, destination: Path, target_format: str) -> None:
