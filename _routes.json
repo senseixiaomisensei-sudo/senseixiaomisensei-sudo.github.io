@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/api/*", "/rvc-media/*"],
+  "include": ["/api/*", "/rvc", "/rvc/*", "/rvc-media/*"],
   "exclude": []
 }

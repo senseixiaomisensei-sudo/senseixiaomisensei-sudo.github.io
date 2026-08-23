@@ -1,3 +1,7 @@
 name = "postprep"
 compatibility_date = "2026-08-08"
 pages_build_output_dir = "."
+
+[[services]]
+binding = "POSTPREP_GATEWAY"
+service = "postprep-text-gateway"

@@ -8560,6 +8560,56 @@ async function processAudioInChunks(audio, processor, config = {}, onProgress) {
   }
   return mergeProcessedChunks(processedChunks, config);
 }
+// The currently shipped browser ONNX voices were traced at 100 phone frames.
+// Their attention graph advertises a dynamic axis but contains a fixed Reshape;
+// feeding a longer mobile clip therefore fails inside OrtRun. Process one exact
+// 100-frame window at a time, with 40 ms look-ahead for ContentVec, and trim only
+// the padded tail. This preserves the complete input without uploading it.
+async function processAudioInFixedFrameWindows(audio, processor, config = {}, onProgress) {
+  const inputSampleRate = config.inputSampleRate ?? 16e3;
+  const outputSampleRate = config.outputSampleRate ?? 40e3;
+  const frameCount = Math.max(1, Math.floor(config.frameCount ?? 100));
+  const stepSamples = Math.max(1, Math.round(frameCount * inputSampleRate / 100));
+  const lookAheadSamples = Math.max(0, Math.round((config.lookAheadDuration ?? 0.04) * inputSampleRate));
+  const windowSamples = stepSamples + lookAheadSamples;
+  const totalChunks = Math.max(1, Math.ceil(audio.length / stepSamples));
+  const processedChunks = [];
+  let totalLength = 0;
+
+  for (let index = 0; index < totalChunks; index++) {
+    onProgress?.(index + 1, totalChunks);
+    const startSample = index * stepSamples;
+    const validInputSamples = Math.max(0, Math.min(stepSamples, audio.length - startSample));
+    const window = new Float32Array(windowSamples);
+    window.set(audio.subarray(startSample, Math.min(audio.length, startSample + windowSamples)));
+    const processed = await processor({
+      data: window,
+      index,
+      startTime: startSample / inputSampleRate,
+      endTime: Math.min(audio.length, startSample + validInputSamples) / inputSampleRate,
+      isFirst: index === 0,
+      isLast: index === totalChunks - 1
+    }, index + 1, totalChunks);
+    const validOutputSamples = Math.min(
+      processed.length,
+      Math.max(1, Math.round(validInputSamples * outputSampleRate / inputSampleRate))
+    );
+    const trimmed = processed.slice(0, validOutputSamples);
+    processedChunks.push(trimmed);
+    totalLength += trimmed.length;
+    if (index < totalChunks - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  const merged = new Float32Array(totalLength);
+  let offset = 0;
+  for (const chunk of processedChunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return merged;
+}
 const CONTENTVEC_PAD_MULTIPLE = 160;
 function preprocessForContentVec(audio, options = {}) {
   // The bundled HuBERT export already follows the official RVC feature path.
@@ -13293,13 +13343,13 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     ctx.backend = "wasm";
     emitStage(PIPELINE_STAGES[2]);
     const chunkingConfig = {
-      chunkDuration: options.chunkDuration ?? 6,
-      padDuration: options.padDuration ?? 0.5,
       inputSampleRate: options.inputSampleRate ?? 16e3,
-      outputSampleRate: options.outputSampleRate ?? 40e3
+      outputSampleRate: options.outputSampleRate ?? 40e3,
+      frameCount: 100,
+      lookAheadDuration: 0.04
     };
     let detectedSampleRate;
-    const outputAudio = await processAudioInChunks(
+    const outputAudio = await processAudioInFixedFrameWindows(
       audio,
       async (chunk, currentChunk, totalChunks) => {
         callbacks.onEvent?.({ type: "chunk_step", step: "feature", current: currentChunk, total: totalChunks });
@@ -13326,6 +13376,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
           pitchShift: options.pitchShift,
           noiseSeed: mixNoiseSeed(options.noiseSeed ?? 20260821, currentChunk),
           noiseScale: options.noiseScale ?? 0.5,
+          maxFrames: chunkingConfig.frameCount,
           sourceUpp: Math.max(1, Math.round((options.outputSampleRate ?? 40e3) / 100))
         });
         if (synthesized.sampleRate && !detectedSampleRate) {

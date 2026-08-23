@@ -30,11 +30,18 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /getUserMedia/);
   assert.match(client, /loadModelAuto/);
   assert.match(client, /runWebRvcInference/);
+  assert.match(client, /function cloudUploadProgress\(evt\)/u);
+  assert.match(client, /音频已从浏览器发出/u);
+  assert.match(client, /等待云端接收确认/u);
+  assert.match(client, /等待服务端完成响应，不虚报百分比/u);
+  assert.doesNotMatch(client, /正在上传音频… \$\{pct\}%/u);
   assert.doesNotMatch(client, /RVC_INFERENCE_TOKEN/);
   assert.doesNotMatch(client, /api\.github\.com/);
   assert.doesNotMatch(client, /I HAVE THE RIGHTS/);
 
-  assert.match(config, /POSTPREP_RVC_API_ENDPOINT/);
+  assert.match(config, /POSTPREP_RVC_API_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc"/u);
+  assert.match(config, /POSTPREP_RVC_STATUS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc\/status"/u);
+  assert.match(config, /POSTPREP_RVC_MODELS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc\/models"/u);
   assert.match(config, /POSTPREP_RVC_MEDIA_ENDPOINT/);
   assert.doesNotMatch(config, /POSTPREP_VOICE_API_ENDPOINT/);
 

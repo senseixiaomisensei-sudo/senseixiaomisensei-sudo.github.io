@@ -144,6 +144,48 @@ test("rvc route uses a separate limiter and fixed Pages upstream", async () => {
   }
 });
 
+test("rvc routes use the authenticated narrow tunnel when direct credentials are configured", async () => {
+  const originalFetch = globalThis.fetch;
+  let forwarded;
+  globalThis.fetch = async (url, options) => {
+    forwarded = { url: String(url), options };
+    return Response.json({ ready: true });
+  };
+  try {
+    const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc/status", {
+      headers: { Origin: PAGES_ORIGIN },
+    });
+    const env = {
+      ...BASE_ENV,
+      POSTPREP_RVC_DIRECT_BASE_URL: "https://voice-relay-example.trycloudflare.com",
+      POSTPREP_RVC_INFERENCE_TOKEN: "rvc-direct-token-with-at-least-32-characters",
+    };
+    const response = await gateway.fetch(request, env);
+    assert.equal(response.status, 200);
+    assert.equal(forwarded.url, "https://voice-relay-example.trycloudflare.com/healthz");
+    assert.equal(
+      forwarded.options.headers.get("Authorization"),
+      `Bearer ${env.POSTPREP_RVC_INFERENCE_TOKEN}`,
+    );
+    assert.equal(forwarded.options.headers.has("X-PostPrep-Gateway"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rvc direct route rejects an arbitrary non-tunnel host", async () => {
+  const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc/status", {
+    headers: { Origin: PAGES_ORIGIN },
+  });
+  const response = await gateway.fetch(request, {
+    ...BASE_ENV,
+    POSTPREP_RVC_DIRECT_BASE_URL: "https://example.com",
+    POSTPREP_RVC_INFERENCE_TOKEN: "rvc-direct-token-with-at-least-32-characters",
+  });
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).code, "RVC_BACKEND_NOT_CONFIGURED");
+});
+
 test("rvc output route rejects an arbitrary job address before any upstream fetch", async () => {
   const originalFetch = globalThis.fetch;
   let upstreamCalls = 0;

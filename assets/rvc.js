@@ -1489,6 +1489,38 @@
     }
   }
 
+  function formatTransferredBytes(bytes) {
+    const safeBytes = Math.max(0, Number(bytes) || 0);
+    if (safeBytes < 1024) return `${Math.round(safeBytes)}B`;
+    if (safeBytes < 1024 * 1024) return `${(safeBytes / 1024).toFixed(1)}KB`;
+    return `${(safeBytes / (1024 * 1024)).toFixed(1)}MB`;
+  }
+
+  function cloudUploadProgress(evt) {
+    const loaded = Math.max(0, Number(evt?.loaded) || 0);
+    const total = Math.max(0, Number(evt?.total) || 0);
+    const lengthComputable = Boolean(evt?.lengthComputable && total > 0);
+    if (!lengthComputable) {
+      return {
+        barPercent: 8,
+        status: `⏳ [1/3] 正在发送音频… 已发送 ${formatTransferredBytes(loaded)}`,
+      };
+    }
+
+    const rawPercent = Math.max(0, Math.min(100, Math.round((loaded / total) * 100)));
+    const transferred = `${formatTransferredBytes(loaded)} / ${formatTransferredBytes(total)}`;
+    if (rawPercent >= 100) {
+      return {
+        barPercent: 44,
+        status: `⏳ [1/3] 音频已从浏览器发出（${transferred}），正在等待云端接收确认…`,
+      };
+    }
+    return {
+      barPercent: Math.min(43, Math.max(6, Math.round(rawPercent * 0.43))),
+      status: `⏳ [1/3] 正在发送音频… ${rawPercent}%（${transferred}）`,
+    };
+  }
+
   async function checkCacheStatus() {
     try {
       const hubertCached = await getCachedItem("hubert.onnx");
@@ -2318,12 +2350,18 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v34", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v37", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
+      const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
       const rvc = createRVC({
         assetBaseUrl: new URL("assets/rvc-engine/", window.location.href).href,
-        wasmBaseUrl: new URL("assets/rvc-engine/ort126/", window.location.href).href,
+        // Use the sub-25 MiB asyncify build explicitly. It is compatible with
+        // mobile WASM and can be served by both GitHub Pages and Cloudflare Pages.
+        wasmBaseUrl: {
+          mjs: new URL("ort-wasm-simd-threaded.asyncify.mjs", wasmAssetBase).href,
+          wasm: new URL("ort-wasm-simd-threaded.asyncify.wasm", wasmAssetBase).href,
+        },
       });
 
       const hubertCfg = state.baseModels?.hubert || { chunks: [] };
@@ -2490,8 +2528,12 @@
       showToast("🎉 变声完成！可在下方试听或下载");
     } catch (err) {
       console.error("RVC Inference Error:", err);
-      showToast(t("generationFailed"));
-      updateStatusDisplay(`❌ 变声失败: ${err.message || err}`);
+      const rawMessage = String(err?.message || err || "");
+      const message = /ReshapeHelper|requested_shape_size|cannot be reshaped/iu.test(rawMessage)
+        ? "本机推理组件仍在使用旧缓存，请刷新页面后重新变声。"
+        : "本机变声处理失败，请重新选择一段较短的纯人声音频后重试。";
+      showToast(message);
+      updateStatusDisplay(`❌ ${message}`);
     } finally {
       state.busy = false;
       if (convertBtn) {
@@ -2566,21 +2608,18 @@
         xhr.timeout = CLOUD_CONVERT_TIMEOUT_MS;
 
         xhr.upload.onprogress = (evt) => {
-          if (evt.lengthComputable) {
-            const pct = Math.round((evt.loaded / evt.total) * 100);
-            const loadedMb = (evt.loaded / (1024 * 1024)).toFixed(1);
-            const totalMb = (evt.total / (1024 * 1024)).toFixed(1);
-            updateProgressBar(Math.min(45, Math.round(pct * 0.45)));
-            updateStatusDisplay(`⏳ [1/3] 正在上传音频… ${pct}% (${loadedMb}MB / ${totalMb}MB)`);
-          }
+          const progress = cloudUploadProgress(evt);
+          updateProgressBar(progress.barPercent);
+          updateStatusDisplay(progress.status);
         };
 
         xhr.upload.onload = () => {
-          updateProgressBar(50);
+          updateProgressBar(46);
+          updateStatusDisplay("⏳ [1/3] 音频传输已结束，正在等待云端确认并启动推理…");
           if (ticker) clearInterval(ticker);
           ticker = setInterval(() => {
             const sec = Math.round((Date.now() - startedAt) / 1000);
-            updateStatusDisplay(`🧠 [2/3] 云端 RVC 神经声线重构中… 已用时 ${sec}s（RMVPE 音高追踪 + FAISS 特征检索）`);
+            updateStatusDisplay(`🧠 [2/3] 云端已接收请求，RVC 神经声线重构中… 已用时 ${sec}s（等待服务端完成响应，不虚报百分比）`);
           }, 1000);
         };
 

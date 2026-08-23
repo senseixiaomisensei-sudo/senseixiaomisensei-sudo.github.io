@@ -3,9 +3,11 @@ const DEFAULT_ORT_CDN_BASE = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${"1.
 function createRVC(config = {}) {
   const rawAsset = config.assetBaseUrl ?? DEFAULT_CDN_BASE;
   const assetBaseUrl = rawAsset.endsWith("/") ? rawAsset : `${rawAsset}/`;
-  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20260823-v34`;
+  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20260823-v37`;
   const rawWasm = config.wasmBaseUrl ?? DEFAULT_ORT_CDN_BASE;
-  const wasmBaseUrl = rawWasm.endsWith("/") ? rawWasm : `${rawWasm}/`;
+  const wasmBaseUrl = typeof rawWasm === "string"
+    ? (rawWasm.endsWith("/") ? rawWasm : `${rawWasm}/`)
+    : rawWasm;
   return {
     assetBaseUrl,
     workerUrl,

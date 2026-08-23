@@ -1,6 +1,8 @@
 const TEXT_RATE_LIMITER_BINDING = "POSTPREP_RATE_LIMITER";
 const RVC_RATE_LIMITER_BINDING = "POSTPREP_RVC_RATE_LIMITER";
 const GATEWAY_SECRET_BINDING = "POSTPREP_GATEWAY_SECRET";
+const RVC_DIRECT_BASE_BINDING = "POSTPREP_RVC_DIRECT_BASE_URL";
+const RVC_DIRECT_TOKEN_BINDING = "POSTPREP_RVC_INFERENCE_TOKEN";
 const MAX_RVC_UPLOAD_BYTES = 25 * 1024 * 1024;
 const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
   "https://senseixiaomisensei-sudo.github.io",
@@ -155,7 +157,44 @@ function requestRoute(request) {
   return { error: { status: 404, code: "ROUTE_NOT_FOUND", message: "This gateway route is not available" } };
 }
 
+function directRvcToken(env) {
+  return configuredUpstream(env, RVC_DIRECT_TOKEN_BINDING);
+}
+
+function resolvedDirectRvcUrl(route, env) {
+  if (!route.id.startsWith("rvc")) return "";
+  const configured = configuredUpstream(env, RVC_DIRECT_BASE_BINDING);
+  const token = directRvcToken(env);
+  if (!configured && !token) return "";
+  if (!configured || token.length < 32) return "";
+  try {
+    const url = new URL(configured);
+    if (
+      url.protocol !== "https:"
+      || !url.hostname.endsWith(".trycloudflare.com")
+      || url.username
+      || url.password
+      || url.port
+    ) return "";
+    const paths = {
+      rvc: "/v1/convert",
+      "rvc-status": "/healthz",
+      "rvc-models": "/v1/models",
+      "rvc-output": `/v1/output/${route.jobId || ""}`,
+    };
+    url.pathname = paths[route.id] || "/";
+    url.search = "";
+    url.hash = "";
+    if (route.id === "rvc-output") url.searchParams.set("token", route.token);
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
 function resolvedUpstreamUrl(route, env) {
+  const direct = resolvedDirectRvcUrl(route, env);
+  if (direct) return direct;
   const configured = configuredUpstream(env, route.upstreamBinding);
   if (!configured) return "";
   try {
@@ -202,8 +241,9 @@ export default {
     }
 
     const gatewaySecret = protectedGatewaySecret(env);
+    const directRvc = route.id.startsWith("rvc") && Boolean(configuredUpstream(env, RVC_DIRECT_BASE_BINDING));
     const upstreamUrl = resolvedUpstreamUrl(route, env);
-    if (!gatewaySecret || !upstreamUrl) {
+    if ((!directRvc && !gatewaySecret) || !upstreamUrl) {
       const code = route.id.startsWith("rvc") ? "RVC_BACKEND_NOT_CONFIGURED" : "GATEWAY_NOT_CONFIGURED";
       return failure(request, env, 503, code, "Cloud processing safeguards are not configured");
     }
@@ -222,7 +262,8 @@ export default {
     if (contentType && route.method === "POST") headers.set("Content-Type", contentType);
     if (origin) headers.set("Origin", origin);
     if (visitorIp) headers.set("CF-Connecting-IP", visitorIp);
-    headers.set("X-PostPrep-Gateway", gatewaySecret);
+    if (directRvc) headers.set("Authorization", `Bearer ${directRvcToken(env)}`);
+    else headers.set("X-PostPrep-Gateway", gatewaySecret);
 
     try {
       const upstream = await fetch(upstreamUrl, {
