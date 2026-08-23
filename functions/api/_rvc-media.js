@@ -10,9 +10,28 @@ import {
 
 const SAFE_RANGE = /^bytes=\d*-\d*$/u;
 
+function allowedMediaRequest(request, env) {
+  if (request.headers.get("Origin")) return sameOrigin(request, env);
+
+  // Chromium omits Origin on a same-origin GET made by <audio crossorigin>,
+  // while still sending the Fetch Metadata headers and a same-origin referrer.
+  // Accept only that exact browser navigation shape; the random output token
+  // remains the short-lived capability for the generated file itself.
+  let referrerOrigin = "";
+  try {
+    referrerOrigin = new URL(request.headers.get("Referer") || "").origin;
+  } catch {
+    return false;
+  }
+  return referrerOrigin === new URL(request.url).origin
+    && request.headers.get("Sec-Fetch-Site") === "same-origin"
+    && request.headers.get("Sec-Fetch-Mode") === "cors"
+    && request.headers.get("Sec-Fetch-Dest") === "audio";
+}
+
 export async function serveRvcMedia(context) {
   const { request, env, params = {} } = context;
-  if (!sameOrigin(request, env)) return failure(request, env, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed");
+  if (!allowedMediaRequest(request, env)) return failure(request, env, 403, "ORIGIN_NOT_ALLOWED", "Origin is not allowed");
   if (request.method.toUpperCase() !== "GET") return failure(request, env, 405, "METHOD_NOT_ALLOWED", "Use GET for voice playback");
 
   const job = String(params.job || "");

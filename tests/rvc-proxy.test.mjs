@@ -284,6 +284,47 @@ test("rvc media route streams only a constrained short-lived output capability",
   }
 });
 
+test("rvc media route accepts Chromium same-origin audio metadata requests without Origin", async () => {
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    return new Response(audioBlob(), { status: 200, headers: { "Content-Type": "audio/wav" } });
+  };
+  try {
+    const request = new Request(`https://postprep-ae6.pages.dev/rvc-media/${JOB_ID}?token=${DOWNLOAD_TOKEN}`, {
+      headers: {
+        Referer: "https://postprep-ae6.pages.dev/rvc",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Dest": "audio",
+      },
+    });
+    const response = await serveRvcMedia({ request, env: BASE_ENV, params: { job: JOB_ID } });
+    assert.equal(response.status, 200);
+    assert.equal(called, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rvc media route rejects Origin-less non-browser requests", async () => {
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    throw new Error("unexpected fetch");
+  };
+  try {
+    const request = new Request(`https://postprep-ae6.pages.dev/rvc-media/${JOB_ID}?token=${DOWNLOAD_TOKEN}`);
+    const response = await serveRvcMedia({ request, env: BASE_ENV, params: { job: JOB_ID } });
+    assert.equal(response.status, 403);
+    assert.equal(called, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("rvc media route rejects an invalid capability before reaching the backend", async () => {
   const originalFetch = globalThis.fetch;
   let called = false;
