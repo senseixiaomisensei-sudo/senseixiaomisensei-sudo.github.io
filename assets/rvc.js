@@ -1941,19 +1941,31 @@
   const RVC_ENDPOINT_STORAGE_KEY = "postprep_rvc_api_endpoint";
 
   function getOfficialEndpoint() {
+    if (globalThis.POSTPREP_RVC_API_ENDPOINT) {
+      // Public releases previously allowed an old workers.dev/local address
+      // saved in localStorage to override the deployed Pages relay forever.
+      // Clear that stale value so China-side and proxied clients use the same
+      // currently deployed endpoint. Keep the override only for localhost
+      // development where an operator intentionally configured it.
+      try {
+        const hostname = String(globalThis.location?.hostname || "").toLowerCase();
+        const isLocalDevelopment = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+        const stored = window.localStorage.getItem(RVC_ENDPOINT_STORAGE_KEY);
+        if (isLocalDevelopment && stored && stored.trim()) return stored.trim().replace(/\/+$/u, "");
+        if (stored) window.localStorage.removeItem(RVC_ENDPOINT_STORAGE_KEY);
+      } catch (e) {}
+      return String(globalThis.POSTPREP_RVC_API_ENDPOINT).trim().replace(/\/+$/u, "");
+    }
     try {
       const stored = window.localStorage.getItem(RVC_ENDPOINT_STORAGE_KEY);
       if (stored && stored.trim()) return stored.trim().replace(/\/+$/u, "");
     } catch (e) {}
-    if (globalThis.POSTPREP_RVC_API_ENDPOINT) {
-      return String(globalThis.POSTPREP_RVC_API_ENDPOINT).trim().replace(/\/+$/u, "");
-    }
     return String(OFFICIAL_RVC_ENDPOINT || "/rvc").trim().replace(/\/+$/u, "");
   }
 
   function officialRoutes(endpoint) {
     const base = String(endpoint || "").trim().replace(/\/+$/u, "");
-    if (/\/rvc$/u.test(base)) {
+    if (/\/(?:rvc|rvc-api)$/u.test(base)) {
       return {
         convertUrl: base,
         outputUrl: (jobId, token) => `${base}/output/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,

@@ -4,6 +4,18 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
+function extractFunction(source, name) {
+  const start = source.indexOf(`function ${name}`);
+  assert.ok(start >= 0, `missing ${name}`);
+  const bodyStart = source.indexOf("{", start);
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}" && --depth === 0) return source.slice(start, index + 1);
+  }
+  throw new Error(`unterminated ${name}`);
+}
+
 test("rvc page has a three-step beginner flow and no default upload path", async () => {
   const [page, client, config, catalog, headersFile] = await Promise.all([
     readFile(new URL("rvc.html", root), "utf8"),
@@ -49,6 +61,16 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(config, /POSTPREP_RVC_MODELS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api\/models"/u);
   assert.match(config, /POSTPREP_RVC_MEDIA_ENDPOINT/);
   assert.doesNotMatch(config, /POSTPREP_VOICE_API_ENDPOINT/);
+
+  const officialRoutes = Function(`"use strict"; return (${extractFunction(client, "officialRoutes")});`)();
+  const pagesRoutes = officialRoutes("https://postprep-ae6.pages.dev/rvc-api");
+  assert.equal(pagesRoutes.convertUrl, "https://postprep-ae6.pages.dev/rvc-api");
+  assert.equal(
+    pagesRoutes.outputUrl("11111111-2222-3333-8444-555555555555", "download_token"),
+    "https://postprep-ae6.pages.dev/rvc-api/output/11111111-2222-3333-8444-555555555555?token=download_token",
+  );
+  assert.doesNotMatch(pagesRoutes.convertUrl, /\/v1\/convert$/u);
+  assert.match(client, /if \(stored\) window\.localStorage\.removeItem\(RVC_ENDPOINT_STORAGE_KEY\)/u);
 
   const catalogPayload = JSON.parse(catalog);
   assert.ok(Array.isArray(catalogPayload.models));
