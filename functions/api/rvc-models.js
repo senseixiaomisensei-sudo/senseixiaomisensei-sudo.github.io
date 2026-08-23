@@ -12,7 +12,7 @@ export async function onRequest(context) {
   try {
     const upstream = await fetchWithTimeout(modelsUrl.toString(), {
       headers: { Authorization: `Bearer ${backend.token}` },
-    }, 8000);
+    }, 20000);
     const payload = await upstream.json().catch(() => null);
     const models = upstream.ok && payload && Array.isArray(payload.models)
       ? payload.models

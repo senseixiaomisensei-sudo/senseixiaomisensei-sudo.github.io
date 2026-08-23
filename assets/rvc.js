@@ -5,6 +5,14 @@
   const MIN_AUDIO_SECONDS = 0.5;
   const WARN_AUDIO_SECONDS = 2;
   const MAX_AUDIO_SECONDS = 180;
+  // The browser compatibility path keeps several large ONNX sessions in RAM.
+  // It is intentionally limited to a short clip so mobile WebViews cannot sit
+  // for minutes and then fail inside a dynamic-shape ONNX node.
+  const LOCAL_MAX_AUDIO_SECONDS = 20;
+  const CLOUD_STATUS_TIMEOUT_MS = 15000;
+  const CLOUD_MODELS_TIMEOUT_MS = 20000;
+  const CLOUD_STATUS_ATTEMPTS = 2;
+  const CLOUD_CONVERT_TIMEOUT_MS = 220000;
   const OFFICIAL_RVC_ENDPOINT = String(globalThis.POSTPREP_RVC_API_ENDPOINT || "/rvc").trim();
   const OFFICIAL_RVC_STATUS_ENDPOINT = String(globalThis.POSTPREP_RVC_STATUS_ENDPOINT || "/rvc/status").trim();
   const OFFICIAL_RVC_MODELS_ENDPOINT = String(globalThis.POSTPREP_RVC_MODELS_ENDPOINT || "/rvc/models").trim();
@@ -56,9 +64,9 @@
     zh: {
       eyebrow: "RVC VOICE CHANGER · WEB EDITION",
       title: "AI 变声器",
-      intro: "选一个你有权使用的声音模型，上传或录制一段你自己的声音，使用官方 RVC 推理管线完成变声。输入和结果仅在处理期间发送到受保护的 GPU 服务，并会自动删除。",
+      intro: "选一个你有权使用的声音模型，上传或录制一段你自己的声音，使用 RVC 变声引擎完成转换。默认走本网站托管的受保护 GPU 服务；输入和结果仅在处理期间发送，并会自动删除。",
       noteTitle: "使用提示",
-      noteBody: "默认使用固定版本的 RVC-Project 官方 HuBERT、RMVPE、真实 FAISS 索引与生成器推理。请仅处理你有权使用的声音，并清晰标注为 AI 变声；公开可下载不等于拥有再分发或冒充许可。",
+      noteBody: "默认使用固定版本的 RVC-Project HuBERT、RMVPE、FAISS 索引与生成器推理。RVC 是开源变声引擎名称，不是要上传的文件。请仅处理你有权使用的声音，并清晰标注为 AI 变声；公开可下载不等于拥有再分发或冒充许可。",
       workflowEyebrow: "VOICE WORKFLOW",
       workflowTitle: "三步完成变声",
       privacyBadge: "受保护 GPU 推理 · 用完即删",
@@ -101,21 +109,21 @@
       formatWav: "WAV（40kHz 高保真）",
       resampleLabel: "输出采样率",
       resampleKeep: "40 kHz / 48 kHz (标准)",
-      checkingService: "正在初始化本地推理引擎…",
-      serviceReady: "⚡ 本地 WebAssembly SIMD 极速推理引擎已就绪",
-      serviceOffline: "正在从本地缓存或 CDN 加载模型权重…",
+      checkingService: "正在连接云端 RVC 引擎；此检查不会上传音频…",
+      serviceReady: "🟢 云端 RVC 引擎已就绪",
+      serviceOffline: "云端 RVC 引擎连接暂缓；可在选好音频后直接开始重试，不会自动切换到本地模式。",
       serviceLoading: "正在从本地缓存或 CDN 加载模型权重...",
       convert: "开始变声",
       converting: "正在变声中...",
       howtoTitle: "三步上手",
       howtoOne: "在左侧选一个角色声音（点击卡片即可）。",
       howtoTwo: "上传一段你自己的录音，或直接用麦克风录制。",
-      howtoThree: "点“开始变声”，等待本地推理完成即可试听与下载。",
+      howtoThree: "点“开始变声”，等待云端推理完成即可试听与下载。",
       tipsTitle: "让效果更好",
       resultTitle: "变声结果",
       download: "下载变声结果",
-      resultDisclosure: "变声完全在您的浏览器本地完成，音频不会上传至任何服务器，保护您的隐私安全。紧随最新技术。",
-      resultMeta: "角色：{model} · 音高变调：{pitch} · 耗时：{elapsed}s · 本地 WebAssembly SIMD 推理",
+      resultDisclosure: "云端模式下，输入在任务结束后删除，输出链接短时保留；本地兼容模式不上传音频。",
+      resultMeta: "角色：{model} · 音高变调：{pitch} · 耗时：{elapsed}s · 云端 RVC 引擎",
       analyzing: "正在分析音频…",
       analysisReady: "音频已就绪：{name} · 时长 {duration} · 可以变声。",
       invalidFile: "请选择有效格式的音频文件 (WAV/MP3/M4A/OGG/WebM)。",
@@ -138,7 +146,7 @@
     en: {
       eyebrow: "RVC VOICE CHANGER · WEB EDITION",
       title: "AI Voice Changer",
-      intro: "Pick a voice model you are authorized to use, upload or record audio you are allowed to use, and convert it with the pinned official RVC inference pipeline.",
+      intro: "Pick a voice model you are authorized to use, upload or record audio you are allowed to use, and convert it with the hosted RVC inference engine.",
       noteTitle: "Notice",
       noteBody: "The default path uses the pinned RVC-Project HuBERT, RMVPE, real FAISS index, and generator pipeline on a protected GPU service. Public availability is not a redistribution or impersonation license.",
       workflowEyebrow: "VOICE WORKFLOW",
@@ -183,9 +191,9 @@
       formatWav: "WAV (40kHz Lossless)",
       resampleLabel: "Output sample rate",
       resampleKeep: "40 kHz / 48 kHz (Standard)",
-      checkingService: "Checking the official RVC GPU service; no audio is uploaded…",
-      serviceReady: "🟢 Official RVC 2.3.260718 GPU service is ready",
-      serviceOffline: "The official RVC GPU service is unavailable. Public voice conversion is disabled instead of falling back to the lower-fidelity compatibility engine.",
+      checkingService: "Connecting to the cloud RVC engine; no audio is uploaded…",
+      serviceReady: "🟢 Cloud RVC engine is ready",
+      serviceOffline: "The cloud RVC engine is reconnecting. You can retry after choosing audio; the page will not switch to local mode automatically.",
       serviceLoading: "Loading model weights...",
       convert: "Convert now",
       converting: "Converting...",
@@ -197,7 +205,7 @@
       resultTitle: "Result",
       download: "Download result",
       resultDisclosure: "The result is back in browser memory. Server input is deleted after the task and output expires shortly.",
-      resultMeta: "Voice: {model} · Pitch: {pitch} · Time: {elapsed}s · Official RVC GPU",
+      resultMeta: "Voice: {model} · Pitch: {pitch} · Time: {elapsed}s · Cloud RVC engine",
       analyzing: "Analyzing audio…",
       analysisReady: "Audio ready: {name} · Duration {duration} · Ready to convert.",
       invalidFile: "Choose a valid WAV, MP3, M4A, OGG, or WebM file.",
@@ -854,11 +862,15 @@
 
   const state = {
     lang: "zh",
-    inferenceMode: "official", // "official" (需上传，最高音质) | "local" (免上传，本地 WebAssembly)
+    inferenceMode: "official", // "official" = 云端 RVC 引擎 | "local" = 浏览器本地兼容模式
     officialEndpoint: "",
     officialReady: false,
-    engineReady: true,
+    // null means the network probe was inconclusive.  It must not lock users
+    // out of a direct cloud conversion, especially on slower cross-border
+    // mobile routes.
+    engineReady: null,
     engineInfo: null,
+    cloudProbe: null,
     busy: false,
     selectedModelId: "hoshino",
     audio: null, // { file, buffer, float32, sampleRate, name, duration }
@@ -907,7 +919,7 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
-  const CHARACTER_MODEL_ASSET_VERSION = "20260823-v31";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260823-v32";
 
   function characterModelCacheKey(model) {
     const id = String(model?.id || "character");
@@ -1647,6 +1659,49 @@
     }
   }
 
+  function waitFor(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function fetchJsonWithRetry(url, timeoutMs, attempts = CLOUD_STATUS_ATTEMPTS) {
+    let lastError;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      try {
+        return await fetchJsonWithTimeout(url, timeoutMs);
+      } catch (error) {
+        lastError = error;
+        if (attempt < attempts) await waitFor(550 * attempt);
+      }
+    }
+    throw lastError || new Error("Cloud service probe failed");
+  }
+
+  async function fetchResponseWithRetry(url, timeoutMs = 45000, attempts = 2) {
+    let lastError;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, {
+          credentials: "omit",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (response.ok) return response;
+        lastError = new Error(`下载音频失败 HTTP ${response.status}`);
+        lastError.retryable = [408, 429, 500, 502, 503, 504].includes(response.status);
+        if (!lastError.retryable || attempt === attempts) throw lastError;
+      } catch (error) {
+        lastError = error;
+        if (error?.retryable === false || attempt === attempts) throw error;
+      } finally {
+        clearTimeout(timer);
+      }
+      await waitFor(700 * attempt);
+    }
+    throw lastError || new Error("下载音频失败");
+  }
+
   function displayMetadataForRemote(remote) {
     const local = state.catalog.find((item) => item.id === remote.id) || EMBEDDED_RVC_CATALOG.find((item) => item.id === remote.id);
     const remoteLicense = typeof remote.license === "string" ? remote.license : "unverified";
@@ -1658,7 +1713,7 @@
       id: remote.id,
       name: remote.name && remote.name !== remote.id ? remote.name : (local?.name || remote.id),
       avatarText: remote.emoji || local?.avatarText || "RVC",
-      description: remote.description || local?.description || "管理员挂载的官方 RVC 推理模型",
+      description: remote.description || local?.description || "管理员挂载的云端 RVC 推理模型",
       tags: license === "unverified" ? [...remoteTags, "许可未核验"] : remoteTags,
       remote: true,
       hasIndex: remote.hasIndex === true,
@@ -1669,30 +1724,38 @@
   }
 
   async function refreshOfficialService() {
-    try {
-      const status = await fetchJsonWithTimeout(OFFICIAL_RVC_STATUS_ENDPOINT, 6500);
-      state.engineReady = status?.ready === true;
-      state.engineInfo = state.engineReady ? status : null;
-      if (!state.engineReady) return false;
-      const payload = await fetchJsonWithTimeout(OFFICIAL_RVC_MODELS_ENDPOINT, 10000);
-      const models = Array.isArray(payload?.models)
-        ? payload.models.filter((model) => model && /^[A-Za-z0-9_-]{1,64}$/u.test(String(model.id || "")))
-        : [];
-      if (!models.length) {
-        state.engineReady = false;
+    if (state.cloudProbe) return state.cloudProbe;
+    state.cloudProbe = (async () => {
+      try {
+        const status = await fetchJsonWithRetry(OFFICIAL_RVC_STATUS_ENDPOINT, CLOUD_STATUS_TIMEOUT_MS);
+        state.engineReady = status?.ready === true;
+        state.engineInfo = state.engineReady ? status : null;
+        if (!state.engineReady) return false;
+        const payload = await fetchJsonWithRetry(OFFICIAL_RVC_MODELS_ENDPOINT, CLOUD_MODELS_TIMEOUT_MS);
+        const models = Array.isArray(payload?.models)
+          ? payload.models.filter((model) => model && /^[A-Za-z0-9_-]{1,64}$/u.test(String(model.id || "")))
+          : [];
+        if (!models.length) {
+          // A healthy service with a delayed optional model-list response can
+          // still convert any bundled model. Keep the cached catalog usable.
+          return true;
+        }
+        state.catalog = models.map(displayMetadataForRemote);
+        if (!state.catalog.some((model) => model.id === state.selectedModelId)) {
+          state.selectedModelId = state.catalog[0].id;
+        }
+        return true;
+      } catch (error) {
+        console.warn("Cloud RVC service probe was inconclusive", error);
+        state.engineReady = null;
         state.engineInfo = null;
-        return false;
+        return null;
       }
-      state.catalog = models.map(displayMetadataForRemote);
-      if (!state.catalog.some((model) => model.id === state.selectedModelId)) {
-        state.selectedModelId = state.catalog[0].id;
-      }
-      return true;
-    } catch (error) {
-      console.warn("Official RVC service is unavailable", error);
-      state.engineReady = false;
-      state.engineInfo = null;
-      return false;
+    })();
+    try {
+      return await state.cloudProbe;
+    } finally {
+      state.cloudProbe = null;
     }
   }
 
@@ -1715,12 +1778,6 @@
     }
 
     const isOwnModel = String(selectedModel.id || "").startsWith(OWN_MODEL_PREFIX);
-    if (state.inferenceMode === "official" && !isOwnModel && !state.engineReady) {
-      if (statusEl) statusEl.textContent = "官方 RVC GPU 服务暂不可用。公共角色不会回退到本地兼容模式。";
-      if (convertBtn) convertBtn.disabled = true;
-      if (convertLabel) convertLabel.textContent = "官方服务未就绪";
-      return;
-    }
     if (!state.audio) {
       if (statusEl) statusEl.textContent = t("missingAudio");
       if (convertBtn) convertBtn.disabled = true;
@@ -1728,12 +1785,22 @@
       return;
     }
 
+    const usesBrowserInference = isOwnModel || state.inferenceMode === "local";
+    if (usesBrowserInference && state.audio.duration > LOCAL_MAX_AUDIO_SECONDS) {
+      if (statusEl) statusEl.textContent = `本地兼容与导入模型仅处理 ${LOCAL_MAX_AUDIO_SECONDS} 秒以内的短音频，已阻止长音频 ONNX 推理以避免卡死或形状错误。公共角色请切换到“云端 RVC 引擎”。`;
+      if (convertBtn) convertBtn.disabled = true;
+      if (convertLabel) convertLabel.textContent = isOwnModel ? "请使用短音频" : "请切换云端模式";
+      return;
+    }
+
     if (statusEl) {
       let engineLabel = "🟢 变声引擎已就绪";
       if (isOwnModel) {
         engineLabel = "🎓 专属导入模型已就绪";
+      } else if (state.inferenceMode === "official" && state.engineReady === true) {
+        engineLabel = "🟢 云端 RVC 高保真引擎已就绪";
       } else if (state.inferenceMode === "official") {
-        engineLabel = "官方 RVC GPU 高保真引擎已就绪";
+        engineLabel = "🟡 云端 RVC 引擎正在连接；本次会直接重试";
       } else {
         engineLabel = "⚡ 极速免上传引擎已就绪";
       }
@@ -1748,7 +1815,10 @@
   // 用户自己训练/转换的 .onnx 模型（仅本机使用，不回传）：
   // 以 IndexedDB Blob 存储，key = `own:<id>.onnx`，catalog 项记录 id 便于检索。
 
-  const RVC_MODE_STORAGE_KEY = "postprep_rvc_inference_mode";
+  // v32 deliberately ignores the legacy mode value. Older releases could
+  // remember the browser-only path and send every later visit into a long
+  // local ONNX task on mobile.
+  const RVC_MODE_STORAGE_KEY = "postprep_rvc_inference_mode_v32";
   const RVC_ENDPOINT_STORAGE_KEY = "postprep_rvc_api_endpoint";
 
   function getOfficialEndpoint() {
@@ -1818,7 +1888,7 @@
     }
 
     if (badgeText) {
-      badgeText.textContent = isOfficial ? "官方 RVC GPU 模式" : "本地 WebAssembly 模式";
+      badgeText.textContent = isOfficial ? "云端 RVC 引擎（推荐）" : "本地兼容模式";
     }
     if (badge) {
       badge.className = isOfficial
@@ -1840,7 +1910,7 @@
     const statusText = document.getElementById("rvc-official-status-text");
 
     if (indicator) indicator.className = "flex h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400";
-    if (statusText) statusText.textContent = "正在检测官方服务…";
+    if (statusText) statusText.textContent = "正在检测云端 RVC 引擎…";
 
     // Try health/status probes with 3500ms timeout
     const candidates = [
@@ -1873,8 +1943,8 @@
     if (statusText) {
       const displayUrl = targetBase.replace(/^https?:\/\//u, "");
       statusText.textContent = ok
-        ? `🟢 官方 RVC 服务已就绪 (${displayUrl}) · 官方 PyTorch RVC`
-        : `⚠️ 官方服务端未连接 (${displayUrl}) · 点击右侧“配置地址”或改用本地极速模式`;
+        ? `🟢 云端 RVC 引擎已就绪 (${displayUrl}) · PyTorch RVC`
+        : `⚠️ 云端 RVC 引擎暂未响应 (${displayUrl}) · 可稍后重试，页面不会自动改用本地模式`;
     }
     updateStatusDisplay();
     return ok;
@@ -2085,6 +2155,13 @@
   async function runWebRvcInference() {
     if (state.busy || !state.audio || !state.selectedModelId) return;
 
+    if (state.audio.duration > LOCAL_MAX_AUDIO_SECONDS) {
+      const message = `本地兼容模式只支持 ${LOCAL_MAX_AUDIO_SECONDS} 秒以内的短音频。为避免移动设备长时间卡住或触发 ONNX 形状错误，已停止本地推理；请切换到“云端 RVC 引擎”。`;
+      updateStatusDisplay(message);
+      showToast(message);
+      return;
+    }
+
     const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
     if (!selectedModel) {
       showToast(t("missingModel"));
@@ -2113,7 +2190,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v31", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v32", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -2248,7 +2325,9 @@
             : deriveStableNoiseSeed(freshAudioInput, selectedModel.id),
           noiseScale: selectedModel.noiseScale ?? 0.5,
           outputSampleRate: selectedModel.sampleRate || 40000,
-          timeout: 600000,
+          // The short local mode should fail quickly and visibly rather than
+          // trapping a mobile browser for ten minutes.
+          timeout: 120000,
         }
       );
 
@@ -2316,7 +2395,7 @@
     const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
     const extension = String(state.audio.file.name || "").toLowerCase().split(".").pop();
     if (!["wav", "mp3", "m4a", "ogg", "webm"].includes(extension)) {
-      showToast("官方服务接受 WAV、MP3、M4A、OGG 或 WebM，请先转换格式。");
+      showToast("云端 RVC 引擎接受 WAV、MP3、M4A、OGG 或 WebM，请先转换格式。");
       return;
     }
 
@@ -2333,7 +2412,7 @@
     try {
       const routes = officialRoutes(getOfficialEndpoint());
       const convertUrl = routes.convertUrl;
-      updateStatusDisplay("⏳ [1/3] 正在准备上传音频到官方推理服务端…");
+      updateStatusDisplay("⏳ [1/3] 正在准备上传音频到云端 RVC 引擎…");
 
       const body = new FormData();
       body.set("modelId", selectedModel.id);
@@ -2348,12 +2427,14 @@
       body.set("language", state.lang === "en" ? "en" : "zh");
       body.set("audio", state.audio.file, state.audio.file.name || `input.${extension}`);
 
-      // Perform upload with granular XMLHttpRequest progress monitoring
+      // XMLHttpRequest gives upload progress on mobile browsers. Retry once
+      // only for a connection-level drop or a transient gateway response;
+      // do not silently route the request to the local ONNX compatibility path.
       let ticker = null;
-      const uploadAndInfer = () => new Promise((resolve, reject) => {
+      const uploadAndInfer = (attempt) => new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", convertUrl, true);
-        xhr.timeout = 180000;
+        xhr.timeout = CLOUD_CONVERT_TIMEOUT_MS;
 
         xhr.upload.onprogress = (evt) => {
           if (evt.lengthComputable) {
@@ -2367,9 +2448,10 @@
 
         xhr.upload.onload = () => {
           updateProgressBar(50);
+          if (ticker) clearInterval(ticker);
           ticker = setInterval(() => {
             const sec = Math.round((Date.now() - startedAt) / 1000);
-            updateStatusDisplay(`🧠 [2/3] 官方 PyTorch 神经声线重构中… 已用时 ${sec}s（RMVPE 音高追踪 + FAISS 特征检索）`);
+            updateStatusDisplay(`🧠 [2/3] 云端 RVC 神经声线重构中… 已用时 ${sec}s（RMVPE 音高追踪 + FAISS 特征检索）`);
           }, 1000);
         };
 
@@ -2380,7 +2462,7 @@
               const resJson = JSON.parse(xhr.responseText);
               resolve(resJson);
             } catch (err) {
-              reject(new Error("服务端返回格式解析失败"));
+            reject(new Error("云端服务返回格式解析失败"));
             }
           } else {
             let errMsg = `HTTP ${xhr.status}`;
@@ -2388,34 +2470,48 @@
               const resJson = JSON.parse(xhr.responseText);
               if (resJson.message || resJson.code) errMsg = resJson.message || resJson.code;
             } catch (e) {}
-            reject(new Error(errMsg));
+            const error = new Error(errMsg);
+            error.retryable = [502, 503, 520, 521, 522, 523, 524].includes(xhr.status);
+            error.httpStatus = xhr.status;
+            reject(error);
           }
         };
 
         xhr.onerror = () => {
           if (ticker) clearInterval(ticker);
-          reject(new Error("网络连接失败，请检查官方服务端是否启动或地址是否正确"));
+          const error = new Error("网络连接暂时中断，正在保留本次云端请求以便重试");
+          error.retryable = true;
+          reject(error);
         };
 
         xhr.ontimeout = () => {
           if (ticker) clearInterval(ticker);
-          reject(new Error("上传或推理超时 (180s)，建议裁短音频重试"));
+          const error = new Error(`上传或推理超时 (${Math.round(CLOUD_CONVERT_TIMEOUT_MS / 1000)}s)，建议裁短音频后重试`);
+          error.retryable = false;
+          reject(error);
         };
 
         xhr.send(body);
       });
 
-      const payload = await uploadAndInfer();
+      let payload;
+      try {
+        payload = await uploadAndInfer(1);
+      } catch (firstError) {
+        if (!firstError?.retryable) throw firstError;
+        updateStatusDisplay("🔄 云端连接短暂中断，正在自动重试一次…");
+        await waitFor(900);
+        payload = await uploadAndInfer(2);
+      }
       if (!payload || !payload.jobId || !payload.downloadToken) {
         throw new Error(payload?.message || payload?.code || "未获取到任务标识");
       }
 
       updateProgressBar(82);
-      updateStatusDisplay("📥 [3/3] 官方 RVC 推理完成，正在下载高保真变声结果…");
+      updateStatusDisplay("📥 [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
 
       const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
-      const outputResponse = await fetch(outputUrl, { credentials: "omit", cache: "no-store" });
-      if (!outputResponse.ok) throw new Error(`下载音频失败 HTTP ${outputResponse.status}`);
+      const outputResponse = await fetchResponseWithRetry(outputUrl);
       const outputBlob = await outputResponse.blob();
       if (!outputBlob.size || outputBlob.size > 100 * 1024 * 1024) throw new Error("返回音频数据异常");
 
@@ -2427,7 +2523,7 @@
       }
       if (resultDownload) {
         resultDownload.href = state.resultUrl;
-        resultDownload.download = `postprep-official-rvc-${selectedModel.id}-${Date.now()}.wav`;
+        resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.wav`;
       }
       const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
       if (resultMeta) {
@@ -2435,20 +2531,20 @@
           model: selectedModel.name,
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        }) + " · 官方 PyTorch RVC";
+        }) + " · 云端 PyTorch RVC";
       }
       if (resultSection) {
         resultSection.hidden = false;
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       updateProgressBar(100);
-      updateStatusDisplay(`🎉 官方 RVC 变声完成！用时 ${elapsed} 秒。可在下方试听或下载。`);
-      showToast("🎉 官方 RVC 变声完成！可在下方试听或下载");
+      updateStatusDisplay(`🎉 云端 RVC 变声完成！用时 ${elapsed} 秒。可在下方试听或下载。`);
+      showToast("🎉 云端 RVC 变声完成！可在下方试听或下载");
       return true;
     } catch (error) {
-      console.warn("Official RVC inference failed", error);
-      updateStatusDisplay(`官方 RVC GPU 转换失败：${error?.message || error}`);
-      showToast("官方 RVC 服务暂时不可用，请稍后重试");
+      console.warn("Cloud RVC inference failed", error);
+      updateStatusDisplay(`云端 RVC 引擎转换失败：${error?.message || error}`);
+      showToast("云端 RVC 引擎暂未完成本次请求，请重试；页面不会自动改用本地模式");
       return false;
     } finally {
       state.busy = false;
@@ -2508,7 +2604,7 @@
           try {
             window.localStorage.setItem(RVC_ENDPOINT_STORAGE_KEY, val);
           } catch (e) {}
-          showToast(`💾 已保存官方服务地址：${val}`);
+          showToast(`💾 已保存云端 RVC 服务地址：${val}`);
           await probeOfficialService(val);
         }
       });

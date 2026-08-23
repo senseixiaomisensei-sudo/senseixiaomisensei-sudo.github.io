@@ -204,7 +204,7 @@ export async function onRequest(context) {
       method: "POST",
       headers: { Authorization: `Bearer ${backend.token}` },
       body: upstreamBody,
-    }, 170000);
+    }, 210000);
   } catch (firstError) {
     if (firstError && firstError.name === "AbortError") {
       return failure(request, env, 504, "RVC_BACKEND_TIMEOUT", "Voice conversion took too long");
@@ -215,7 +215,7 @@ export async function onRequest(context) {
         method: "POST",
         headers: { Authorization: `Bearer ${backend.token}` },
         body: upstreamBody,
-      }, 170000);
+      }, 210000);
     } catch (error) {
       return failure(request, env, error && error.name === "AbortError" ? 504 : 502, error && error.name === "AbortError" ? "RVC_BACKEND_TIMEOUT" : "RVC_BACKEND_UNAVAILABLE", error && error.name === "AbortError" ? "Voice conversion took too long" : "Voice conversion is temporarily unavailable");
     }

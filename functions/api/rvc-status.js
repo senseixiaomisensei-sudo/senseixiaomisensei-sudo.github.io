@@ -12,7 +12,10 @@ export async function onRequest(context) {
   try {
     const upstream = await fetchWithTimeout(healthUrl.toString(), {
       headers: { Authorization: `Bearer ${backend.token}` },
-    }, 4500);
+    // Cross-border mobile routes can take several seconds before the tunnel
+    // responds. A health probe is non-destructive, so leave enough headroom
+    // before the page concludes that the cloud engine is unavailable.
+    }, 15000);
     const payload = await upstream.json().catch(() => null);
     const ready = Boolean(upstream.ok && payload && payload.ready === true);
     return json(request, env, ready ? {

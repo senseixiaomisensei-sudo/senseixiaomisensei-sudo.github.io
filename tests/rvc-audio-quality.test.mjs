@@ -118,7 +118,7 @@ test("RMVPE salience decoder supports class-last and class-first tensors", () =>
   assert.ok(lastResult.every((value) => value > 0));
 });
 
-test("RVC page starts neutral and public voices use the pinned official service", async () => {
+test("RVC page starts neutral and public voices prefer the cloud engine", async () => {
   const [page, client, runtime, service] = await Promise.all([
     readFile(new URL("rvc.html", root), "utf8"),
     readFile(new URL("assets/rvc.js", root), "utf8"),
@@ -136,7 +136,7 @@ test("RVC page starts neutral and public voices use the pinned official service"
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260823-v31/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260823-v32/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);
@@ -145,15 +145,21 @@ test("RVC page starts neutral and public voices use the pinned official service"
   assert.match(client, /function officialRoutes\(endpoint\)/u);
   assert.match(client, /convertUrl: base/u);
   assert.doesNotMatch(client, /if \(!success\) \{\s*return runWebRvcInference\(\);\s*\}/u);
+  assert.match(client, /const LOCAL_MAX_AUDIO_SECONDS = 20/u);
+  assert.match(client, /state\.audio\.duration > LOCAL_MAX_AUDIO_SECONDS/u);
+  assert.match(client, /postprep_rvc_inference_mode_v32/u);
+  assert.match(client, /CLOUD_STATUS_TIMEOUT_MS = 15000/u);
+  assert.match(client, /CLOUD_CONVERT_TIMEOUT_MS = 220000/u);
+  assert.doesNotMatch(client, /官方 RVC GPU 服务暂不可用/u);
   assert.match(client, /OWN_MODEL_PREFIX/u);
   assert.match(workerSource, /extractHubertFeatures[\s\S]*?normalize: false/u);
   assert.doesNotMatch(workerSource, /extractHubertFeatures[\s\S]{0,180}?normalize: true/u);
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260823-v31/u);
-  assert.match(runtime, /v=20260823-v31/u);
-  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260823-v31"/u);
+  assert.match(client, /v=20260823-v32/u);
+  assert.match(runtime, /v=20260823-v32/u);
+  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260823-v32"/u);
   assert.match(client, /characterModelCacheKey\(selectedModel\)/u);
   assert.match(client, /chunks\.map\(versionCharacterChunkPath\)/u);
   assert.match(page, /id="rvc-index-rate"[^>]*value="0\.3"/u);
