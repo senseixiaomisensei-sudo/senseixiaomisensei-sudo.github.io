@@ -22,7 +22,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v28（全球智能自适应 · 录音棚极致高保真 + 极速免上传双模式）
+          <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v29（官方 RVC GPU + 本地 WebAssembly 双模式）
         </span>
       </div>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
@@ -56,7 +56,7 @@
               <h3 class="mt-1 text-base font-black text-ink">选择变声模式</h3>
             </div>
             <span id="rvc-mode-badge" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-              <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i><span id="rvc-mode-badge-text">录音棚极致音质模式</span>
+              <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i><span id="rvc-mode-badge-text">官方 RVC GPU 模式</span>
             </span>
           </div>
 
@@ -65,29 +65,29 @@
             <button id="rvc-mode-official" type="button" class="flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-4 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="true" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
-                  <i class="fa-solid fa-fire text-amber-500"></i>录音棚极致音质模式 <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">最高保真</span>
+                  <i class="fa-solid fa-fire text-amber-500"></i>官方 RVC GPU 模式 <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">上传推理</span>
                 </span>
                 <i id="rvc-mode-official-check" class="fa-solid fa-circle-check text-brand text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted">原版 PyTorch + HuBERT + RMVPE + FAISS 检索。全自动智能云端/本地加速，细节饱满，角色音色 100% 纯正逼真。</p>
+              <p class="mt-2 text-xs leading-5 text-muted">官方 PyTorch + HuBERT + RMVPE + FAISS 检索。音频经受保护网关发送到你的本机 GPU；服务离线时不会伪装成本地模式。</p>
             </button>
 
             <!-- 模式 2: 极速免上传模式 -->
             <button id="rvc-mode-local" type="button" class="flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-4 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="false" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
-                  <i class="fa-solid fa-bolt text-teal-600"></i>极速免上传模式 <span class="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800">0 秒等待</span>
+                  <i class="fa-solid fa-bolt text-teal-600"></i>本地 WebAssembly 模式 <span class="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800">免上传</span>
                 </span>
                 <i id="rvc-mode-local-check" class="fa-regular fa-circle text-zinc-300 text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted">纯前端 WebAssembly 极速推理。0 上传、0 等待、100% 离线隐私，随时随地可用。</p>
+              <p class="mt-2 text-xs leading-5 text-muted">纯浏览器 WebAssembly 兼容推理。音频不上传，但模型和效果受设备性能、浏览器与缓存状态影响。</p>
             </button>
           </div>
 
           <!-- 本地闪存预热与高级设置（免配置，进阶可折叠） -->
           <div id="rvc-local-prewarm-wrap" class="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3 text-xs text-muted">
             <span id="rvc-cache-status" class="flex items-center gap-1.5 font-medium">
-              <i class="fa-solid fa-circle-check text-emerald-500"></i>全球 CDN 加速已就绪 · 全球网络及代理已优化
+                <i class="fa-solid fa-circle-info text-sky-500"></i>本地模式仅使用浏览器缓存；官方模式使用本机 GPU 服务
             </span>
             <div class="flex items-center gap-2">
               <button id="rvc-preload-btn" type="button" class="inline-flex items-center gap-1 rounded bg-teal-50 px-2 py-0.5 font-bold text-brand hover:bg-teal-100">
@@ -332,6 +332,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260820-v10"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-  <script src="assets/rvc.js?v=20260822-v28"></script>
+  <script src="assets/rvc.js?v=20260823-v29"></script>
 </body>
 </html>

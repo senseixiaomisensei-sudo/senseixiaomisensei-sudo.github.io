@@ -1215,6 +1215,12 @@
     }
 
     const isOwnModel = String(selectedModel.id || "").startsWith(OWN_MODEL_PREFIX);
+    if (state.inferenceMode === "official" && !isOwnModel && !state.engineReady) {
+      if (statusEl) statusEl.textContent = "官方 RVC GPU 服务暂不可用。公共角色不会回退到本地兼容模式。";
+      if (convertBtn) convertBtn.disabled = true;
+      if (convertLabel) convertLabel.textContent = "官方服务未就绪";
+      return;
+    }
     if (!state.audio) {
       if (statusEl) statusEl.textContent = t("missingAudio");
       if (convertBtn) convertBtn.disabled = true;
@@ -1227,7 +1233,7 @@
       if (isOwnModel) {
         engineLabel = "🎓 专属导入模型已就绪";
       } else if (state.inferenceMode === "official") {
-        engineLabel = "✨ 录音棚极致高保真引擎已就绪";
+        engineLabel = "官方 RVC GPU 高保真引擎已就绪";
       } else {
         engineLabel = "⚡ 极速免上传引擎已就绪";
       }
@@ -1254,6 +1260,27 @@
       return String(globalThis.POSTPREP_RVC_API_ENDPOINT).trim().replace(/\/+$/u, "");
     }
     return String(OFFICIAL_RVC_ENDPOINT || "/rvc").trim().replace(/\/+$/u, "");
+  }
+
+  function officialRoutes(endpoint) {
+    const base = String(endpoint || "").trim().replace(/\/+$/u, "");
+    if (/\/rvc$/u.test(base)) {
+      return {
+        convertUrl: base,
+        outputUrl: (jobId, token) => `${base}/output/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+      };
+    }
+    if (/\/v1\/convert$/u.test(base)) {
+      const serviceBase = base.replace(/\/v1\/convert$/u, "");
+      return {
+        convertUrl: base,
+        outputUrl: (jobId, token) => `${serviceBase}/v1/output/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+      };
+    }
+    return {
+      convertUrl: `${base}/v1/convert`,
+      outputUrl: (jobId, token) => `${base}/v1/output/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+    };
   }
 
   function setInferenceMode(mode) {
@@ -1291,7 +1318,7 @@
     }
 
     if (badgeText) {
-      badgeText.textContent = isOfficial ? "录音棚极致音质模式" : "极速免上传模式";
+      badgeText.textContent = isOfficial ? "官方 RVC GPU 模式" : "本地 WebAssembly 模式";
     }
     if (badge) {
       badge.className = isOfficial
@@ -1299,7 +1326,11 @@
         : "inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-800";
     }
 
-    checkCacheStatus();
+    if (isOfficial) {
+      refreshOfficialService().then(() => updateStatusDisplay());
+    } else {
+      checkCacheStatus();
+    }
     updateStatusDisplay();
   }
 
@@ -1800,8 +1831,8 @@
     const startedAt = Date.now();
 
     try {
-      const endpoint = getOfficialEndpoint();
-      const convertUrl = endpoint.endsWith("/v1/convert") ? endpoint : `${endpoint}/v1/convert`;
+      const routes = officialRoutes(getOfficialEndpoint());
+      const convertUrl = routes.convertUrl;
       updateStatusDisplay("⏳ [1/3] 正在准备上传音频到官方推理服务端…");
 
       const body = new FormData();
@@ -1882,8 +1913,7 @@
       updateProgressBar(82);
       updateStatusDisplay("📥 [3/3] 官方 RVC 推理完成，正在下载高保真变声结果…");
 
-      const outputBase = endpoint.replace(/\/v1\/convert$/u, "");
-      const outputUrl = `${outputBase}/v1/output/${encodeURIComponent(payload.jobId)}?token=${encodeURIComponent(payload.downloadToken)}`;
+      const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
       const outputResponse = await fetch(outputUrl, { credentials: "omit", cache: "no-store" });
       if (!outputResponse.ok) throw new Error(`下载音频失败 HTTP ${outputResponse.status}`);
       const outputBlob = await outputResponse.blob();
@@ -1916,8 +1946,9 @@
       showToast("🎉 官方高保真变声完成！可在下方试听或下载");
       return true;
     } catch (error) {
-      console.warn("Official GPU endpoint unreachable, seamlessly executing high-fidelity in-browser neural synthesis:", error);
-      updateStatusDisplay("✨ 正在自动启用全精度神经变声加速…");
+      console.warn("Official RVC inference failed", error);
+      updateStatusDisplay(`官方 RVC GPU 转换失败：${error?.message || error}`);
+      showToast("官方 RVC 服务暂时不可用，请稍后重试");
       return false;
     } finally {
       state.busy = false;
@@ -1939,10 +1970,7 @@
     if (state.inferenceMode === "local") {
       return runWebRvcInference();
     }
-    const success = await runOfficialRvcInference();
-    if (!success) {
-      return runWebRvcInference();
-    }
+    return runOfficialRvcInference();
   }
 
   function setupEventListeners() {
