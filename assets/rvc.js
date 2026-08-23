@@ -2586,15 +2586,20 @@
 
       const body = new FormData();
       body.set("modelId", selectedModel.id);
+      body.set("model_id", selectedModel.id);
       body.set("pitch", String(pitch));
       body.set("indexRate", String(selectedModel.hasIndex !== false ? indexRate : 0));
+      body.set("index_rate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("protect", String(protect));
       body.set("f0Method", "rmvpe");
+      body.set("f0_method", "rmvpe");
       const outputFormat = preferredCloudOutputFormat();
       body.set("format", outputFormat);
       body.set("resample", "0");
       body.set("rmsMixRate", String(rmsMixRate));
+      body.set("rms_mix_rate", String(rmsMixRate));
       body.set("filterRadius", String(filterRadius));
+      body.set("filter_radius", String(filterRadius));
       body.set("language", state.lang === "en" ? "en" : "zh");
       body.set("audio", state.audio.file, state.audio.file.name || `input.${extension}`);
 

@@ -34,14 +34,19 @@ function audioBlob() {
 function rvcForm(overrides = {}) {
   const form = new FormData();
   form.set("modelId", "sweet-female");
+  form.set("model_id", "sweet-female");
   form.set("pitch", "2");
   form.set("indexRate", "0.5");
+  form.set("index_rate", "0.5");
   form.set("protect", "0.33");
   form.set("f0Method", "rmvpe");
+  form.set("f0_method", "rmvpe");
   form.set("format", "wav");
   form.set("resample", "0");
   form.set("rmsMixRate", "1");
+  form.set("rms_mix_rate", "1");
   form.set("filterRadius", "3");
+  form.set("filter_radius", "3");
   form.set("language", "zh");
   form.set("audio", audioBlob(), "input.wav");
   for (const [key, value] of Object.entries(overrides)) {

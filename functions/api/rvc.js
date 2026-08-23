@@ -13,14 +13,19 @@ const MAX_REQUEST_BYTES = 25 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 const ALLOWED_FIELDS = new Set([
   "modelId",
+  "model_id",
   "pitch",
   "indexRate",
+  "index_rate",
   "protect",
   "f0Method",
+  "f0_method",
   "format",
   "resample",
   "rmsMixRate",
+  "rms_mix_rate",
   "filterRadius",
+  "filter_radius",
   "language",
   "audio",
 ]);
