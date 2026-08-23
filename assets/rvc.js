@@ -13,6 +13,12 @@
   const CLOUD_MODELS_TIMEOUT_MS = 20000;
   const CLOUD_STATUS_ATTEMPTS = 2;
   const CLOUD_CONVERT_TIMEOUT_MS = 220000;
+  // Android WebViews and several in-app Chinese browsers are inconsistent at
+  // reading duration metadata from a Blob-backed 40 kHz WAV. The inference
+  // itself is fine, but their native audio controls can display 0:00 / 0:00.
+  // Keep lossless WAV for desktop and request a high-bitrate MP3 only where
+  // the browser needs the broadly supported container.
+  const MOBILE_AUDIO_USER_AGENT = /Android|iPhone|iPad|iPod|Mobile|MicroMessenger|MQQBrowser|QQBrowser|UCBrowser|Quark|ByteDance|Douyin/iu;
   const OFFICIAL_RVC_ENDPOINT = String(globalThis.POSTPREP_RVC_API_ENDPOINT || "/rvc").trim();
   const OFFICIAL_RVC_STATUS_ENDPOINT = String(globalThis.POSTPREP_RVC_STATUS_ENDPOINT || "/rvc/status").trim();
   const OFFICIAL_RVC_MODELS_ENDPOINT = String(globalThis.POSTPREP_RVC_MODELS_ENDPOINT || "/rvc/models").trim();
@@ -919,7 +925,7 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
-  const CHARACTER_MODEL_ASSET_VERSION = "20260823-v32";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260823-v33";
 
   function characterModelCacheKey(model) {
     const id = String(model?.id || "character");
@@ -1702,6 +1708,40 @@
     throw lastError || new Error("下载音频失败");
   }
 
+  function preferredCloudOutputFormat() {
+    try {
+      const ua = String(globalThis.navigator?.userAgent || "");
+      const uaMobile = globalThis.navigator?.userAgentData?.mobile === true;
+      return uaMobile || MOBILE_AUDIO_USER_AGENT.test(ua) ? "mp3" : "wav";
+    } catch {
+      return "wav";
+    }
+  }
+
+  function cloudAudioMimeType(format) {
+    return format === "mp3" ? "audio/mpeg" : "audio/wav";
+  }
+
+  async function normalizeCloudAudioBlob(blob, format) {
+    if (!blob || !Number.isFinite(blob.size) || blob.size < 44 || blob.size > 100 * 1024 * 1024) {
+      throw new Error("返回音频数据异常");
+    }
+    const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
+    const ascii = (from, to) => String.fromCharCode(...bytes.slice(from, to));
+    if (format === "wav") {
+      if (ascii(0, 4) !== "RIFF" || ascii(8, 12) !== "WAVE") {
+        throw new Error("返回结果不是有效 WAV 音频");
+      }
+    } else {
+      const hasId3 = ascii(0, 3) === "ID3";
+      const hasMpegFrame = bytes.length >= 2 && bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0;
+      if (!hasId3 && !hasMpegFrame) throw new Error("返回结果不是有效 MP3 音频");
+    }
+    // Explicitly attach a browser-recognised MIME type. Some mobile WebViews
+    // discard the upstream Content-Type when Response.blob() creates the URL.
+    return new Blob([blob], { type: cloudAudioMimeType(format) });
+  }
+
   function displayMetadataForRemote(remote) {
     const local = state.catalog.find((item) => item.id === remote.id) || EMBEDDED_RVC_CATALOG.find((item) => item.id === remote.id);
     const remoteLicense = typeof remote.license === "string" ? remote.license : "unverified";
@@ -2190,7 +2230,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v32", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v33", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -2420,7 +2460,8 @@
       body.set("indexRate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("protect", String(protect));
       body.set("f0Method", "rmvpe");
-      body.set("format", "wav");
+      const outputFormat = preferredCloudOutputFormat();
+      body.set("format", outputFormat);
       body.set("resample", "0");
       body.set("rmsMixRate", String(rmsMixRate));
       body.set("filterRadius", String(filterRadius));
@@ -2512,8 +2553,7 @@
 
       const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
       const outputResponse = await fetchResponseWithRetry(outputUrl);
-      const outputBlob = await outputResponse.blob();
-      if (!outputBlob.size || outputBlob.size > 100 * 1024 * 1024) throw new Error("返回音频数据异常");
+      const outputBlob = await normalizeCloudAudioBlob(await outputResponse.blob(), outputFormat);
 
       if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
       state.resultUrl = URL.createObjectURL(outputBlob);
@@ -2523,7 +2563,7 @@
       }
       if (resultDownload) {
         resultDownload.href = state.resultUrl;
-        resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.wav`;
+        resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.${outputFormat}`;
       }
       const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
       if (resultMeta) {
@@ -2531,7 +2571,7 @@
           model: selectedModel.name,
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        }) + " · 云端 PyTorch RVC";
+        }) + ` · 云端 PyTorch RVC · ${outputFormat.toUpperCase()}`;
       }
       if (resultSection) {
         resultSection.hidden = false;

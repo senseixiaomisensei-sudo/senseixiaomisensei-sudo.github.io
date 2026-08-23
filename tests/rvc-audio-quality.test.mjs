@@ -136,7 +136,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260823-v32/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260823-v33/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);
@@ -157,9 +157,13 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260823-v32/u);
-  assert.match(runtime, /v=20260823-v32/u);
-  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260823-v32"/u);
+  assert.match(client, /v=20260823-v33/u);
+  assert.match(client, /function preferredCloudOutputFormat\(\)/u);
+  assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
+  assert.match(client, /body\.set\("format", outputFormat\)/u);
+  assert.match(client, /normalizeCloudAudioBlob\(await outputResponse\.blob\(\), outputFormat\)/u);
+  assert.match(runtime, /v=20260823-v33/u);
+  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260823-v33"/u);
   assert.match(client, /characterModelCacheKey\(selectedModel\)/u);
   assert.match(client, /chunks\.map\(versionCharacterChunkPath\)/u);
   assert.match(page, /id="rvc-index-rate"[^>]*value="0\.3"/u);
