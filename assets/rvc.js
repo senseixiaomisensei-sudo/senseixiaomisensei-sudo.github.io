@@ -22,6 +22,7 @@
   const OFFICIAL_RVC_ENDPOINT = String(globalThis.POSTPREP_RVC_API_ENDPOINT || "/rvc").trim();
   const OFFICIAL_RVC_STATUS_ENDPOINT = String(globalThis.POSTPREP_RVC_STATUS_ENDPOINT || "/rvc/status").trim();
   const OFFICIAL_RVC_MODELS_ENDPOINT = String(globalThis.POSTPREP_RVC_MODELS_ENDPOINT || "/rvc/models").trim();
+  const OFFICIAL_RVC_MEDIA_ENDPOINT = String(globalThis.POSTPREP_RVC_MEDIA_ENDPOINT || "").trim();
   // 本机 edge-tts 服务（rvc-service）地址。
   // 优先级：locaStorage 里"一键适配"保存的地址 > 全局注入 __RVC_TTS_BASE__（postprep-config.js）> 同源。
   // 这样"一键适配"写入本地后立即生效，且支持"全机适配"局域网 IP。
@@ -1893,6 +1894,47 @@
     };
   }
 
+  function officialMediaUrl(jobId, token) {
+    const current = globalThis.location;
+    const hostname = String(current?.hostname || "").toLowerCase();
+    let base = "";
+    if (hostname.endsWith(".github.io")) {
+      base = OFFICIAL_RVC_MEDIA_ENDPOINT;
+    } else if (current?.protocol === "https:") {
+      base = new URL("/rvc-media", current.origin).toString();
+    }
+    if (!base) return "";
+    return `${base.replace(/\/+$/u, "")}/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`;
+  }
+
+  function attachResultAudio(audio, sourceUrl, crossOrigin) {
+    if (!audio || !sourceUrl) return Promise.reject(new Error("播放器地址未就绪"));
+    return new Promise((resolve, reject) => {
+      const finish = (error) => {
+        clearTimeout(timer);
+        audio.removeEventListener("loadedmetadata", onMetadata);
+        audio.removeEventListener("error", onError);
+        if (error) reject(error);
+        else resolve();
+      };
+      const onMetadata = () => {
+        if (Number.isFinite(audio.duration) && audio.duration > 0) finish();
+        else finish(new Error("播放器没有读到有效时长"));
+      };
+      const onError = () => finish(new Error(audio.error?.message || "播放器拒绝加载音频"));
+      const timer = setTimeout(() => finish(new Error("播放器读取音频元数据超时")), 30000);
+      audio.pause();
+      audio.removeAttribute("src");
+      if (crossOrigin) audio.crossOrigin = "anonymous";
+      else audio.removeAttribute("crossorigin");
+      audio.preload = "metadata";
+      audio.addEventListener("loadedmetadata", onMetadata, { once: true });
+      audio.addEventListener("error", onError, { once: true });
+      audio.src = sourceUrl;
+      audio.load();
+    });
+  }
+
   function setInferenceMode(mode) {
     state.inferenceMode = mode === "local" ? "local" : "official";
     try {
@@ -2230,7 +2272,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v33", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v34", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const rvc = createRVC({
@@ -2557,13 +2599,14 @@
 
       if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
       state.resultUrl = URL.createObjectURL(outputBlob);
-      if (resultAudio) {
-        resultAudio.src = state.resultUrl;
-        resultAudio.load();
-      }
       if (resultDownload) {
         resultDownload.href = state.resultUrl;
         resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.${outputFormat}`;
+      }
+      if (resultAudio) {
+        const mediaUrl = officialMediaUrl(payload.jobId, payload.downloadToken);
+        await attachResultAudio(resultAudio, mediaUrl || state.resultUrl, Boolean(mediaUrl));
+        resultAudio.hidden = false;
       }
       const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
       if (resultMeta) {

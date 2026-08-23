@@ -16,6 +16,7 @@ const { onRequest: rvcRequest } = await importFunction("../functions/api/rvc.js"
 const { onRequest: rvcStatusRequest } = await importFunction("../functions/api/rvc-status.js");
 const { onRequest: rvcModelsRequest } = await importFunction("../functions/api/rvc-models.js");
 const { onRequest: rvcOutputRequest } = await importFunction("../functions/api/rvc-output.js");
+const { serveRvcMedia } = await importFunction("../functions/api/_rvc-media.js");
 
 const SITE_ORIGIN = "https://senseixiaomisensei-sudo.github.io";
 const JOB_ID = "11111111-2222-3333-8444-555555555555";
@@ -255,4 +256,49 @@ test("rvc output requires an internal gateway and a constrained job token", asyn
   const body = await response.json();
   assert.equal(response.status, 403);
   assert.equal(body.code, "GATEWAY_NOT_ALLOWED");
+});
+
+test("rvc media route streams only a constrained short-lived output capability", async () => {
+  const originalFetch = globalThis.fetch;
+  let forwarded;
+  globalThis.fetch = async (url, options = {}) => {
+    forwarded = { url: String(url), options };
+    return new Response(audioBlob(), {
+      status: 200,
+      headers: { "Content-Type": "audio/wav", "Content-Length": "8", "Accept-Ranges": "bytes" },
+    });
+  };
+  try {
+    const request = new Request(`https://postprep-ae6.pages.dev/rvc-media/${JOB_ID}?token=${DOWNLOAD_TOKEN}`, {
+      headers: { Origin: SITE_ORIGIN, Range: "bytes=0-7" },
+    });
+    const response = await serveRvcMedia({ request, env: BASE_ENV, params: { job: JOB_ID } });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("Content-Type"), "audio/wav");
+    assert.equal(response.headers.get("Content-Disposition"), 'inline; filename="postprep-rvc-preview"');
+    assert.equal(forwarded.url, `https://gpu.example/v1/output/${JOB_ID}?token=${DOWNLOAD_TOKEN}`);
+    assert.equal(forwarded.options.headers.Authorization, `Bearer ${BASE_ENV.RVC_INFERENCE_TOKEN}`);
+    assert.equal(forwarded.options.headers.Range, "bytes=0-7");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rvc media route rejects an invalid capability before reaching the backend", async () => {
+  const originalFetch = globalThis.fetch;
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    throw new Error("unexpected fetch");
+  };
+  try {
+    const request = new Request(`https://postprep-ae6.pages.dev/rvc-media/not-a-job?token=bad`, {
+      headers: { Origin: SITE_ORIGIN },
+    });
+    const response = await serveRvcMedia({ request, env: BASE_ENV, params: { job: "not-a-job" } });
+    assert.equal(response.status, 404);
+    assert.equal(called, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

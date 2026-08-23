@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' blob: data: http: https: https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://testingcf.jsdelivr.net https://gcore.jsdelivr.net https://*.jsdelivr.net https://cdn.jsdmirror.com https://gh-proxy.com https://raw.githubusercontent.com https://huggingface.co https://*.hf.co https://postprep-text-gateway.postprep.workers.dev; media-src 'self' blob: https://postprep-text-gateway.postprep.workers.dev data:; worker-src 'self' blob:; frame-src 'none'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' blob: data: http: https: https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://testingcf.jsdelivr.net https://gcore.jsdelivr.net https://*.jsdelivr.net https://cdn.jsdmirror.com https://gh-proxy.com https://raw.githubusercontent.com https://huggingface.co https://*.hf.co https://postprep-text-gateway.postprep.workers.dev; media-src 'self' blob: data: https://postprep-text-gateway.postprep.workers.dev https://postprep-ae6.pages.dev; worker-src 'self' blob:; frame-src 'none'; form-action 'self'">
   <meta name="description" content="PostPrep AI 变声器：选择角色声音，上传或录制一段声音，一键变成角色音色。RVC 声音转换，简单三步。">
   <meta name="theme-color" content="#0F766E">
   <title>AI 变声器 | PostPrep</title>
@@ -22,7 +22,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-              <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v33（云端 RVC 引擎 + 本地兼容双模式）
+              <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v34（云端 RVC 引擎 + 本地兼容双模式）
         </span>
       </div>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
@@ -330,8 +330,8 @@
 
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
-  <script src="assets/postprep-config.js?v=20260820-v10"></script>
+  <script src="assets/postprep-config.js?v=20260823-v11"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-<script src="assets/rvc.js?v=20260823-v33"></script>
+<script src="assets/rvc.js?v=20260823-v34"></script>
 </body>
 </html>

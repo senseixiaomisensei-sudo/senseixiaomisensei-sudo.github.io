@@ -20,7 +20,8 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(page, /id="rvc-record-toggle"/);
   assert.match(page, /id="rvc-convert"[^>]*aria-describedby="rvc-service-status"/);
   assert.match(page, /id="toast"[^>]*w-\[calc\(100%-2rem\)\]/);
-  assert.match(page, /media-src 'self' blob: https:\/\/postprep-text-gateway\.postprep\.workers\.dev/);
+  assert.match(page, /media-src 'self' blob:[^;]*https:\/\/postprep-text-gateway\.postprep\.workers\.dev/);
+  assert.match(page, /media-src[^;]*https:\/\/postprep-ae6\.pages\.dev/);
   assert.match(page, /assets\/rvc\.css/);
 
   assert.match(client, /decodeAudioData/);
@@ -34,6 +35,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.doesNotMatch(client, /I HAVE THE RIGHTS/);
 
   assert.match(config, /POSTPREP_RVC_API_ENDPOINT/);
+  assert.match(config, /POSTPREP_RVC_MEDIA_ENDPOINT/);
   assert.doesNotMatch(config, /POSTPREP_VOICE_API_ENDPOINT/);
 
   const catalogPayload = JSON.parse(catalog);
