@@ -151,6 +151,7 @@ function requestRoute(request) {
       method: "GET",
       rateBinding: TEXT_RATE_LIMITER_BINDING,
       ratePrefix: "rvc-output",
+      skipRateLimit: true,
       message: "Use GET for voice output",
       jobId,
       token,
@@ -316,11 +317,13 @@ export default {
       return failure(request, env, 503, code, "Cloud processing safeguards are not configured");
     }
 
-    const rateLimit = await enforceRateLimit(request, env, route.rateBinding, route.ratePrefix);
-    if (rateLimit.error) {
-      const response = failure(request, env, rateLimit.error.status, rateLimit.error.code, rateLimit.error.message);
-      if (rateLimit.error.status === 429) response.headers.set("Retry-After", "60");
-      return response;
+    if (!route.skipRateLimit) {
+      const rateLimit = await enforceRateLimit(request, env, route.rateBinding, route.ratePrefix);
+      if (rateLimit.error) {
+        const response = failure(request, env, rateLimit.error.status, rateLimit.error.code, rateLimit.error.message);
+        if (rateLimit.error.status === 429) response.headers.set("Retry-After", "60");
+        return response;
+      }
     }
 
     const headers = new Headers();

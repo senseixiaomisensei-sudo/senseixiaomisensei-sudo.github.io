@@ -86,4 +86,23 @@ uv venv --python 3.12 $resolvedVenv
 $venvPython = Join-Path $resolvedVenv 'Scripts\python.exe'
 uv pip install --python $venvPython torch==2.7.1+cu128 torchaudio==2.7.1+cu128 --index-url https://download.pytorch.org/whl/cu128
 uv pip install --python $venvPython -r (Join-Path $PSScriptRoot 'requirements.txt')
+$separatorRoot = Join-Path $runtimeParent 'pymss-models'
+$separatorModel = Join-Path $separatorRoot 'vocal\vocal_extraction\model_bs_roformer_ep_368_sdr_12.9628.ckpt'
+$separatorConfig = Join-Path $separatorRoot 'vocal\vocal_extraction\model_bs_roformer_ep_368_sdr_12.9628.yaml'
+$separatorModelHash = 'f6c94864adfb73bbb0ca58ec14d58dd0b364549e9fb61433ae51916f3e2f8d0b'
+$separatorConfigHash = '3dae086b481bc6adecccb6bdfd2386ffd78708e11c221876a146972cab5b2afe'
+if (-not (Test-Path -LiteralPath $separatorModel) -or -not (Test-Path -LiteralPath $separatorConfig)) {
+  & $venvPython -m pymss.cli download model_bs_roformer_ep_368_sdr_12.9628.ckpt --model-dir $separatorRoot --source modelscope
+  if ($LASTEXITCODE -ne 0) {
+    throw 'PyMSS separator model download failed.'
+  }
+}
+if ((Get-Item -LiteralPath $separatorModel).Length -ne 639317465 -or
+    (Get-FileHash -LiteralPath $separatorModel -Algorithm SHA256).Hash.ToLowerInvariant() -ne $separatorModelHash) {
+  throw 'PyMSS separator checkpoint integrity check failed.'
+}
+if ((Get-Item -LiteralPath $separatorConfig).Length -ne 2279 -or
+    (Get-FileHash -LiteralPath $separatorConfig -Algorithm SHA256).Hash.ToLowerInvariant() -ne $separatorConfigHash) {
+  throw 'PyMSS separator config integrity check failed.'
+}
 Write-Host "Official RVC Python environment ready: $resolvedVenv"

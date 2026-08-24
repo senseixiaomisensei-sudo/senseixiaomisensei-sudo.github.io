@@ -41,7 +41,9 @@ test("training UI uploads multiple authorized clips and separates trained models
   assert.match(client, /postprep_rvc_training_job_v1/u);
   assert.match(client, /model\.trained === true/u);
   assert.match(client, /initBody\.set\("collection_name", collectionName\)/u);
-  assert.match(client, /collection\.models\.forEach/u);
+  assert.match(client, /function renderCollectionNav/u);
+  assert.match(client, /function renderModelCards/u);
+  assert.match(client, /function trainedCollectionId/u);
   assert.match(client, /escapeHtml/u);
 });
 

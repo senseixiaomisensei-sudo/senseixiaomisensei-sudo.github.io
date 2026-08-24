@@ -9,7 +9,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PYTHONPATH=/opt/rvc-service \
-    RVC_OFFICIAL_ROOT=/opt/rvc-official
+    RVC_OFFICIAL_ROOT=/opt/rvc-official \
+    RVC_SEPARATOR_MODELS_DIR=/opt/pymss-models \
+    RVC_SEPARATOR_MODEL=model_bs_roformer_ep_368_sdr_12.9628.ckpt \
+    RVC_SEPARATOR_DEVICE=cuda
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 python3-pip python3-venv git curl ca-certificates ffmpeg libsndfile1 \
@@ -24,6 +27,9 @@ RUN python -m pip install --upgrade pip \
 WORKDIR /opt/rvc-service
 COPY requirements.txt ./
 RUN python -m pip install -r requirements.txt
+RUN python -m pymss.cli download model_bs_roformer_ep_368_sdr_12.9628.ckpt --model-dir ${RVC_SEPARATOR_MODELS_DIR} --source modelscope \
+    && echo "f6c94864adfb73bbb0ca58ec14d58dd0b364549e9fb61433ae51916f3e2f8d0b  ${RVC_SEPARATOR_MODELS_DIR}/vocal/vocal_extraction/model_bs_roformer_ep_368_sdr_12.9628.ckpt" | sha256sum -c - \
+    && echo "3dae086b481bc6adecccb6bdfd2386ffd78708e11c221876a146972cab5b2afe  ${RVC_SEPARATOR_MODELS_DIR}/vocal/vocal_extraction/model_bs_roformer_ep_368_sdr_12.9628.yaml" | sha256sum -c -
 
 RUN git clone --filter=blob:none --no-checkout https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git ${RVC_OFFICIAL_ROOT} \
     && git -C ${RVC_OFFICIAL_ROOT} fetch --depth 1 origin ${RVC_COMMIT} \

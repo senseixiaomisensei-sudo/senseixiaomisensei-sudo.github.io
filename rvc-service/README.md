@@ -19,6 +19,9 @@ after 15 minutes by default.
   pipeline: preprocessing, RMVPE F0, HuBERT features, pretrained G/D fine
   tuning, and FAISS index construction. Training audio is removed when the
   task completes, fails, or is cancelled.
+- Song conversion uses the PyMSS/MSST separator adopted by current official
+  RVC: split vocals/instrumental, run only the vocal stem through the unchanged
+  RVC inference path, then align and remix it with the separated backing stem.
 
 ## Required server environment
 
@@ -26,7 +29,10 @@ after 15 minutes by default.
 RVC_GATEWAY_TOKEN=<same high-entropy value as Cloudflare Pages RVC_INFERENCE_TOKEN>
 RVC_MODELS_DIR=/models/rvc
 RVC_OFFICIAL_ROOT=/opt/rvc-official
-RVC_OUTPUT_RETENTION_SECONDS=900
+RVC_SEPARATOR_MODELS_DIR=/models/pymss
+RVC_SEPARATOR_MODEL=model_bs_roformer_ep_368_sdr_12.9628.ckpt
+RVC_SEPARATOR_DEVICE=cuda
+RVC_OUTPUT_RETENTION_SECONDS=7200
 RVC_MAX_CONCURRENCY=1
 ```
 
@@ -88,7 +94,7 @@ All endpoints require `Authorization: Bearer <RVC_GATEWAY_TOKEN>`.
 | --- | --- | --- |
 | GET | `/healthz` | readiness probe |
 | GET | `/v1/models` | list mounted models |
-| POST | `/v1/convert` | multipart: `model_id`, `audio`, `pitch`, `index_rate`, `protect`, `filter_radius`, `resample`, `rms_mix_rate`, `f0_method`, `format`, `language` |
+| POST | `/v1/convert` | multipart: `model_id`, `audio`, `audio_mode=voice|song`, `pitch`, `index_rate`, `protect`, `filter_radius`, `resample`, `rms_mix_rate`, `f0_method`, `format`, `language` |
 | GET | `/v1/output/{job_id}?token=...` | download a generated file |
 | POST | `/v1/training/init` | create a named, token-protected training job |
 | POST | `/v1/training/{job_id}/audio/{slot}?token=...` | upload one training clip |

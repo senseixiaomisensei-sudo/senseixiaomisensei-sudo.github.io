@@ -20,11 +20,14 @@ const helpers = Function(`
   "use strict";
   const CLOUD_CONVERT_TIMEOUT_MS = 220000;
   const CLOUD_MAX_CONVERT_TIMEOUT_MS = 600000;
+  const CLOUD_MAX_LONG_JOB_TIMEOUT_MS = 45 * 60 * 1000;
+  const LONG_AUDIO_THRESHOLD_SECONDS = 45;
   const CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND = 64 * 1024;
   ${extractFunction("encodeMono16kWav")}
   ${extractFunction("prepareCloudUploadAudio")}
   ${extractFunction("cloudRequestTimeoutMs")}
-  return { encodeMono16kWav, prepareCloudUploadAudio, cloudRequestTimeoutMs };
+  ${extractFunction("cloudJobTimeoutMs")}
+  return { encodeMono16kWav, prepareCloudUploadAudio, cloudRequestTimeoutMs, cloudJobTimeoutMs };
 `)();
 
 test("large WAV uploads are reduced to 16 kHz mono without shortening the clip", () => {
@@ -54,6 +57,18 @@ test("already compact short MP3 uploads stay untouched", () => {
   assert.equal(prepared.file, original);
 });
 
+test("song mode preserves the original full-band stereo-capable upload", () => {
+  const original = new File([new Uint8Array(512 * 1024)], "song.mp3", { type: "audio/mpeg" });
+  const prepared = helpers.prepareCloudUploadAudio({
+    file: original,
+    float32: new Float32Array(16000 * 20),
+    duration: 20,
+  }, "song");
+  assert.equal(prepared.optimized, false);
+  assert.equal(prepared.preservesMix, true);
+  assert.equal(prepared.file, original);
+});
+
 test("browser microphone recordings are normalized to a standard WAV before cloud upload", () => {
   const original = new File([new Uint8Array(32 * 1024)], "mic_recording_1787536560938.webm", { type: "audio/webm" });
   const samples = new Float32Array(16000 * 3);
@@ -73,4 +88,12 @@ test("long uploads receive a size-aware timeout instead of the old fixed cutoff"
   assert.ok(timeout > 500000);
   assert.ok(timeout <= 600000);
   assert.equal(helpers.cloudRequestTimeoutMs(100 * 1024, 4), 220000);
+  assert.equal(helpers.cloudRequestTimeoutMs(100 * 1024, 180, "song"), 600000);
+});
+
+test("short job timing remains unchanged while long jobs receive a durable window", () => {
+  assert.equal(helpers.cloudJobTimeoutMs(4, "voice"), 220000);
+  assert.ok(helpers.cloudJobTimeoutMs(60, "voice") >= 12 * 60 * 1000);
+  assert.ok(helpers.cloudJobTimeoutMs(600, "song") >= 40 * 60 * 1000);
+  assert.ok(helpers.cloudJobTimeoutMs(600, "song") <= 45 * 60 * 1000);
 });

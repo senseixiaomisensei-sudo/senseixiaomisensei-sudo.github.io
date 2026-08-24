@@ -18,6 +18,11 @@ documentation. It does not replace licenses attached to third-party materials.
   by size/SHA-256 where applicable. Character/performer weights are not covered
   by the upstream code license; operators must separately verify their source,
   model terms, consent and redistribution rights.
+- The optional song-separation path uses MIT-licensed **pymss 2.0.14** and
+  **pymss-core 0.1.4**. Its BS-RoFormer vocal-separation checkpoint is fetched
+  during operator setup, verified by exact size and SHA-256, and is not committed
+  to this repository. The checkpoint's training-data and model-specific usage
+  terms must be reviewed separately from the PyMSS source-code license.
 - The v31 public community character-model source URLs, pinned checkpoint/index
   SHA-256 values and technical acceptance evidence are listed in
   `docs/RVC_V31_MODEL_SOURCES.md` and `docs/rvc-v31-quality-evidence.json`.

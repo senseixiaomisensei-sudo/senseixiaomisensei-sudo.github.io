@@ -32,6 +32,9 @@ $env:RVC_OFFICIAL_ROOT = $officialRoot
 $env:RVC_RUNTIME_CACHE = 'D:\rvc-cache'
 $env:RVC_WORK_ROOT = Join-Path $resolvedRuntime 'work'
 $env:RVC_OUTPUT_ROOT = Join-Path $resolvedRuntime 'output'
+$env:RVC_SEPARATOR_MODELS_DIR = Join-Path $resolvedRuntime 'pymss-models'
+$env:RVC_SEPARATOR_MODEL = 'model_bs_roformer_ep_368_sdr_12.9628.ckpt'
+$env:RVC_SEPARATOR_DEVICE = 'cuda'
 $env:RVC_MAX_CONCURRENCY = '1'
 $env:PYTHONPATH = $serviceRoot
 

@@ -27,6 +27,8 @@ const ALLOWED_FIELDS = new Set([
   "filterRadius",
   "filter_radius",
   "language",
+  "audioMode",
+  "audio_mode",
   "requestId",
   "request_id",
   "audio",
@@ -47,6 +49,7 @@ const ALLOWED_MIME_TYPES = new Set([
 const ALLOWED_FORMATS = new Set(["wav", "mp3"]);
 const ALLOWED_F0_METHODS = new Set(["auto", "rmvpe", "fcpe", "pm"]);
 const ALLOWED_RESAMPLE = new Set(["0", "16000", "24000", "32000", "44100", "48000"]);
+const ALLOWED_AUDIO_MODES = new Set(["voice", "song"]);
 
 function declaredRequestIsTooLarge(request) {
   const contentLength = Number.parseInt(request.headers.get("Content-Length") || "", 10);
@@ -133,6 +136,22 @@ const UPSTREAM_ERROR_MESSAGES = Object.freeze({
     zh: "本机正在训练新模型，当前变声任务将在训练结束后恢复",
     en: "The GPU is training a new model; conversion resumes after training",
   }),
+  RVC_SEPARATOR_UNAVAILABLE: Object.freeze({
+    zh: "伴奏分离模型尚未在 GPU 服务上就绪，请稍后重试",
+    en: "The vocal separation model is not ready on the GPU service",
+  }),
+  RVC_SEPARATION_TIMEOUT: Object.freeze({
+    zh: "歌曲人声分离耗时过长，请裁短音频后重试",
+    en: "Vocal separation took too long; trim the song and retry",
+  }),
+  RVC_SEPARATION_FAILED: Object.freeze({
+    zh: "这段混音的人声与伴奏分离失败，请换清晰度更高的音频重试",
+    en: "The vocal/instrumental split failed; try a clearer source",
+  }),
+  RVC_REMIX_FAILED: Object.freeze({
+    zh: "人声变声已完成，但与原伴奏回混失败，请重试",
+    en: "Voice conversion finished, but remixing with the backing track failed",
+  }),
   UNAUTHORIZED: Object.freeze({
     zh: "推理服务密钥不一致，需要管理员重新同步服务端配置",
     en: "The inference service token mismatched; an admin must resync the server config",
@@ -183,6 +202,7 @@ export async function onRequest(context) {
   const rmsMixRate = valueAsString(formData, "rmsMixRate");
   const filterRadius = valueAsString(formData, "filterRadius");
   const requestedLanguage = valueAsString(formData, "language") === "en" ? "en" : "zh";
+  const audioMode = valueAsString(formData, "audioMode") || valueAsString(formData, "audio_mode") || "voice";
   const requestId = valueAsString(formData, "requestId");
   const audio = valueAsFile(formData, "audio");
 
@@ -197,6 +217,7 @@ export async function onRequest(context) {
   if (!validInteger(filterRadius, 0, 7)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Filter radius must be between 0 and 7");
   if (requestId && !/^[A-Za-z0-9_-]{16,80}$/u.test(requestId)) return failure(request, env, 400, "RVC_INVALID_REQUEST_ID", "Invalid conversion request id");
   if (!validAudio(audio)) return failure(request, env, 400, "RVC_INVALID_AUDIO", "Use a permitted audio file");
+  if (!ALLOWED_AUDIO_MODES.has(audioMode)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose a supported audio mode");
 
   const backend = configuredRvcBackend(env);
   if (!backend) return failure(request, env, 503, "RVC_BACKEND_NOT_CONFIGURED", "Voice conversion is not configured");
@@ -212,6 +233,7 @@ export async function onRequest(context) {
   upstreamBody.set("rms_mix_rate", rmsMixRate);
   upstreamBody.set("filter_radius", filterRadius);
   upstreamBody.set("language", requestedLanguage);
+  upstreamBody.set("audio_mode", audioMode);
   if (requestId) upstreamBody.set("request_id", requestId);
   upstreamBody.set("audio", audio, safeFilename(audio, "input"));
 

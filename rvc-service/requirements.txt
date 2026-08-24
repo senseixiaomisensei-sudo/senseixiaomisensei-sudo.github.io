@@ -18,3 +18,7 @@ soundfile>=0.13.0,<1
 tensorboard>=2.19.0,<3
 transformers>=4.49.0,<4.50
 torchfcpe>=0.0.4,<0.1
+
+# Pinned official-RVC 2026 vocal/accompaniment separation backend.
+pymss==2.0.14
+pymss-core==0.1.4

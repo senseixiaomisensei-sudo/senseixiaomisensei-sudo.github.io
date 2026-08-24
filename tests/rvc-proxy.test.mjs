@@ -48,6 +48,8 @@ function rvcForm(overrides = {}) {
   form.set("filterRadius", "3");
   form.set("filter_radius", "3");
   form.set("language", "zh");
+  form.set("audioMode", "voice");
+  form.set("audio_mode", "voice");
   form.set("requestId", "request_id_1234567890abcdef");
   form.set("request_id", "request_id_1234567890abcdef");
   form.set("audio", audioBlob(), "input.wav");
@@ -150,6 +152,7 @@ test("rvc endpoint sends only sanitized fields to the fixed GPU backend", async 
     assert.equal(upstream.options.body.get("request_id"), "request_id_1234567890abcdef");
     assert.equal(upstream.options.body.get("audio").name, "input.wav");
     assert.equal(upstream.options.body.get("language"), "zh");
+    assert.equal(upstream.options.body.get("audio_mode"), "voice");
   } finally {
     mocked.restore();
   }
@@ -267,6 +270,19 @@ test("rvc output requires an internal gateway and a constrained job token", asyn
   const body = await response.json();
   assert.equal(response.status, 403);
   assert.equal(body.code, "GATEWAY_NOT_ALLOWED");
+});
+
+test("rvc endpoint forwards song mode only as the constrained server field", async () => {
+  const mocked = mockRvcFetch();
+  try {
+    const response = await rvcRequest(context({ form: rvcForm({ audioMode: "song", audio_mode: "song" }) }));
+    assert.equal(response.status, 200);
+    const upstream = mocked.calls[0].options.body;
+    assert.equal(upstream.get("audio_mode"), "song");
+    assert.equal(upstream.has("audioMode"), false);
+  } finally {
+    mocked.restore();
+  }
 });
 
 test("rvc output preserves an asynchronous processing response", async () => {

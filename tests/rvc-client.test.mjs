@@ -28,7 +28,10 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(page, /data-page="rvc"/);
   assert.match(page, /viewport-fit=cover/);
   assert.match(page, /id="rvc-model-gallery"/);
+  assert.match(page, /id="rvc-collection-nav"/);
+  assert.match(page, /id="rvc-create-collection"/);
   assert.match(page, /id="rvc-audio-file"/);
+  assert.match(page, /id="rvc-audio-mode-song"/);
   assert.match(page, /id="rvc-record-toggle"/);
   assert.match(page, /id="rvc-convert"[^>]*aria-describedby="rvc-service-status"/);
   assert.match(page, /id="toast"[^>]*w-\[calc\(100%-2rem\)\]/);
@@ -55,6 +58,9 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /body\.set\("rms_mix_rate"/u);
   assert.match(client, /body\.set\("filter_radius"/u);
+  assert.match(client, /body\.set\("audio_mode", state\.audioMode\)/u);
+  assert.match(client, /function renderCollectionNav\(\)/u);
+  assert.match(client, /postprep_rvc_custom_collections_v1/u);
   assert.doesNotMatch(client, /正在上传音频… \$\{pct\}%/u);
   assert.doesNotMatch(client, /RVC_INFERENCE_TOKEN/);
   assert.doesNotMatch(client, /api\.github\.com/);
@@ -80,7 +86,8 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /formatTransferredBytes\(bytesPerSecond\)/u);
   assert.match(client, /诊断号 \$\{error\.requestId\}/u);
   assert.match(client, /createCloudRequestId/u);
-  assert.match(client, /pollCloudOutput\(outputUrl, requestTimeoutMs\)/u);
+  assert.match(client, /pollCloudOutput\(outputUrl, jobTimeoutMs, longJob\)/u);
+  assert.match(client, /downloadLongCloudOutput\(outputUrl, outputResponse, outputFormat, jobTimeoutMs\)/u);
   assert.match(client, /Protected media route failed; using the already downloaded result blob/u);
   assert.match(client, /let base = OFFICIAL_RVC_MEDIA_ENDPOINT/u);
   assert.doesNotMatch(client, /setTimeout\(probeTts,\s*1000\)/u);

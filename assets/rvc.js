@@ -4,7 +4,8 @@
   const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
   const MIN_AUDIO_SECONDS = 0.5;
   const WARN_AUDIO_SECONDS = 2;
-  const MAX_AUDIO_SECONDS = 180;
+  const MAX_AUDIO_SECONDS = 600;
+  const LONG_AUDIO_THRESHOLD_SECONDS = 45;
   // The browser compatibility path keeps several large ONNX sessions in RAM.
   // It is intentionally limited to a short clip so mobile WebViews cannot sit
   // for minutes and then fail inside a dynamic-shape ONNX node.
@@ -14,6 +15,7 @@
   const CLOUD_STATUS_ATTEMPTS = 2;
   const CLOUD_CONVERT_TIMEOUT_MS = 220000;
   const CLOUD_MAX_CONVERT_TIMEOUT_MS = 600000;
+  const CLOUD_MAX_LONG_JOB_TIMEOUT_MS = 45 * 60 * 1000;
   const CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND = 64 * 1024;
   // Android WebViews and several in-app Chinese browsers are inconsistent at
   // reading duration metadata from a Blob-backed 40 kHz WAV. The inference
@@ -25,6 +27,7 @@
   const OFFICIAL_RVC_STATUS_ENDPOINT = String(globalThis.POSTPREP_RVC_STATUS_ENDPOINT || "/rvc/status").trim();
   const OFFICIAL_RVC_MODELS_ENDPOINT = String(globalThis.POSTPREP_RVC_MODELS_ENDPOINT || "/rvc/models").trim();
   const OFFICIAL_RVC_MEDIA_ENDPOINT = String(globalThis.POSTPREP_RVC_MEDIA_ENDPOINT || "").trim();
+  const COLLECTION_STORAGE_KEY = "postprep_rvc_custom_collections_v1";
   // 本机 edge-tts 服务（rvc-service）地址。
   // 优先级：locaStorage 里"一键适配"保存的地址 > 全局注入 __RVC_TTS_BASE__（postprep-config.js）> 同源。
   // 这样"一键适配"写入本地后立即生效，且支持"全机适配"局域网 IP。
@@ -80,14 +83,14 @@
       workflowTitle: "三步完成变声",
       privacyBadge: "受保护 GPU 推理 · 用完即删",
       stepModel: "1. 选择角色声音",
-      stepModelHint: "点击卡片即可选中。搜索框可快速筛选角色。",
+      stepModelHint: "先切换角色分区，再点角色卡片。搜索只查当前分区。",
       searchPlaceholder: "搜索角色…",
       modelEmpty: "没有找到匹配的角色。换个关键词试试。",
       modelCatalogTitle: "角色声音库",
       modelInstalled: "已就绪",
       modelPick: "已选择",
       stepAudio: "2. 上传或录制你的声音",
-      stepAudioHint: "建议单人、清晰、无背景噪音的说话或唱歌片段。支持 WAV、MP3、M4A、OGG、WebM 和浏览器录音。",
+      stepAudioHint: "云端模式支持最长 10 分钟；文件需在 25 MB 内，超长歌曲优先使用 MP3/M4A。",
       sourceUpload: "上传音频",
       sourceUploadHint: "选择电脑或手机里已有的录音文件。",
       sourceRecord: "录制声音",
@@ -131,7 +134,7 @@
       tipsTitle: "让效果更好",
       resultTitle: "变声结果",
       download: "下载变声结果",
-      resultDisclosure: "云端模式下，输入在任务结束后删除，输出链接短时保留；本地兼容模式不上传音频。",
+      resultDisclosure: "云端输入会在任务结束后删除，输出链接从处理完成起最多保留约 2 小时；本地兼容模式不上传音频。",
       resultMeta: "角色：{model} · 音高变调：{pitch} · 耗时：{elapsed}s · 云端 RVC 引擎",
       analyzing: "正在分析音频…",
       analysisReady: "音频已就绪：{name} · 时长 {duration} · 可以变声。",
@@ -139,7 +142,7 @@
       fileTooLarge: "文件超过大小限制 (25 MB)。",
       audioTooShort: "音频太短（不足 0.5 秒），请换一段更长的录音。",
       audioShortWarn: "音频不足 2 秒，建议使用稍长的句子获得更自然效果。",
-      audioTooLong: "音频超过 3 分钟。请裁剪后再转换，以免超过受保护网关的任务时限。",
+      audioTooLong: "音频超过 10 分钟。请裁剪后再转换。",
       decodeFailed: "无法解码此音频文件。请换成标准 WAV 或 MP3 重试。",
       missingModel: "请先选择一个角色声音。",
       missingAudio: "请先上传或录制一段你的声音。",
@@ -148,7 +151,7 @@
       noModels: "未找到可用角色模型。",
       tips: [
         "使用安静环境、单人清晰的人声录音效果最佳。",
-        "男生转女声角色建议将音高调为 +12（女转男调为 -12）。",
+        "纯录音选“纯人声”；歌曲、伴奏或复杂混音选“带伴奏翻唱”。",
         "点击变声才会上传音频；服务端输入用完即删，输出短时保留后自动删除。",
       ],
     },
@@ -162,14 +165,14 @@
       workflowTitle: "Three steps to a new voice",
       privacyBadge: "Protected GPU · Ephemeral files",
       stepModel: "1. Pick a character voice",
-      stepModelHint: "Click a card to select it. Use the search box to find a voice.",
+      stepModelHint: "Choose a collection first, then select a voice. Search stays inside the active collection.",
       searchPlaceholder: "Search voices…",
       modelEmpty: "No matching voice. Try another keyword.",
       modelCatalogTitle: "Voice library",
       modelInstalled: "Ready",
       modelPick: "Selected",
       stepAudio: "2. Upload or record your voice",
-      stepAudioHint: "A clean single-person voice clip without background noise is best. WAV, MP3, M4A, OGG, and WebM supported.",
+      stepAudioHint: "Cloud mode accepts up to 10 minutes and 25 MB. Prefer MP3/M4A for long songs.",
       sourceUpload: "Upload audio",
       sourceUploadHint: "Choose an existing audio file from your device.",
       sourceRecord: "Record voice",
@@ -213,7 +216,7 @@
       tipsTitle: "Tips",
       resultTitle: "Result",
       download: "Download result",
-      resultDisclosure: "The result is back in browser memory. Server input is deleted after the task and output expires shortly.",
+      resultDisclosure: "Cloud input is deleted after the task. Output remains available for up to about two hours after completion.",
       resultMeta: "Voice: {model} · Pitch: {pitch} · Time: {elapsed}s · Cloud RVC engine",
       analyzing: "Analyzing audio…",
       analysisReady: "Audio ready: {name} · Duration {duration} · Ready to convert.",
@@ -221,7 +224,7 @@
       fileTooLarge: "File exceeds 25 MB limit.",
       audioTooShort: "Audio is too short (under 0.5s).",
       audioShortWarn: "Audio under 2s may sound robotic. Longer speech is recommended.",
-      audioTooLong: "Audio exceeds 3 minutes. Trim it to stay within the protected gateway time limit.",
+      audioTooLong: "Audio exceeds 10 minutes. Trim it before conversion.",
       decodeFailed: "Could not decode audio. Try converting to standard MP3 or WAV.",
       missingModel: "Pick a character voice first.",
       missingAudio: "Upload or record your voice first.",
@@ -230,7 +233,7 @@
       noModels: "No character models available.",
       tips: [
         "Use a clear, quiet single-person vocal recording.",
-        "Male-to-female conversion works best with pitch +12.",
+        "Use voice mode for dry vocals and song mode for a track with accompaniment.",
         "Audio is uploaded only after Convert; source files are deleted after processing and outputs expire shortly.",
       ],
     },
@@ -1034,10 +1037,21 @@
         : tags.includes("蔚蓝档案")
           ? "蔚蓝档案"
           : "其他角色";
+    const collectionName = String(model.collectionName || inferredCollectionName).trim() || inferredCollectionName;
+    const inferredCollectionId = tags.includes("咒术回战")
+      ? "jujutsu-kaisen"
+      : tags.includes("蔚蓝档案")
+        ? "blue-archive"
+        : model.trained === true
+          ? `trained:${collectionName}`
+          : "other";
+    const configuredCollectionId = String(model.collectionId || "").trim();
     return {
       ...model,
-      collectionId: String(model.collectionId || (model.trained === true ? "trained" : "other")),
-      collectionName: String(model.collectionName || inferredCollectionName),
+      collectionId: model.trained === true && (!configuredCollectionId || configuredCollectionId === "trained")
+        ? `trained:${collectionName}`
+        : (configuredCollectionId || inferredCollectionId),
+      collectionName,
       sampleRate: Number(model.sampleRate) || CHARACTER_SAMPLE_RATES[model.id] || 40000,
       retrieval: model.retrieval || `models/characters/${model.id}/retrieval.bin`,
       noiseScale: Number.isFinite(Number(model.noiseScale)) ? Number(model.noiseScale) : 0.5,
@@ -1077,6 +1091,9 @@
     resultUrl: "",
     trainingFiles: [],
     trainingJob: null,
+    activeCollectionId: "blue-archive",
+    customCollections: [],
+    audioMode: "voice",
   };
 
   // High-Performance Concurrency Pool (5 concurrent HTTP streams for max speed)
@@ -1591,18 +1608,170 @@
     }
   }
 
+  function cleanCollectionName(value) {
+    return String(value || "")
+      .replace(/[<>]/gu, "")
+      .replace(/\s+/gu, " ")
+      .trim()
+      .slice(0, 30);
+  }
+
+  function trainedCollectionId(name) {
+    return `trained:${cleanCollectionName(name) || "我的训练模型"}`;
+  }
+
+  function loadCustomCollections() {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(COLLECTION_STORAGE_KEY) || "[]");
+      state.customCollections = Array.isArray(parsed)
+        ? [...new Set(parsed.map(cleanCollectionName).filter(Boolean))].slice(0, 24)
+        : [];
+    } catch {
+      state.customCollections = [];
+    }
+  }
+
+  function persistCustomCollections() {
+    try {
+      window.localStorage.setItem(COLLECTION_STORAGE_KEY, JSON.stringify(state.customCollections));
+    } catch {}
+  }
+
+  function collectionDefinitions() {
+    const definitions = new Map();
+    state.catalog.forEach((model) => {
+      const name = cleanCollectionName(model.collectionName) || (model.trained === true ? "我的训练模型" : "其他角色");
+      const id = String(model.collectionId || (model.trained === true ? trainedCollectionId(name) : "other"));
+      if (!definitions.has(id)) {
+        definitions.set(id, {
+          id,
+          name,
+          custom: model.trained === true || id.startsWith("trained:") || id === "local-imports",
+          count: 0,
+        });
+      }
+      definitions.get(id).count += 1;
+    });
+    state.customCollections.forEach((name) => {
+      const id = trainedCollectionId(name);
+      if (!definitions.has(id)) definitions.set(id, { id, name, custom: true, count: 0 });
+    });
+    const priority = new Map([
+      ["blue-archive", 0],
+      ["jujutsu-kaisen", 1],
+      ["other", 2],
+      ["local-imports", 90],
+    ]);
+    return [...definitions.values()].sort((left, right) => {
+      const leftRank = priority.has(left.id) ? priority.get(left.id) : left.custom ? 80 : 20;
+      const rightRank = priority.has(right.id) ? priority.get(right.id) : right.custom ? 80 : 20;
+      return leftRank - rightRank || left.name.localeCompare(right.name, "zh-CN");
+    });
+  }
+
+  function selectedCollectionDefinition() {
+    return collectionDefinitions().find((collection) => collection.id === state.activeCollectionId) || null;
+  }
+
+  function renderCollectionNav() {
+    const nav = document.getElementById("rvc-collection-nav");
+    if (!nav) return;
+    const definitions = collectionDefinitions();
+    if (!definitions.some((collection) => collection.id === state.activeCollectionId)) {
+      const selectedModel = getSelectedModel();
+      state.activeCollectionId = selectedModel?.collectionId || definitions[0]?.id || "other";
+    }
+    nav.innerHTML = "";
+    definitions.forEach((collection) => {
+      const active = collection.id === state.activeCollectionId;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.role = "tab";
+      button.dataset.collectionId = collection.id;
+      button.setAttribute("aria-selected", String(active));
+      button.className = active
+        ? "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg bg-brand px-3.5 py-2 text-xs font-black text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
+        : "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-3.5 py-2 text-xs font-black text-ink shadow-xs hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1";
+      button.innerHTML = `<span>${escapeHtml(collection.name)}</span><span class="${active ? "bg-white/20 text-white" : "bg-zinc-100 text-muted"} rounded-full px-1.5 py-0.5 text-[10px]">${collection.count}</span>`;
+      button.addEventListener("click", () => {
+        state.activeCollectionId = collection.id;
+        const search = document.getElementById("rvc-model-search");
+        if (search) search.value = "";
+        if (collection.custom) {
+          const trainingCollection = document.getElementById("rvc-training-collection");
+          if (trainingCollection) trainingCollection.value = collection.name;
+        }
+        renderModelGallery();
+      });
+      nav.appendChild(button);
+    });
+  }
+
+  function renderModelCards(target, models, trained = false) {
+    if (!target) return;
+    target.innerHTML = "";
+    const grid = document.createElement("div");
+    grid.className = "grid gap-3 sm:grid-cols-2";
+    grid.setAttribute("role", "group");
+    models.forEach((m) => {
+      const isSelected = m.id === state.selectedModelId;
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = `flex flex-col items-start p-4 rounded-xl border text-left transition-all relative ${
+        isSelected
+          ? "border-brand bg-teal-50/80 shadow-md ring-2 ring-brand"
+          : trained
+            ? "border-violet-200 bg-white hover:border-violet-500 hover:shadow-sm"
+            : "border-line bg-white hover:border-brand/60 hover:shadow-sm"
+      }`;
+      card.setAttribute("role", "option");
+      card.setAttribute("aria-selected", isSelected ? "true" : "false");
+      card.dataset.modelId = m.id;
+      const avatarText = escapeHtml(m.avatarText || m.name.slice(0, 2));
+      card.innerHTML = `
+        <div class="flex items-center justify-between w-full gap-3">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${trained ? "bg-violet-100 border-violet-200 text-violet-700" : "bg-teal-50/80 border-teal-200/60 text-brand"} border font-black text-xs shadow-xs">
+              ${avatarText}
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-black text-ink">${escapeHtml(m.name)}</p>
+              <div class="mt-1 flex flex-wrap gap-1">
+                ${(m.tags || []).map((tag) => `<span class="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600">${escapeHtml(tag)}</span>`).join("")}
+              </div>
+            </div>
+          </div>
+          <span class="shrink-0 text-xs font-bold ${isSelected ? "text-brand" : "text-zinc-400"}">
+            ${isSelected ? `<i class="fa-solid fa-circle-check"></i> ${t("modelPick")}` : t("modelInstalled")}
+          </span>
+        </div>
+        <p class="mt-2 line-clamp-2 text-xs leading-5 text-muted">${escapeHtml(m.description || "")}</p>
+      `;
+      card.addEventListener("click", () => {
+        state.selectedModelId = m.id;
+        applyCharacterPitch(m);
+        renderModelGallery();
+        updateStatusDisplay();
+      });
+      grid.appendChild(card);
+    });
+    target.appendChild(grid);
+  }
+
   function renderModelGallery() {
     const container = document.getElementById("rvc-model-gallery");
     const trainedContainer = document.getElementById("rvc-trained-model-gallery");
     const trainedSection = document.getElementById("rvc-trained-models-section");
     const trainedCount = document.getElementById("rvc-trained-models-count");
+    const trainedTitle = document.getElementById("rvc-trained-models-title");
     const emptyEl = document.getElementById("rvc-model-empty");
     const searchVal = (document.getElementById("rvc-model-search")?.value || "").trim().toLowerCase();
     if (!container) return;
 
-    container.innerHTML = "";
-    if (trainedContainer) trainedContainer.innerHTML = "";
+    renderCollectionNav();
+    const activeCollection = selectedCollectionDefinition();
     const filtered = state.catalog.filter((m) => {
+      if (String(m.collectionId || "other") !== state.activeCollectionId) return false;
       if (!searchVal) return true;
       return (
         m.name.toLowerCase().includes(searchVal) ||
@@ -1614,99 +1783,25 @@
     const trainedModels = filtered.filter((model) => model.trained === true);
 
     if (regularModels.length === 0 && trainedModels.length === 0) {
-      if (emptyEl) emptyEl.classList.remove("hidden");
+      container.innerHTML = "";
+      if (trainedContainer) trainedContainer.innerHTML = "";
+      if (emptyEl) {
+        emptyEl.textContent = searchVal
+          ? `“${searchVal}”在当前分区没有匹配角色。`
+          : activeCollection?.custom
+            ? `“${activeCollection.name}”分区已创建。训练新模型时选择这个分区，完成后角色会自动出现在这里。`
+            : "当前分区还没有角色。";
+        emptyEl.classList.remove("hidden");
+      }
       if (trainedSection) trainedSection.classList.add("hidden");
       return;
     }
     if (emptyEl) emptyEl.classList.add("hidden");
-    const renderItems = (target, items, trained = false) => {
-      if (!target) return;
-      const grouped = new Map();
-      items.forEach((model) => {
-        const collectionName = String(
-          model.collectionName ||
-          (trained ? "我的训练模型" : (model.tags || []).includes("蔚蓝档案") ? "蔚蓝档案" : "其他角色")
-        ).trim() || (trained ? "我的训练模型" : "其他角色");
-        const collectionId = String(model.collectionId || collectionName).trim() || collectionName;
-        const key = `${collectionId}\u0000${collectionName}`;
-        if (!grouped.has(key)) grouped.set(key, { id: collectionId, name: collectionName, models: [] });
-        grouped.get(key).models.push(model);
-      });
-
-      grouped.forEach((collection) => {
-        const section = document.createElement("section");
-        section.className = trained
-          ? "rounded-xl border border-violet-200 bg-white/70 p-3"
-          : "rounded-xl border border-line bg-canvas/40 p-3";
-        section.dataset.collectionId = collection.id;
-
-        const heading = document.createElement("div");
-        heading.className = "flex items-center justify-between gap-3";
-        heading.innerHTML = `
-          <p class="text-xs font-black tracking-wide ${trained ? "text-violet-800" : "text-ink"}">${escapeHtml(collection.name)}</p>
-          <span class="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-bold text-muted">${collection.models.length} 个音色</span>
-        `;
-        const grid = document.createElement("div");
-        grid.className = "mt-3 grid gap-3 sm:grid-cols-2";
-        grid.setAttribute("role", "group");
-        grid.setAttribute("aria-label", collection.name);
-
-        collection.models.forEach((m) => {
-          const isSelected = m.id === state.selectedModelId;
-          const card = document.createElement("button");
-          card.type = "button";
-          card.className = `flex flex-col items-start p-4 rounded-xl border text-left transition-all relative ${
-            isSelected
-              ? "border-brand bg-teal-50/80 shadow-md ring-2 ring-brand"
-              : trained
-                ? "border-violet-200 bg-white hover:border-violet-500 hover:shadow-sm"
-                : "border-line bg-white hover:border-brand/60 hover:shadow-sm"
-          }`;
-          card.setAttribute("role", "option");
-          card.setAttribute("aria-selected", isSelected ? "true" : "false");
-          card.dataset.modelId = m.id;
-
-          const avatarText = escapeHtml(m.avatarText || m.name.slice(0, 2));
-          card.innerHTML = `
-            <div class="flex items-center justify-between w-full gap-3">
-              <div class="flex min-w-0 items-center gap-3">
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${trained ? "bg-violet-100 border-violet-200 text-violet-700" : "bg-teal-50/80 border-teal-200/60 text-brand"} border font-black text-xs shadow-xs">
-                  ${avatarText}
-                </div>
-                <div class="min-w-0">
-                  <p class="truncate text-sm font-black text-ink">${escapeHtml(m.name)}</p>
-                  <div class="mt-1 flex flex-wrap gap-1">
-                    ${(m.tags || [])
-                      .map(
-                        (tag) =>
-                          `<span class="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600">${escapeHtml(tag)}</span>`
-                      )
-                      .join("")}
-                  </div>
-                </div>
-              </div>
-              <span class="shrink-0 text-xs font-bold ${isSelected ? "text-brand" : "text-zinc-400"}">
-                ${isSelected ? `<i class="fa-solid fa-circle-check"></i> ${t("modelPick")}` : t("modelInstalled")}
-              </span>
-            </div>
-            <p class="mt-2 line-clamp-2 text-xs leading-5 text-muted">${escapeHtml(m.description || "")}</p>
-          `;
-
-          card.addEventListener("click", () => {
-            state.selectedModelId = m.id;
-            applyCharacterPitch(m);
-            renderModelGallery();
-            updateStatusDisplay();
-          });
-          grid.appendChild(card);
-        });
-        section.append(heading, grid);
-        target.appendChild(section);
-      });
-    };
-    renderItems(container, regularModels);
-    renderItems(trainedContainer, trainedModels, true);
+    renderModelCards(container, regularModels);
+    renderModelCards(trainedContainer, trainedModels, true);
+    container.classList.toggle("hidden", regularModels.length === 0);
     if (trainedSection) trainedSection.classList.toggle("hidden", trainedModels.length === 0);
+    if (trainedTitle) trainedTitle.textContent = `🎓 ${activeCollection?.name || "训练完成的模型"}`;
     if (trainedCount) trainedCount.textContent = `${trainedModels.length} 个模型`;
   }
 
@@ -1792,10 +1887,15 @@
     return new File([buffer], `${stem}.postprep-16k.wav`, { type: "audio/wav" });
   }
 
-  function prepareCloudUploadAudio(audio) {
+  function prepareCloudUploadAudio(audio, audioMode = "voice") {
     const original = audio?.file;
     if (!original || !(audio?.float32 instanceof Float32Array)) {
       return { file: original, optimized: false, originalBytes: Number(original?.size) || 0 };
+    }
+    // Song mode must retain the original stereo/full-band mix so the GPU
+    // service can separate vocals and later restore the untouched backing.
+    if (audioMode === "song") {
+      return { file: original, optimized: false, originalBytes: original.size, preservesMix: true };
     }
     const normalizedWav = encodeMono16kWav(audio.float32, original.name);
     const extension = String(original.name || "").toLowerCase().split(".").pop();
@@ -1812,15 +1912,27 @@
     };
   }
 
-  function cloudRequestTimeoutMs(fileSize, durationSeconds) {
+  function cloudRequestTimeoutMs(fileSize, durationSeconds, audioMode = "voice") {
     const uploadBudgetMs = Math.ceil(
       Math.max(0, Number(fileSize) || 0) / CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND * 1000,
     ) + 30000;
-    const inferenceBudgetMs = 150000 + Math.min(180000, Math.max(0, Number(durationSeconds) || 0) * 1200);
+    const duration = Math.max(0, Number(durationSeconds) || 0);
+    const inferenceBudgetMs = audioMode === "song"
+      ? 300000 + Math.min(300000, duration * 2000)
+      : 150000 + Math.min(180000, duration * 1200);
     return Math.min(
       CLOUD_MAX_CONVERT_TIMEOUT_MS,
       Math.max(CLOUD_CONVERT_TIMEOUT_MS, uploadBudgetMs + inferenceBudgetMs),
     );
+  }
+
+  function cloudJobTimeoutMs(durationSeconds, audioMode = "voice") {
+    const duration = Math.max(0, Number(durationSeconds) || 0);
+    const shortBudget = cloudRequestTimeoutMs(0, duration, audioMode);
+    if (duration <= LONG_AUDIO_THRESHOLD_SECONDS) return shortBudget;
+    const longBudget = 8 * 60 * 1000
+      + duration * (audioMode === "song" ? 3200 : 1800);
+    return Math.min(CLOUD_MAX_LONG_JOB_TIMEOUT_MS, Math.max(12 * 60 * 1000, Math.ceil(longBudget)));
   }
 
   async function checkCacheStatus() {
@@ -2054,12 +2166,13 @@
     }
   }
 
-  async function pollCloudOutput(url, timeoutMs) {
+  async function pollCloudOutput(url, timeoutMs, longJob = false) {
     const deadline = Date.now() + timeoutMs;
     let transientFailures = 0;
+    const maxTransientFailures = longJob ? 30 : 4;
     while (Date.now() < deadline) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 45000);
+      const timer = setTimeout(() => controller.abort(), longJob ? 60000 : 45000);
       try {
         const response = await fetch(url, {
           credentials: "omit",
@@ -2069,9 +2182,24 @@
         if (response.status === 200) return response;
         if (response.status === 202) {
           transientFailures = 0;
-          const retryAfterSeconds = Math.max(4, Math.min(10, parseInt(response.headers.get("Retry-After") || "6", 10) || 6));
+          const retryAfterSeconds = Math.max(longJob ? 8 : 4, Math.min(15, parseInt(response.headers.get("Retry-After") || "6", 10) || 6));
+          let processing = {};
+          try {
+            processing = await response.json();
+          } catch {}
           updateProgressBar(55);
-          updateStatusDisplay("🧠 [2/3] 云端 GPU 正在后台处理；页面会自动查询结果，网络短暂切换不会丢失任务…");
+          const longStage = String(processing?.stage || "");
+          const longStageLabel = {
+            separating: "正在分离人声与伴奏",
+            converting: "正在分段进行角色变声",
+            remixing: "正在回混原伴奏",
+            encoding: "正在编码最终音频",
+          }[longStage] || "正在后台处理长音频";
+          updateStatusDisplay(longJob
+            ? `🧠 [2/3] ${longStageLabel}；任务已保存在服务端，网络波动后会继续查询…`
+            : state.audioMode === "song"
+              ? "🧠 [2/3] 云端正在分离人声、角色变声并回混原伴奏；网络短暂切换不会丢失任务…"
+              : "🧠 [2/3] 云端 GPU 正在后台处理；页面会自动查询结果，网络短暂切换不会丢失任务…");
           await waitFor(retryAfterSeconds * 1000);
           continue;
         }
@@ -2092,9 +2220,9 @@
       } catch (error) {
         transientFailures += 1;
         const structuredCode = typeof error?.code === "string" && error.code;
-        if (structuredCode || transientFailures >= 4 || Date.now() >= deadline) throw error;
-        updateStatusDisplay(`🔄 [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/3）…`);
-        await waitFor(1800 * transientFailures);
+        if (structuredCode || transientFailures >= maxTransientFailures || Date.now() >= deadline) throw error;
+        updateStatusDisplay(`🔄 [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`);
+        await waitFor(Math.min(longJob ? 15000 : 8000, 1800 * transientFailures));
       } finally {
         clearTimeout(timer);
       }
@@ -2104,14 +2232,35 @@
     throw timeout;
   }
 
+  async function downloadLongCloudOutput(url, firstResponse, format, timeoutMs) {
+    const deadline = Date.now() + timeoutMs;
+    let response = firstResponse;
+    let lastError = null;
+    for (let attempt = 1; attempt <= 6 && Date.now() < deadline; attempt += 1) {
+      try {
+        if (!response || response.status !== 200) {
+          response = await pollCloudOutput(url, Math.max(60000, deadline - Date.now()), true);
+        }
+        return await normalizeCloudAudioBlob(await response.blob(), format);
+      } catch (error) {
+        lastError = error;
+        if (attempt >= 6 || Date.now() >= deadline) break;
+        updateStatusDisplay(`🔄 [3/3] 结果下载中断，正在从已完成任务重新拉取（${attempt}/5）…`);
+        await waitFor(Math.min(12000, attempt * 2000));
+        response = null;
+      }
+    }
+    throw lastError || new Error("长音频结果下载未完成");
+  }
+
   const CLOUD_RVC_ERROR_MESSAGES = Object.freeze({
     RATE_LIMITED: Object.freeze({
       zh: "当前网络 60 秒内已经提交过任务，请等待 60 秒后再试",
       en: "This network already submitted a job in the last 60 seconds. Please wait and retry",
     }),
     RVC_INFERENCE_FAILED: Object.freeze({
-      zh: "这段音频未通过本次推理，请裁成 5–30 秒、去掉伴奏或强混响后重试",
-      en: "Inference failed on this clip. Try a clean 5–30 second voice-only clip",
+      zh: "这段音频未通过本次推理；纯录音请选择纯人声，歌曲请选择带伴奏翻唱后重试",
+      en: "Inference failed. Use voice mode for dry recordings or song mode for a mixed track",
     }),
     RVC_MODEL_NOT_FOUND: Object.freeze({
       zh: "所选角色模型暂未挂载，请刷新页面后重新选择角色",
@@ -2128,6 +2277,22 @@
     RVC_TRAINING_ACTIVE: Object.freeze({
       zh: "本机 GPU 正在训练新模型。训练结束后旧角色变声会自动恢复，请稍后再提交",
       en: "The GPU is training a new model. Existing voice conversion resumes when training finishes",
+    }),
+    RVC_SEPARATOR_UNAVAILABLE: Object.freeze({
+      zh: "伴奏分离模型尚未就绪，请稍后重新提交",
+      en: "The vocal separation model is not ready yet",
+    }),
+    RVC_SEPARATION_TIMEOUT: Object.freeze({
+      zh: "歌曲人声分离超过等待时限，请裁短音频后重试",
+      en: "Vocal separation timed out. Trim the song and retry",
+    }),
+    RVC_SEPARATION_FAILED: Object.freeze({
+      zh: "这段混音的人声与伴奏分离失败，请换清晰度更高的音频重试",
+      en: "The vocal/instrumental split failed. Try a clearer source",
+    }),
+    RVC_REMIX_FAILED: Object.freeze({
+      zh: "角色人声已生成，但与原伴奏回混失败，请重新提交",
+      en: "The converted vocal was generated, but remixing the backing track failed",
     }),
     UPSTREAM_UNAVAILABLE: Object.freeze({
       zh: "云端 RVC 连接刚刚中断，请稍后重新提交",
@@ -2166,7 +2331,8 @@
       : "云端 RVC 本次请求未完成，请检查音频后重试";
   }
 
-  function preferredCloudOutputFormat() {
+  function preferredCloudOutputFormat(durationSeconds = 0) {
+    if (Number(durationSeconds) > LONG_AUDIO_THRESHOLD_SECONDS) return "mp3";
     try {
       const ua = String(globalThis.navigator?.userAgent || "");
       const uaMobile = globalThis.navigator?.userAgentData?.mobile === true;
@@ -2431,6 +2597,11 @@
   }
 
   function setInferenceMode(mode) {
+    if (mode === "local" && state.audioMode === "song") {
+      state.audioMode = "voice";
+      renderAudioMode();
+      showToast("本地兼容模式已切回纯人声；带伴奏翻唱使用云端 GPU 分离与回混。");
+    }
     state.inferenceMode = mode === "local" ? "local" : "official";
     try {
       window.localStorage.setItem(RVC_MODE_STORAGE_KEY, state.inferenceMode);
@@ -2478,6 +2649,39 @@
     } else {
       checkCacheStatus();
     }
+    updateStatusDisplay();
+  }
+
+  function renderAudioMode() {
+    const voiceButton = document.getElementById("rvc-audio-mode-voice");
+    const songButton = document.getElementById("rvc-audio-mode-song");
+    const hint = document.getElementById("rvc-audio-mode-hint");
+    const song = state.audioMode === "song";
+    if (voiceButton) {
+      voiceButton.setAttribute("aria-checked", String(!song));
+      voiceButton.className = !song
+        ? "min-h-11 rounded-lg border-2 border-brand bg-teal-50 px-3 py-2 text-left text-xs font-bold text-ink shadow-xs"
+        : "min-h-11 rounded-lg border-2 border-transparent bg-white px-3 py-2 text-left text-xs font-bold text-ink shadow-xs hover:border-brand/40";
+    }
+    if (songButton) {
+      songButton.setAttribute("aria-checked", String(song));
+      songButton.className = song
+        ? "min-h-11 rounded-lg border-2 border-brand bg-teal-50 px-3 py-2 text-left text-xs font-bold text-ink shadow-xs"
+        : "min-h-11 rounded-lg border-2 border-transparent bg-white px-3 py-2 text-left text-xs font-bold text-ink shadow-xs hover:border-brand/40";
+    }
+    if (hint) {
+      hint.textContent = song
+        ? "带伴奏翻唱会保留原始立体声文件：云端 PyMSS 分离人声与伴奏，RVC 只转换人声，随后按原时长回混。"
+        : "纯人声模式不会启动伴奏分离，原功能与音质参数保持不变。";
+    }
+  }
+
+  function setAudioMode(mode) {
+    state.audioMode = mode === "song" ? "song" : "voice";
+    if (state.audioMode === "song" && state.inferenceMode !== "official") {
+      setInferenceMode("official");
+    }
+    renderAudioMode();
     updateStatusDisplay();
   }
 
@@ -2592,6 +2796,7 @@
       const imported = state.catalog.find((m) => m.id === `${OWN_MODEL_PREFIX}${id}`);
       if (imported) {
         state.selectedModelId = imported.id;
+        state.activeCollectionId = imported.collectionId;
       }
       renderModelGallery();
       checkCacheStatus();
@@ -2632,6 +2837,25 @@
     applyCharacterPitch(getSelectedModel());
   }
 
+  function probeAudioDuration(file) {
+    return new Promise((resolve) => {
+      const audio = document.createElement("audio");
+      const url = URL.createObjectURL(file);
+      const finish = (duration = 0) => {
+        clearTimeout(timer);
+        audio.removeAttribute("src");
+        audio.load();
+        URL.revokeObjectURL(url);
+        resolve(Number.isFinite(duration) ? duration : 0);
+      };
+      const timer = setTimeout(() => finish(0), 20000);
+      audio.preload = "metadata";
+      audio.addEventListener("loadedmetadata", () => finish(audio.duration), { once: true });
+      audio.addEventListener("error", () => finish(0), { once: true });
+      audio.src = url;
+    });
+  }
+
   async function handleAudioSelected(file, fallbackDuration = 0) {
     if (!file) return;
     const statusEl = document.getElementById("rvc-audio-status");
@@ -2639,6 +2863,13 @@
 
     try {
       const decoded = await decodeAudioFileTo16kMono(file);
+      if (decoded.duration > MAX_AUDIO_SECONDS) {
+        state.audio = null;
+        if (statusEl) statusEl.textContent = t("audioTooLong");
+        showToast(t("audioTooLong"));
+        updateStatusDisplay();
+        return;
+      }
       state.audio = {
         file,
         float32: decoded.float32,
@@ -2654,7 +2885,14 @@
       updateStatusDisplay();
     } catch (err) {
       console.error("Audio decode error:", err);
-      const safeFallbackDuration = Number(fallbackDuration) || 0;
+      const safeFallbackDuration = Number(fallbackDuration) || await probeAudioDuration(file);
+      if (safeFallbackDuration > MAX_AUDIO_SECONDS) {
+        state.audio = null;
+        if (statusEl) statusEl.textContent = t("audioTooLong");
+        showToast(t("audioTooLong"));
+        updateStatusDisplay();
+        return;
+      }
       if (safeFallbackDuration >= MIN_AUDIO_SECONDS && file?.size > 0) {
         // A few Safari/in-app browser builds can record a valid MP4/WebM file
         // that their own WebAudio decoder refuses to reopen.  Cloud ffmpeg can
@@ -3174,8 +3412,14 @@
     const protect = parseFloat(document.getElementById("rvc-protect")?.value || "0.25");
     const rmsMixRate = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1");
     const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
-    const preparedUpload = prepareCloudUploadAudio(state.audio);
+    const preparedUpload = prepareCloudUploadAudio(state.audio, state.audioMode);
     const uploadFile = preparedUpload.file;
+    if (!uploadFile || uploadFile.size < 1 || uploadFile.size > MAX_AUDIO_BYTES) {
+      showToast(state.audioMode === "song"
+        ? "带伴奏翻唱请使用 25 MB 以内的 MP3、M4A、AAC、OGG 或 FLAC；超长无损文件请先压缩。"
+        : t("fileTooLarge"));
+      return;
+    }
     const extension = String(uploadFile?.name || "").toLowerCase().split(".").pop();
     if (!["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"].includes(extension)) {
       showToast("云端 RVC 引擎接受 WAV、MP3、M4A、OGG、WebM、FLAC 或 AAC，请先转换格式。");
@@ -3195,13 +3439,17 @@
     try {
       const routes = officialRoutes(getOfficialEndpoint());
       const convertUrl = routes.convertUrl;
-      const requestTimeoutMs = cloudRequestTimeoutMs(uploadFile.size, state.audio.duration);
+      const requestTimeoutMs = cloudRequestTimeoutMs(uploadFile.size, state.audio.duration, state.audioMode);
+      const jobTimeoutMs = cloudJobTimeoutMs(state.audio.duration, state.audioMode);
+      const longJob = state.audio.duration > LONG_AUDIO_THRESHOLD_SECONDS;
       if (preparedUpload.optimized) {
         updateStatusDisplay(
           `⚡ [1/3] 已把上传体积从 ${formatTransferredBytes(preparedUpload.originalBytes)} 压到 ${formatTransferredBytes(uploadFile.size)}（16kHz 单声道），正在连接云端…`,
         );
       } else {
-        updateStatusDisplay("⏳ [1/3] 正在准备上传音频到云端 RVC 引擎…");
+        updateStatusDisplay(state.audioMode === "song"
+          ? "⏳ [1/3] 正在上传原始混音；云端将分离人声、转换音色并回混原伴奏…"
+          : "⏳ [1/3] 正在准备上传音频到云端 RVC 引擎…");
       }
 
       const body = new FormData();
@@ -3214,7 +3462,7 @@
       body.set("protect", String(protect));
       body.set("f0Method", "auto");
       body.set("f0_method", "auto");
-      const outputFormat = preferredCloudOutputFormat();
+      const outputFormat = preferredCloudOutputFormat(state.audio.duration);
       body.set("format", outputFormat);
       body.set("resample", "0");
       body.set("rmsMixRate", String(rmsMixRate));
@@ -3222,6 +3470,8 @@
       body.set("filterRadius", String(filterRadius));
       body.set("filter_radius", String(filterRadius));
       body.set("language", state.lang === "en" ? "en" : "zh");
+      body.set("audioMode", state.audioMode);
+      body.set("audio_mode", state.audioMode);
       body.set("requestId", cloudRequestId);
       body.set("request_id", cloudRequestId);
       body.set("audio", uploadFile, uploadFile.name || `input.${extension}`);
@@ -3248,7 +3498,9 @@
           if (ticker) clearInterval(ticker);
           ticker = setInterval(() => {
             const sec = Math.round((Date.now() - startedAt) / 1000);
-            updateStatusDisplay(`🧠 [2/3] 云端已接收请求，RVC 神经声线重构中… 已用时 ${sec}s（等待服务端完成响应，不虚报百分比）`);
+            updateStatusDisplay(state.audioMode === "song"
+              ? `🧠 [2/3] 云端正在分离人声 → RVC 变声 → 原伴奏回混… 已用时 ${sec}s（等待真实结果）`
+              : `🧠 [2/3] 云端已接收请求，RVC 神经声线重构中… 已用时 ${sec}s（等待服务端完成响应，不虚报百分比）`);
           }, 1000);
         };
 
@@ -3330,11 +3582,15 @@
 
       const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
       updateProgressBar(52);
-      updateStatusDisplay("🧠 [2/3] 音频已接收，云端 GPU 已转入后台推理…");
-      const outputResponse = await pollCloudOutput(outputUrl, requestTimeoutMs);
+      updateStatusDisplay(state.audioMode === "song"
+        ? "🧠 [2/3] 混音已接收，云端正在分离人声、变声并回混伴奏…"
+        : "🧠 [2/3] 音频已接收，云端 GPU 已转入后台推理…");
+      const outputResponse = await pollCloudOutput(outputUrl, jobTimeoutMs, longJob);
       updateProgressBar(82);
       updateStatusDisplay("📥 [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
-      const outputBlob = await normalizeCloudAudioBlob(await outputResponse.blob(), outputFormat);
+      const outputBlob = longJob
+        ? await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs)
+        : await normalizeCloudAudioBlob(await outputResponse.blob(), outputFormat);
 
       if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
       state.resultUrl = URL.createObjectURL(outputBlob);
@@ -3359,14 +3615,14 @@
           model: selectedModel.name,
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        }) + ` · 云端 PyTorch RVC · ${outputFormat.toUpperCase()}`;
+        }) + ` · 云端 PyTorch RVC${state.audioMode === "song" ? " · PyMSS 人声分离/原伴奏回混" : ""} · ${outputFormat.toUpperCase()}`;
       }
       if (resultSection) {
         resultSection.hidden = false;
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       updateProgressBar(100);
-      updateStatusDisplay(`🎉 云端 RVC 变声完成！用时 ${elapsed} 秒。可在下方试听或下载。`);
+      updateStatusDisplay(`🎉 云端 RVC 变声完成！用时 ${elapsed} 秒。${longJob ? "长音频稳定链路已完成分段处理与可恢复下载。" : ""}可在下方试听或下载。`);
       showToast("🎉 云端 RVC 变声完成！可在下方试听或下载");
       return true;
     } catch (error) {
@@ -3483,8 +3739,10 @@
     const refreshTrainedModel = async (modelId) => {
       state.engineReady = null;
       await refreshOfficialService();
-      if (modelId && state.catalog.some((model) => model.id === modelId)) {
+      const trainedModel = modelId ? state.catalog.find((model) => model.id === modelId) : null;
+      if (trainedModel) {
         state.selectedModelId = modelId;
+        state.activeCollectionId = trainedModel.collectionId;
       }
       renderModelGallery();
       updateStatusDisplay();
@@ -3540,7 +3798,7 @@
 
     startButton.addEventListener("click", async () => {
       const displayName = String(nameInput?.value || "").trim();
-      const collectionName = String(collectionInput?.value || "").trim() || "我的训练模型";
+      const collectionName = cleanCollectionName(collectionInput?.value) || "我的训练模型";
       const files = state.trainingFiles;
       if (!displayName) {
         showToast("请填写训练模型名称");
@@ -3560,6 +3818,12 @@
       startButton.disabled = true;
       setTrainingUi(1, "正在创建隔离训练任务…");
       try {
+        if (!state.customCollections.includes(collectionName)) {
+          state.customCollections.push(collectionName);
+          persistCustomCollections();
+          state.activeCollectionId = trainedCollectionId(collectionName);
+          renderModelGallery();
+        }
         const initBody = new FormData();
         initBody.set("display_name", displayName);
         initBody.set("collection_name", collectionName);
@@ -3627,6 +3891,51 @@
     if (btnLocal) {
       btnLocal.addEventListener("click", () => setInferenceMode("local"));
     }
+    const audioModeVoice = document.getElementById("rvc-audio-mode-voice");
+    const audioModeSong = document.getElementById("rvc-audio-mode-song");
+    audioModeVoice?.addEventListener("click", () => setAudioMode("voice"));
+    audioModeSong?.addEventListener("click", () => setAudioMode("song"));
+    renderAudioMode();
+
+    const createCollectionButton = document.getElementById("rvc-create-collection");
+    const createCollectionForm = document.getElementById("rvc-create-collection-form");
+    const createCollectionName = document.getElementById("rvc-create-collection-name");
+    const createCollectionSave = document.getElementById("rvc-create-collection-save");
+    const createCollectionCancel = document.getElementById("rvc-create-collection-cancel");
+    const closeCollectionForm = () => {
+      createCollectionForm?.classList.add("hidden");
+      if (createCollectionName) createCollectionName.value = "";
+    };
+    const saveCollection = () => {
+      const name = cleanCollectionName(createCollectionName?.value);
+      if (!name) {
+        showToast("请填写分区名称");
+        createCollectionName?.focus();
+        return;
+      }
+      if (!state.customCollections.includes(name)) {
+        state.customCollections.push(name);
+        persistCustomCollections();
+      }
+      state.activeCollectionId = trainedCollectionId(name);
+      const trainingCollection = document.getElementById("rvc-training-collection");
+      const trainingPanel = document.getElementById("rvc-training-panel");
+      if (trainingCollection) trainingCollection.value = name;
+      if (trainingPanel) trainingPanel.open = true;
+      closeCollectionForm();
+      renderModelGallery();
+      showToast(`已创建分区“${name}”，训练模型时会自动放入该分区。`);
+    };
+    createCollectionButton?.addEventListener("click", () => {
+      createCollectionForm?.classList.toggle("hidden");
+      if (!createCollectionForm?.classList.contains("hidden")) createCollectionName?.focus();
+    });
+    createCollectionSave?.addEventListener("click", saveCollection);
+    createCollectionCancel?.addEventListener("click", closeCollectionForm);
+    createCollectionName?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") saveCollection();
+      if (event.key === "Escape") closeCollectionForm();
+    });
 
     // Official Endpoint Configuration UI
     const toggleConfigBtn = document.getElementById("rvc-official-toggle-config");
@@ -4053,6 +4362,7 @@
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
+    loadCustomCollections();
     setupEventListeners();
     await initCatalog();
     updateStatusDisplay();

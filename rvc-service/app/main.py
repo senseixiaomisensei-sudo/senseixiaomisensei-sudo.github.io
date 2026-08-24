@@ -14,6 +14,7 @@ GET /v1/models and selectable by id from the website.
 from __future__ import annotations
 
 import asyncio
+import gc
 import json
 import logging
 import os
@@ -31,13 +32,22 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
+from app.separation_runtime import (
+    SeparationRuntimeError,
+    remix_song,
+    separate_song,
+    separation_status,
+)
 from app.training_runtime import TrainingRuntimeError, run_training
 
 
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 MIN_AUDIO_SECONDS = 1
-MAX_AUDIO_SECONDS = 180
-OUTPUT_RETENTION_SECONDS = max(300, min(int(os.getenv("RVC_OUTPUT_RETENTION_SECONDS", "900")), 3600))
+MAX_AUDIO_SECONDS = 600
+LONG_AUDIO_THRESHOLD_SECONDS = 45
+LONG_CHUNK_SECONDS = 40
+LONG_CHUNK_CROSSFADE_SECONDS = 0.5
+OUTPUT_RETENTION_SECONDS = max(900, min(int(os.getenv("RVC_OUTPUT_RETENTION_SECONDS", "7200")), 21600))
 MAX_CONCURRENCY = max(1, min(int(os.getenv("RVC_MAX_CONCURRENCY", "1")), 2))
 MODELS_DIR = Path(os.getenv("RVC_MODELS_DIR", "/models/rvc")).resolve()
 WORK_ROOT = Path(os.getenv("RVC_WORK_ROOT", "/tmp/rvc-work")).resolve()
@@ -75,6 +85,7 @@ ALLOWED_MIME_TYPES = {
 ALLOWED_FORMATS = {"wav", "mp3"}
 ALLOWED_F0_METHODS = {"auto", "rmvpe", "fcpe", "pm"}
 ALLOWED_RESAMPLE = {0, 16000, 24000, 32000, 44100, 48000}
+ALLOWED_AUDIO_MODES = {"voice", "song"}
 # A high threshold keeps ordinary speech untouched. The compressor and
 # look-ahead limiter only guard loud/near-clipped shouts before the official
 # RVC feature extractor; they cannot reconstruct clipping already baked into
@@ -151,6 +162,8 @@ class OutputRecord:
     error_code: str = ""
     f0_method: str = ""
     request_id: str = ""
+    audio_mode: str = "voice"
+    stage: str = "queued"
 
 
 @dataclass
@@ -321,6 +334,19 @@ def acquire_model(pth: Path):
     return inference
 
 
+def release_cached_models() -> None:
+    """Release parent-process RVC models before the isolated separator uses VRAM."""
+    model_cache.clear()
+    gc.collect()
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except (ImportError, RuntimeError):
+        pass
+
+
 async def load_model_async(pth: Path):
     async with model_cache_lock:
         return await asyncio.to_thread(acquire_model, pth)
@@ -331,7 +357,7 @@ async def cleanup_expired_outputs() -> None:
     now = utcnow()
     async with outputs_lock:
         for job_id, record in tuple(outputs.items()):
-            if record.expires_at <= now:
+            if record.state not in {"queued", "processing"} and record.expires_at <= now:
                 expired.append((job_id, record))
                 outputs.pop(job_id, None)
                 if record.request_id and request_jobs.get(record.request_id) == job_id:
@@ -584,7 +610,7 @@ def prepare_inference_audio(input_wav: Path, profile: AudioProfile) -> Path:
         check=False,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        timeout=120,
+        timeout=max(120, min(600, int(duration * 1.5) + 60)),
     )
     if result.returncode == 0 and guarded.is_file() and guarded.stat().st_size > 44:
         return guarded
@@ -655,6 +681,7 @@ def render_conversion(
         output_filter = SHOUT_HARSHNESS_FILTER
     else:
         output_filter = OUTPUT_SAFETY_FILTER
+    postprocess_timeout = max(120, min(600, int(probe_duration(output_wav) * 1.5) + 60))
     result = subprocess.run(
         [
             "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(output_wav),
@@ -663,7 +690,7 @@ def render_conversion(
         check=False,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        timeout=120,
+        timeout=postprocess_timeout,
     )
     if result.returncode == 0 and limited_output.is_file() and limited_output.stat().st_size > 44:
         limited_output.replace(output_wav)
@@ -672,6 +699,140 @@ def render_conversion(
         # optional limiter filter.
         limited_output.unlink(missing_ok=True)
     return used_method
+
+
+def split_long_audio(input_wav: Path, chunk_root: Path, duration_seconds: float) -> list[Path]:
+    chunk_root.mkdir(parents=True, exist_ok=True)
+    chunks: list[Path] = []
+    start = 0.0
+    step = LONG_CHUNK_SECONDS - LONG_CHUNK_CROSSFADE_SECONDS
+    while start < duration_seconds - 0.05:
+        chunk_duration = min(LONG_CHUNK_SECONDS, duration_seconds - start)
+        chunk_path = chunk_root / f"source-{len(chunks):03d}.wav"
+        result = subprocess.run(
+            [
+                "ffmpeg",
+                "-nostdin",
+                "-v",
+                "error",
+                "-y",
+                "-ss",
+                f"{start:.6f}",
+                "-i",
+                str(input_wav),
+                "-t",
+                f"{chunk_duration:.6f}",
+                "-ac",
+                "1",
+                "-ar",
+                "16000",
+                "-c:a",
+                "pcm_f32le",
+                str(chunk_path),
+            ],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=120,
+        )
+        if result.returncode != 0 or not chunk_path.is_file() or chunk_path.stat().st_size <= 44:
+            raise RvcServiceError(502, "RVC_LONG_AUDIO_SPLIT_FAILED")
+        chunks.append(chunk_path)
+        if start + chunk_duration >= duration_seconds - 0.05:
+            break
+        start += step
+    if not chunks:
+        raise RvcServiceError(502, "RVC_LONG_AUDIO_SPLIT_FAILED")
+    return chunks
+
+
+def join_long_audio(chunks: list[Path], destination: Path, duration_seconds: float) -> None:
+    if len(chunks) == 1:
+        shutil.copyfile(chunks[0], destination)
+        return
+    command = ["ffmpeg", "-nostdin", "-v", "error", "-y"]
+    for chunk in chunks:
+        command.extend(["-i", str(chunk)])
+    filters: list[str] = []
+    previous = "[0:a]"
+    for index in range(1, len(chunks)):
+        output = f"[xf{index}]"
+        filters.append(
+            f"{previous}[{index}:a]acrossfade=d={LONG_CHUNK_CROSSFADE_SECONDS}:c1=tri:c2=tri{output}"
+        )
+        previous = output
+    filters.append(
+        f"{previous}atrim=end={duration_seconds:.6f},"
+        "alimiter=limit=0.90:attack=5:release=100:level=0[out]"
+    )
+    command.extend([
+        "-filter_complex",
+        ";".join(filters),
+        "-map",
+        "[out]",
+        "-c:a",
+        "pcm_s16le",
+        str(destination),
+    ])
+    result = subprocess.run(
+        command,
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=max(180, min(900, int(duration_seconds * 1.5) + 90)),
+    )
+    if result.returncode != 0 or not destination.is_file() or destination.stat().st_size <= 44:
+        destination.unlink(missing_ok=True)
+        raise RvcServiceError(502, "RVC_LONG_AUDIO_JOIN_FAILED")
+
+
+def render_duration_safe_conversion(
+    model_path: Path,
+    input_wav: Path,
+    output_wav: Path,
+    work_root: Path,
+    duration_seconds: float,
+    pitch: int,
+    index_rate: float,
+    protect: float,
+    filter_radius: int,
+    resample_rate: int,
+    rms_mix_rate: float,
+    f0_method: str,
+) -> str:
+    if duration_seconds <= LONG_AUDIO_THRESHOLD_SECONDS:
+        return render_conversion(
+            model_path,
+            input_wav,
+            output_wav,
+            pitch,
+            index_rate,
+            protect,
+            filter_radius,
+            resample_rate,
+            rms_mix_rate,
+            f0_method,
+        )
+    source_chunks = split_long_audio(input_wav, work_root / "source", duration_seconds)
+    output_chunks: list[Path] = []
+    methods: list[str] = []
+    for index, source_chunk in enumerate(source_chunks):
+        converted_chunk = work_root / f"converted-{index:03d}.wav"
+        methods.append(render_conversion(
+            model_path,
+            source_chunk,
+            converted_chunk,
+            pitch,
+            index_rate,
+            protect,
+            filter_radius,
+            resample_rate,
+            rms_mix_rate,
+            f0_method,
+        ))
+        output_chunks.append(converted_chunk)
+    join_long_audio(output_chunks, output_wav, duration_seconds)
+    return "+".join(dict.fromkeys(methods))
 
 
 def select_f0_method(input_wav: Path, requested_method: str) -> str:
@@ -716,13 +877,14 @@ def select_f0_method(input_wav: Path, requested_method: str) -> str:
 
 
 def transcode(source: Path, destination: Path, target_format: str) -> None:
+    timeout = max(120, min(600, int(probe_duration(source) * 1.5) + 60))
     if target_format == "mp3":
         result = subprocess.run(
             ["ffmpeg", "-nostdin", "-v", "error", "-i", str(source), "-codec:a", "libmp3lame", "-b:a", "192k", str(destination)],
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            timeout=120,
+            timeout=timeout,
         )
         if result.returncode != 0 or not destination.is_file() or destination.stat().st_size < 1:
             raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
@@ -738,6 +900,7 @@ async def healthz(request: Request) -> dict[str, object]:
     from app.official_runtime import OFFICIAL_COMMIT, OFFICIAL_TAG, runtime_info
 
     info = await asyncio.to_thread(runtime_info)
+    separator = await asyncio.to_thread(separation_status)
     return {
         "ready": True,
         "engine": "RVC-Project/Retrieval-based-Voice-Conversion-WebUI",
@@ -746,6 +909,7 @@ async def healthz(request: Request) -> dict[str, object]:
         "device": info.device,
         "half": info.is_half,
         "training": bool(active_training_job_id),
+        "separation": separator,
     }
 
 
@@ -766,6 +930,8 @@ def output_payload(job_id: str, record: OutputRecord) -> dict[str, str]:
         "expiresAt": record.expires_at.isoformat().replace("+00:00", "Z"),
         "format": record.format,
         "state": record.state,
+        "audioMode": record.audio_mode,
+        "stage": record.stage,
     }
     if record.f0_method:
         payload["f0Method"] = record.f0_method
@@ -1085,6 +1251,7 @@ async def process_conversion_job(
     job_id: str,
     job_root: Path,
     model_path: Path,
+    input_raw: Path,
     input_wav: Path,
     output_wav: Path,
     output_path: Path,
@@ -1099,26 +1266,73 @@ async def process_conversion_job(
     request_id: str,
     model_id: str,
     started_at: float,
+    audio_mode: str,
+    duration_seconds: float,
 ) -> None:
     try:
         async with outputs_lock:
             record = outputs.get(job_id)
             if record:
                 record.state = "processing"
+                record.stage = "separating" if audio_mode == "song" else "converting"
         async with inference_lock:
-            used_f0_method = await asyncio.to_thread(
-                render_conversion,
-                model_path,
-                input_wav,
-                output_wav,
-                pitch,
-                index_rate,
-                protect,
-                filter_radius,
-                resample,
-                rms_mix_rate,
-                f0_method,
-            )
+            if audio_mode == "song":
+                await asyncio.to_thread(release_cached_models)
+                stems = await asyncio.to_thread(separate_song, input_raw, job_root / "stems")
+                async with outputs_lock:
+                    record = outputs.get(job_id)
+                    if record:
+                        record.stage = "converting"
+                separated_vocals = job_root / "separated-vocals-16k.wav"
+                converted_vocals = job_root / "converted-vocals.wav"
+                await asyncio.to_thread(normalize_audio, stems.vocals, separated_vocals)
+                used_f0_method = await asyncio.to_thread(
+                    render_duration_safe_conversion,
+                    model_path,
+                    separated_vocals,
+                    converted_vocals,
+                    job_root / "long-vocals",
+                    duration_seconds,
+                    pitch,
+                    index_rate,
+                    protect,
+                    filter_radius,
+                    resample,
+                    rms_mix_rate,
+                    f0_method,
+                )
+                async with outputs_lock:
+                    record = outputs.get(job_id)
+                    if record:
+                        record.stage = "remixing"
+                await asyncio.to_thread(
+                    remix_song,
+                    stems.instrumental,
+                    converted_vocals,
+                    output_wav,
+                    duration_seconds,
+                    stems.sample_rate,
+                )
+            else:
+                used_f0_method = await asyncio.to_thread(
+                    render_duration_safe_conversion,
+                    model_path,
+                    input_wav,
+                    output_wav,
+                    job_root / "long-voice",
+                    duration_seconds,
+                    pitch,
+                    index_rate,
+                    protect,
+                    filter_radius,
+                    resample,
+                    rms_mix_rate,
+                    f0_method,
+                )
+        async with outputs_lock:
+            record = outputs.get(job_id)
+            if record:
+                record.stage = "encoding"
         if output_format == "mp3":
             await asyncio.to_thread(transcode, output_wav, output_path, "mp3")
         else:
@@ -1129,12 +1343,15 @@ async def process_conversion_job(
             record = outputs.get(job_id)
             if record:
                 record.state = "completed"
+                record.stage = "completed"
                 record.f0_method = used_f0_method
+                record.expires_at = job_expiry()
         logger.info(
-            "conversion completed request_id=%s job_id=%s model=%s f0=%s seconds=%.2f",
+            "conversion completed request_id=%s job_id=%s model=%s mode=%s f0=%s seconds=%.2f",
             request_id,
             job_id,
             model_id,
+            audio_mode,
             used_f0_method,
             asyncio.get_running_loop().time() - started_at,
         )
@@ -1147,14 +1364,25 @@ async def process_conversion_job(
             record = outputs.get(job_id)
             if record:
                 record.state = "failed"
+                record.stage = "failed"
                 record.error_code = error.code
         logger.warning("conversion failed request_id=%s model=%s code=%s", request_id, model_id, error.code)
+    except SeparationRuntimeError as error:
+        output_path.unlink(missing_ok=True)
+        async with outputs_lock:
+            record = outputs.get(job_id)
+            if record:
+                record.state = "failed"
+                record.stage = "failed"
+                record.error_code = error.code
+        logger.warning("song conversion failed request_id=%s model=%s code=%s", request_id, model_id, error.code)
     except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
         output_path.unlink(missing_ok=True)
         async with outputs_lock:
             record = outputs.get(job_id)
             if record:
                 record.state = "failed"
+                record.stage = "failed"
                 record.error_code = "RVC_INFERENCE_FAILED"
         logger.exception(
             "conversion failed request_id=%s model=%s seconds=%.2f",
@@ -1179,6 +1407,7 @@ async def create_job(
     f0_method: str = Form("rmvpe"),
     format: str = Form("wav"),
     language: str = Form("zh"),
+    audio_mode: str = Form("voice"),
     request_id: str = Form(""),
     audio: UploadFile = File(...),
 ) -> dict[str, str]:
@@ -1231,6 +1460,8 @@ async def create_job(
         raise RvcServiceError(400, "RVC_INVALID_PARAMETER")
     if language not in {"zh", "en"}:
         raise RvcServiceError(400, "RVC_INVALID_LANGUAGE")
+    if audio_mode not in ALLOWED_AUDIO_MODES:
+        raise RvcServiceError(400, "RVC_INVALID_PARAMETER")
     if client_request_id and not valid_request_id(client_request_id):
         raise RvcServiceError(400, "RVC_INVALID_REQUEST_ID")
 
@@ -1253,7 +1484,13 @@ async def create_job(
         input_wav = job_root / "input.wav"
         output_wav = job_root / "output.wav"
         await write_upload(audio, input_raw)
-        await asyncio.to_thread(normalize_audio, input_raw, input_wav)
+        duration_seconds = await asyncio.to_thread(probe_duration, input_raw)
+        if duration_seconds < MIN_AUDIO_SECONDS:
+            raise RvcServiceError(400, "RVC_AUDIO_TOO_SHORT")
+        if duration_seconds > MAX_AUDIO_SECONDS:
+            raise RvcServiceError(400, "RVC_AUDIO_TOO_LONG")
+        if audio_mode == "voice":
+            await asyncio.to_thread(normalize_audio, input_raw, input_wav)
         expires_at = job_expiry()
         download_token = secrets.token_urlsafe(32)
         async with outputs_lock:
@@ -1263,6 +1500,7 @@ async def create_job(
                 expires_at=expires_at,
                 format=format,
                 request_id=client_request_id,
+                audio_mode=audio_mode,
             )
             if client_request_id:
                 request_jobs[client_request_id] = job_id
@@ -1270,6 +1508,7 @@ async def create_job(
             job_id=job_id,
             job_root=job_root,
             model_path=model_path,
+            input_raw=input_raw,
             input_wav=input_wav,
             output_wav=output_wav,
             output_path=output_path,
@@ -1284,14 +1523,17 @@ async def create_job(
             request_id=trace_id,
             model_id=model_id,
             started_at=started_at,
+            audio_mode=audio_mode,
+            duration_seconds=duration_seconds,
         ))
         job_tasks.add(task)
         task.add_done_callback(job_tasks.discard)
         logger.info(
-            "conversion queued request_id=%s job_id=%s model=%s seconds=%.2f",
+            "conversion queued request_id=%s job_id=%s model=%s mode=%s seconds=%.2f",
             trace_id,
             job_id,
             model_id,
+            audio_mode,
             asyncio.get_running_loop().time() - started_at,
         )
         return output_payload(job_id, outputs[job_id])
@@ -1323,7 +1565,7 @@ async def get_output(request: Request, job_id: str, token: str):
         raise HTTPException(status_code=404, detail="Not found")
     if record.state in {"queued", "processing"}:
         return JSONResponse(
-            {"jobId": job_id, "state": record.state},
+            output_payload(job_id, record),
             status_code=202,
             headers={"Cache-Control": "no-store", "Retry-After": "6"},
         )
