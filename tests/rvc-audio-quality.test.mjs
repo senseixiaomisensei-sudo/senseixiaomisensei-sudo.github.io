@@ -192,6 +192,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /speechnorm=p=0\.88:e=3:c=2/u);
   assert.match(service, /def select_f0_method\(/u);
   assert.match(service, /methods\.append\("fcpe" if selected_method == "rmvpe" else "rmvpe"\)/u);
+  assert.match(service, /return used_method/u);
   assert.match(service, /SHOUT_HARSHNESS_GUARD_MODELS = frozenset\(\{"midori", "mika", "shiroko", "toki", "yuzu"\}\)/u);
   assert.match(service, /lowpass=f=10000:p=2/u);
 });

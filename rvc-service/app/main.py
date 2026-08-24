@@ -376,7 +376,7 @@ def render_conversion(
     resample_rate: int,
     rms_mix_rate: float,
     f0_method: str,
-) -> None:
+) -> str:
     inference = acquire_model(model_path)
     # Upstream 2.3.260718 removed the old post-F0 median-filter parameter.
     # Keep accepting it at the HTTP boundary for backward compatibility, but
@@ -387,6 +387,7 @@ def render_conversion(
     if f0_method == "auto":
         methods.append("fcpe" if selected_method == "rmvpe" else "rmvpe")
     last_error: Exception | None = None
+    used_method = selected_method
     for method in dict.fromkeys(methods):
         output_wav.unlink(missing_ok=True)
         try:
@@ -401,6 +402,7 @@ def render_conversion(
                 rms_mix_rate=rms_mix_rate,
             )
             if output_wav.is_file() and output_wav.stat().st_size > 44:
+                used_method = method
                 break
         except (OSError, RuntimeError, ValueError) as error:
             last_error = error
@@ -436,6 +438,7 @@ def render_conversion(
         # Keep a valid RVC result even when a host ffmpeg build lacks the
         # optional limiter filter.
         limited_output.unlink(missing_ok=True)
+    return used_method
 
 
 def select_f0_method(input_wav: Path, requested_method: str) -> str:
@@ -592,7 +595,7 @@ async def create_job(
         await asyncio.to_thread(normalize_audio, input_raw, input_wav)
 
         async with inference_lock:
-            await asyncio.to_thread(
+            used_f0_method = await asyncio.to_thread(
                 render_conversion,
                 model_path,
                 input_wav,
@@ -616,10 +619,11 @@ async def create_job(
         async with outputs_lock:
             outputs[job_id] = OutputRecord(path=output_path, token=download_token, expires_at=expires_at)
         logger.info(
-            "conversion completed request_id=%s job_id=%s model=%s seconds=%.2f",
+            "conversion completed request_id=%s job_id=%s model=%s f0=%s seconds=%.2f",
             request_id,
             job_id,
             model_id,
+            used_f0_method,
             asyncio.get_running_loop().time() - started_at,
         )
         return {
@@ -627,6 +631,7 @@ async def create_job(
             "downloadToken": download_token,
             "expiresAt": expires_at.isoformat().replace("+00:00", "Z"),
             "format": format,
+            "f0Method": used_f0_method,
         }
     except RvcServiceError:
         output_path.unlink(missing_ok=True)
