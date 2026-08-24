@@ -600,6 +600,7 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
 def prepare_inference_audio(input_wav: Path, profile: AudioProfile) -> Path:
     if not profile.high_energy:
         return input_wav
+    duration = probe_duration(input_wav)
     guarded = input_wav.with_name(f"{input_wav.stem}-high-energy.wav")
     result = subprocess.run(
         [
