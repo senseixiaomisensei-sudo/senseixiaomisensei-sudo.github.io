@@ -3749,10 +3749,11 @@
       });
     }
 
-    // 进入 TTS 源时触发一次探测；页面加载 1s 后台探测一次
+    // Only probe after the user opens the TTS source. Public GitHub Pages has
+    // no same-origin /v1/tts-health route, so eager probing created a harmless
+    // but noisy 404 on every visit and made browser diagnostics differ.
     const ttsBtn = document.getElementById("rvc-source-tts");
     if (ttsBtn) ttsBtn.addEventListener("click", probeTts);
-    setTimeout(probeTts, 1000);
 
     // 一键适配：并行快速探测本机/常见地址 → 写入 localStorage（立即生效）→ 下载配置文件
     const adaptBtn = document.getElementById("rvc-tts-adapt");

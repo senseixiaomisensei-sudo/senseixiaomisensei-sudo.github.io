@@ -83,6 +83,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /pollCloudOutput\(outputUrl, requestTimeoutMs\)/u);
   assert.match(client, /Protected media route failed; using the already downloaded result blob/u);
   assert.match(client, /let base = OFFICIAL_RVC_MEDIA_ENDPOINT/u);
+  assert.doesNotMatch(client, /setTimeout\(probeTts,\s*1000\)/u);
 
   const catalogPayload = JSON.parse(catalog);
   assert.ok(Array.isArray(catalogPayload.models));
