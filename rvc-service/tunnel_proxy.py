@@ -151,7 +151,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             self.close_connection = True
             self.send_response(response.status, response.reason)
             content_length = response.getheader("Content-Length")
-            for key in ("Content-Type", "Cache-Control", "Content-Disposition", "X-Content-Type-Options"):
+            for key in ("Content-Type", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After"):
                 value = response.getheader(key)
                 if value:
                     self.send_header(key, value)

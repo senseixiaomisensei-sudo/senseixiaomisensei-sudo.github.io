@@ -48,6 +48,8 @@ function rvcForm(overrides = {}) {
   form.set("filterRadius", "3");
   form.set("filter_radius", "3");
   form.set("language", "zh");
+  form.set("requestId", "request_id_1234567890abcdef");
+  form.set("request_id", "request_id_1234567890abcdef");
   form.set("audio", audioBlob(), "input.wav");
   for (const [key, value] of Object.entries(overrides)) {
     form.delete(key);
@@ -145,6 +147,7 @@ test("rvc endpoint sends only sanitized fields to the fixed GPU backend", async 
     assert.equal(upstream.options.body.get("model_id"), "sweet-female");
     assert.equal(upstream.options.body.get("pitch"), "2");
     assert.equal(upstream.options.body.get("f0_method"), "auto");
+    assert.equal(upstream.options.body.get("request_id"), "request_id_1234567890abcdef");
     assert.equal(upstream.options.body.get("audio").name, "input.wav");
     assert.equal(upstream.options.body.get("language"), "zh");
   } finally {
@@ -262,6 +265,25 @@ test("rvc output requires an internal gateway and a constrained job token", asyn
   const body = await response.json();
   assert.equal(response.status, 403);
   assert.equal(body.code, "GATEWAY_NOT_ALLOWED");
+});
+
+test("rvc output preserves an asynchronous processing response", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json(
+    { jobId: JOB_ID, state: "processing" },
+    { status: 202, headers: { "Retry-After": "6" } },
+  );
+  try {
+    const request = new Request(`https://postprep-ae6.pages.dev/api/rvc-output?job=${JOB_ID}&token=${DOWNLOAD_TOKEN}`, {
+      headers: { Origin: SITE_ORIGIN, "X-PostPrep-Gateway": "gateway-secret" },
+    });
+    const response = await rvcOutputRequest({ request, env: BASE_ENV });
+    assert.equal(response.status, 202);
+    assert.equal(response.headers.get("Retry-After"), "6");
+    assert.equal((await response.json()).state, "processing");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("rvc media route streams only a constrained short-lived output capability", async () => {

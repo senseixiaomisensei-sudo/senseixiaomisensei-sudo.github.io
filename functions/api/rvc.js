@@ -27,6 +27,8 @@ const ALLOWED_FIELDS = new Set([
   "filterRadius",
   "filter_radius",
   "language",
+  "requestId",
+  "request_id",
   "audio",
 ]);
 const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm"]);
@@ -174,6 +176,7 @@ export async function onRequest(context) {
   const rmsMixRate = valueAsString(formData, "rmsMixRate");
   const filterRadius = valueAsString(formData, "filterRadius");
   const requestedLanguage = valueAsString(formData, "language") === "en" ? "en" : "zh";
+  const requestId = valueAsString(formData, "requestId");
   const audio = valueAsFile(formData, "audio");
 
   if (!validModelId(modelId)) return failure(request, env, 400, "RVC_INVALID_MODEL", "Choose a supported character voice");
@@ -185,6 +188,7 @@ export async function onRequest(context) {
   if (!ALLOWED_FORMATS.has(format)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose a supported output format");
   if (!ALLOWED_RESAMPLE.has(resample)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose a supported resample rate");
   if (!validInteger(filterRadius, 0, 7)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Filter radius must be between 0 and 7");
+  if (requestId && !/^[A-Za-z0-9_-]{16,80}$/u.test(requestId)) return failure(request, env, 400, "RVC_INVALID_REQUEST_ID", "Invalid conversion request id");
   if (!validAudio(audio)) return failure(request, env, 400, "RVC_INVALID_AUDIO", "Use a permitted audio file");
 
   const backend = configuredRvcBackend(env);
@@ -201,6 +205,7 @@ export async function onRequest(context) {
   upstreamBody.set("rms_mix_rate", rmsMixRate);
   upstreamBody.set("filter_radius", filterRadius);
   upstreamBody.set("language", requestedLanguage);
+  if (requestId) upstreamBody.set("request_id", requestId);
   upstreamBody.set("audio", audio, safeFilename(audio, "input"));
 
   let upstream;

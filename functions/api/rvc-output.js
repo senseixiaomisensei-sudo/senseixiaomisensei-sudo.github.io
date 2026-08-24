@@ -31,6 +31,12 @@ export async function onRequest(context) {
     return failure(request, env, error && error.name === "AbortError" ? 504 : 502, "RVC_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
   }
   const contentType = String(upstream.headers.get("Content-Type") || "").toLowerCase();
+  if (upstream.status === 202 && contentType.startsWith("application/json")) {
+    const body = await upstream.text();
+    const headers = new Headers(responseHeaders(request, env));
+    headers.set("Retry-After", upstream.headers.get("Retry-After") || "6");
+    return new Response(body, { status: 202, headers });
+  }
   if (!upstream.ok || !contentType.startsWith("audio/")) return failure(request, env, 502, "RVC_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
   const headers = new Headers(responseHeaders(request, env, contentType));
   headers.set("Content-Disposition", 'attachment; filename="postprep-rvc-audio.wav"');

@@ -99,16 +99,23 @@ class RvcServiceError(Exception):
         self.code = code
 
 
-@dataclass(frozen=True)
+@dataclass
 class OutputRecord:
     path: Path
     token: str
     expires_at: datetime
+    format: str
+    state: str = "queued"
+    error_code: str = ""
+    f0_method: str = ""
+    request_id: str = ""
 
 
 outputs: dict[str, OutputRecord] = {}
+request_jobs: dict[str, str] = {}
 outputs_lock = asyncio.Lock()
 inference_lock = asyncio.Semaphore(MAX_CONCURRENCY)
+job_tasks: set[asyncio.Task] = set()
 
 # Loaded RVCInference instances keyed by resolved .pth path (LRU).
 model_cache: "OrderedDict[str, object]" = OrderedDict()
@@ -245,14 +252,16 @@ async def load_model_async(pth: Path):
 
 
 async def cleanup_expired_outputs() -> None:
-    expired: list[OutputRecord] = []
+    expired: list[tuple[str, OutputRecord]] = []
     now = utcnow()
     async with outputs_lock:
         for job_id, record in tuple(outputs.items()):
             if record.expires_at <= now:
-                expired.append(record)
+                expired.append((job_id, record))
                 outputs.pop(job_id, None)
-    for record in expired:
+                if record.request_id and request_jobs.get(record.request_id) == job_id:
+                    request_jobs.pop(record.request_id, None)
+    for _, record in expired:
         record.path.unlink(missing_ok=True)
 
 
@@ -272,7 +281,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         cleanup_task.cancel()
+        for task in tuple(job_tasks):
+            task.cancel()
         await asyncio.gather(cleanup_task, return_exceptions=True)
+        if job_tasks:
+            await asyncio.gather(*tuple(job_tasks), return_exceptions=True)
         await cleanup_expired_outputs()
 
 
@@ -521,6 +534,109 @@ async def list_models(request: Request) -> dict[str, list[dict]]:
     return {"models": await asyncio.to_thread(scan_models)}
 
 
+def valid_request_id(value: str) -> bool:
+    return 16 <= len(value) <= 80 and all(ch.isalnum() or ch in "-_" for ch in value)
+
+
+def output_payload(job_id: str, record: OutputRecord) -> dict[str, str]:
+    payload = {
+        "jobId": job_id,
+        "downloadToken": record.token,
+        "expiresAt": record.expires_at.isoformat().replace("+00:00", "Z"),
+        "format": record.format,
+        "state": record.state,
+    }
+    if record.f0_method:
+        payload["f0Method"] = record.f0_method
+    return payload
+
+
+async def process_conversion_job(
+    *,
+    job_id: str,
+    job_root: Path,
+    model_path: Path,
+    input_wav: Path,
+    output_wav: Path,
+    output_path: Path,
+    output_format: str,
+    pitch: int,
+    index_rate: float,
+    protect: float,
+    filter_radius: int,
+    resample: int,
+    rms_mix_rate: float,
+    f0_method: str,
+    request_id: str,
+    model_id: str,
+    started_at: float,
+) -> None:
+    try:
+        async with outputs_lock:
+            record = outputs.get(job_id)
+            if record:
+                record.state = "processing"
+        async with inference_lock:
+            used_f0_method = await asyncio.to_thread(
+                render_conversion,
+                model_path,
+                input_wav,
+                output_wav,
+                pitch,
+                index_rate,
+                protect,
+                filter_radius,
+                resample,
+                rms_mix_rate,
+                f0_method,
+            )
+        if output_format == "mp3":
+            await asyncio.to_thread(transcode, output_wav, output_path, "mp3")
+        else:
+            shutil.copyfile(output_wav, output_path)
+        if not output_path.is_file() or output_path.stat().st_size < 1:
+            raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
+        async with outputs_lock:
+            record = outputs.get(job_id)
+            if record:
+                record.state = "completed"
+                record.f0_method = used_f0_method
+        logger.info(
+            "conversion completed request_id=%s job_id=%s model=%s f0=%s seconds=%.2f",
+            request_id,
+            job_id,
+            model_id,
+            used_f0_method,
+            asyncio.get_running_loop().time() - started_at,
+        )
+    except asyncio.CancelledError:
+        output_path.unlink(missing_ok=True)
+        raise
+    except RvcServiceError as error:
+        output_path.unlink(missing_ok=True)
+        async with outputs_lock:
+            record = outputs.get(job_id)
+            if record:
+                record.state = "failed"
+                record.error_code = error.code
+        logger.warning("conversion failed request_id=%s model=%s code=%s", request_id, model_id, error.code)
+    except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
+        output_path.unlink(missing_ok=True)
+        async with outputs_lock:
+            record = outputs.get(job_id)
+            if record:
+                record.state = "failed"
+                record.error_code = "RVC_INFERENCE_FAILED"
+        logger.exception(
+            "conversion failed request_id=%s model=%s seconds=%.2f",
+            request_id,
+            model_id,
+            asyncio.get_running_loop().time() - started_at,
+        )
+    finally:
+        shutil.rmtree(job_root, ignore_errors=True)
+
+
 @app.post("/v1/convert")
 async def create_job(
     request: Request,
@@ -534,10 +650,12 @@ async def create_job(
     f0_method: str = Form("rmvpe"),
     format: str = Form("wav"),
     language: str = Form("zh"),
+    request_id: str = Form(""),
     audio: UploadFile = File(...),
 ) -> dict[str, str]:
     ensure_authorized(request)
-    request_id = str(request.headers.get("X-PostPrep-Request-Id") or request.headers.get("CF-Ray") or uuid.uuid4())[:96]
+    trace_id = str(request.headers.get("X-PostPrep-Request-Id") or request.headers.get("CF-Ray") or uuid.uuid4())[:96]
+    client_request_id = request_id.strip()
     started_at = asyncio.get_running_loop().time()
     content_length = request.headers.get("Content-Length")
     try:
@@ -581,6 +699,17 @@ async def create_job(
         raise RvcServiceError(400, "RVC_INVALID_PARAMETER")
     if language not in {"zh", "en"}:
         raise RvcServiceError(400, "RVC_INVALID_LANGUAGE")
+    if client_request_id and not valid_request_id(client_request_id):
+        raise RvcServiceError(400, "RVC_INVALID_REQUEST_ID")
+
+    if client_request_id:
+        async with outputs_lock:
+            existing_job_id = request_jobs.get(client_request_id)
+            existing_record = outputs.get(existing_job_id or "")
+        if existing_job_id and existing_record:
+            await audio.close()
+            logger.info("idempotent retry request_id=%s job_id=%s", trace_id, existing_job_id)
+            return output_payload(existing_job_id, existing_record)
 
     extension = safe_extension(audio)
     job_id = str(uuid.uuid4())
@@ -593,72 +722,91 @@ async def create_job(
         output_wav = job_root / "output.wav"
         await write_upload(audio, input_raw)
         await asyncio.to_thread(normalize_audio, input_raw, input_wav)
-
-        async with inference_lock:
-            used_f0_method = await asyncio.to_thread(
-                render_conversion,
-                model_path,
-                input_wav,
-                output_wav,
-                pitch_value,
-                index_rate_value,
-                protect_value,
-                filter_radius_value,
-                resample_value,
-                rms_mix_value,
-                f0_method,
-            )
-        if format == "mp3":
-            await asyncio.to_thread(transcode, output_wav, output_path, "mp3")
-        else:
-            shutil.copyfile(output_wav, output_path)
-        if not output_path.is_file() or output_path.stat().st_size < 1:
-            raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
         expires_at = job_expiry()
         download_token = secrets.token_urlsafe(32)
         async with outputs_lock:
-            outputs[job_id] = OutputRecord(path=output_path, token=download_token, expires_at=expires_at)
+            outputs[job_id] = OutputRecord(
+                path=output_path,
+                token=download_token,
+                expires_at=expires_at,
+                format=format,
+                request_id=client_request_id,
+            )
+            if client_request_id:
+                request_jobs[client_request_id] = job_id
+        task = asyncio.create_task(process_conversion_job(
+            job_id=job_id,
+            job_root=job_root,
+            model_path=model_path,
+            input_wav=input_wav,
+            output_wav=output_wav,
+            output_path=output_path,
+            output_format=format,
+            pitch=pitch_value,
+            index_rate=index_rate_value,
+            protect=protect_value,
+            filter_radius=filter_radius_value,
+            resample=resample_value,
+            rms_mix_rate=rms_mix_value,
+            f0_method=f0_method,
+            request_id=trace_id,
+            model_id=model_id,
+            started_at=started_at,
+        ))
+        job_tasks.add(task)
+        task.add_done_callback(job_tasks.discard)
         logger.info(
-            "conversion completed request_id=%s job_id=%s model=%s f0=%s seconds=%.2f",
-            request_id,
+            "conversion queued request_id=%s job_id=%s model=%s seconds=%.2f",
+            trace_id,
             job_id,
             model_id,
-            used_f0_method,
             asyncio.get_running_loop().time() - started_at,
         )
-        return {
-            "jobId": job_id,
-            "downloadToken": download_token,
-            "expiresAt": expires_at.isoformat().replace("+00:00", "Z"),
-            "format": format,
-            "f0Method": used_f0_method,
-        }
+        return output_payload(job_id, outputs[job_id])
     except RvcServiceError:
         output_path.unlink(missing_ok=True)
+        shutil.rmtree(job_root, ignore_errors=True)
         raise
     except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
         logger.exception(
             "conversion failed request_id=%s model=%s seconds=%.2f",
-            request_id,
+            trace_id,
             model_id,
             asyncio.get_running_loop().time() - started_at,
         )
         output_path.unlink(missing_ok=True)
-        raise RvcServiceError(502, "RVC_INFERENCE_FAILED") from None
-    finally:
         shutil.rmtree(job_root, ignore_errors=True)
+        raise RvcServiceError(502, "RVC_INFERENCE_FAILED") from None
 
 
 @app.get("/v1/output/{job_id}")
-async def get_output(request: Request, job_id: str, token: str) -> FileResponse:
+async def get_output(request: Request, job_id: str, token: str):
     ensure_authorized(request)
     if not re_full_uuid(job_id) or not token or len(token) > 128:
         raise HTTPException(status_code=404, detail="Not found")
     await cleanup_expired_outputs()
     async with outputs_lock:
         record = outputs.get(job_id)
-    if record is None or not secrets.compare_digest(token, record.token) or not record.path.is_file():
+    if record is None or not secrets.compare_digest(token, record.token):
         raise HTTPException(status_code=404, detail="Not found")
+    if record.state in {"queued", "processing"}:
+        return JSONResponse(
+            {"jobId": job_id, "state": record.state},
+            status_code=202,
+            headers={"Cache-Control": "no-store", "Retry-After": "6"},
+        )
+    if record.state == "failed":
+        return JSONResponse(
+            {"code": record.error_code or "RVC_INFERENCE_FAILED"},
+            status_code=502,
+            headers={"Cache-Control": "no-store"},
+        )
+    if record.state != "completed" or not record.path.is_file():
+        return JSONResponse(
+            {"code": "RVC_OUTPUT_UNAVAILABLE"},
+            status_code=502,
+            headers={"Cache-Control": "no-store"},
+        )
     media_type = "audio/mpeg" if record.path.suffix.lower() == ".mp3" else "audio/wav"
     return FileResponse(
         record.path,

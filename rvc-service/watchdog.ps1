@@ -50,7 +50,7 @@ try {
       if (Test-Path -LiteralPath $StartScript) {
         Write-WatchdogLog "starting automatic recovery"
         try {
-          & powershell -NoProfile -ExecutionPolicy Bypass -File $StartScript -NoWatchdog *>> $LogFile
+          & pwsh -NoProfile -ExecutionPolicy Bypass -File $StartScript -NoWatchdog *>> $LogFile
           Write-WatchdogLog "automatic recovery command finished"
         } catch {
           Write-WatchdogLog "automatic recovery failed: $($_.Exception.Message)"

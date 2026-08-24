@@ -136,7 +136,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260823-v42/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260824-v43/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);
@@ -153,6 +153,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /CLOUD_MAX_CONVERT_TIMEOUT_MS = 600000/u);
   assert.match(client, /function prepareCloudUploadAudio\(audio\)/u);
   assert.match(client, /function cloudRequestTimeoutMs\(fileSize, durationSeconds\)/u);
+  assert.match(client, /function pollCloudOutput\(url, timeoutMs\)/u);
+  assert.match(client, /body\.set\("requestId", cloudRequestId\)/u);
   assert.match(client, /function cloudRvcFailureMessage\(error\)/u);
   assert.match(client, /error\.code = errCode/u);
   assert.doesNotMatch(client, /云端 RVC 引擎暂未完成本次请求，请重试/u);
@@ -193,6 +195,9 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /def select_f0_method\(/u);
   assert.match(service, /methods\.append\("fcpe" if selected_method == "rmvpe" else "rmvpe"\)/u);
   assert.match(service, /return used_method/u);
+  assert.match(service, /async def process_conversion_job\(/u);
+  assert.match(service, /record\.state = "processing"/u);
+  assert.match(service, /status_code=202/u);
   assert.match(service, /SHOUT_HARSHNESS_GUARD_MODELS = frozenset\(\{"midori", "mika", "shiroko", "toki", "yuzu"\}\)/u);
   assert.match(service, /lowpass=f=10000:p=2/u);
 });

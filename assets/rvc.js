@@ -1807,6 +1807,67 @@
     throw lastError || new Error("下载音频失败");
   }
 
+  function createCloudRequestId() {
+    try {
+      if (typeof crypto?.randomUUID === "function") return crypto.randomUUID();
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
+    } catch {
+      return `${Date.now()}_${Math.random().toString(36).slice(2, 18)}`;
+    }
+  }
+
+  async function pollCloudOutput(url, timeoutMs) {
+    const deadline = Date.now() + timeoutMs;
+    let transientFailures = 0;
+    while (Date.now() < deadline) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 45000);
+      try {
+        const response = await fetch(url, {
+          credentials: "omit",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (response.status === 200) return response;
+        if (response.status === 202) {
+          transientFailures = 0;
+          const retryAfterSeconds = Math.max(4, Math.min(10, parseInt(response.headers.get("Retry-After") || "6", 10) || 6));
+          updateProgressBar(55);
+          updateStatusDisplay("🧠 [2/3] 云端 GPU 正在后台处理；页面会自动查询结果，网络短暂切换不会丢失任务…");
+          await waitFor(retryAfterSeconds * 1000);
+          continue;
+        }
+
+        let payload = {};
+        try {
+          payload = await response.json();
+        } catch (e) {}
+        const error = new Error(payload?.message || payload?.code || `HTTP ${response.status}`);
+        error.code = typeof payload?.code === "string" ? payload.code : "";
+        error.requestId = String(response.headers.get("X-PostPrep-Request-Id") || "").slice(0, 96);
+        if (response.status === 429) {
+          const retryAfterSeconds = Math.max(1, parseInt(response.headers.get("Retry-After") || "6", 10) || 6);
+          await waitFor(retryAfterSeconds * 1000);
+          continue;
+        }
+        throw error;
+      } catch (error) {
+        transientFailures += 1;
+        const structuredCode = typeof error?.code === "string" && error.code;
+        if (structuredCode || transientFailures >= 4 || Date.now() >= deadline) throw error;
+        updateStatusDisplay(`🔄 [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/3）…`);
+        await waitFor(1800 * transientFailures);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    const timeout = new Error("云端后台处理超过等待时限，请重新提交");
+    timeout.code = "RVC_BACKEND_TIMEOUT";
+    throw timeout;
+  }
+
   const CLOUD_RVC_ERROR_MESSAGES = Object.freeze({
     RATE_LIMITED: Object.freeze({
       zh: "当前网络 60 秒内已经提交过任务，请等待 60 秒后再试",
@@ -2684,6 +2745,7 @@
       }
 
       const body = new FormData();
+      const cloudRequestId = createCloudRequestId();
       body.set("modelId", selectedModel.id);
       body.set("model_id", selectedModel.id);
       body.set("pitch", String(pitch));
@@ -2700,6 +2762,8 @@
       body.set("filterRadius", String(filterRadius));
       body.set("filter_radius", String(filterRadius));
       body.set("language", state.lang === "en" ? "en" : "zh");
+      body.set("requestId", cloudRequestId);
+      body.set("request_id", cloudRequestId);
       body.set("audio", uploadFile, uploadFile.name || `input.${extension}`);
 
       // XMLHttpRequest gives upload progress on mobile browsers. Retry once
@@ -2804,11 +2868,12 @@
         throw new Error(payload?.message || payload?.code || "未获取到任务标识");
       }
 
+      const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
+      updateProgressBar(52);
+      updateStatusDisplay("🧠 [2/3] 音频已接收，云端 GPU 已转入后台推理…");
+      const outputResponse = await pollCloudOutput(outputUrl, requestTimeoutMs);
       updateProgressBar(82);
       updateStatusDisplay("📥 [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
-
-      const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
-      const outputResponse = await fetchResponseWithRetry(outputUrl);
       const outputBlob = await normalizeCloudAudioBlob(await outputResponse.blob(), outputFormat);
 
       if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
