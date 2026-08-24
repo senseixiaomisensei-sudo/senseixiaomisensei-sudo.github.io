@@ -174,7 +174,10 @@ test("rvc routes use the authenticated narrow tunnel when direct credentials are
       forwarded.options.headers.get("Authorization"),
       `Bearer ${env.POSTPREP_RVC_INFERENCE_TOKEN}`,
     );
+    assert.match(forwarded.options.headers.get("X-PostPrep-Request-Id"), /^[0-9a-f-]{36}$/u);
     assert.equal(forwarded.options.headers.has("X-PostPrep-Gateway"), false);
+    assert.match(response.headers.get("X-PostPrep-Request-Id"), /^[0-9a-f-]{36}$/u);
+    assert.match(response.headers.get("Access-Control-Expose-Headers"), /X-PostPrep-Request-Id/u);
   } finally {
     globalThis.fetch = originalFetch;
   }

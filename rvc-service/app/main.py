@@ -13,6 +13,7 @@ GET /v1/models and selectable by id from the website.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import secrets
 import shutil
@@ -40,6 +41,7 @@ WORK_ROOT = Path(os.getenv("RVC_WORK_ROOT", "/tmp/rvc-work")).resolve()
 OUTPUT_ROOT = Path(os.getenv("RVC_OUTPUT_ROOT", "/tmp/rvc-output")).resolve()
 GATEWAY_TOKEN = os.getenv("RVC_GATEWAY_TOKEN", "").strip()
 MAX_CACHED_MODELS = max(1, min(int(os.getenv("RVC_MAX_CACHED_MODELS", "2")), 8))
+logger = logging.getLogger("postprep.rvc")
 ALLOWED_EXTENSIONS = {"wav", "mp3", "m4a", "ogg", "webm"}
 ALLOWED_MIME_TYPES = {
     "audio/wav",
@@ -54,7 +56,7 @@ ALLOWED_MIME_TYPES = {
     "application/octet-stream",
 }
 ALLOWED_FORMATS = {"wav", "mp3"}
-ALLOWED_F0_METHODS = {"rmvpe", "fcpe", "pm"}
+ALLOWED_F0_METHODS = {"auto", "rmvpe", "fcpe", "pm"}
 ALLOWED_RESAMPLE = {0, 16000, 24000, 32000, 44100, 48000}
 # A high threshold keeps ordinary speech untouched. The compressor and
 # look-ahead limiter only guard loud/near-clipped shouts before the official
@@ -62,6 +64,11 @@ ALLOWED_RESAMPLE = {0, 16000, 24000, 32000, 44100, 48000}
 # the source recording.
 INPUT_SAFETY_FILTER = (
     "highpass=f=45:p=2,"
+    "lowpass=f=7600:p=1,"
+    # Gentle tracked FFT denoising improves low-SNR and reverberant uploads
+    # without a gate, so quiet consonants and sustained singing notes remain.
+    "afftdn=nr=6:nf=-55:tn=1:ad=0.8,"
+    "speechnorm=p=0.88:e=3:c=2:r=0.0005:f=0.0005:m=0.06,"
     "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
     "alimiter=limit=0.90:attack=5:release=100:level=0"
 )
@@ -375,16 +382,33 @@ def render_conversion(
     # Keep accepting it at the HTTP boundary for backward compatibility, but
     # use the exact upstream RMVPE/FCPE/PM pipeline without an invented filter.
     _ = filter_radius
-    inference.infer(
-        input_wav,
-        output_wav,
-        pitch=pitch,
-        f0_method=f0_method,
-        index_rate=index_rate,
-        protect=protect,
-        resample_rate=resample_rate,
-        rms_mix_rate=rms_mix_rate,
-    )
+    selected_method = select_f0_method(input_wav, f0_method)
+    methods = [selected_method]
+    if f0_method == "auto":
+        methods.append("fcpe" if selected_method == "rmvpe" else "rmvpe")
+    last_error: Exception | None = None
+    for method in dict.fromkeys(methods):
+        output_wav.unlink(missing_ok=True)
+        try:
+            inference.infer(
+                input_wav,
+                output_wav,
+                pitch=pitch,
+                f0_method=method,
+                index_rate=index_rate,
+                protect=protect,
+                resample_rate=resample_rate,
+                rms_mix_rate=rms_mix_rate,
+            )
+            if output_wav.is_file() and output_wav.stat().st_size > 44:
+                break
+        except (OSError, RuntimeError, ValueError) as error:
+            last_error = error
+            logger.warning("pitch extraction failed with %s; trying fallback", method)
+    else:
+        if last_error:
+            raise last_error
+        raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
     if not output_wav.is_file() or output_wav.stat().st_size < 1:
         raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
     # The upstream generator writes PCM; a final transparent limiter prevents
@@ -412,6 +436,47 @@ def render_conversion(
         # Keep a valid RVC result even when a host ffmpeg build lacks the
         # optional limiter filter.
         limited_output.unlink(missing_ok=True)
+
+
+def select_f0_method(input_wav: Path, requested_method: str) -> str:
+    """Use FCPE for sustained singing and RMVPE for ordinary/unclear speech."""
+    if requested_method != "auto":
+        return requested_method
+    try:
+        import librosa
+        import numpy as np
+        import soundfile as sf
+
+        audio, sample_rate = sf.read(str(input_wav), dtype="float32", always_2d=False)
+        if getattr(audio, "ndim", 1) > 1:
+            audio = np.mean(audio, axis=1)
+        if len(audio) < sample_rate * 2:
+            return "rmvpe"
+        f0 = librosa.yin(
+            audio,
+            fmin=55,
+            fmax=min(1100, sample_rate / 2 - 1),
+            sr=sample_rate,
+            frame_length=1024,
+            hop_length=160,
+            trough_threshold=0.12,
+        )
+        valid = np.isfinite(f0) & (f0 > 0)
+        voiced = f0[valid]
+        if voiced.size < 20:
+            return "rmvpe"
+        semitones = 12 * np.log2(np.maximum(voiced, 1))
+        window_frames = 40  # 0.4 seconds at a 10 ms hop
+        if semitones.size < window_frames:
+            return "rmvpe"
+        stable_windows = [
+            float(np.max(semitones[start:start + window_frames]) - np.min(semitones[start:start + window_frames])) < 0.7
+            for start in range(0, semitones.size - window_frames + 1, 10)
+        ]
+        stable_fraction = float(np.mean(stable_windows)) if stable_windows else 0.0
+        return "fcpe" if stable_fraction >= 0.35 else "rmvpe"
+    except (ImportError, OSError, RuntimeError, ValueError):
+        return "rmvpe"
 
 
 def transcode(source: Path, destination: Path, target_format: str) -> None:
@@ -469,6 +534,8 @@ async def create_job(
     audio: UploadFile = File(...),
 ) -> dict[str, str]:
     ensure_authorized(request)
+    request_id = str(request.headers.get("X-PostPrep-Request-Id") or request.headers.get("CF-Ray") or uuid.uuid4())[:96]
+    started_at = asyncio.get_running_loop().time()
     content_length = request.headers.get("Content-Length")
     try:
         declared_length = int(content_length) if content_length else 0
@@ -548,6 +615,13 @@ async def create_job(
         download_token = secrets.token_urlsafe(32)
         async with outputs_lock:
             outputs[job_id] = OutputRecord(path=output_path, token=download_token, expires_at=expires_at)
+        logger.info(
+            "conversion completed request_id=%s job_id=%s model=%s seconds=%.2f",
+            request_id,
+            job_id,
+            model_id,
+            asyncio.get_running_loop().time() - started_at,
+        )
         return {
             "jobId": job_id,
             "downloadToken": download_token,
@@ -558,6 +632,12 @@ async def create_job(
         output_path.unlink(missing_ok=True)
         raise
     except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
+        logger.exception(
+            "conversion failed request_id=%s model=%s seconds=%.2f",
+            request_id,
+            model_id,
+            asyncio.get_running_loop().time() - started_at,
+        )
         output_path.unlink(missing_ok=True)
         raise RvcServiceError(502, "RVC_INFERENCE_FAILED") from None
     finally:

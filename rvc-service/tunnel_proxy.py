@@ -140,6 +140,9 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
                 return
             headers["Content-Type"] = content_type
             headers["Content-Length"] = str(len(body))
+        request_id = self.headers.get("X-PostPrep-Request-Id", "")
+        if request_id and len(request_id) <= 96:
+            headers["X-PostPrep-Request-Id"] = request_id
 
         connection = http.client.HTTPConnection(UPSTREAM_HOST, UPSTREAM_PORT, timeout=190)
         try:

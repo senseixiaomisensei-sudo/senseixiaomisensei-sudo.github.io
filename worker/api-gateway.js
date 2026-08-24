@@ -256,10 +256,12 @@ export default {
     }
 
     const headers = new Headers();
+    const requestId = crypto.randomUUID();
     const contentType = request.headers.get("Content-Type");
     const origin = request.headers.get("Origin");
     const visitorIp = request.headers.get("CF-Connecting-IP");
     if (contentType && route.method === "POST") headers.set("Content-Type", contentType);
+    headers.set("X-PostPrep-Request-Id", requestId);
     if (origin) headers.set("Origin", origin);
     if (visitorIp) headers.set("CF-Connecting-IP", visitorIp);
     if (directRvc) headers.set("Authorization", `Bearer ${directRvcToken(env)}`);
@@ -276,9 +278,14 @@ export default {
       upstreamHeaders.set("X-Content-Type-Options", "nosniff");
       upstreamHeaders.set("Vary", "Origin");
       upstreamHeaders.set("Access-Control-Allow-Origin", origin);
+      upstreamHeaders.set("Access-Control-Expose-Headers", "Retry-After, X-PostPrep-Request-Id");
+      upstreamHeaders.set("X-PostPrep-Request-Id", requestId);
       return new Response(upstream.body, { status: upstream.status, headers: upstreamHeaders });
     } catch {
-      return failure(request, env, 502, "UPSTREAM_UNAVAILABLE", "Cloud processing is temporarily unavailable");
+      const response = failure(request, env, 502, "UPSTREAM_UNAVAILABLE", "Cloud processing is temporarily unavailable");
+      response.headers.set("Access-Control-Expose-Headers", "Retry-After, X-PostPrep-Request-Id");
+      response.headers.set("X-PostPrep-Request-Id", requestId);
+      return response;
     }
   },
 };

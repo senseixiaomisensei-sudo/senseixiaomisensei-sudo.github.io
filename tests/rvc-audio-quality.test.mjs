@@ -136,7 +136,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260823-v41/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260823-v42/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);
@@ -150,6 +150,9 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /postprep_rvc_inference_mode_v32/u);
   assert.match(client, /CLOUD_STATUS_TIMEOUT_MS = 15000/u);
   assert.match(client, /CLOUD_CONVERT_TIMEOUT_MS = 220000/u);
+  assert.match(client, /CLOUD_MAX_CONVERT_TIMEOUT_MS = 600000/u);
+  assert.match(client, /function prepareCloudUploadAudio\(audio\)/u);
+  assert.match(client, /function cloudRequestTimeoutMs\(fileSize, durationSeconds\)/u);
   assert.match(client, /function cloudRvcFailureMessage\(error\)/u);
   assert.match(client, /error\.code = errCode/u);
   assert.doesNotMatch(client, /云端 RVC 引擎暂未完成本次请求，请重试/u);
@@ -167,6 +170,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /function preferredCloudOutputFormat\(\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
+  assert.match(client, /body\.set\("f0Method", "auto"\)/u);
+  assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /normalizeCloudAudioBlob\(await outputResponse\.blob\(\), outputFormat\)/u);
   assert.match(runtime, /v=20260823-v37/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
@@ -183,6 +188,10 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /deriveStableNoiseSeed\(freshAudioInput, selectedModel\.id\)/u);
   assert.match(client, /indexRate: indexRateVal/u);
   assert.match(service, /adeclick=threshold=2\.5:burst=2/u);
+  assert.match(service, /afftdn=nr=6:nf=-55:tn=1:ad=0\.8/u);
+  assert.match(service, /speechnorm=p=0\.88:e=3:c=2/u);
+  assert.match(service, /def select_f0_method\(/u);
+  assert.match(service, /methods\.append\("fcpe" if selected_method == "rmvpe" else "rmvpe"\)/u);
   assert.match(service, /SHOUT_HARSHNESS_GUARD_MODELS = frozenset\(\{"midori", "mika", "shiroko", "toki", "yuzu"\}\)/u);
   assert.match(service, /lowpass=f=10000:p=2/u);
 });

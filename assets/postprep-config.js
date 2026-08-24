@@ -11,7 +11,7 @@ globalThis.POSTPREP_RVC_STATUS_ENDPOINT = "https://postprep-ae6.pages.dev/rvc-ap
 globalThis.POSTPREP_RVC_MODELS_ENDPOINT = "https://postprep-ae6.pages.dev/rvc-api/models";
 // Public, short-lived audio playback route. It accepts only an unguessable
 // conversion job/token pair and never exposes the private GPU endpoint token.
-globalThis.POSTPREP_RVC_MEDIA_ENDPOINT = "https://postprep-ae6.pages.dev/rvc-media";
+globalThis.POSTPREP_RVC_MEDIA_ENDPOINT = "https://postprep-ae6.pages.dev/rvc-api/output";
 
 // This is a public Cloudflare Turnstile site key, not its secret key.
 // Its matching secret is stored only in the server-side deployment environment.

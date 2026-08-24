@@ -13,6 +13,8 @@
   const CLOUD_MODELS_TIMEOUT_MS = 20000;
   const CLOUD_STATUS_ATTEMPTS = 2;
   const CLOUD_CONVERT_TIMEOUT_MS = 220000;
+  const CLOUD_MAX_CONVERT_TIMEOUT_MS = 600000;
+  const CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND = 64 * 1024;
   // Android WebViews and several in-app Chinese browsers are inconsistent at
   // reading duration metadata from a Blob-backed 40 kHz WAV. The inference
   // itself is fine, but their native audio controls can display 0:00 / 0:00.
@@ -1496,14 +1498,19 @@
     return `${(safeBytes / (1024 * 1024)).toFixed(1)}MB`;
   }
 
-  function cloudUploadProgress(evt) {
+  function cloudUploadProgress(evt, startedAt = Date.now()) {
     const loaded = Math.max(0, Number(evt?.loaded) || 0);
     const total = Math.max(0, Number(evt?.total) || 0);
+    const elapsedSeconds = Math.max(0.25, (Date.now() - startedAt) / 1000);
+    const bytesPerSecond = loaded / elapsedSeconds;
+    const speed = bytesPerSecond >= 1024
+      ? `${formatTransferredBytes(bytesPerSecond)}/s`
+      : "正在建立上传通道";
     const lengthComputable = Boolean(evt?.lengthComputable && total > 0);
     if (!lengthComputable) {
       return {
         barPercent: 8,
-        status: `⏳ [1/3] 正在发送音频… 已发送 ${formatTransferredBytes(loaded)}`,
+        status: `⏳ [1/3] 正在发送音频… 已发送 ${formatTransferredBytes(loaded)} · ${speed}`,
       };
     }
 
@@ -1512,13 +1519,72 @@
     if (rawPercent >= 100) {
       return {
         barPercent: 44,
-        status: `⏳ [1/3] 音频已从浏览器发出（${transferred}），正在等待云端接收确认…`,
+        status: `⏳ [1/3] 音频已从浏览器发出（${transferred} · ${speed}），正在等待云端接收确认…`,
       };
     }
     return {
       barPercent: Math.min(43, Math.max(6, Math.round(rawPercent * 0.43))),
-      status: `⏳ [1/3] 正在发送音频… ${rawPercent}%（${transferred}）`,
+      status: `⏳ [1/3] 正在发送音频… ${rawPercent}%（${transferred} · ${speed}）`,
     };
+  }
+
+  function encodeMono16kWav(samples, originalName = "audio") {
+    const sampleCount = Math.max(0, samples?.length || 0);
+    const buffer = new ArrayBuffer(44 + sampleCount * 2);
+    const view = new DataView(buffer);
+    const writeAscii = (offset, value) => {
+      for (let index = 0; index < value.length; index += 1) {
+        view.setUint8(offset + index, value.charCodeAt(index));
+      }
+    };
+    writeAscii(0, "RIFF");
+    view.setUint32(4, 36 + sampleCount * 2, true);
+    writeAscii(8, "WAVE");
+    writeAscii(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, 16000, true);
+    view.setUint32(28, 16000 * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeAscii(36, "data");
+    view.setUint32(40, sampleCount * 2, true);
+    for (let index = 0; index < sampleCount; index += 1) {
+      const sample = Math.max(-1, Math.min(1, Number(samples[index]) || 0));
+      view.setInt16(44 + index * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    }
+    const stem = String(originalName || "audio").replace(/\.[^.]+$/u, "").replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 48) || "audio";
+    return new File([buffer], `${stem}.postprep-16k.wav`, { type: "audio/wav" });
+  }
+
+  function prepareCloudUploadAudio(audio) {
+    const original = audio?.file;
+    if (!original || !(audio?.float32 instanceof Float32Array)) {
+      return { file: original, optimized: false, originalBytes: Number(original?.size) || 0 };
+    }
+    const normalizedWav = encodeMono16kWav(audio.float32, original.name);
+    const extension = String(original.name || "").toLowerCase().split(".").pop();
+    const originalBytesPerSecond = original.size / Math.max(0.5, Number(audio.duration) || 0.5);
+    const shouldUseNormalized = extension === "wav"
+      || original.size > 5 * 1024 * 1024
+      || (originalBytesPerSecond > 64 * 1024 && normalizedWav.size < original.size);
+    return {
+      file: shouldUseNormalized ? normalizedWav : original,
+      optimized: shouldUseNormalized,
+      originalBytes: original.size,
+    };
+  }
+
+  function cloudRequestTimeoutMs(fileSize, durationSeconds) {
+    const uploadBudgetMs = Math.ceil(
+      Math.max(0, Number(fileSize) || 0) / CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND * 1000,
+    ) + 30000;
+    const inferenceBudgetMs = 150000 + Math.min(180000, Math.max(0, Number(durationSeconds) || 0) * 1200);
+    return Math.min(
+      CLOUD_MAX_CONVERT_TIMEOUT_MS,
+      Math.max(CLOUD_CONVERT_TIMEOUT_MS, uploadBudgetMs + inferenceBudgetMs),
+    );
   }
 
   async function checkCacheStatus() {
@@ -1777,6 +1843,14 @@
     RVC_NETWORK_INTERRUPTED: Object.freeze({
       zh: "当前网络连续中断了云端请求，请保持页面在前台，切换 Wi‑Fi 或移动数据后重新提交",
       en: "The network repeatedly interrupted the cloud request. Keep the page in the foreground, switch networks, and submit again",
+    }),
+    RVC_ROUTE_UNAVAILABLE: Object.freeze({
+      zh: "云端变声入口版本不一致，页面将不会继续使用这个错误地址；请刷新后重试",
+      en: "The cloud voice route is out of date. Refresh the page and retry",
+    }),
+    RVC_REQUEST_REJECTED: Object.freeze({
+      zh: "云端没有接受本次音频请求，请重新选择音频后提交",
+      en: "The cloud service rejected this audio request. Select the audio again and submit",
     }),
   });
 
@@ -2579,7 +2653,9 @@
     const protect = parseFloat(document.getElementById("rvc-protect")?.value || "0.25");
     const rmsMixRate = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1");
     const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
-    const extension = String(state.audio.file.name || "").toLowerCase().split(".").pop();
+    const preparedUpload = prepareCloudUploadAudio(state.audio);
+    const uploadFile = preparedUpload.file;
+    const extension = String(uploadFile?.name || "").toLowerCase().split(".").pop();
     if (!["wav", "mp3", "m4a", "ogg", "webm"].includes(extension)) {
       showToast("云端 RVC 引擎接受 WAV、MP3、M4A、OGG 或 WebM，请先转换格式。");
       return;
@@ -2598,7 +2674,14 @@
     try {
       const routes = officialRoutes(getOfficialEndpoint());
       const convertUrl = routes.convertUrl;
-      updateStatusDisplay("⏳ [1/3] 正在准备上传音频到云端 RVC 引擎…");
+      const requestTimeoutMs = cloudRequestTimeoutMs(uploadFile.size, state.audio.duration);
+      if (preparedUpload.optimized) {
+        updateStatusDisplay(
+          `⚡ [1/3] 已把上传体积从 ${formatTransferredBytes(preparedUpload.originalBytes)} 压到 ${formatTransferredBytes(uploadFile.size)}（16kHz 单声道），正在连接云端…`,
+        );
+      } else {
+        updateStatusDisplay("⏳ [1/3] 正在准备上传音频到云端 RVC 引擎…");
+      }
 
       const body = new FormData();
       body.set("modelId", selectedModel.id);
@@ -2607,8 +2690,8 @@
       body.set("indexRate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("index_rate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("protect", String(protect));
-      body.set("f0Method", "rmvpe");
-      body.set("f0_method", "rmvpe");
+      body.set("f0Method", "auto");
+      body.set("f0_method", "auto");
       const outputFormat = preferredCloudOutputFormat();
       body.set("format", outputFormat);
       body.set("resample", "0");
@@ -2617,7 +2700,7 @@
       body.set("filterRadius", String(filterRadius));
       body.set("filter_radius", String(filterRadius));
       body.set("language", state.lang === "en" ? "en" : "zh");
-      body.set("audio", state.audio.file, state.audio.file.name || `input.${extension}`);
+      body.set("audio", uploadFile, uploadFile.name || `input.${extension}`);
 
       // XMLHttpRequest gives upload progress on mobile browsers. Retry once
       // only for a connection-level drop or a transient gateway response;
@@ -2625,11 +2708,12 @@
       let ticker = null;
       const uploadAndInfer = (attempt) => new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+        const uploadStartedAt = Date.now();
         xhr.open("POST", convertUrl, true);
-        xhr.timeout = CLOUD_CONVERT_TIMEOUT_MS;
+        xhr.timeout = requestTimeoutMs;
 
         xhr.upload.onprogress = (evt) => {
-          const progress = cloudUploadProgress(evt);
+          const progress = cloudUploadProgress(evt, uploadStartedAt);
           updateProgressBar(progress.barPercent);
           updateStatusDisplay(progress.status);
         };
@@ -2664,9 +2748,16 @@
             if (xhr.status === 0) {
               errCode = "RVC_NETWORK_INTERRUPTED";
               errMsg = "网络连接在收到云端响应前中断";
+            } else if (!errCode && [404, 405].includes(xhr.status)) {
+              errCode = "RVC_ROUTE_UNAVAILABLE";
+            } else if (!errCode && [400, 415, 422].includes(xhr.status)) {
+              errCode = "RVC_REQUEST_REJECTED";
+            } else if (!errCode && xhr.status >= 500) {
+              errCode = "UPSTREAM_UNAVAILABLE";
             }
             const error = new Error(errMsg);
             error.code = errCode;
+            error.requestId = String(xhr.getResponseHeader("X-PostPrep-Request-Id") || "").slice(0, 96);
             error.retryAfterSeconds = Math.max(0, parseInt(xhr.getResponseHeader("Retry-After") || "0", 10) || 0);
             error.retryable = attempt < 2 && (
               ["UPSTREAM_UNAVAILABLE", "RVC_BACKEND_UNAVAILABLE", "RATE_LIMITER_UNAVAILABLE", "RVC_NETWORK_INTERRUPTED"].includes(errCode)
@@ -2691,7 +2782,7 @@
 
         xhr.ontimeout = () => {
           if (ticker) clearInterval(ticker);
-          const error = new Error(`上传或推理超时 (${Math.round(CLOUD_CONVERT_TIMEOUT_MS / 1000)}s)，建议裁短音频后重试`);
+          const error = new Error(`上传或推理超时 (${Math.round(requestTimeoutMs / 1000)}s)，建议裁短音频后重试`);
           error.retryable = false;
           reject(error);
         };
@@ -2750,7 +2841,8 @@
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
       const failureMessage = cloudRvcFailureMessage(error);
-      updateStatusDisplay(`❌ ${failureMessage}${error?.code ? `（${error.code}）` : ""}`);
+      const diagnostic = error?.requestId ? ` · 诊断号 ${error.requestId}` : "";
+      updateStatusDisplay(`❌ ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}`);
       showToast(`❌ ${failureMessage}`);
       return false;
     } finally {

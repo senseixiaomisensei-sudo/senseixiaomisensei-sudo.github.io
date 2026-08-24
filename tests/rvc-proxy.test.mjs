@@ -39,8 +39,8 @@ function rvcForm(overrides = {}) {
   form.set("indexRate", "0.5");
   form.set("index_rate", "0.5");
   form.set("protect", "0.33");
-  form.set("f0Method", "rmvpe");
-  form.set("f0_method", "rmvpe");
+  form.set("f0Method", "auto");
+  form.set("f0_method", "auto");
   form.set("format", "wav");
   form.set("resample", "0");
   form.set("rmsMixRate", "1");
@@ -144,6 +144,7 @@ test("rvc endpoint sends only sanitized fields to the fixed GPU backend", async 
     assert.equal(upstream.options.headers.Authorization, `Bearer ${BASE_ENV.RVC_INFERENCE_TOKEN}`);
     assert.equal(upstream.options.body.get("model_id"), "sweet-female");
     assert.equal(upstream.options.body.get("pitch"), "2");
+    assert.equal(upstream.options.body.get("f0_method"), "auto");
     assert.equal(upstream.options.body.get("audio").name, "input.wav");
     assert.equal(upstream.options.body.get("language"), "zh");
   } finally {

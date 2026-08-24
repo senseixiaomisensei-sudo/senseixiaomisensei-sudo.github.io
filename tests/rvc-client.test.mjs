@@ -42,7 +42,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /getUserMedia/);
   assert.match(client, /loadModelAuto/);
   assert.match(client, /runWebRvcInference/);
-  assert.match(client, /function cloudUploadProgress\(evt\)/u);
+  assert.match(client, /function cloudUploadProgress\(evt, startedAt = Date\.now\(\)\)/u);
   assert.match(client, /音频已从浏览器发出/u);
   assert.match(client, /等待云端接收确认/u);
   assert.match(client, /等待服务端完成响应，不虚报百分比/u);
@@ -52,7 +52,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /error\.retryable = attempt < 2/u);
   assert.match(client, /body\.set\("model_id", selectedModel\.id\)/u);
   assert.match(client, /body\.set\("index_rate"/u);
-  assert.match(client, /body\.set\("f0_method", "rmvpe"\)/u);
+  assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /body\.set\("rms_mix_rate"/u);
   assert.match(client, /body\.set\("filter_radius"/u);
   assert.doesNotMatch(client, /正在上传音频… \$\{pct\}%/u);
@@ -63,7 +63,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(config, /POSTPREP_RVC_API_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api"/u);
   assert.match(config, /POSTPREP_RVC_STATUS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api\/status"/u);
   assert.match(config, /POSTPREP_RVC_MODELS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api\/models"/u);
-  assert.match(config, /POSTPREP_RVC_MEDIA_ENDPOINT/);
+  assert.match(config, /POSTPREP_RVC_MEDIA_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api\/output"/u);
   assert.doesNotMatch(config, /POSTPREP_VOICE_API_ENDPOINT/);
 
   const officialRoutes = Function(`"use strict"; return (${extractFunction(client, "officialRoutes")});`)();
@@ -75,6 +75,10 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   );
   assert.doesNotMatch(pagesRoutes.convertUrl, /\/v1\/convert$/u);
   assert.match(client, /if \(stored\) window\.localStorage\.removeItem\(RVC_ENDPOINT_STORAGE_KEY\)/u);
+  assert.match(client, /CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND = 64 \* 1024/u);
+  assert.match(client, /encodeMono16kWav/u);
+  assert.match(client, /formatTransferredBytes\(bytesPerSecond\)/u);
+  assert.match(client, /诊断号 \$\{error\.requestId\}/u);
 
   const catalogPayload = JSON.parse(catalog);
   assert.ok(Array.isArray(catalogPayload.models));
@@ -130,4 +134,13 @@ test("GPU service pins and imports the official RVC inference source", async () 
   assert.match(dockerfile, /RVC_COMMIT=8f2fdbf483955f924b4c87ab34919170d0b704ed/u);
   assert.match(setup, /cc8c20f4b90a520757260197a3ff2505705a7adbd20ad9eeaa4e1a9b38442ef5/u);
   assert.match(setup, /6d62215f4306e3ca278246188607209f09af3dc77ed4232efdd069798c4ec193/u);
+});
+
+test("RVC watchdog automatically recovers the local service and public tunnel", async () => {
+  const watchdog = await readFile(new URL("rvc-service/watchdog.ps1", root), "utf8");
+  assert.match(watchdog, /FailureThreshold = 2/u);
+  assert.match(watchdog, /postprep-ae6\.pages\.dev\/rvc-api\/status/u);
+  assert.match(watchdog, /start-all\.ps1/u);
+  assert.match(watchdog, /-NoWatchdog/u);
+  assert.match(watchdog, /Local\\PostPrepRvcWatchdog/u);
 });
