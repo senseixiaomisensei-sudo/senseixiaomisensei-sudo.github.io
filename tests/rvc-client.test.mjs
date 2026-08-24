@@ -86,8 +86,10 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.ok(Array.isArray(catalogPayload.models));
   assert.ok(catalogPayload.models.every((model) => /^[A-Za-z0-9_-]{1,64}$/u.test(model.id)));
 
-  // The /rvc* path rule must re-allow the microphone for browser recording.
-  const rvcRule = headersFile.split(/\r?\n/u).findIndex((line) => line.trim() === "/rvc*");
+  // The exact RVC page rule must override the global CSP and re-allow media
+  // blobs plus the microphone. Cloudflare Pages did not reliably match the
+  // former /rvc* wildcard for /rvc.html.
+  const rvcRule = headersFile.split(/\r?\n/u).findIndex((line) => line.trim() === "/rvc.html");
   assert.ok(rvcRule >= 0);
   const rvcBlock = headersFile.split(/\r?\n/u).slice(rvcRule, rvcRule + 6).join("\n");
   assert.match(rvcBlock, /microphone=\(self\)/);

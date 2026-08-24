@@ -5,7 +5,7 @@
   Permissions-Policy: camera=(), microphone=(self), geolocation=()
   X-Frame-Options: DENY
 
-/rvc*
+/rvc.html
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' blob: data: https://cdn.jsdelivr.net https://cdn.jsdmirror.com https://gh-proxy.com https://ghproxy.net https://raw.githubusercontent.com https://testingcf.jsdelivr.net https://gcore.jsdelivr.net https://huggingface.co https://*.hf.co https://postprep-text-gateway.postprep.workers.dev; media-src 'self' blob: data:; worker-src 'self' blob:; frame-src 'none'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

@@ -1590,8 +1590,10 @@
     }
     const normalizedWav = encodeMono16kWav(audio.float32, original.name);
     const extension = String(original.name || "").toLowerCase().split(".").pop();
+    const isBrowserRecording = /^mic_recording_\d+/iu.test(String(original.name || ""));
     const originalBytesPerSecond = original.size / Math.max(0.5, Number(audio.duration) || 0.5);
-    const shouldUseNormalized = extension === "wav"
+    const shouldUseNormalized = isBrowserRecording
+      || extension === "wav"
       || original.size > 5 * 1024 * 1024
       || (originalBytesPerSecond > 64 * 1024 && normalizedWav.size < original.size);
     return {

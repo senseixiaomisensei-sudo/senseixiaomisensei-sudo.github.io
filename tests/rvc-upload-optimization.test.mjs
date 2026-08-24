@@ -54,6 +54,20 @@ test("already compact short MP3 uploads stay untouched", () => {
   assert.equal(prepared.file, original);
 });
 
+test("browser microphone recordings are normalized to a standard WAV before cloud upload", () => {
+  const original = new File([new Uint8Array(32 * 1024)], "mic_recording_1787536560938.webm", { type: "audio/webm" });
+  const samples = new Float32Array(16000 * 3);
+  samples.fill(0.1);
+  const prepared = helpers.prepareCloudUploadAudio({
+    file: original,
+    float32: samples,
+    duration: 3,
+  });
+  assert.equal(prepared.optimized, true);
+  assert.equal(prepared.file.type, "audio/wav");
+  assert.match(prepared.file.name, /\.postprep-16k\.wav$/u);
+});
+
 test("long uploads receive a size-aware timeout instead of the old fixed cutoff", () => {
   const timeout = helpers.cloudRequestTimeoutMs(25 * 1024 * 1024, 180);
   assert.ok(timeout > 500000);
