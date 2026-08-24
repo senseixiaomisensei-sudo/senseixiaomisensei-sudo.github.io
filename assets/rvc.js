@@ -2183,11 +2183,9 @@
   function officialMediaUrl(jobId, token) {
     const current = globalThis.location;
     const hostname = String(current?.hostname || "").toLowerCase();
-    let base = "";
-    if (hostname.endsWith(".github.io")) {
-      base = OFFICIAL_RVC_MEDIA_ENDPOINT;
-    } else if (current?.protocol === "https:") {
-      base = new URL("/rvc-media", current.origin).toString();
+    let base = OFFICIAL_RVC_MEDIA_ENDPOINT;
+    if (!base && current?.protocol === "https:" && !hostname.endsWith(".github.io")) {
+      base = new URL("/rvc-api/output", current.origin).toString();
     }
     if (!base) return "";
     return `${base.replace(/\/+$/u, "")}/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`;
@@ -2595,11 +2593,10 @@
     const finishRecordedFile = async (file) => {
       if (!file || file.size < 44) throw new Error("EMPTY_RECORDING");
       if (state.recordPreviewUrl) URL.revokeObjectURL(state.recordPreviewUrl);
-      state.recordPreviewUrl = URL.createObjectURL(file);
       if (recordPreview) {
-        recordPreview.src = state.recordPreviewUrl;
-        recordPreview.hidden = false;
-        recordPreview.load();
+        recordPreview.pause();
+        recordPreview.removeAttribute("src");
+        recordPreview.hidden = true;
       }
       await handleAudioSelected(file, Math.max(0, (Date.now() - state.recordStartAt) / 1000));
       if (recordHint) recordHint.textContent = `录音已就绪：${file.name} · 点击“开始变声”即可处理。`;
@@ -3133,7 +3130,13 @@
       }
       if (resultAudio) {
         const mediaUrl = officialMediaUrl(payload.jobId, payload.downloadToken);
-        await attachResultAudio(resultAudio, mediaUrl || state.resultUrl, Boolean(mediaUrl));
+        try {
+          await attachResultAudio(resultAudio, mediaUrl || state.resultUrl, Boolean(mediaUrl));
+        } catch (mediaError) {
+          if (!mediaUrl) throw mediaError;
+          console.warn("Protected media route failed; using the already downloaded result blob", mediaError);
+          await attachResultAudio(resultAudio, state.resultUrl, false);
+        }
         resultAudio.hidden = false;
       }
       const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
