@@ -94,6 +94,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   const rvcBlock = headersFile.split(/\r?\n/u).slice(rvcRule, rvcRule + 6).join("\n");
   assert.match(rvcBlock, /microphone=\(self\)/);
   assert.match(rvcBlock, /media-src 'self' blob:/);
+  assert.match(headersFile.split(/\r?\n/u).slice(0, 7).join("\n"), /media-src 'self' blob:/);
 });
 
 test("rvc routes are constrained to the protected gateway and a fixed backend contract", async () => {
