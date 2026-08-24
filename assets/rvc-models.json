@@ -1,7 +1,7 @@
 {
-  "version": 12,
-  "updatedAt": "2026-08-23",
-  "_readme": "v31 精选目录：20 个公开社区蔚蓝档案 RVC v2 模型均已校验托管哈希、权重有限值、768 维结构、FAISS 索引与两条推理链路。技术检查不等于角色/表演者授权，也不等于主观音色或任何输入下零伪影保证；未花当前公开候选为 32k，其余为 40k/48k。",
+  "version": 13,
+  "updatedAt": "2026-08-24",
+  "_readme": "v48 精选目录：20 个蔚蓝档案与 5 个咒术回战公开社区 RVC v2 模型；新增角色分区与自训练模型自定义区域。全部公开模型经过哈希、权重安全加载、结构、索引和真实推理检查。技术检查不等于角色/表演者授权，也不等于任何输入下零伪影保证。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",
@@ -653,6 +653,171 @@
         "models/characters/mika/chunk_3.bin",
         "models/characters/mika/chunk_4.bin",
         "models/characters/mika/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "gojo",
+      "name": "五条悟 (Satoru Gojo)",
+      "avatarText": "五条悟",
+      "description": "《咒术回战》· 清亮从容的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+      "tags": [
+        "男声",
+        "咒术回战",
+        "日语",
+        "48k"
+      ],
+      "collectionId": "jujutsu-kaisen",
+      "collectionName": "咒术回战",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；跨音域时小步调节，避免一次性大幅移调",
+      "sampleRate": 48000,
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "marketplace": "https://voice-models.com/model/1ntfr5panFt",
+      "source": "https://huggingface.co/Kuma6/Satoru-Gojo/resolve/main/Gojo.zip",
+      "license": "Community model; creator requests credit; character/performer authorization unverified",
+      "checkpointSha256": "8a473aaae82a9e7be0bbde859fc3b654c877b340fb002e462bbf5c68b38ab6fa",
+      "indexSha256": "8e643bf9f1ee96e7eb954d9b1dd56cf7fa7bb1c6ec3d02580e394eab2368543",
+      "retrieval": "models/characters/gojo/retrieval.bin",
+      "chunks": [
+        "models/characters/gojo/chunk_0.bin",
+        "models/characters/gojo/chunk_1.bin",
+        "models/characters/gojo/chunk_2.bin",
+        "models/characters/gojo/chunk_3.bin",
+        "models/characters/gojo/chunk_4.bin",
+        "models/characters/gojo/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "sukuna",
+      "name": "两面宿傩 (Ryomen Sukuna)",
+      "avatarText": "宿傩",
+      "description": "《咒术回战》· 低沉强势的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+      "tags": [
+        "男声",
+        "咒术回战",
+        "日语",
+        "48k"
+      ],
+      "collectionId": "jujutsu-kaisen",
+      "collectionName": "咒术回战",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；低沉角色建议保留原调并控制输入峰值",
+      "sampleRate": 48000,
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "marketplace": "https://voice-models.com/model/1nui7agzFO0",
+      "source": "https://huggingface.co/Kuma6/Sukuna/resolve/main/Sukuna.zip",
+      "license": "Community model; creator requests credit; character/performer authorization unverified",
+      "checkpointSha256": "e66c9c880131788736b086badd8835fa1177b1a387ea9f1a530313496342516d",
+      "indexSha256": "b10493894265c1692c9dde370a95e13703dac3a50d229b651c29215ddd80fd82",
+      "retrieval": "models/characters/sukuna/retrieval.bin",
+      "chunks": [
+        "models/characters/sukuna/chunk_0.bin",
+        "models/characters/sukuna/chunk_1.bin",
+        "models/characters/sukuna/chunk_2.bin",
+        "models/characters/sukuna/chunk_3.bin",
+        "models/characters/sukuna/chunk_4.bin",
+        "models/characters/sukuna/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "geto",
+      "name": "夏油杰 (Suguru Geto)",
+      "avatarText": "夏油杰",
+      "description": "《咒术回战》· 沉稳柔和的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+      "tags": [
+        "男声",
+        "咒术回战",
+        "日语",
+        "48k"
+      ],
+      "collectionId": "jujutsu-kaisen",
+      "collectionName": "咒术回战",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；平稳人声更利于保留角色质感",
+      "sampleRate": 48000,
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "marketplace": "https://voice-models.com/model/1nsS1R5evxB",
+      "source": "https://huggingface.co/Kuma6/Suguru-Geto/resolve/main/Geto.zip",
+      "license": "Community model; creator requests credit; character/performer authorization unverified",
+      "checkpointSha256": "29377d351b87e9873e71a6ea4fee2130a2b0222751494ff6c408ea21ac95094b",
+      "indexSha256": "509f8327fb3b588ade669a253eddc0ffe3aa2b7a6aeb9205d1878676f916808e",
+      "retrieval": "models/characters/geto/retrieval.bin",
+      "chunks": [
+        "models/characters/geto/chunk_0.bin",
+        "models/characters/geto/chunk_1.bin",
+        "models/characters/geto/chunk_2.bin",
+        "models/characters/geto/chunk_3.bin",
+        "models/characters/geto/chunk_4.bin",
+        "models/characters/geto/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "toji",
+      "name": "伏黑甚尔 (Toji Fushiguro)",
+      "avatarText": "甚尔",
+      "description": "《咒术回战》· 粗粝有力的成年男声 · 日语公开社区 RVC v2 · 48k / 400 epochs",
+      "tags": [
+        "男声",
+        "咒术回战",
+        "日语",
+        "48k"
+      ],
+      "collectionId": "jujutsu-kaisen",
+      "collectionName": "咒术回战",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；高能输入会沿用既有峰值保护链",
+      "sampleRate": 48000,
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "marketplace": "https://voice-models.com/model/1nqAeDDuwe6",
+      "source": "https://huggingface.co/Kuma6/Toji-Fushiguro/resolve/main/Toji.zip",
+      "license": "Community model; creator requests credit; character/performer authorization unverified",
+      "checkpointSha256": "7f9da37feac47f5b6fd06962c01292253866528ecae5284a5693f1a07b887122",
+      "indexSha256": "3ca686e1b45e2d76910cc0ec4e99be225837be7e984dc81062459e5f33545672",
+      "retrieval": "models/characters/toji/retrieval.bin",
+      "chunks": [
+        "models/characters/toji/chunk_0.bin",
+        "models/characters/toji/chunk_1.bin",
+        "models/characters/toji/chunk_2.bin",
+        "models/characters/toji/chunk_3.bin",
+        "models/characters/toji/chunk_4.bin",
+        "models/characters/toji/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "megumi",
+      "name": "伏黑惠 (Megumi Fushiguro)",
+      "avatarText": "伏黑惠",
+      "description": "《咒术回战》· 冷静克制的青年男声 · 日语公开社区 RVC v2 · 48k / 400 epochs",
+      "tags": [
+        "男声",
+        "咒术回战",
+        "日语",
+        "48k"
+      ],
+      "collectionId": "jujutsu-kaisen",
+      "collectionName": "咒术回战",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；使用清晰近讲人声效果更稳定",
+      "sampleRate": 48000,
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "marketplace": "https://voice-models.com/model/1nqEz5uruf5",
+      "source": "https://huggingface.co/Kuma6/Megumi-Fushiguro/resolve/main/Megumi.zip",
+      "license": "Community model; creator requests credit; character/performer authorization unverified",
+      "checkpointSha256": "5607805eca963f7cffd25962ecdd47366ba38377cccdca254bd1a4c7c871424f",
+      "indexSha256": "3cb0baec983878498ba311bc861a0677d35125c400bf89a3c5ef8c1a037aa7e5",
+      "retrieval": "models/characters/megumi/retrieval.bin",
+      "chunks": [
+        "models/characters/megumi/chunk_0.bin",
+        "models/characters/megumi/chunk_1.bin",
+        "models/characters/megumi/chunk_2.bin",
+        "models/characters/megumi/chunk_3.bin",
+        "models/characters/megumi/chunk_4.bin",
+        "models/characters/megumi/chunk_5.bin"
       ]
     }
   ]

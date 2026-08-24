@@ -88,6 +88,13 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   const catalogPayload = JSON.parse(catalog);
   assert.ok(Array.isArray(catalogPayload.models));
   assert.ok(catalogPayload.models.every((model) => /^[A-Za-z0-9_-]{1,64}$/u.test(model.id)));
+  assert.equal(catalogPayload.models.length, 25);
+  assert.equal(catalogPayload.models.filter((model) => model.tags?.includes("蔚蓝档案")).length, 20);
+  assert.equal(catalogPayload.models.filter((model) => model.collectionId === "jujutsu-kaisen").length, 5);
+  assert.deepEqual(
+    new Set(catalogPayload.models.filter((model) => model.collectionId === "jujutsu-kaisen").map((model) => model.sampleRate)),
+    new Set([48000]),
+  );
 
   // The exact RVC page rule must override the global CSP and re-allow media
   // blobs plus the microphone. Cloudflare Pages did not reliably match the

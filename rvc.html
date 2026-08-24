@@ -22,7 +22,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-              <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v47（云端 RVC + 跨浏览器录音 + 自定义训练）
+              <i class="fa-solid fa-circle-check text-emerald-600"></i>引擎版本 v48（角色分区 + 咒术回战模型 + 自定义训练）
         </span>
       </div>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
@@ -118,17 +118,17 @@
             </div>
             <input id="rvc-model-search" type="search" autocomplete="off" spellcheck="false" class="min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand sm:w-56" data-rvc-i18n-placeholder="searchPlaceholder" placeholder="搜索角色…">
           </div>
-          <div id="rvc-model-gallery" class="mt-4 grid max-h-80 gap-3 overflow-y-auto pr-1 sm:grid-cols-2" role="listbox" aria-labelledby="rvc-step-model-label"></div>
+          <div id="rvc-model-gallery" class="mt-4 max-h-[32rem] space-y-4 overflow-y-auto pr-1" role="listbox" aria-labelledby="rvc-step-model-label"></div>
           <p id="rvc-model-empty" class="mt-4 hidden rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" data-rvc-i18n="modelEmpty">没有找到匹配的角色。换个关键词试试。</p>
           <div id="rvc-trained-models-section" class="mt-5 hidden rounded-xl border border-violet-200 bg-violet-50/50 p-4">
             <div class="flex flex-wrap items-end justify-between gap-2">
               <div>
                 <p class="text-sm font-black text-ink">🎓 训练完成的模型</p>
-                <p class="mt-1 text-xs leading-5 text-muted">这些模型由下方训练功能生成，和公开角色分区显示，点击即可使用原有云端 RVC 变声流程。</p>
+                <p class="mt-1 text-xs leading-5 text-muted">这些模型由下方训练功能生成，可在训练前填写自己的区域名称；点击后继续使用原有云端 RVC 变声流程。</p>
               </div>
               <span id="rvc-trained-models-count" class="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-violet-700"></span>
             </div>
-            <div id="rvc-trained-model-gallery" class="mt-3 grid max-h-64 gap-3 overflow-y-auto pr-1 sm:grid-cols-2" role="listbox" aria-label="训练完成的模型"></div>
+            <div id="rvc-trained-model-gallery" class="mt-3 max-h-80 space-y-3 overflow-y-auto pr-1" role="listbox" aria-label="训练完成的模型"></div>
           </div>
 
           <!-- 导入我的模型（自己训练/转换的 .onnx，仅本机使用） -->
@@ -150,12 +150,16 @@
             <summary class="cursor-pointer text-sm font-black text-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">🧪 上传纯人声并训练新的 RVC v2 模型</summary>
             <div class="mt-4 space-y-4">
               <p class="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs leading-5 text-muted">选择 2–12 段你有权使用的纯净单人人声。系统按固定官方 RVC v2 路线执行数据切分、RMVPE 音高、HuBERT 特征、预训练权重微调和 FAISS 索引。训练由本机 GPU 后台执行，旧角色与普通变声代码不被替换。</p>
-              <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <div class="grid gap-3 sm:grid-cols-2">
                 <label class="block">
                   <span class="text-xs font-bold text-ink">模型名称</span>
                   <input id="rvc-training-name" type="text" maxlength="60" autocomplete="off" placeholder="例如：我的自然声线" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-violet-500 focus:ring-violet-500">
                 </label>
-                <label class="flex min-h-10 cursor-pointer items-center justify-center gap-2 self-end rounded-lg border border-violet-500 bg-white px-4 py-2 text-sm font-bold text-violet-700 shadow-sm hover:bg-violet-100">
+                <label class="block">
+                  <span class="text-xs font-bold text-ink">模型区域</span>
+                  <input id="rvc-training-collection" type="text" maxlength="30" autocomplete="off" value="我的训练模型" placeholder="例如：我的翻唱模型" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-violet-500 focus:ring-violet-500">
+                </label>
+                <label class="flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-violet-500 bg-white px-4 py-2 text-sm font-bold text-violet-700 shadow-sm hover:bg-violet-100 sm:col-span-2">
                   <i class="fa-solid fa-music" aria-hidden="true"></i><span>选择多段音频</span>
                   <input id="rvc-training-files" type="file" multiple accept="audio/wav,audio/x-wav,audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,audio/webm,audio/flac,audio/aac" class="sr-only">
                 </label>
@@ -376,6 +380,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-<script src="assets/rvc.js?v=20260824-v47"></script>
+<script src="assets/rvc.js?v=20260824-v48"></script>
 </body>
 </html>

@@ -136,7 +136,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260824-v47/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260824-v48/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);
@@ -179,7 +179,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.wasm/u);
-  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260823-v33"/u);
+  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260824-v34"/u);
   assert.match(client, /function officialMediaUrl\(jobId, token\)/u);
   assert.match(client, /await attachResultAudio\(resultAudio, mediaUrl \|\| state\.resultUrl, Boolean\(mediaUrl\)\)/u);
   assert.match(page, /media-src[^;"]*https:\/\/postprep-ae6\.pages\.dev/u);
@@ -205,7 +205,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
 test("all deployed character models expose caller-controlled noise without hidden random operators", async () => {
   const catalog = JSON.parse(await readFile(new URL("assets/rvc-models.json", root), "utf8"));
   const manifest = JSON.parse(await readFile(new URL("models/manifest.json", root), "utf8"));
-  assert.equal(catalog.models.length, 20);
+  assert.equal(catalog.models.length, 25);
   assert.ok(catalog.models.some((model) => model.id === "momoi"));
   assert.ok(catalog.models.some((model) => model.id === "reisa"));
   for (const model of catalog.models) {

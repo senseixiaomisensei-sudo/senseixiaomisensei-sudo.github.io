@@ -160,6 +160,7 @@ class TrainingRecord:
     display_name: str
     model_id: str
     root: str
+    collection_name: str = "我的训练模型"
     state: str = "uploading"
     stage: str = "uploading"
     progress: int = 0
@@ -253,6 +254,8 @@ def scan_models() -> list[dict]:
             "emoji": str(meta.get("emoji") or "🎵"),
             "description": str(meta.get("description") or ""),
             "tags": meta.get("tags") if isinstance(meta.get("tags"), list) else [],
+            "collectionId": str(meta.get("collectionId") or ""),
+            "collectionName": str(meta.get("collectionName") or ""),
             "hasIndex": index.is_file(),
             "license": str(meta.get("license") or "unverified"),
             "source": str(meta.get("source") or ""),
@@ -795,6 +798,7 @@ def training_payload(record: TrainingRecord) -> dict[str, object]:
         "epochs": record.epochs,
         "modelId": record.result_model_id,
         "displayName": record.display_name,
+        "collectionName": record.collection_name,
         "errorCode": record.error_code,
         "updatedAt": record.updated_at,
     }
@@ -843,6 +847,7 @@ async def process_training_job(record: TrainingRecord) -> None:
                 models_dir=MODELS_DIR,
                 model_id=record.model_id,
                 display_name=record.display_name,
+                collection_name=record.collection_name,
                 epochs=record.epochs,
                 batch_size=1,
                 source_duration_seconds=record.duration_seconds,
@@ -892,6 +897,7 @@ async def process_training_job(record: TrainingRecord) -> None:
 async def init_training(
     request: Request,
     display_name: str = Form(...),
+    collection_name: str = Form("我的训练模型"),
     consent: str = Form(...),
     epochs: str = Form(str(DEFAULT_TRAIN_EPOCHS)),
 ) -> dict[str, object]:
@@ -899,6 +905,11 @@ async def init_training(
     clean_name = " ".join(display_name.strip().split())[:60]
     if len(clean_name) < 1:
         raise RvcServiceError(400, "RVC_TRAINING_INVALID_NAME")
+    clean_collection = " ".join(
+        "".join(ch for ch in collection_name.strip() if ch.isprintable() and ch not in "<>").split()
+    )[:30]
+    if not clean_collection:
+        clean_collection = "我的训练模型"
     if consent.lower() not in {"true", "1", "yes"}:
         raise RvcServiceError(400, "RVC_TRAINING_CONSENT_REQUIRED")
     try:
@@ -926,6 +937,7 @@ async def init_training(
         display_name=clean_name,
         model_id=model_id,
         root=str(root),
+        collection_name=clean_collection,
         epochs=epoch_value,
         created_at=now,
         updated_at=now,

@@ -851,6 +851,172 @@
               "models/characters/mika/chunk_5.bin"
           ]
       }
+,
+      {
+          "id": "gojo",
+          "name": "五条悟 (Satoru Gojo)",
+          "avatarText": "五条悟",
+          "description": "《咒术回战》· 清亮从容的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+          "tags": [
+              "男声",
+              "咒术回战",
+              "日语",
+              "48k"
+          ],
+          "collectionId": "jujutsu-kaisen",
+          "collectionName": "咒术回战",
+          "defaultPitch": 0,
+          "pitchNote": "同音域输入建议 0；跨音域时小步调节，避免一次性大幅移调",
+          "sampleRate": 48000,
+          "noiseScale": 0.3,
+          "defaultIndexRate": 0.3,
+          "marketplace": "https://voice-models.com/model/1ntfr5panFt",
+          "source": "https://huggingface.co/Kuma6/Satoru-Gojo/resolve/main/Gojo.zip",
+          "license": "Community model; creator requests credit; character/performer authorization unverified",
+          "checkpointSha256": "8a473aaae82a9e7be0bbde859fc3b654c877b340fb002e462bbf5c68b38ab6fa",
+          "indexSha256": "8e643bf9f1ee96e7eb954d9b1dd56cf7fa7bb1c6ec3d02580e394eab2368543",
+          "retrieval": "models/characters/gojo/retrieval.bin",
+          "chunks": [
+              "models/characters/gojo/chunk_0.bin",
+              "models/characters/gojo/chunk_1.bin",
+              "models/characters/gojo/chunk_2.bin",
+              "models/characters/gojo/chunk_3.bin",
+              "models/characters/gojo/chunk_4.bin",
+              "models/characters/gojo/chunk_5.bin"
+          ]
+      },
+      {
+          "id": "sukuna",
+          "name": "两面宿傩 (Ryomen Sukuna)",
+          "avatarText": "宿傩",
+          "description": "《咒术回战》· 低沉强势的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+          "tags": [
+              "男声",
+              "咒术回战",
+              "日语",
+              "48k"
+          ],
+          "collectionId": "jujutsu-kaisen",
+          "collectionName": "咒术回战",
+          "defaultPitch": 0,
+          "pitchNote": "同音域输入建议 0；低沉角色建议保留原调并控制输入峰值",
+          "sampleRate": 48000,
+          "noiseScale": 0.3,
+          "defaultIndexRate": 0.3,
+          "marketplace": "https://voice-models.com/model/1nui7agzFO0",
+          "source": "https://huggingface.co/Kuma6/Sukuna/resolve/main/Sukuna.zip",
+          "license": "Community model; creator requests credit; character/performer authorization unverified",
+          "checkpointSha256": "e66c9c880131788736b086badd8835fa1177b1a387ea9f1a530313496342516d",
+          "indexSha256": "b10493894265c1692c9dde370a95e13703dac3a50d229b651c29215ddd80fd82",
+          "retrieval": "models/characters/sukuna/retrieval.bin",
+          "chunks": [
+              "models/characters/sukuna/chunk_0.bin",
+              "models/characters/sukuna/chunk_1.bin",
+              "models/characters/sukuna/chunk_2.bin",
+              "models/characters/sukuna/chunk_3.bin",
+              "models/characters/sukuna/chunk_4.bin",
+              "models/characters/sukuna/chunk_5.bin"
+          ]
+      },
+      {
+          "id": "geto",
+          "name": "夏油杰 (Suguru Geto)",
+          "avatarText": "夏油杰",
+          "description": "《咒术回战》· 沉稳柔和的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+          "tags": [
+              "男声",
+              "咒术回战",
+              "日语",
+              "48k"
+          ],
+          "collectionId": "jujutsu-kaisen",
+          "collectionName": "咒术回战",
+          "defaultPitch": 0,
+          "pitchNote": "同音域输入建议 0；平稳人声更利于保留角色质感",
+          "sampleRate": 48000,
+          "noiseScale": 0.3,
+          "defaultIndexRate": 0.3,
+          "marketplace": "https://voice-models.com/model/1nsS1R5evxB",
+          "source": "https://huggingface.co/Kuma6/Suguru-Geto/resolve/main/Geto.zip",
+          "license": "Community model; creator requests credit; character/performer authorization unverified",
+          "checkpointSha256": "29377d351b87e9873e71a6ea4fee2130a2b0222751494ff6c408ea21ac95094b",
+          "indexSha256": "509f8327fb3b588ade669a253eddc0ffe3aa2b7a6aeb9205d1878676f916808e",
+          "retrieval": "models/characters/geto/retrieval.bin",
+          "chunks": [
+              "models/characters/geto/chunk_0.bin",
+              "models/characters/geto/chunk_1.bin",
+              "models/characters/geto/chunk_2.bin",
+              "models/characters/geto/chunk_3.bin",
+              "models/characters/geto/chunk_4.bin",
+              "models/characters/geto/chunk_5.bin"
+          ]
+      },
+      {
+          "id": "toji",
+          "name": "伏黑甚尔 (Toji Fushiguro)",
+          "avatarText": "甚尔",
+          "description": "《咒术回战》· 粗粝有力的成年男声 · 日语公开社区 RVC v2 · 48k / 400 epochs",
+          "tags": [
+              "男声",
+              "咒术回战",
+              "日语",
+              "48k"
+          ],
+          "collectionId": "jujutsu-kaisen",
+          "collectionName": "咒术回战",
+          "defaultPitch": 0,
+          "pitchNote": "同音域输入建议 0；高能输入会沿用既有峰值保护链",
+          "sampleRate": 48000,
+          "noiseScale": 0.3,
+          "defaultIndexRate": 0.3,
+          "marketplace": "https://voice-models.com/model/1nqAeDDuwe6",
+          "source": "https://huggingface.co/Kuma6/Toji-Fushiguro/resolve/main/Toji.zip",
+          "license": "Community model; creator requests credit; character/performer authorization unverified",
+          "checkpointSha256": "7f9da37feac47f5b6fd06962c01292253866528ecae5284a5693f1a07b887122",
+          "indexSha256": "3ca686e1b45e2d76910cc0ec4e99be225837be7e984dc81062459e5f33545672",
+          "retrieval": "models/characters/toji/retrieval.bin",
+          "chunks": [
+              "models/characters/toji/chunk_0.bin",
+              "models/characters/toji/chunk_1.bin",
+              "models/characters/toji/chunk_2.bin",
+              "models/characters/toji/chunk_3.bin",
+              "models/characters/toji/chunk_4.bin",
+              "models/characters/toji/chunk_5.bin"
+          ]
+      },
+      {
+          "id": "megumi",
+          "name": "伏黑惠 (Megumi Fushiguro)",
+          "avatarText": "伏黑惠",
+          "description": "《咒术回战》· 冷静克制的青年男声 · 日语公开社区 RVC v2 · 48k / 400 epochs",
+          "tags": [
+              "男声",
+              "咒术回战",
+              "日语",
+              "48k"
+          ],
+          "collectionId": "jujutsu-kaisen",
+          "collectionName": "咒术回战",
+          "defaultPitch": 0,
+          "pitchNote": "同音域输入建议 0；使用清晰近讲人声效果更稳定",
+          "sampleRate": 48000,
+          "noiseScale": 0.3,
+          "defaultIndexRate": 0.3,
+          "marketplace": "https://voice-models.com/model/1nqEz5uruf5",
+          "source": "https://huggingface.co/Kuma6/Megumi-Fushiguro/resolve/main/Megumi.zip",
+          "license": "Community model; creator requests credit; character/performer authorization unverified",
+          "checkpointSha256": "5607805eca963f7cffd25962ecdd47366ba38377cccdca254bd1a4c7c871424f",
+          "indexSha256": "3cb0baec983878498ba311bc861a0677d35125c400bf89a3c5ef8c1a037aa7e5",
+          "retrieval": "models/characters/megumi/retrieval.bin",
+          "chunks": [
+              "models/characters/megumi/chunk_0.bin",
+              "models/characters/megumi/chunk_1.bin",
+              "models/characters/megumi/chunk_2.bin",
+              "models/characters/megumi/chunk_3.bin",
+              "models/characters/megumi/chunk_4.bin",
+              "models/characters/megumi/chunk_5.bin"
+          ]
+      }
   ];
 
   const CHARACTER_SAMPLE_RATES = Object.freeze({
@@ -860,8 +1026,18 @@
 
   function normalizeCharacterRuntimeConfig(model) {
     if (!model || String(model.id || "").startsWith("own:")) return model;
+    const tags = Array.isArray(model.tags) ? model.tags : [];
+    const inferredCollectionName = model.trained === true
+      ? "我的训练模型"
+      : tags.includes("咒术回战")
+        ? "咒术回战"
+        : tags.includes("蔚蓝档案")
+          ? "蔚蓝档案"
+          : "其他角色";
     return {
       ...model,
+      collectionId: String(model.collectionId || (model.trained === true ? "trained" : "other")),
+      collectionName: String(model.collectionName || inferredCollectionName),
       sampleRate: Number(model.sampleRate) || CHARACTER_SAMPLE_RATES[model.id] || 40000,
       retrieval: model.retrieval || `models/characters/${model.id}/retrieval.bin`,
       noiseScale: Number.isFinite(Number(model.noiseScale)) ? Number(model.noiseScale) : 0.5,
@@ -932,7 +1108,7 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
-  const CHARACTER_MODEL_ASSET_VERSION = "20260823-v33";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260824-v34";
 
   function characterModelCacheKey(model) {
     const id = String(model?.id || "character");
@@ -1445,54 +1621,87 @@
     if (emptyEl) emptyEl.classList.add("hidden");
     const renderItems = (target, items, trained = false) => {
       if (!target) return;
-      items.forEach((m) => {
-        const isSelected = m.id === state.selectedModelId;
-        const card = document.createElement("button");
-        card.type = "button";
-        card.className = `flex flex-col items-start p-4 rounded-xl border text-left transition-all relative ${
-          isSelected
-            ? "border-brand bg-teal-50/80 shadow-md ring-2 ring-brand"
-            : trained
-              ? "border-violet-200 bg-white hover:border-violet-500 hover:shadow-sm"
-              : "border-line bg-white hover:border-brand/60 hover:shadow-sm"
-        }`;
-        card.setAttribute("role", "option");
-        card.setAttribute("aria-selected", isSelected ? "true" : "false");
-        card.dataset.modelId = m.id;
+      const grouped = new Map();
+      items.forEach((model) => {
+        const collectionName = String(
+          model.collectionName ||
+          (trained ? "我的训练模型" : (model.tags || []).includes("蔚蓝档案") ? "蔚蓝档案" : "其他角色")
+        ).trim() || (trained ? "我的训练模型" : "其他角色");
+        const collectionId = String(model.collectionId || collectionName).trim() || collectionName;
+        const key = `${collectionId}\u0000${collectionName}`;
+        if (!grouped.has(key)) grouped.set(key, { id: collectionId, name: collectionName, models: [] });
+        grouped.get(key).models.push(model);
+      });
 
-        const avatarText = escapeHtml(m.avatarText || m.name.slice(0, 2));
-        card.innerHTML = `
-          <div class="flex items-center justify-between w-full gap-3">
-            <div class="flex min-w-0 items-center gap-3">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${trained ? "bg-violet-100 border-violet-200 text-violet-700" : "bg-teal-50/80 border-teal-200/60 text-brand"} border font-black text-xs shadow-xs">
-                ${avatarText}
-              </div>
-              <div class="min-w-0">
-                <p class="truncate text-sm font-black text-ink">${escapeHtml(m.name)}</p>
-                <div class="mt-1 flex flex-wrap gap-1">
-                  ${(m.tags || [])
-                    .map(
-                      (tag) =>
-                        `<span class="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600">${escapeHtml(tag)}</span>`
-                    )
-                    .join("")}
+      grouped.forEach((collection) => {
+        const section = document.createElement("section");
+        section.className = trained
+          ? "rounded-xl border border-violet-200 bg-white/70 p-3"
+          : "rounded-xl border border-line bg-canvas/40 p-3";
+        section.dataset.collectionId = collection.id;
+
+        const heading = document.createElement("div");
+        heading.className = "flex items-center justify-between gap-3";
+        heading.innerHTML = `
+          <p class="text-xs font-black tracking-wide ${trained ? "text-violet-800" : "text-ink"}">${escapeHtml(collection.name)}</p>
+          <span class="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-bold text-muted">${collection.models.length} 个音色</span>
+        `;
+        const grid = document.createElement("div");
+        grid.className = "mt-3 grid gap-3 sm:grid-cols-2";
+        grid.setAttribute("role", "group");
+        grid.setAttribute("aria-label", collection.name);
+
+        collection.models.forEach((m) => {
+          const isSelected = m.id === state.selectedModelId;
+          const card = document.createElement("button");
+          card.type = "button";
+          card.className = `flex flex-col items-start p-4 rounded-xl border text-left transition-all relative ${
+            isSelected
+              ? "border-brand bg-teal-50/80 shadow-md ring-2 ring-brand"
+              : trained
+                ? "border-violet-200 bg-white hover:border-violet-500 hover:shadow-sm"
+                : "border-line bg-white hover:border-brand/60 hover:shadow-sm"
+          }`;
+          card.setAttribute("role", "option");
+          card.setAttribute("aria-selected", isSelected ? "true" : "false");
+          card.dataset.modelId = m.id;
+
+          const avatarText = escapeHtml(m.avatarText || m.name.slice(0, 2));
+          card.innerHTML = `
+            <div class="flex items-center justify-between w-full gap-3">
+              <div class="flex min-w-0 items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${trained ? "bg-violet-100 border-violet-200 text-violet-700" : "bg-teal-50/80 border-teal-200/60 text-brand"} border font-black text-xs shadow-xs">
+                  ${avatarText}
+                </div>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-black text-ink">${escapeHtml(m.name)}</p>
+                  <div class="mt-1 flex flex-wrap gap-1">
+                    ${(m.tags || [])
+                      .map(
+                        (tag) =>
+                          `<span class="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600">${escapeHtml(tag)}</span>`
+                      )
+                      .join("")}
+                  </div>
                 </div>
               </div>
+              <span class="shrink-0 text-xs font-bold ${isSelected ? "text-brand" : "text-zinc-400"}">
+                ${isSelected ? `<i class="fa-solid fa-circle-check"></i> ${t("modelPick")}` : t("modelInstalled")}
+              </span>
             </div>
-            <span class="shrink-0 text-xs font-bold ${isSelected ? "text-brand" : "text-zinc-400"}">
-              ${isSelected ? `<i class="fa-solid fa-circle-check"></i> ${t("modelPick")}` : t("modelInstalled")}
-            </span>
-          </div>
-          <p class="mt-2 line-clamp-2 text-xs leading-5 text-muted">${escapeHtml(m.description || "")}</p>
-        `;
+            <p class="mt-2 line-clamp-2 text-xs leading-5 text-muted">${escapeHtml(m.description || "")}</p>
+          `;
 
-        card.addEventListener("click", () => {
-          state.selectedModelId = m.id;
-          applyCharacterPitch(m);
-          renderModelGallery();
-          updateStatusDisplay();
+          card.addEventListener("click", () => {
+            state.selectedModelId = m.id;
+            applyCharacterPitch(m);
+            renderModelGallery();
+            updateStatusDisplay();
+          });
+          grid.appendChild(card);
         });
-        target.appendChild(card);
+        section.append(heading, grid);
+        target.appendChild(section);
       });
     };
     renderItems(container, regularModels);
@@ -2009,6 +2218,8 @@
       license,
       source: typeof remote.source === "string" && remote.source ? remote.source : (local?.source || ""),
       modelVersion: typeof remote.modelVersion === "string" && remote.modelVersion ? remote.modelVersion : (local?.modelVersion || ""),
+      collectionId: typeof remote.collectionId === "string" && remote.collectionId ? remote.collectionId : (local?.collectionId || ""),
+      collectionName: typeof remote.collectionName === "string" && remote.collectionName ? remote.collectionName : (local?.collectionName || ""),
       trained: remote.trained === true,
       createdAt: typeof remote.createdAt === "string" ? remote.createdAt : "",
     });
@@ -2356,6 +2567,9 @@
       avatarText: "自训",
       description: "你本地上传训练/转换的 RVC .onnx 模型，仅本机可用",
       tags: ["女声", "我的模型"],
+      collectionId: "local-imports",
+      collectionName: "本机导入模型",
+      trained: true,
       defaultPitch: 12,
       chunks: [],
     }));
@@ -3188,6 +3402,7 @@
     const filesInput = document.getElementById("rvc-training-files");
     const filesStatus = document.getElementById("rvc-training-files-status");
     const nameInput = document.getElementById("rvc-training-name");
+    const collectionInput = document.getElementById("rvc-training-collection");
     const consentInput = document.getElementById("rvc-training-consent");
     const startButton = document.getElementById("rvc-training-start");
     const cancelButton = document.getElementById("rvc-training-cancel");
@@ -3325,6 +3540,7 @@
 
     startButton.addEventListener("click", async () => {
       const displayName = String(nameInput?.value || "").trim();
+      const collectionName = String(collectionInput?.value || "").trim() || "我的训练模型";
       const files = state.trainingFiles;
       if (!displayName) {
         showToast("请填写训练模型名称");
@@ -3346,6 +3562,7 @@
       try {
         const initBody = new FormData();
         initBody.set("display_name", displayName);
+        initBody.set("collection_name", collectionName);
         initBody.set("consent", "true");
         initBody.set("epochs", "80");
         const initPayload = await readJson(await fetch(routes.init, { method: "POST", body: initBody }));
@@ -3355,6 +3572,7 @@
           endpoint,
           progress: 1,
           displayName,
+          collectionName,
         };
         saveJob(job);
         for (let slot = 0; slot < files.length; slot += 1) {

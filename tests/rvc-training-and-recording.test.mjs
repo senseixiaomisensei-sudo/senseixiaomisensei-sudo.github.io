@@ -33,12 +33,15 @@ test("training UI uploads multiple authorized clips and separates trained models
   ]);
   assert.match(page, /id="rvc-training-files"[^>]*multiple/u);
   assert.match(page, /id="rvc-training-name"/u);
+  assert.match(page, /id="rvc-training-collection"/u);
   assert.match(page, /id="rvc-training-consent"/u);
   assert.match(page, /id="rvc-trained-model-gallery"/u);
   assert.match(client, /function trainingRoutes/u);
   assert.match(client, /uploadWithRetry/u);
   assert.match(client, /postprep_rvc_training_job_v1/u);
   assert.match(client, /model\.trained === true/u);
+  assert.match(client, /initBody\.set\("collection_name", collectionName\)/u);
+  assert.match(client, /collection\.models\.forEach/u);
   assert.match(client, /escapeHtml/u);
 });
 
@@ -58,6 +61,8 @@ test("training service follows the pinned official RVC v2 pipeline", async () =>
   assert.match(runtime, /train\/train\.py/u);
   assert.match(runtime, /train\/train_index\.py/u);
   assert.match(runtime, /TRAIN_VERSION = "v2"/u);
+  assert.match(runtime, /"collectionName": collection_name/u);
+  assert.match(service, /collection_name: str = Form\("我的训练模型"\)/u);
   assert.match(proxy, /TRAIN_UPLOAD_RE/u);
 });
 

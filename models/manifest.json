@@ -285,5 +285,65 @@
       "models/characters/mika/chunk_4.bin",
       "models/characters/mika/chunk_5.bin"
     ]
+  },
+  "gojo.onnx": {
+    "totalSize": 115532205,
+    "sha256": "52e29eeb345e3c8dca885b508d0dc52a23d73266f23bffbdcb88205fb21929a5",
+    "chunks": [
+      "models/characters/gojo/chunk_0.bin",
+      "models/characters/gojo/chunk_1.bin",
+      "models/characters/gojo/chunk_2.bin",
+      "models/characters/gojo/chunk_3.bin",
+      "models/characters/gojo/chunk_4.bin",
+      "models/characters/gojo/chunk_5.bin"
+    ]
+  },
+  "sukuna.onnx": {
+    "totalSize": 115532205,
+    "sha256": "0a599132d54ef31b05b1963355cfd8f1c9424b9f6a61a02112aa9d465e1e1463",
+    "chunks": [
+      "models/characters/sukuna/chunk_0.bin",
+      "models/characters/sukuna/chunk_1.bin",
+      "models/characters/sukuna/chunk_2.bin",
+      "models/characters/sukuna/chunk_3.bin",
+      "models/characters/sukuna/chunk_4.bin",
+      "models/characters/sukuna/chunk_5.bin"
+    ]
+  },
+  "geto.onnx": {
+    "totalSize": 115532205,
+    "sha256": "ad6a81196c57848e66d5b4c2363273af85d0b60293a1a10e35c9e7ab1b26b11d",
+    "chunks": [
+      "models/characters/geto/chunk_0.bin",
+      "models/characters/geto/chunk_1.bin",
+      "models/characters/geto/chunk_2.bin",
+      "models/characters/geto/chunk_3.bin",
+      "models/characters/geto/chunk_4.bin",
+      "models/characters/geto/chunk_5.bin"
+    ]
+  },
+  "toji.onnx": {
+    "totalSize": 115532205,
+    "sha256": "d250a7562b158a1781bc9577e2884e0c93c9e668313d6e3f8038c3600153d9c9",
+    "chunks": [
+      "models/characters/toji/chunk_0.bin",
+      "models/characters/toji/chunk_1.bin",
+      "models/characters/toji/chunk_2.bin",
+      "models/characters/toji/chunk_3.bin",
+      "models/characters/toji/chunk_4.bin",
+      "models/characters/toji/chunk_5.bin"
+    ]
+  },
+  "megumi.onnx": {
+    "totalSize": 115532205,
+    "sha256": "6cc775add963ed89658837fdc586fd69d60a8cb63886a2fbf9eef0c6e2b503da",
+    "chunks": [
+      "models/characters/megumi/chunk_0.bin",
+      "models/characters/megumi/chunk_1.bin",
+      "models/characters/megumi/chunk_2.bin",
+      "models/characters/megumi/chunk_3.bin",
+      "models/characters/megumi/chunk_4.bin",
+      "models/characters/megumi/chunk_5.bin"
+    ]
   }
 }
