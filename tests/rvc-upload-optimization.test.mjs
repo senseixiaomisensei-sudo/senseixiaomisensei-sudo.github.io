@@ -22,12 +22,16 @@ const helpers = Function(`
   const CLOUD_MAX_CONVERT_TIMEOUT_MS = 600000;
   const CLOUD_MAX_LONG_JOB_TIMEOUT_MS = 45 * 60 * 1000;
   const LONG_AUDIO_THRESHOLD_SECONDS = 45;
+  const DURABLE_CLOUD_JOB_SECONDS = 40;
   const CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND = 64 * 1024;
+  const TRANSIENT_CLOUD_OUTPUT_CODES = new Set(["RATE_LIMITER_UNAVAILABLE", "RVC_BACKEND_TIMEOUT", "RVC_BACKEND_UNAVAILABLE", "RVC_NETWORK_INTERRUPTED", "RVC_OUTPUT_UNAVAILABLE", "RVC_RELAY_UNAVAILABLE", "UPSTREAM_UNAVAILABLE"]);
+  const TRANSIENT_CLOUD_OUTPUT_STATUSES = new Set([0, 408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 530]);
   ${extractFunction("encodeMono16kWav")}
   ${extractFunction("prepareCloudUploadAudio")}
   ${extractFunction("cloudRequestTimeoutMs")}
   ${extractFunction("cloudJobTimeoutMs")}
-  return { encodeMono16kWav, prepareCloudUploadAudio, cloudRequestTimeoutMs, cloudJobTimeoutMs };
+  ${extractFunction("isTransientCloudOutputError")}
+  return { encodeMono16kWav, prepareCloudUploadAudio, cloudRequestTimeoutMs, cloudJobTimeoutMs, isTransientCloudOutputError };
 `)();
 
 test("large WAV uploads are reduced to 16 kHz mono without shortening the clip", () => {
@@ -93,7 +97,19 @@ test("long uploads receive a size-aware timeout instead of the old fixed cutoff"
 
 test("short job timing remains unchanged while long jobs receive a durable window", () => {
   assert.equal(helpers.cloudJobTimeoutMs(4, "voice"), 220000);
+  assert.equal(helpers.cloudJobTimeoutMs(39.9, "voice"), helpers.cloudRequestTimeoutMs(0, 39.9, "voice"));
+  assert.ok(helpers.cloudJobTimeoutMs(40, "voice") >= 12 * 60 * 1000);
   assert.ok(helpers.cloudJobTimeoutMs(60, "voice") >= 12 * 60 * 1000);
   assert.ok(helpers.cloudJobTimeoutMs(600, "song") >= 40 * 60 * 1000);
   assert.ok(helpers.cloudJobTimeoutMs(600, "song") <= 45 * 60 * 1000);
+});
+
+
+test("output polling distinguishes recoverable tunnel errors from terminal inference failures", () => {
+  assert.equal(helpers.isTransientCloudOutputError({ code: "UPSTREAM_UNAVAILABLE", httpStatus: 502 }), true);
+  assert.equal(helpers.isTransientCloudOutputError({ code: "RVC_RELAY_UNAVAILABLE", httpStatus: 502 }), true);
+  assert.equal(helpers.isTransientCloudOutputError({ code: "", httpStatus: 524 }), true);
+  assert.equal(helpers.isTransientCloudOutputError(new TypeError("network drop")), true);
+  assert.equal(helpers.isTransientCloudOutputError({ code: "RVC_INFERENCE_FAILED", httpStatus: 502 }), false);
+  assert.equal(helpers.isTransientCloudOutputError({ code: "RVC_INVALID_AUDIO", httpStatus: 400 }), false);
 });

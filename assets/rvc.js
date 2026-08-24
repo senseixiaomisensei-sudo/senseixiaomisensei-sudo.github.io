@@ -6,6 +6,7 @@
   const WARN_AUDIO_SECONDS = 2;
   const MAX_AUDIO_SECONDS = 600;
   const LONG_AUDIO_THRESHOLD_SECONDS = 45;
+  const DURABLE_CLOUD_JOB_SECONDS = 40;
   // The browser compatibility path keeps several large ONNX sessions in RAM.
   // It is intentionally limited to a short clip so mobile WebViews cannot sit
   // for minutes and then fail inside a dynamic-shape ONNX node.
@@ -1929,7 +1930,7 @@
   function cloudJobTimeoutMs(durationSeconds, audioMode = "voice") {
     const duration = Math.max(0, Number(durationSeconds) || 0);
     const shortBudget = cloudRequestTimeoutMs(0, duration, audioMode);
-    if (duration <= LONG_AUDIO_THRESHOLD_SECONDS) return shortBudget;
+    if (duration < DURABLE_CLOUD_JOB_SECONDS) return shortBudget;
     const longBudget = 8 * 60 * 1000
       + duration * (audioMode === "song" ? 3200 : 1800);
     return Math.min(CLOUD_MAX_LONG_JOB_TIMEOUT_MS, Math.max(12 * 60 * 1000, Math.ceil(longBudget)));
@@ -2166,9 +2167,28 @@
     }
   }
 
+  const TRANSIENT_CLOUD_OUTPUT_CODES = new Set([
+    "RATE_LIMITER_UNAVAILABLE",
+    "RVC_BACKEND_TIMEOUT",
+    "RVC_BACKEND_UNAVAILABLE",
+    "RVC_NETWORK_INTERRUPTED",
+    "RVC_OUTPUT_UNAVAILABLE",
+    "RVC_RELAY_UNAVAILABLE",
+    "UPSTREAM_UNAVAILABLE",
+  ]);
+  const TRANSIENT_CLOUD_OUTPUT_STATUSES = new Set([0, 408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 530]);
+
+  function isTransientCloudOutputError(error) {
+    const code = typeof error?.code === "string" ? error.code : "";
+    if (code) return TRANSIENT_CLOUD_OUTPUT_CODES.has(code);
+    const status = Number(error?.httpStatus) || 0;
+    return !status || TRANSIENT_CLOUD_OUTPUT_STATUSES.has(status);
+  }
+
   async function pollCloudOutput(url, timeoutMs, longJob = false) {
     const deadline = Date.now() + timeoutMs;
     let transientFailures = 0;
+    let lastRequestId = "";
     const maxTransientFailures = longJob ? 30 : 4;
     while (Date.now() < deadline) {
       const controller = new AbortController();
@@ -2210,7 +2230,10 @@
         } catch (e) {}
         const error = new Error(payload?.message || payload?.code || `HTTP ${response.status}`);
         error.code = typeof payload?.code === "string" ? payload.code : "";
-        error.requestId = String(response.headers.get("X-PostPrep-Request-Id") || "").slice(0, 96);
+        error.httpStatus = response.status;
+        const requestId = String(response.headers.get("X-PostPrep-Request-Id") || "").slice(0, 96);
+        if (requestId) lastRequestId = requestId;
+        error.requestId = requestId || lastRequestId;
         if (response.status === 429) {
           const retryAfterSeconds = Math.max(1, parseInt(response.headers.get("Retry-After") || "6", 10) || 6);
           await waitFor(retryAfterSeconds * 1000);
@@ -2219,8 +2242,12 @@
         throw error;
       } catch (error) {
         transientFailures += 1;
-        const structuredCode = typeof error?.code === "string" && error.code;
-        if (structuredCode || transientFailures >= maxTransientFailures || Date.now() >= deadline) throw error;
+        if (error?.requestId) lastRequestId = error.requestId;
+        const structuredCode = typeof error?.code === "string" ? error.code : "";
+        const retryableError = structuredCode
+          ? longJob && TRANSIENT_CLOUD_OUTPUT_CODES.has(structuredCode)
+          : longJob ? isTransientCloudOutputError(error) : true;
+        if (!retryableError || transientFailures >= maxTransientFailures || Date.now() >= deadline) throw error;
         updateStatusDisplay(`🔄 [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`);
         await waitFor(Math.min(longJob ? 15000 : 8000, 1800 * transientFailures));
       } finally {
@@ -2229,6 +2256,7 @@
     }
     const timeout = new Error("云端后台处理超过等待时限，请重新提交");
     timeout.code = "RVC_BACKEND_TIMEOUT";
+    timeout.requestId = lastRequestId;
     throw timeout;
   }
 
@@ -2236,7 +2264,8 @@
     const deadline = Date.now() + timeoutMs;
     let response = firstResponse;
     let lastError = null;
-    for (let attempt = 1; attempt <= 6 && Date.now() < deadline; attempt += 1) {
+    const maxAttempts = 12;
+    for (let attempt = 1; attempt <= maxAttempts && Date.now() < deadline; attempt += 1) {
       try {
         if (!response || response.status !== 200) {
           response = await pollCloudOutput(url, Math.max(60000, deadline - Date.now()), true);
@@ -2244,8 +2273,8 @@
         return await normalizeCloudAudioBlob(await response.blob(), format);
       } catch (error) {
         lastError = error;
-        if (attempt >= 6 || Date.now() >= deadline) break;
-        updateStatusDisplay(`🔄 [3/3] 结果下载中断，正在从已完成任务重新拉取（${attempt}/5）…`);
+        if (attempt >= maxAttempts || Date.now() >= deadline) break;
+        updateStatusDisplay(`🔄 [3/3] 结果下载中断，正在从已完成任务重新拉取（${attempt}/${maxAttempts - 1}）…`);
         await waitFor(Math.min(12000, attempt * 2000));
         response = null;
       }
@@ -2332,7 +2361,7 @@
   }
 
   function preferredCloudOutputFormat(durationSeconds = 0) {
-    if (Number(durationSeconds) > LONG_AUDIO_THRESHOLD_SECONDS) return "mp3";
+    if (Number(durationSeconds) >= DURABLE_CLOUD_JOB_SECONDS) return "mp3";
     try {
       const ua = String(globalThis.navigator?.userAgent || "");
       const uaMobile = globalThis.navigator?.userAgentData?.mobile === true;
@@ -3441,7 +3470,7 @@
       const convertUrl = routes.convertUrl;
       const requestTimeoutMs = cloudRequestTimeoutMs(uploadFile.size, state.audio.duration, state.audioMode);
       const jobTimeoutMs = cloudJobTimeoutMs(state.audio.duration, state.audioMode);
-      const longJob = state.audio.duration > LONG_AUDIO_THRESHOLD_SECONDS;
+      const longJob = state.audio.duration >= DURABLE_CLOUD_JOB_SECONDS;
       if (preparedUpload.optimized) {
         updateStatusDisplay(
           `⚡ [1/3] 已把上传体积从 ${formatTransferredBytes(preparedUpload.originalBytes)} 压到 ${formatTransferredBytes(uploadFile.size)}（16kHz 单声道），正在连接云端…`,
@@ -3622,7 +3651,7 @@
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       updateProgressBar(100);
-      updateStatusDisplay(`🎉 云端 RVC 变声完成！用时 ${elapsed} 秒。${longJob ? "长音频稳定链路已完成分段处理与可恢复下载。" : ""}可在下方试听或下载。`);
+      updateStatusDisplay(`🎉 云端 RVC 变声完成！用时 ${elapsed} 秒。${longJob ? "长音频稳定链路已完成可恢复处理与下载。" : ""}可在下方试听或下载。`);
       showToast("🎉 云端 RVC 变声完成！可在下方试听或下载");
       return true;
     } catch (error) {

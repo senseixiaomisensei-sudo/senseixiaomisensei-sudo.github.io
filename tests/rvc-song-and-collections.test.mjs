@@ -61,7 +61,9 @@ test("long audio uses a separate resilient contract without changing short conve
   ]);
   assert.match(client, /LONG_AUDIO_THRESHOLD_SECONDS = 45/u);
   assert.match(client, /MAX_AUDIO_SECONDS = 600/u);
-  assert.match(client, /if \(Number\(durationSeconds\) > LONG_AUDIO_THRESHOLD_SECONDS\) return "mp3"/u);
+  assert.match(client, /DURABLE_CLOUD_JOB_SECONDS = 40/u);
+  assert.match(client, /if \(Number\(durationSeconds\) >= DURABLE_CLOUD_JOB_SECONDS\) return "mp3"/u);
+  assert.match(client, /structuredCode[\s\S]*longJob && TRANSIENT_CLOUD_OUTPUT_CODES\.has/u);
   assert.match(client, /maxTransientFailures = longJob \? 30 : 4/u);
   assert.match(client, /结果下载中断，正在从已完成任务重新拉取/u);
   assert.match(service, /MAX_AUDIO_SECONDS = 600/u);
