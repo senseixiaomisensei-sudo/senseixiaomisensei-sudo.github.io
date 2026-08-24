@@ -31,7 +31,7 @@ const ALLOWED_FIELDS = new Set([
   "request_id",
   "audio",
 ]);
-const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm"]);
+const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"]);
 const ALLOWED_MIME_TYPES = new Set([
   "audio/wav",
   "audio/x-wav",
@@ -40,6 +40,9 @@ const ALLOWED_MIME_TYPES = new Set([
   "audio/x-m4a",
   "audio/ogg",
   "audio/webm",
+  "audio/flac",
+  "audio/x-flac",
+  "audio/aac",
 ]);
 const ALLOWED_FORMATS = new Set(["wav", "mp3"]);
 const ALLOWED_F0_METHODS = new Set(["auto", "rmvpe", "fcpe", "pm"]);
@@ -125,6 +128,10 @@ const UPSTREAM_ERROR_MESSAGES = Object.freeze({
   RVC_EMPTY_OUTPUT: Object.freeze({
     zh: "推理服务没有产出有效音频，请稍后重试",
     en: "The inference service produced no usable audio; please retry",
+  }),
+  RVC_TRAINING_ACTIVE: Object.freeze({
+    zh: "本机正在训练新模型，当前变声任务将在训练结束后恢复",
+    en: "The GPU is training a new model; conversion resumes after training",
   }),
   UNAUTHORIZED: Object.freeze({
     zh: "推理服务密钥不一致，需要管理员重新同步服务端配置",

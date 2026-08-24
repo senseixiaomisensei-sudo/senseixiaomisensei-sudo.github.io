@@ -136,7 +136,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260824-v43/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260824-v44/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\)/u);
   assert.match(client, /function runWebRvcInference\(\)/u);

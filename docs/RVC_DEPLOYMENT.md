@@ -17,8 +17,8 @@
   -> 结果回传，浏览器经 Worker /rvc/output/<job>?token= 下载
 ```
 
-`rvc-service/tunnel_proxy.py` 是只读白名单反代：仅放行 `/healthz`、`/v1/models`、`/v1/convert`、
-`/v1/output/<job>?token=`，要求与 GPU 服务相同的 Bearer 令牌；泄露的快速隧道地址无法枚举模型或绕过令牌。
+`rvc-service/tunnel_proxy.py` 是白名单反代：仅放行 `/healthz`、`/v1/models`、`/v1/convert`、
+`/v1/output/<job>?token=` 以及带随机任务令牌的 `/v1/training/*` 固定路由，要求与 GPU 服务相同的 Bearer 令牌；泄露的快速隧道地址无法枚举模型或绕过令牌。
 Pages Function 对上游非 200 响应会透传其错误码（如 `RVC_MODEL_NOT_FOUND`）并附中英文说明；
 连接级失败会立即重试一次。
 
@@ -33,7 +33,7 @@ Pages Function 对上游非 200 响应会透传其错误码（如 `RVC_MODEL_NOT
 powershell -ExecutionPolicy Bypass -File .\rvc-service\setup-official-rvc.ps1 -InstallRoot D:\数据\rvc-runtime\official-rvc
 ```
 
-脚本会把官方源码固定到精确提交、校验 HuBERT/RMVPE 的 SHA-256，并在同级 `.venv` 自动安装 Python 3.12、PyTorch CUDA 12.8 和服务依赖。模型放入 `E:\大肥鱼\rvc-local\models\<角色名>\`（`model.pth` 或 `<角色名>.pth` + 可选 `.index` + 可选 `meta.json`），重启服务后自动出现。
+脚本会把官方源码固定到精确提交，校验 HuBERT、RMVPE、RVC v2 40 kHz 生成器/判别器预训练权重的 SHA-256，并在同级 `.venv` 自动安装 Python 3.12、PyTorch CUDA 12.8 和推理/训练依赖。模型放入 `E:\大肥鱼\rvc-local\models\<角色名>\`（`model.pth` 或 `<角色名>.pth` + 可选 `.index` + 可选 `meta.json`），重启服务后自动出现。
 
 本机单独启动官方服务：
 
@@ -46,7 +46,7 @@ powershell -ExecutionPolicy Bypass -File .\rvc-service\start-official-rvc.ps1 -R
 powershell -ExecutionPolicy Bypass -File E:\大肥鱼\rvc-local\start-all.ps1
 ```
 
-`start-all.ps1` 会自动：启动本地 GPU 服务 → 启动 trycloudflare 快速隧道 → 用新隧道地址更新 Pages 密钥（`RVC_INFERENCE_URL`/`RVC_INFERENCE_TOKEN`）→ 重新部署 Pages → 线上自检。要求本机已执行过 `npx wrangler login`。
+`start-all.ps1` 会自动：启动本地 GPU 服务 → 启动 trycloudflare 快速隧道 → 原子更新 Worker 的隧道地址/令牌 → 线上自检 → 启动 watchdog。要求本机已执行过 `npx wrangler login`。
 
 ## Cloudflare 环境变量（由 start-all.ps1 自动维护）
 
@@ -63,7 +63,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\deploy-pages.ps1
 npx wrangler deploy --config worker/wrangler.toml
 ```
 
-Worker 配置中已有独立的 `POSTPREP_RVC_RATE_LIMITER`（每 Origin/IP 1 次／分钟）。未配置 GPU 服务时，`/rvc/status` 返回 `ready: false`，网页会关闭"开始变声"按钮，不会把音频发送到一个空地址。
+Worker 配置中已有独立的变声限流与训练上传/轮询限流。未配置 GPU 服务时，`/rvc/status` 返回 `ready: false`，网页会关闭"开始变声"按钮，不会把音频发送到一个空地址。
 
 ## 添加/更新角色
 

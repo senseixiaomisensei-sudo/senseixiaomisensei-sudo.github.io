@@ -15,6 +15,10 @@ after 15 minutes by default.
   HuBERT/ContentVec extractor, RMVPE/FCPE/PM F0, FAISS Top-8 retrieval and
   PyTorch NSF generator—not the previous browser ONNX approximation and not
   the `rvc-python` wrapper.
+- User-authorized training follows the same pinned upstream's RVC v2 40 kHz
+  pipeline: preprocessing, RMVPE F0, HuBERT features, pretrained G/D fine
+  tuning, and FAISS index construction. Training audio is removed when the
+  task completes, fails, or is cancelled.
 
 ## Required server environment
 
@@ -66,7 +70,7 @@ or performer's voice can be redistributed or used for impersonation.
 docker build -t postprep-rvc:local .
 docker run --rm --gpus all -p 8080:8080 \
   -e RVC_GATEWAY_TOKEN='replace-with-a-server-secret' \
-  -v /absolute/path/to/models:/models/rvc:ro \
+  -v /absolute/path/to/models:/models/rvc:rw \
   postprep-rvc:local
 ```
 
@@ -86,6 +90,11 @@ All endpoints require `Authorization: Bearer <RVC_GATEWAY_TOKEN>`.
 | GET | `/v1/models` | list mounted models |
 | POST | `/v1/convert` | multipart: `model_id`, `audio`, `pitch`, `index_rate`, `protect`, `filter_radius`, `resample`, `rms_mix_rate`, `f0_method`, `format`, `language` |
 | GET | `/v1/output/{job_id}?token=...` | download a generated file |
+| POST | `/v1/training/init` | create a named, token-protected training job |
+| POST | `/v1/training/{job_id}/audio/{slot}?token=...` | upload one training clip |
+| POST | `/v1/training/{job_id}/start?token=...` | start the pinned RVC v2 pipeline |
+| GET | `/v1/training/{job_id}?token=...` | poll training status |
+| POST | `/v1/training/{job_id}/cancel?token=...` | safely stop a training job |
 
 ## Operating constraints
 
@@ -95,3 +104,6 @@ All endpoints require `Authorization: Bearer <RVC_GATEWAY_TOKEN>`.
   start without it and a readable models directory.
 - Model weight licensing is the operator's responsibility. Record an exact
   source URL, revision/hash and the model-specific terms before mounting it.
+- Only one GPU training job runs at a time. Conversion returns a structured
+  `RVC_TRAINING_ACTIVE` response during the explicit training window instead
+  of competing for VRAM and crashing both workloads.

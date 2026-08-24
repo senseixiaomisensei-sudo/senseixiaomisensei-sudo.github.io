@@ -28,6 +28,10 @@
         <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.cloudBody">基础工具不会上传草稿。若当前部署启用了服务端代理，点击深度建议、深度整理、深度润色、发布可信包的深度建议或按平台生成后，只会发送当前主题或文案来生成结果；使用公开 GitHub Skill 权限护照时，只会发送你粘贴的 GitHub 地址并读取对应公开 SKILL.md。未启用时按钮会提示暂不可用。</p>
       </section>
       <section class="py-8">
+        <h2 class="text-xl font-black">RVC 变声与模型训练</h2>
+        <p class="mt-3 text-sm leading-7 text-muted">只有你主动点击变声或训练后，所选音频才会经受保护网关发送到本机 GPU 服务。普通变声输入在任务排队完成后删除，输出只通过短期随机令牌提供。模型训练会暂存你逐段上传的音频，训练完成、取消或失败后删除训练音频；训练得到的 RVC 模型与索引保存在运行该服务的主机，并显示在“训练完成的模型”独立分区。请勿提交未经授权的声音。</p>
+      </section>
+      <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.servicesTitle">静态资源与人机验证</h2>
         <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理、Skills 筛选或公开 GitHub Skill 权限护照时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选与公开 Skill 读取由服务端查询 GitHub 公开 API；为减少公开 API 限流，公开候选或 Skill 元数据可在服务端内存中短时缓存，缓存键不含草稿内容。若启用 AI 排序或深度解释，也只在你主动点击后传递当前文本。当前公开版本不加载第三方广告脚本。</p>
         <a class="mt-3 inline-block text-sm font-semibold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark" href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener noreferrer" data-i18n="privacy.turnstilePolicy">查看 Cloudflare Turnstile 隐私说明</a>

@@ -25,6 +25,15 @@ UPSTREAM_PORT = int(os.getenv("RVC_UPSTREAM_PORT", "8088"))
 TOKEN = os.getenv("RVC_GATEWAY_TOKEN", "").strip()
 MAX_BODY_BYTES = 26 * 1024 * 1024
 JOB_RE = re.compile(r"^/v1/output/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.I)
+TRAIN_JOB_RE = re.compile(r"^/v1/training/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.I)
+TRAIN_ACTION_RE = re.compile(
+    r"^/v1/training/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/(?:start|cancel)$",
+    re.I,
+)
+TRAIN_UPLOAD_RE = re.compile(
+    r"^/v1/training/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/audio/(?:[0-9]|1[0-9])$",
+    re.I,
+)
 OUTPUT_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
 
 
@@ -84,7 +93,18 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             return parsed.path if not parsed.query else None
         if parsed.path == "/v1/convert":
             return parsed.path if self.command == "POST" and not parsed.query else None
+        if parsed.path == "/v1/training/init":
+            return parsed.path if self.command == "POST" and not parsed.query else None
         if JOB_RE.fullmatch(parsed.path) and self.command == "GET":
+            values = parse_qs(parsed.query, keep_blank_values=True)
+            token_values = values.get("token", [])
+            if len(token_values) == 1 and OUTPUT_TOKEN_RE.fullmatch(token_values[0]):
+                return f"{parsed.path}?token={token_values[0]}"
+        if (
+            (TRAIN_JOB_RE.fullmatch(parsed.path) and self.command == "GET")
+            or (TRAIN_ACTION_RE.fullmatch(parsed.path) and self.command == "POST")
+            or (TRAIN_UPLOAD_RE.fullmatch(parsed.path) and self.command == "POST")
+        ):
             values = parse_qs(parsed.query, keep_blank_values=True)
             token_values = values.get("token", [])
             if len(token_values) == 1 and OUTPUT_TOKEN_RE.fullmatch(token_values[0]):

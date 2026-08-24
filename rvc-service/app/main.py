@@ -1,9 +1,10 @@
 """RVC voice-conversion inference adapter for PostPrep's AI voice changer.
 
 Deliberately not a browser service: it accepts one server-to-server bearer
-token, has no browser CORS, never auto-downloads models, and deletes source
-audio as soon as a request finishes. Generated files receive a random
-download token and are removed after a short retention window.
+token, has no browser CORS, never auto-downloads models, and deletes conversion
+audio as soon as a request finishes. Explicit training jobs retain only their
+uploaded dataset until completion/cancellation/failure. Generated files receive
+a random download token and are removed after a short retention window.
 
 Model weights are NOT bundled. The operator mounts RVC `.pth` (and optional
 `.index`) files into RVC_MODELS_DIR; every mounted model is listed by
@@ -13,6 +14,7 @@ GET /v1/models and selectable by id from the website.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import secrets
@@ -22,13 +24,14 @@ import tempfile
 import uuid
 from collections import OrderedDict
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
+from app.training_runtime import TrainingRuntimeError, run_training
 
 
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
@@ -41,8 +44,19 @@ WORK_ROOT = Path(os.getenv("RVC_WORK_ROOT", "/tmp/rvc-work")).resolve()
 OUTPUT_ROOT = Path(os.getenv("RVC_OUTPUT_ROOT", "/tmp/rvc-output")).resolve()
 GATEWAY_TOKEN = os.getenv("RVC_GATEWAY_TOKEN", "").strip()
 MAX_CACHED_MODELS = max(1, min(int(os.getenv("RVC_MAX_CACHED_MODELS", "2")), 8))
+OFFICIAL_ROOT = Path(os.getenv("RVC_OFFICIAL_ROOT", "")).resolve()
+TRAIN_ROOT = Path(os.getenv("RVC_TRAIN_ROOT", str(WORK_ROOT.parent / "training"))).resolve()
+TRAIN_JOB_RETENTION_SECONDS = max(3600, min(int(os.getenv("RVC_TRAIN_JOB_RETENTION_SECONDS", "86400")), 7 * 86400))
+TRAIN_UPLOAD_SESSION_SECONDS = max(900, min(int(os.getenv("RVC_TRAIN_UPLOAD_SESSION_SECONDS", "7200")), 24 * 3600))
+MAX_TRAIN_FILES = max(2, min(int(os.getenv("RVC_MAX_TRAIN_FILES", "12")), 20))
+MAX_TRAIN_FILE_BYTES = 25 * 1024 * 1024
+MAX_TRAIN_TOTAL_BYTES = 96 * 1024 * 1024
+MIN_TRAIN_SECONDS = 30
+MAX_TRAIN_SECONDS = 30 * 60
+DEFAULT_TRAIN_EPOCHS = max(40, min(int(os.getenv("RVC_TRAIN_EPOCHS", "80")), 200))
+TRAIN_PYTHON = Path(os.getenv("RVC_TRAIN_PYTHON", os.sys.executable)).resolve()
 logger = logging.getLogger("postprep.rvc")
-ALLOWED_EXTENSIONS = {"wav", "mp3", "m4a", "ogg", "webm"}
+ALLOWED_EXTENSIONS = {"wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"}
 ALLOWED_MIME_TYPES = {
     "audio/wav",
     "audio/x-wav",
@@ -51,6 +65,9 @@ ALLOWED_MIME_TYPES = {
     "audio/x-m4a",
     "audio/ogg",
     "audio/webm",
+    "audio/flac",
+    "audio/x-flac",
+    "audio/aac",
     # Some HTTP clients (curl, PowerShell, generic uploaders) send a generic
     # type for audio files; ffmpeg still parses the real format below.
     "application/octet-stream",
@@ -90,6 +107,20 @@ SHOUT_HARSHNESS_FILTER = (
     "lowpass=f=10000:p=2,"
     "alimiter=limit=0.90:attack=5:release=100:level=0"
 )
+HIGH_ENERGY_INPUT_FILTER = (
+    # This branch is selected only after objective peak/RMS analysis.  Normal
+    # speech keeps the exact established preprocessing path above.
+    "acompressor=threshold=0.36:ratio=2.2:attack=0.8:release=90:knee=2.5:makeup=1,"
+    "asoftclip=type=tanh:threshold=0.92:output=0.88:oversample=4,"
+    "alimiter=limit=0.86:attack=2:release=90:level=0"
+)
+HIGH_ENERGY_OUTPUT_FILTER = (
+    "adeclick=threshold=1.8:burst=2,"
+    "deesser=i=0.24:m=0.32:f=0.53,"
+    "lowpass=f=11500:p=2,"
+    "acompressor=threshold=0.72:ratio=1.6:attack=1:release=80:knee=2:makeup=1,"
+    "alimiter=limit=0.88:attack=3:release=90:level=0"
+)
 
 
 class RvcServiceError(Exception):
@@ -97,6 +128,17 @@ class RvcServiceError(Exception):
         super().__init__(code)
         self.status_code = status_code
         self.code = code
+
+
+@dataclass(frozen=True)
+class AudioProfile:
+    peak: float = 0.0
+    rms: float = 0.0
+    clipped_fraction: float = 0.0
+    high_band_ratio: float = 0.0
+    median_f0: float = 0.0
+    high_energy: bool = False
+    high_pitch: bool = False
 
 
 @dataclass
@@ -111,11 +153,37 @@ class OutputRecord:
     request_id: str = ""
 
 
+@dataclass
+class TrainingRecord:
+    job_id: str
+    token: str
+    display_name: str
+    model_id: str
+    root: str
+    state: str = "uploading"
+    stage: str = "uploading"
+    progress: int = 0
+    message: str = ""
+    files: int = 0
+    total_bytes: int = 0
+    duration_seconds: float = 0.0
+    epochs: int = DEFAULT_TRAIN_EPOCHS
+    created_at: str = ""
+    updated_at: str = ""
+    error_code: str = ""
+    cancel_requested: bool = False
+    result_model_id: str = ""
+
+
 outputs: dict[str, OutputRecord] = {}
 request_jobs: dict[str, str] = {}
 outputs_lock = asyncio.Lock()
 inference_lock = asyncio.Semaphore(MAX_CONCURRENCY)
 job_tasks: set[asyncio.Task] = set()
+training_records: dict[str, TrainingRecord] = {}
+training_tasks: set[asyncio.Task] = set()
+training_lock = asyncio.Lock()
+active_training_job_id = ""
 
 # Loaded RVCInference instances keyed by resolved .pth path (LRU).
 model_cache: "OrderedDict[str, object]" = OrderedDict()
@@ -131,6 +199,8 @@ def require_config() -> None:
         raise RuntimeError("RVC service is not configured (RVC_GATEWAY_TOKEN too short)")
     if not MODELS_DIR.is_dir():
         raise RuntimeError("RVC service is not configured (RVC_MODELS_DIR missing)")
+    if not OFFICIAL_ROOT.is_dir():
+        raise RuntimeError("RVC service is not configured (RVC_OFFICIAL_ROOT missing)")
 
 
 def scan_models() -> list[dict]:
@@ -187,6 +257,8 @@ def scan_models() -> list[dict]:
             "license": str(meta.get("license") or "unverified"),
             "source": str(meta.get("source") or ""),
             "modelVersion": str(meta.get("modelVersion") or ""),
+            "trained": meta.get("trained") is True,
+            "createdAt": str(meta.get("createdAt") or ""),
             "file": str(relative).replace("\\", "/"),
         })
     return results
@@ -265,17 +337,74 @@ async def cleanup_expired_outputs() -> None:
         record.path.unlink(missing_ok=True)
 
 
+def training_job_root(job_id: str) -> Path:
+    return (TRAIN_ROOT / "jobs" / job_id).resolve()
+
+
+def training_status_path(record: TrainingRecord) -> Path:
+    return Path(record.root) / "status.json"
+
+
+def persist_training_record(record: TrainingRecord) -> None:
+    path = training_status_path(record)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(asdict(record), ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(path)
+
+
+def load_training_records() -> None:
+    jobs_root = TRAIN_ROOT / "jobs"
+    jobs_root.mkdir(parents=True, exist_ok=True)
+    for status_path in jobs_root.glob("*/status.json"):
+        try:
+            payload = json.loads(status_path.read_text(encoding="utf-8"))
+            record = TrainingRecord(**payload)
+            if record.state in {"queued", "preprocessing", "extracting_pitch", "extracting_features", "training", "indexing", "installing"}:
+                record.state = "failed"
+                record.stage = "failed"
+                record.error_code = "RVC_TRAINING_INTERRUPTED"
+                record.message = "训练服务曾重启，请重新提交训练任务"
+                record.updated_at = utcnow().isoformat()
+                persist_training_record(record)
+            training_records[record.job_id] = record
+        except (OSError, TypeError, ValueError):
+            continue
+
+
+async def cleanup_expired_training_jobs() -> None:
+    cutoff = utcnow() - timedelta(seconds=TRAIN_JOB_RETENTION_SECONDS)
+    upload_cutoff = utcnow() - timedelta(seconds=TRAIN_UPLOAD_SESSION_SECONDS)
+    expired: list[TrainingRecord] = []
+    async with training_lock:
+        for job_id, record in tuple(training_records.items()):
+            try:
+                updated = datetime.fromisoformat(record.updated_at)
+            except ValueError:
+                updated = utcnow()
+            abandoned_upload = record.state == "uploading" and updated <= upload_cutoff
+            inactive_expired = record.state not in {"uploading", "queued", "preprocessing", "extracting_pitch", "extracting_features", "training", "indexing", "installing"} and updated <= cutoff
+            if abandoned_upload or inactive_expired:
+                expired.append(record)
+                training_records.pop(job_id, None)
+    for record in expired:
+        shutil.rmtree(Path(record.root), ignore_errors=True)
+
+
 async def cleanup_loop() -> None:
     while True:
         await asyncio.sleep(60)
         await cleanup_expired_outputs()
+        await cleanup_expired_training_jobs()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
+    TRAIN_ROOT.mkdir(parents=True, exist_ok=True)
     require_config()
+    load_training_records()
     cleanup_task = asyncio.create_task(cleanup_loop())
     try:
         yield
@@ -283,10 +412,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         cleanup_task.cancel()
         for task in tuple(job_tasks):
             task.cancel()
+        for task in tuple(training_tasks):
+            task.cancel()
         await asyncio.gather(cleanup_task, return_exceptions=True)
         if job_tasks:
             await asyncio.gather(*tuple(job_tasks), return_exceptions=True)
+        if training_tasks:
+            await asyncio.gather(*tuple(training_tasks), return_exceptions=True)
         await cleanup_expired_outputs()
+        await cleanup_expired_training_jobs()
 
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
@@ -378,6 +512,83 @@ def normalize_audio(source: Path, destination: Path) -> None:
         raise RvcServiceError(400, "RVC_INVALID_AUDIO")
 
 
+def analyze_audio_profile(path: Path) -> AudioProfile:
+    """Detect only the extreme-input branch; ordinary audio remains untouched."""
+    try:
+        import librosa
+        import numpy as np
+        import soundfile as sf
+
+        audio, sample_rate = sf.read(str(path), dtype="float32", always_2d=False)
+        if getattr(audio, "ndim", 1) > 1:
+            audio = np.mean(audio, axis=1)
+        audio = np.asarray(audio, dtype=np.float32)
+        if audio.size < max(8000, sample_rate // 2):
+            return AudioProfile()
+        absolute = np.abs(audio)
+        peak = float(np.max(absolute))
+        rms = float(np.sqrt(np.mean(np.square(audio, dtype=np.float64))))
+        clipped_fraction = float(np.mean(absolute >= 0.985))
+        spectrum = np.abs(np.fft.rfft(audio[: min(audio.size, sample_rate * 30)]))
+        frequencies = np.fft.rfftfreq(min(audio.size, sample_rate * 30), d=1 / sample_rate)
+        total_energy = float(np.sum(np.square(spectrum))) + 1e-12
+        high_band_ratio = float(np.sum(np.square(spectrum[frequencies >= 3500])) / total_energy)
+        median_f0 = 0.0
+        try:
+            f0 = librosa.yin(
+                audio,
+                fmin=55,
+                fmax=min(1100, sample_rate / 2 - 1),
+                sr=sample_rate,
+                frame_length=1024,
+                hop_length=160,
+                trough_threshold=0.12,
+            )
+            voiced = f0[np.isfinite(f0) & (f0 > 0)]
+            if voiced.size:
+                median_f0 = float(np.median(voiced))
+        except (RuntimeError, ValueError):
+            median_f0 = 0.0
+        high_energy = bool(
+            clipped_fraction >= 0.0005
+            or rms >= 0.22
+            or (peak >= 0.88 and rms >= 0.15)
+            or (peak >= 0.82 and high_band_ratio >= 0.18)
+        )
+        return AudioProfile(
+            peak=peak,
+            rms=rms,
+            clipped_fraction=clipped_fraction,
+            high_band_ratio=high_band_ratio,
+            median_f0=median_f0,
+            high_energy=high_energy,
+            high_pitch=median_f0 >= 420,
+        )
+    except (ImportError, OSError, RuntimeError, ValueError):
+        return AudioProfile()
+
+
+def prepare_inference_audio(input_wav: Path, profile: AudioProfile) -> Path:
+    if not profile.high_energy:
+        return input_wav
+    guarded = input_wav.with_name(f"{input_wav.stem}-high-energy.wav")
+    result = subprocess.run(
+        [
+            "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(input_wav),
+            "-af", HIGH_ENERGY_INPUT_FILTER,
+            "-ac", "1", "-ar", "16000", "-c:a", "pcm_f32le", str(guarded),
+        ],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=120,
+    )
+    if result.returncode == 0 and guarded.is_file() and guarded.stat().st_size > 44:
+        return guarded
+    guarded.unlink(missing_ok=True)
+    return input_wav
+
+
 def render_conversion(
     model_path: Path,
     input_wav: Path,
@@ -395,7 +606,9 @@ def render_conversion(
     # Keep accepting it at the HTTP boundary for backward compatibility, but
     # use the exact upstream RMVPE/FCPE/PM pipeline without an invented filter.
     _ = filter_radius
-    selected_method = select_f0_method(input_wav, f0_method)
+    profile = analyze_audio_profile(input_wav)
+    inference_input = prepare_inference_audio(input_wav, profile)
+    selected_method = select_f0_method(inference_input, f0_method)
     methods = [selected_method]
     if f0_method == "auto":
         methods.append("fcpe" if selected_method == "rmvpe" else "rmvpe")
@@ -405,14 +618,17 @@ def render_conversion(
         output_wav.unlink(missing_ok=True)
         try:
             inference.infer(
-                input_wav,
+                inference_input,
                 output_wav,
                 pitch=pitch,
                 f0_method=method,
-                index_rate=index_rate,
-                protect=protect,
+                # Reduce retrieval grain and preserve transients only for an
+                # objectively high-energy input.  Ordinary/mid-range audio
+                # retains the caller's exact established settings.
+                index_rate=min(index_rate, 0.22) if profile.high_energy else index_rate,
+                protect=min(protect, 0.18) if profile.high_energy else protect,
                 resample_rate=resample_rate,
-                rms_mix_rate=rms_mix_rate,
+                rms_mix_rate=min(rms_mix_rate, 0.90) if profile.high_energy else rms_mix_rate,
             )
             if output_wav.is_file() and output_wav.stat().st_size > 44:
                 used_method = method
@@ -430,11 +646,12 @@ def render_conversion(
     # a very loud synthesized peak from clipping in the browser/player.
     limited_output = output_wav.with_name(f"{output_wav.stem}-limited{output_wav.suffix}")
     model_id = model_path.parent.name if model_path.parent != MODELS_DIR else model_path.stem
-    output_filter = (
-        SHOUT_HARSHNESS_FILTER
-        if model_id in SHOUT_HARSHNESS_GUARD_MODELS
-        else OUTPUT_SAFETY_FILTER
-    )
+    if profile.high_energy:
+        output_filter = HIGH_ENERGY_OUTPUT_FILTER
+    elif model_id in SHOUT_HARSHNESS_GUARD_MODELS:
+        output_filter = SHOUT_HARSHNESS_FILTER
+    else:
+        output_filter = OUTPUT_SAFETY_FILTER
     result = subprocess.run(
         [
             "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(output_wav),
@@ -525,6 +742,7 @@ async def healthz(request: Request) -> dict[str, object]:
         "commit": OFFICIAL_COMMIT,
         "device": info.device,
         "half": info.is_half,
+        "training": bool(active_training_job_id),
     }
 
 
@@ -549,6 +767,305 @@ def output_payload(job_id: str, record: OutputRecord) -> dict[str, str]:
     if record.f0_method:
         payload["f0Method"] = record.f0_method
     return payload
+
+
+def valid_training_token(value: str) -> bool:
+    return 32 <= len(value) <= 128 and all(ch.isalnum() or ch in "-_" for ch in value)
+
+
+def get_training_record(job_id: str, token: str) -> TrainingRecord:
+    if not re_full_uuid(job_id) or not valid_training_token(token):
+        raise HTTPException(status_code=404, detail="Not found")
+    record = training_records.get(job_id)
+    if record is None or not secrets.compare_digest(token, record.token):
+        raise HTTPException(status_code=404, detail="Not found")
+    return record
+
+
+def training_payload(record: TrainingRecord) -> dict[str, object]:
+    return {
+        "jobId": record.job_id,
+        "state": record.state,
+        "stage": record.stage,
+        "progress": max(0, min(100, int(record.progress))),
+        "message": record.message,
+        "files": record.files,
+        "totalBytes": record.total_bytes,
+        "durationSeconds": round(record.duration_seconds, 2),
+        "epochs": record.epochs,
+        "modelId": record.result_model_id,
+        "displayName": record.display_name,
+        "errorCode": record.error_code,
+        "updatedAt": record.updated_at,
+    }
+
+
+def apply_training_update(record: TrainingRecord, stage: str, progress: int, message: str) -> None:
+    record.state = stage
+    record.stage = stage
+    record.progress = max(record.progress, max(0, min(99, int(progress))))
+    record.message = message[:300]
+    record.updated_at = utcnow().isoformat()
+    persist_training_record(record)
+
+
+async def release_model_cache() -> None:
+    async with model_cache_lock:
+        model_cache.clear()
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except (ImportError, RuntimeError):
+        pass
+
+
+async def process_training_job(record: TrainingRecord) -> None:
+    global active_training_job_id
+    root = Path(record.root)
+    dataset_dir = root / "audio"
+    loop = asyncio.get_running_loop()
+    try:
+        async with training_lock:
+            active_training_job_id = record.job_id
+        await release_model_cache()
+        async with inference_lock:
+            def update(stage: str, progress: int, message: str) -> None:
+                loop.call_soon_threadsafe(apply_training_update, record, stage, progress, message)
+
+            result = await asyncio.to_thread(
+                run_training,
+                python_executable=TRAIN_PYTHON,
+                official_root=OFFICIAL_ROOT,
+                dataset_dir=dataset_dir,
+                work_dir=root,
+                models_dir=MODELS_DIR,
+                model_id=record.model_id,
+                display_name=record.display_name,
+                epochs=record.epochs,
+                batch_size=1,
+                source_duration_seconds=record.duration_seconds,
+                update=update,
+                cancelled=lambda: record.cancel_requested,
+            )
+        record.state = "completed"
+        record.stage = "completed"
+        record.progress = 100
+        record.message = "训练完成，模型已加入下方独立训练模型区"
+        record.result_model_id = str(result["modelId"])
+        record.updated_at = utcnow().isoformat()
+        persist_training_record(record)
+    except asyncio.CancelledError:
+        record.state = "failed"
+        record.stage = "failed"
+        record.error_code = "RVC_TRAINING_INTERRUPTED"
+        record.message = "训练服务已停止"
+        record.updated_at = utcnow().isoformat()
+        persist_training_record(record)
+        raise
+    except TrainingRuntimeError as error:
+        record.state = "cancelled" if error.code == "RVC_TRAINING_CANCELLED" else "failed"
+        record.stage = record.state
+        record.error_code = error.code
+        record.message = "训练已取消" if record.state == "cancelled" else "训练流程未完成，请查看任务诊断"
+        record.updated_at = utcnow().isoformat()
+        persist_training_record(record)
+        logger.warning("training failed job_id=%s code=%s", record.job_id, error.code)
+    except (OSError, RuntimeError, subprocess.SubprocessError, ValueError):
+        record.state = "failed"
+        record.stage = "failed"
+        record.error_code = "RVC_TRAINING_FAILED"
+        record.message = "训练服务处理失败"
+        record.updated_at = utcnow().isoformat()
+        persist_training_record(record)
+        logger.exception("training failed job_id=%s", record.job_id)
+    finally:
+        shutil.rmtree(dataset_dir, ignore_errors=True)
+        await release_model_cache()
+        async with training_lock:
+            if active_training_job_id == record.job_id:
+                active_training_job_id = ""
+
+
+@app.post("/v1/training/init")
+async def init_training(
+    request: Request,
+    display_name: str = Form(...),
+    consent: str = Form(...),
+    epochs: str = Form(str(DEFAULT_TRAIN_EPOCHS)),
+) -> dict[str, object]:
+    ensure_authorized(request)
+    clean_name = " ".join(display_name.strip().split())[:60]
+    if len(clean_name) < 1:
+        raise RvcServiceError(400, "RVC_TRAINING_INVALID_NAME")
+    if consent.lower() not in {"true", "1", "yes"}:
+        raise RvcServiceError(400, "RVC_TRAINING_CONSENT_REQUIRED")
+    try:
+        epoch_value = int(epochs)
+    except ValueError:
+        raise RvcServiceError(400, "RVC_TRAINING_INVALID_EPOCHS") from None
+    if not 40 <= epoch_value <= 200:
+        raise RvcServiceError(400, "RVC_TRAINING_INVALID_EPOCHS")
+    await cleanup_expired_training_jobs()
+    active_count = sum(
+        record.state in {"uploading", "queued", "preprocessing", "extracting_pitch", "extracting_features", "training", "indexing", "installing"}
+        for record in training_records.values()
+    )
+    if active_count >= 2:
+        raise RvcServiceError(429, "RVC_TRAINING_QUEUE_FULL")
+    job_id = str(uuid.uuid4())
+    token = secrets.token_urlsafe(32)
+    model_id = f"trained-{job_id.split('-', 1)[0]}"
+    root = training_job_root(job_id)
+    (root / "audio").mkdir(parents=True, exist_ok=False)
+    now = utcnow().isoformat()
+    record = TrainingRecord(
+        job_id=job_id,
+        token=token,
+        display_name=clean_name,
+        model_id=model_id,
+        root=str(root),
+        epochs=epoch_value,
+        created_at=now,
+        updated_at=now,
+        message="任务已创建，请上传至少两段纯人声音频",
+    )
+    async with training_lock:
+        training_records[job_id] = record
+    persist_training_record(record)
+    return {**training_payload(record), "uploadToken": token}
+
+
+@app.post("/v1/training/{job_id}/audio/{slot}")
+async def upload_training_audio(
+    request: Request,
+    job_id: str,
+    slot: int,
+    token: str,
+    audio: UploadFile = File(...),
+) -> dict[str, object]:
+    ensure_authorized(request)
+    record = get_training_record(job_id, token)
+    if record.state != "uploading":
+        await audio.close()
+        raise RvcServiceError(409, "RVC_TRAINING_ALREADY_STARTED")
+    if not 0 <= slot < MAX_TRAIN_FILES:
+        await audio.close()
+        raise RvcServiceError(400, "RVC_TRAINING_TOO_MANY_FILES")
+    extension = safe_extension(audio)
+    destination = Path(record.root) / "audio" / f"{slot:02d}.{extension}"
+    metadata_dir = Path(record.root) / "metadata"
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    metadata_path = metadata_dir / f"{slot:02d}.json"
+    temporary = destination.with_suffix(destination.suffix + ".part")
+    temporary.unlink(missing_ok=True)
+    try:
+        await write_upload(audio, temporary)
+        if temporary.stat().st_size > MAX_TRAIN_FILE_BYTES:
+            raise RvcServiceError(413, "RVC_TRAINING_FILE_TOO_LARGE")
+        duration = await asyncio.to_thread(probe_duration, temporary)
+        if duration < MIN_AUDIO_SECONDS / 2:
+            raise RvcServiceError(400, "RVC_TRAINING_AUDIO_TOO_SHORT")
+        existing_slot_files = [
+            path for path in destination.parent.glob(f"{slot:02d}.*")
+            if path.is_file() and path.suffix.lower().lstrip(".") in ALLOWED_EXTENSIONS
+        ]
+        existing_bytes = sum(path.stat().st_size for path in existing_slot_files)
+        projected = record.total_bytes - existing_bytes + temporary.stat().st_size
+        if projected > MAX_TRAIN_TOTAL_BYTES:
+            raise RvcServiceError(413, "RVC_TRAINING_DATASET_TOO_LARGE")
+        for stale in existing_slot_files:
+            if stale != temporary:
+                stale.unlink(missing_ok=True)
+        temporary.replace(destination)
+        metadata_path.write_text(json.dumps({"duration": duration}), encoding="utf-8")
+        audio_files = [
+            path for path in destination.parent.iterdir()
+            if path.is_file() and path.suffix.lower().lstrip(".") in ALLOWED_EXTENSIONS
+        ]
+        record.files = len(audio_files)
+        record.total_bytes = sum(path.stat().st_size for path in audio_files)
+        total_duration = 0.0
+        for path in audio_files:
+            try:
+                total_duration += float(json.loads((metadata_dir / f"{path.stem}.json").read_text(encoding="utf-8"))["duration"])
+            except (OSError, KeyError, TypeError, ValueError):
+                total_duration += await asyncio.to_thread(probe_duration, path)
+        record.duration_seconds = total_duration
+        if record.duration_seconds > MAX_TRAIN_SECONDS:
+            destination.unlink(missing_ok=True)
+            metadata_path.unlink(missing_ok=True)
+            raise RvcServiceError(413, "RVC_TRAINING_AUDIO_TOO_LONG")
+        record.progress = min(10, max(record.progress, record.files))
+        record.message = f"已接收 {record.files} 段音频，共 {record.duration_seconds:.1f} 秒"
+        record.updated_at = utcnow().isoformat()
+        persist_training_record(record)
+        return training_payload(record)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+@app.post("/v1/training/{job_id}/start")
+async def start_training(request: Request, job_id: str, token: str) -> dict[str, object]:
+    global active_training_job_id
+    ensure_authorized(request)
+    record = get_training_record(job_id, token)
+    if record.state != "uploading":
+        raise RvcServiceError(409, "RVC_TRAINING_ALREADY_STARTED")
+    if record.files < 2 or record.duration_seconds < MIN_TRAIN_SECONDS:
+        raise RvcServiceError(400, "RVC_TRAINING_DATASET_TOO_SHORT")
+    if record.duration_seconds > MAX_TRAIN_SECONDS:
+        raise RvcServiceError(400, "RVC_TRAINING_AUDIO_TOO_LONG")
+    async with training_lock:
+        if active_training_job_id:
+            raise RvcServiceError(429, "RVC_TRAINING_QUEUE_FULL")
+        active_training_job_id = record.job_id
+    record.state = "queued"
+    record.stage = "queued"
+    record.progress = max(10, record.progress)
+    record.message = "训练任务已进入本机 GPU 队列"
+    record.updated_at = utcnow().isoformat()
+    persist_training_record(record)
+    task = asyncio.create_task(process_training_job(record))
+    training_tasks.add(task)
+    task.add_done_callback(training_tasks.discard)
+    return training_payload(record)
+
+
+@app.get("/v1/training/{job_id}")
+async def training_status(request: Request, job_id: str, token: str) -> JSONResponse:
+    ensure_authorized(request)
+    record = get_training_record(job_id, token)
+    status = 202 if record.state not in {"completed", "failed", "cancelled"} else 200
+    return JSONResponse(
+        training_payload(record),
+        status_code=status,
+        headers={"Cache-Control": "no-store", "Retry-After": "8" if status == 202 else "0"},
+    )
+
+
+@app.post("/v1/training/{job_id}/cancel")
+async def cancel_training(request: Request, job_id: str, token: str) -> dict[str, object]:
+    ensure_authorized(request)
+    record = get_training_record(job_id, token)
+    if record.state in {"completed", "failed", "cancelled"}:
+        return training_payload(record)
+    if record.state == "uploading":
+        record.state = "cancelled"
+        record.stage = "cancelled"
+        record.cancel_requested = True
+        record.message = "训练任务已取消"
+        record.updated_at = utcnow().isoformat()
+        shutil.rmtree(Path(record.root) / "audio", ignore_errors=True)
+        persist_training_record(record)
+        return training_payload(record)
+    record.cancel_requested = True
+    record.message = "正在安全停止训练任务"
+    record.updated_at = utcnow().isoformat()
+    persist_training_record(record)
+    return training_payload(record)
 
 
 async def process_conversion_job(
@@ -654,6 +1171,9 @@ async def create_job(
     audio: UploadFile = File(...),
 ) -> dict[str, str]:
     ensure_authorized(request)
+    if active_training_job_id:
+        await audio.close()
+        raise RvcServiceError(503, "RVC_TRAINING_ACTIVE")
     trace_id = str(request.headers.get("X-PostPrep-Request-Id") or request.headers.get("CF-Ray") or uuid.uuid4())[:96]
     client_request_id = request_id.strip()
     started_at = asyncio.get_running_loop().time()

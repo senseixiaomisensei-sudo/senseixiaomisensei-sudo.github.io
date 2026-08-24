@@ -1,9 +1,11 @@
 const TEXT_RATE_LIMITER_BINDING = "POSTPREP_RATE_LIMITER";
 const RVC_RATE_LIMITER_BINDING = "POSTPREP_RVC_RATE_LIMITER";
+const RVC_TRAIN_RATE_LIMITER_BINDING = "POSTPREP_RVC_TRAIN_RATE_LIMITER";
 const GATEWAY_SECRET_BINDING = "POSTPREP_GATEWAY_SECRET";
 const RVC_DIRECT_BASE_BINDING = "POSTPREP_RVC_DIRECT_BASE_URL";
 const RVC_DIRECT_TOKEN_BINDING = "POSTPREP_RVC_INFERENCE_TOKEN";
 const MAX_RVC_UPLOAD_BYTES = 25 * 1024 * 1024;
+const MAX_RVC_TRAIN_UPLOAD_BYTES = 26 * 1024 * 1024;
 const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
   "https://senseixiaomisensei-sudo.github.io",
   "https://postprep-ae6.pages.dev",
@@ -154,6 +156,70 @@ function requestRoute(request) {
       token,
     };
   }
+  if (path === "/rvc/train/init") {
+    return {
+      id: "rvc-train-init",
+      method: "POST",
+      rateBinding: RVC_TRAIN_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc-train-init",
+      maxBytes: 64 * 1024,
+      directPath: "/v1/training/init",
+      message: "Use POST to create a training job",
+    };
+  }
+  const trainUploadMatch = path.match(/^\/rvc\/train\/upload\/([^/]+)\/([0-9]|1[0-9])$/u);
+  if (trainUploadMatch) {
+    const jobId = trainUploadMatch[1];
+    const token = url.searchParams.get("token") || "";
+    if (!isOutputJobId(jobId) || !isOutputToken(token)) {
+      return { error: { status: 400, code: "INVALID_RVC_TRAINING_TOKEN", message: "Invalid training upload address" } };
+    }
+    return {
+      id: "rvc-train-upload",
+      method: "POST",
+      rateBinding: RVC_TRAIN_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc-train-upload",
+      maxBytes: MAX_RVC_TRAIN_UPLOAD_BYTES,
+      directPath: `/v1/training/${jobId}/audio/${trainUploadMatch[2]}`,
+      token,
+      message: "Use POST to upload training audio",
+    };
+  }
+  const trainActionMatch = path.match(/^\/rvc\/train\/(start|cancel)\/([^/]+)$/u);
+  if (trainActionMatch) {
+    const jobId = trainActionMatch[2];
+    const token = url.searchParams.get("token") || "";
+    if (!isOutputJobId(jobId) || !isOutputToken(token)) {
+      return { error: { status: 400, code: "INVALID_RVC_TRAINING_TOKEN", message: "Invalid training action address" } };
+    }
+    return {
+      id: `rvc-train-${trainActionMatch[1]}`,
+      method: "POST",
+      rateBinding: RVC_TRAIN_RATE_LIMITER_BINDING,
+      ratePrefix: `rvc-train-${trainActionMatch[1]}`,
+      maxBytes: 64 * 1024,
+      directPath: `/v1/training/${jobId}/${trainActionMatch[1]}`,
+      token,
+      message: "Use POST for this training action",
+    };
+  }
+  const trainStatusMatch = path.match(/^\/rvc\/train\/status\/([^/]+)$/u);
+  if (trainStatusMatch) {
+    const jobId = trainStatusMatch[1];
+    const token = url.searchParams.get("token") || "";
+    if (!isOutputJobId(jobId) || !isOutputToken(token)) {
+      return { error: { status: 400, code: "INVALID_RVC_TRAINING_TOKEN", message: "Invalid training status address" } };
+    }
+    return {
+      id: "rvc-train-status",
+      method: "GET",
+      rateBinding: RVC_TRAIN_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc-train-status",
+      directPath: `/v1/training/${jobId}`,
+      token,
+      message: "Use GET for training status",
+    };
+  }
   return { error: { status: 404, code: "ROUTE_NOT_FOUND", message: "This gateway route is not available" } };
 }
 
@@ -182,10 +248,12 @@ function resolvedDirectRvcUrl(route, env) {
       "rvc-models": "/v1/models",
       "rvc-output": `/v1/output/${route.jobId || ""}`,
     };
-    url.pathname = paths[route.id] || "/";
+    url.pathname = route.directPath || paths[route.id] || "/";
     url.search = "";
     url.hash = "";
-    if (route.id === "rvc-output") url.searchParams.set("token", route.token);
+    if (route.id === "rvc-output" || route.id.startsWith("rvc-train-") && route.token) {
+      url.searchParams.set("token", route.token);
+    }
     return url.toString();
   } catch {
     return "";

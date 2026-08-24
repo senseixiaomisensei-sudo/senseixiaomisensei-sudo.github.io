@@ -889,14 +889,18 @@
     ttsAdapting: false,
     recording: false,
     mediaRecorder: null,
+    pcmRecorder: null,
     recordChunks: [],
     recordStream: null,
+    recordPreviewUrl: "",
     recordStartAt: 0,
     recordTimerId: 0,
     catalog: EMBEDDED_RVC_CATALOG.map(normalizeCharacterRuntimeConfig),
     baseModels: EMBEDDED_BASE_MODELS,
     rvcContext: null,
     resultUrl: "",
+    trainingFiles: [],
+    trainingJob: null,
   };
 
   // High-Performance Concurrency Pool (5 concurrent HTTP streams for max speed)
@@ -1296,6 +1300,15 @@
     return text;
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
   function showToast(msg) {
     const el = document.getElementById("toast");
     if (!el) return;
@@ -1404,11 +1417,15 @@
 
   function renderModelGallery() {
     const container = document.getElementById("rvc-model-gallery");
+    const trainedContainer = document.getElementById("rvc-trained-model-gallery");
+    const trainedSection = document.getElementById("rvc-trained-models-section");
+    const trainedCount = document.getElementById("rvc-trained-models-count");
     const emptyEl = document.getElementById("rvc-model-empty");
     const searchVal = (document.getElementById("rvc-model-search")?.value || "").trim().toLowerCase();
     if (!container) return;
 
     container.innerHTML = "";
+    if (trainedContainer) trainedContainer.innerHTML = "";
     const filtered = state.catalog.filter((m) => {
       if (!searchVal) return true;
       return (
@@ -1417,63 +1434,71 @@
         (m.tags || []).some((tag) => tag.toLowerCase().includes(searchVal))
       );
     });
+    const regularModels = filtered.filter((model) => model.trained !== true);
+    const trainedModels = filtered.filter((model) => model.trained === true);
 
-    if (filtered.length === 0) {
+    if (regularModels.length === 0 && trainedModels.length === 0) {
       if (emptyEl) emptyEl.classList.remove("hidden");
+      if (trainedSection) trainedSection.classList.add("hidden");
       return;
     }
     if (emptyEl) emptyEl.classList.add("hidden");
+    const renderItems = (target, items, trained = false) => {
+      if (!target) return;
+      items.forEach((m) => {
+        const isSelected = m.id === state.selectedModelId;
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `flex flex-col items-start p-4 rounded-xl border text-left transition-all relative ${
+          isSelected
+            ? "border-brand bg-teal-50/80 shadow-md ring-2 ring-brand"
+            : trained
+              ? "border-violet-200 bg-white hover:border-violet-500 hover:shadow-sm"
+              : "border-line bg-white hover:border-brand/60 hover:shadow-sm"
+        }`;
+        card.setAttribute("role", "option");
+        card.setAttribute("aria-selected", isSelected ? "true" : "false");
+        card.dataset.modelId = m.id;
 
-    filtered.forEach((m) => {
-      const isSelected = m.id === state.selectedModelId;
-      const card = document.createElement("button");
-      card.type = "button";
-      card.className = `flex flex-col items-start p-4 rounded-xl border text-left transition-all relative ${
-        isSelected
-          ? "border-brand bg-teal-50/80 shadow-md ring-2 ring-brand"
-          : "border-line bg-white hover:border-brand/60 hover:shadow-sm"
-      }`;
-      card.setAttribute("role", "option");
-      card.setAttribute("aria-selected", isSelected ? "true" : "false");
-      card.dataset.modelId = m.id;
-
-      const avatarText = m.avatarText || m.name.slice(0, 2);
-      card.innerHTML = `
-        <div class="flex items-center justify-between w-full">
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50/80 border border-teal-200/60 font-black text-brand text-xs shadow-xs">
-              ${avatarText}
-            </div>
-            <div>
-              <p class="text-sm font-black text-ink">${m.name}</p>
-              <div class="flex flex-wrap gap-1 mt-1">
-                ${(m.tags || [])
-                  .map(
-                    (tag) =>
-                      `<span class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-zinc-100 text-zinc-600">${tag}</span>`
-                  )
-                  .join("")}
+        const avatarText = escapeHtml(m.avatarText || m.name.slice(0, 2));
+        card.innerHTML = `
+          <div class="flex items-center justify-between w-full gap-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${trained ? "bg-violet-100 border-violet-200 text-violet-700" : "bg-teal-50/80 border-teal-200/60 text-brand"} border font-black text-xs shadow-xs">
+                ${avatarText}
+              </div>
+              <div class="min-w-0">
+                <p class="truncate text-sm font-black text-ink">${escapeHtml(m.name)}</p>
+                <div class="mt-1 flex flex-wrap gap-1">
+                  ${(m.tags || [])
+                    .map(
+                      (tag) =>
+                        `<span class="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600">${escapeHtml(tag)}</span>`
+                    )
+                    .join("")}
+                </div>
               </div>
             </div>
+            <span class="shrink-0 text-xs font-bold ${isSelected ? "text-brand" : "text-zinc-400"}">
+              ${isSelected ? `<i class="fa-solid fa-circle-check"></i> ${t("modelPick")}` : t("modelInstalled")}
+            </span>
           </div>
-          <span class="text-xs font-bold ${
-            isSelected ? "text-brand" : "text-zinc-400"
-          }">
-            ${isSelected ? `<i class="fa-solid fa-circle-check"></i> ${t("modelPick")}` : t("modelInstalled")}
-          </span>
-        </div>
-        <p class="mt-2 text-xs leading-5 text-muted line-clamp-2">${m.description || ""}</p>
-      `;
+          <p class="mt-2 line-clamp-2 text-xs leading-5 text-muted">${escapeHtml(m.description || "")}</p>
+        `;
 
-      card.addEventListener("click", () => {
-        state.selectedModelId = m.id;
-        applyCharacterPitch(m);
-        renderModelGallery();
-        updateStatusDisplay();
+        card.addEventListener("click", () => {
+          state.selectedModelId = m.id;
+          applyCharacterPitch(m);
+          renderModelGallery();
+          updateStatusDisplay();
+        });
+        target.appendChild(card);
       });
-
-      container.appendChild(card);
-    });
+    };
+    renderItems(container, regularModels);
+    renderItems(trainedContainer, trainedModels, true);
+    if (trainedSection) trainedSection.classList.toggle("hidden", trainedModels.length === 0);
+    if (trainedCount) trainedCount.textContent = `${trainedModels.length} 个模型`;
   }
 
   function showProgressBar(show) {
@@ -1889,6 +1914,10 @@
       zh: "云端 RVC 连接刚刚中断，请稍后重新提交",
       en: "The cloud RVC connection dropped. Please submit the job again",
     }),
+    RVC_TRAINING_ACTIVE: Object.freeze({
+      zh: "本机 GPU 正在训练新模型。训练结束后旧角色变声会自动恢复，请稍后再提交",
+      en: "The GPU is training a new model. Existing voice conversion resumes when training finishes",
+    }),
     UPSTREAM_UNAVAILABLE: Object.freeze({
       zh: "云端 RVC 连接刚刚中断，请稍后重新提交",
       en: "The cloud RVC connection dropped. Please submit the job again",
@@ -1978,6 +2007,8 @@
       license,
       source: typeof remote.source === "string" && remote.source ? remote.source : (local?.source || ""),
       modelVersion: typeof remote.modelVersion === "string" && remote.modelVersion ? remote.modelVersion : (local?.modelVersion || ""),
+      trained: remote.trained === true,
+      createdAt: typeof remote.createdAt === "string" ? remote.createdAt : "",
     });
   }
 
@@ -2121,6 +2152,30 @@
       convertUrl: `${base}/v1/convert`,
       outputUrl: (jobId, token) => `${base}/v1/output/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
     };
+  }
+
+  function trainingRoutes(endpoint = getOfficialEndpoint()) {
+    const base = String(endpoint || "").trim().replace(/\/+$/u, "");
+    if (/\/(?:rvc|rvc-api)$/u.test(base)) {
+      return {
+        init: `${base}/train/init`,
+        upload: (jobId, token, slot) => `${base}/train/upload/${encodeURIComponent(jobId)}/${slot}?token=${encodeURIComponent(token)}`,
+        start: (jobId, token) => `${base}/train/start/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+        status: (jobId, token) => `${base}/train/status/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+        cancel: (jobId, token) => `${base}/train/cancel/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+      };
+    }
+    if (/\/v1\/convert$/u.test(base)) {
+      const service = base.replace(/\/v1\/convert$/u, "");
+      return {
+        init: `${service}/v1/training/init`,
+        upload: (jobId, token, slot) => `${service}/v1/training/${encodeURIComponent(jobId)}/audio/${slot}?token=${encodeURIComponent(token)}`,
+        start: (jobId, token) => `${service}/v1/training/${encodeURIComponent(jobId)}/start?token=${encodeURIComponent(token)}`,
+        status: (jobId, token) => `${service}/v1/training/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+        cancel: (jobId, token) => `${service}/v1/training/${encodeURIComponent(jobId)}/cancel?token=${encodeURIComponent(token)}`,
+      };
+    }
+    return trainingRoutes(`${base}/rvc`);
   }
 
   function officialMediaUrl(jobId, token) {
@@ -2363,7 +2418,7 @@
     applyCharacterPitch(getSelectedModel());
   }
 
-  async function handleAudioSelected(file) {
+  async function handleAudioSelected(file, fallbackDuration = 0) {
     if (!file) return;
     const statusEl = document.getElementById("rvc-audio-status");
     if (statusEl) statusEl.textContent = t("analyzing");
@@ -2385,11 +2440,137 @@
       updateStatusDisplay();
     } catch (err) {
       console.error("Audio decode error:", err);
-      state.audio = null;
-      if (statusEl) statusEl.textContent = t("decodeFailed");
-      showToast(t("decodeFailed"));
+      const safeFallbackDuration = Number(fallbackDuration) || 0;
+      if (safeFallbackDuration >= MIN_AUDIO_SECONDS && file?.size > 0) {
+        // A few Safari/in-app browser builds can record a valid MP4/WebM file
+        // that their own WebAudio decoder refuses to reopen.  Cloud ffmpeg can
+        // still read it, so preserve the original recording instead of
+        // discarding it.  Local WASM remains gated by its decoder.
+        state.audio = {
+          file,
+          float32: null,
+          duration: safeFallbackDuration,
+          name: file.name,
+        };
+        if (statusEl) {
+          statusEl.textContent = t("analysisReady", {
+            name: file.name,
+            duration: `${safeFallbackDuration.toFixed(1)}s`,
+          });
+        }
+      } else {
+        state.audio = null;
+        if (statusEl) statusEl.textContent = t("decodeFailed");
+        showToast(t("decodeFailed"));
+      }
       updateStatusDisplay();
     }
+  }
+
+  function recorderFormat() {
+    const candidates = [
+      { mimeType: "audio/webm;codecs=opus", extension: "webm" },
+      { mimeType: "audio/mp4;codecs=mp4a.40.2", extension: "m4a" },
+      { mimeType: "audio/mp4", extension: "m4a" },
+      { mimeType: "audio/ogg;codecs=opus", extension: "ogg" },
+      { mimeType: "audio/webm", extension: "webm" },
+    ];
+    if (typeof MediaRecorder === "undefined") return null;
+    if (typeof MediaRecorder.isTypeSupported !== "function") {
+      return { mimeType: "", extension: "webm" };
+    }
+    return candidates.find((candidate) => MediaRecorder.isTypeSupported(candidate.mimeType))
+      || { mimeType: "", extension: "webm" };
+  }
+
+  function concatenateFloat32(chunks) {
+    const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const output = new Float32Array(total);
+    let offset = 0;
+    chunks.forEach((chunk) => {
+      output.set(chunk, offset);
+      offset += chunk.length;
+    });
+    return output;
+  }
+
+  function encodePcmWav(samples, sampleRate, name = "mic_recording") {
+    const count = samples.length;
+    const buffer = new ArrayBuffer(44 + count * 2);
+    const view = new DataView(buffer);
+    const ascii = (offset, value) => {
+      for (let index = 0; index < value.length; index += 1) view.setUint8(offset + index, value.charCodeAt(index));
+    };
+    ascii(0, "RIFF");
+    view.setUint32(4, 36 + count * 2, true);
+    ascii(8, "WAVE");
+    ascii(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    ascii(36, "data");
+    view.setUint32(40, count * 2, true);
+    for (let index = 0; index < count; index += 1) {
+      const sample = Math.max(-1, Math.min(1, samples[index] || 0));
+      view.setInt16(44 + index * 2, sample < 0 ? sample * 32768 : sample * 32767, true);
+    }
+    return new File([buffer], `${name}.wav`, { type: "audio/wav" });
+  }
+
+  async function microphoneStream() {
+    const preferred = {
+      audio: {
+        channelCount: { ideal: 1 },
+        sampleRate: { ideal: 48000 },
+        echoCancellation: { ideal: false },
+        noiseSuppression: { ideal: false },
+        autoGainControl: { ideal: false },
+      },
+    };
+    try {
+      return await navigator.mediaDevices.getUserMedia(preferred);
+    } catch (error) {
+      if (error?.name === "NotAllowedError" || error?.name === "SecurityError") throw error;
+      return navigator.mediaDevices.getUserMedia({ audio: true });
+    }
+  }
+
+  function startPcmRecorder(stream) {
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextCtor) throw new Error("PCM_RECORDER_UNAVAILABLE");
+    const context = new AudioContextCtor();
+    const source = context.createMediaStreamSource(stream);
+    const processor = context.createScriptProcessor(4096, 1, 1);
+    const silent = context.createGain();
+    silent.gain.value = 0;
+    const chunks = [];
+    processor.onaudioprocess = (event) => {
+      if (state.recording) chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+    };
+    source.connect(processor);
+    processor.connect(silent);
+    silent.connect(context.destination);
+    return {
+      stop: async () => {
+        processor.disconnect();
+        source.disconnect();
+        silent.disconnect();
+        processor.onaudioprocess = null;
+        await context.close().catch(() => {});
+        const samples = concatenateFloat32(chunks);
+        if (!samples.length) throw new Error("EMPTY_RECORDING");
+        return encodePcmWav(samples, context.sampleRate || 48000, `mic_recording_${Date.now()}`);
+      },
+    };
+  }
+
+  function stopRecordStream() {
+    if (state.recordStream) state.recordStream.getTracks().forEach((track) => track.stop());
+    state.recordStream = null;
   }
 
   function setupRecording() {
@@ -2400,17 +2581,57 @@
 
     if (!recordBtn) return;
 
+    const recordHint = document.getElementById("rvc-record-hint");
+    const resetButton = () => {
+      state.recording = false;
+      clearInterval(state.recordTimerId);
+      if (recordLabel) recordLabel.textContent = t("recordStart");
+      recordBtn.disabled = false;
+      recordBtn.classList.remove("bg-red-600", "hover:bg-red-700");
+      recordBtn.classList.add("bg-brand", "hover:bg-brandDark");
+    };
+    const finishRecordedFile = async (file) => {
+      if (!file || file.size < 44) throw new Error("EMPTY_RECORDING");
+      if (state.recordPreviewUrl) URL.revokeObjectURL(state.recordPreviewUrl);
+      state.recordPreviewUrl = URL.createObjectURL(file);
+      if (recordPreview) {
+        recordPreview.src = state.recordPreviewUrl;
+        recordPreview.hidden = false;
+        recordPreview.load();
+      }
+      await handleAudioSelected(file, Math.max(0, (Date.now() - state.recordStartAt) / 1000));
+      if (recordHint) recordHint.textContent = `录音已就绪：${file.name} · 点击“开始变声”即可处理。`;
+    };
+
     recordBtn.addEventListener("click", async () => {
       if (state.recording) {
-        // Stop recording
+        state.recording = false;
+        recordBtn.disabled = true;
+        if (recordLabel) recordLabel.textContent = "正在整理录音…";
+        if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
+          try { state.mediaRecorder.requestData(); } catch {}
+          state.mediaRecorder.stop();
+          return;
+        }
+        if (state.pcmRecorder) {
+          try {
+            const file = await state.pcmRecorder.stop();
+            await finishRecordedFile(file);
+          } catch (error) {
+            console.error("PCM recording finalize failed:", error);
+            showToast(t("recordError"));
+          } finally {
+            state.pcmRecorder = null;
+            stopRecordStream();
+            resetButton();
+          }
+          return;
+        }
         if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
           state.mediaRecorder.stop();
         }
-        clearInterval(state.recordTimerId);
-        state.recording = false;
-        if (recordLabel) recordLabel.textContent = t("recordStart");
-        recordBtn.classList.remove("bg-red-600", "hover:bg-red-700");
-        recordBtn.classList.add("bg-brand", "hover:bg-brandDark");
+        stopRecordStream();
+        resetButton();
         return;
       }
 
@@ -2421,33 +2642,50 @@
       }
 
       try {
-        state.recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        state.recordStream = await microphoneStream();
         state.recordChunks = [];
-        const recorder = new MediaRecorder(state.recordStream);
-        state.mediaRecorder = recorder;
-
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0) state.recordChunks.push(e.data);
-        };
-
-        recorder.onstop = async () => {
-          const blob = new Blob(state.recordChunks, { type: recorder.mimeType || "audio/webm" });
-          const recFile = new File([blob], `mic_recording_${Date.now()}.webm`, {
-            type: blob.type,
-          });
-          if (recordPreview) {
-            recordPreview.src = URL.createObjectURL(blob);
-            recordPreview.hidden = false;
+        const format = recorderFormat();
+        if (format) {
+          let recorder;
+          try {
+            recorder = format.mimeType
+              ? new MediaRecorder(state.recordStream, { mimeType: format.mimeType, audioBitsPerSecond: 128000 })
+              : new MediaRecorder(state.recordStream);
+          } catch {
+            recorder = new MediaRecorder(state.recordStream);
           }
-          if (state.recordStream) {
-            state.recordStream.getTracks().forEach((track) => track.stop());
-          }
-          await handleAudioSelected(recFile);
-        };
-
-        recorder.start(100);
+          state.mediaRecorder = recorder;
+          recorder.ondataavailable = (event) => {
+            if (event.data?.size > 0) state.recordChunks.push(event.data);
+          };
+          recorder.onerror = (event) => {
+            console.error("MediaRecorder error:", event.error || event);
+            showToast(t("recordError"));
+          };
+          recorder.onstop = async () => {
+            const actualType = recorder.mimeType || format.mimeType || state.recordChunks[0]?.type || "audio/webm";
+            const extension = actualType.includes("mp4") ? "m4a" : actualType.includes("ogg") ? "ogg" : "webm";
+            const blob = new Blob(state.recordChunks, { type: actualType });
+            const file = new File([blob], `mic_recording_${Date.now()}.${extension}`, { type: actualType });
+            try {
+              await finishRecordedFile(file);
+            } catch (error) {
+              console.error("Recorded audio decode failed:", error);
+              showToast(t("decodeFailed"));
+            } finally {
+              state.mediaRecorder = null;
+              stopRecordStream();
+              resetButton();
+            }
+          };
+          recorder.start(250);
+        } else {
+          state.mediaRecorder = null;
+          state.pcmRecorder = startPcmRecorder(state.recordStream);
+        }
         state.recording = true;
         state.recordStartAt = Date.now();
+        if (recordHint) recordHint.textContent = "正在录音；再次点击后会自动整理为可变声的标准音频。";
         if (recordLabel) recordLabel.textContent = t("recordStop");
         recordBtn.classList.remove("bg-brand", "hover:bg-brandDark");
         recordBtn.classList.add("bg-red-600", "hover:bg-red-700");
@@ -2458,8 +2696,17 @@
         }, 500);
       } catch (err) {
         console.error("Mic access denied or error:", err);
-        showToast(t("recordDenied"));
+        stopRecordStream();
+        resetButton();
+        showToast(err?.name === "NotAllowedError" || err?.name === "SecurityError" ? t("recordDenied") : t("recordError"));
       }
+    });
+
+    window.addEventListener("pagehide", () => {
+      try {
+        if (state.mediaRecorder?.state !== "inactive") state.mediaRecorder.stop();
+      } catch {}
+      stopRecordStream();
     });
   }
 
@@ -2717,8 +2964,8 @@
     const preparedUpload = prepareCloudUploadAudio(state.audio);
     const uploadFile = preparedUpload.file;
     const extension = String(uploadFile?.name || "").toLowerCase().split(".").pop();
-    if (!["wav", "mp3", "m4a", "ogg", "webm"].includes(extension)) {
-      showToast("云端 RVC 引擎接受 WAV、MP3、M4A、OGG 或 WebM，请先转换格式。");
+    if (!["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"].includes(extension)) {
+      showToast("云端 RVC 引擎接受 WAV、MP3、M4A、OGG、WebM、FLAC 或 AAC，请先转换格式。");
       return;
     }
 
@@ -2930,6 +3177,221 @@
       return runWebRvcInference();
     }
     return runOfficialRvcInference();
+  }
+
+  function setupModelTraining() {
+    const filesInput = document.getElementById("rvc-training-files");
+    const filesStatus = document.getElementById("rvc-training-files-status");
+    const nameInput = document.getElementById("rvc-training-name");
+    const consentInput = document.getElementById("rvc-training-consent");
+    const startButton = document.getElementById("rvc-training-start");
+    const cancelButton = document.getElementById("rvc-training-cancel");
+    const progressWrap = document.getElementById("rvc-training-progress-wrap");
+    const progressBar = document.getElementById("rvc-training-progress");
+    const statusText = document.getElementById("rvc-training-status");
+    if (!filesInput || !startButton) return;
+
+    const storageKey = "postprep_rvc_training_job_v1";
+    const setTrainingUi = (progress, message, active = true) => {
+      if (progressWrap) progressWrap.classList.remove("hidden");
+      if (progressBar) progressBar.style.width = `${Math.max(0, Math.min(100, Number(progress) || 0))}%`;
+      if (statusText) statusText.textContent = message || "";
+      startButton.disabled = active;
+      if (cancelButton) cancelButton.classList.toggle("hidden", !active);
+    };
+    const clearStoredJob = () => {
+      state.trainingJob = null;
+      try { window.localStorage.removeItem(storageKey); } catch {}
+    };
+    const saveJob = (job) => {
+      state.trainingJob = job;
+      try { window.localStorage.setItem(storageKey, JSON.stringify(job)); } catch {}
+    };
+    const formatTrainingFiles = (files) => {
+      const total = files.reduce((sum, file) => sum + file.size, 0);
+      return `${files.length} 段 · ${formatTransferredBytes(total)} · 将逐段上传，单段失败会自动重试`;
+    };
+    const readJson = async (response) => {
+      const payload = await response.json().catch(() => null);
+      if (!response.ok && response.status !== 202) {
+        const error = new Error(payload?.message || payload?.code || `HTTP ${response.status}`);
+        error.code = payload?.code || "";
+        throw error;
+      }
+      return payload;
+    };
+    const uploadOne = (url, file, slot, totalFiles) => new Promise((resolve, reject) => {
+      const body = new FormData();
+      body.set("audio", file, file.name);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+      xhr.timeout = 240000;
+      xhr.upload.onprogress = (event) => {
+        const fraction = event.lengthComputable && event.total > 0 ? event.loaded / event.total : 0;
+        const uploadProgress = 2 + ((slot + fraction) / totalFiles) * 18;
+        setTrainingUi(uploadProgress, `正在上传第 ${slot + 1}/${totalFiles} 段：${file.name} · ${Math.round(fraction * 100)}%`);
+      };
+      xhr.onload = () => {
+        let payload = null;
+        try { payload = JSON.parse(xhr.responseText); } catch {}
+        if (xhr.status >= 200 && xhr.status < 300) resolve(payload);
+        else {
+          const error = new Error(payload?.message || payload?.code || `HTTP ${xhr.status}`);
+          error.code = payload?.code || "";
+          error.httpStatus = xhr.status;
+          reject(error);
+        }
+      };
+      xhr.onerror = () => reject(Object.assign(new Error("训练音频上传连接中断"), { code: "RVC_NETWORK_INTERRUPTED" }));
+      xhr.ontimeout = () => reject(Object.assign(new Error("训练音频上传超时"), { code: "RVC_NETWORK_INTERRUPTED" }));
+      xhr.send(body);
+    });
+    const uploadWithRetry = async (url, file, slot, totalFiles) => {
+      let error;
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          return await uploadOne(url, file, slot, totalFiles);
+        } catch (caught) {
+          error = caught;
+          if (attempt >= 3 || caught?.httpStatus && caught.httpStatus < 500 && caught.httpStatus !== 429) throw caught;
+          setTrainingUi(2 + (slot / totalFiles) * 18, `第 ${slot + 1} 段连接波动，正在重试 ${attempt}/2…`);
+          await waitFor(attempt * 1500);
+        }
+      }
+      throw error;
+    };
+    const refreshTrainedModel = async (modelId) => {
+      state.engineReady = null;
+      await refreshOfficialService();
+      if (modelId && state.catalog.some((model) => model.id === modelId)) {
+        state.selectedModelId = modelId;
+      }
+      renderModelGallery();
+      updateStatusDisplay();
+    };
+    const pollTraining = async (job) => {
+      const routes = trainingRoutes(job.endpoint);
+      while (state.trainingJob?.jobId === job.jobId) {
+        let payload;
+        try {
+          payload = await readJson(await fetch(routes.status(job.jobId, job.token), {
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          }));
+        } catch (error) {
+          setTrainingUi(state.trainingJob.progress || 20, `训练状态连接波动：${error.message}，8 秒后自动续查…`);
+          await waitFor(8000);
+          continue;
+        }
+        job.progress = Number(payload?.progress) || job.progress || 0;
+        saveJob(job);
+        const label = payload?.message || payload?.stage || "训练任务运行中";
+        if (payload?.state === "completed") {
+          setTrainingUi(100, `✅ ${label}`, false);
+          clearStoredJob();
+          if (cancelButton) cancelButton.classList.add("hidden");
+          await refreshTrainedModel(payload.modelId);
+          showToast("🎓 新模型训练完成，已加入独立训练模型区");
+          return;
+        }
+        if (payload?.state === "failed" || payload?.state === "cancelled") {
+          setTrainingUi(job.progress, `❌ ${label}${payload.errorCode ? `（${payload.errorCode}）` : ""}`, false);
+          clearStoredJob();
+          if (cancelButton) cancelButton.classList.add("hidden");
+          return;
+        }
+        setTrainingUi(job.progress, `⏳ ${label}`);
+        await waitFor(8000);
+      }
+    };
+
+    filesInput.addEventListener("change", () => {
+      const files = Array.from(filesInput.files || []);
+      const allowed = /\.(wav|mp3|m4a|ogg|webm|flac|aac)$/iu;
+      const valid = files.filter((file) => allowed.test(file.name) && file.size > 0 && file.size <= 25 * 1024 * 1024).slice(0, 12);
+      const total = valid.reduce((sum, file) => sum + file.size, 0);
+      state.trainingFiles = total <= 96 * 1024 * 1024 ? valid : [];
+      if (filesStatus) {
+        filesStatus.textContent = state.trainingFiles.length >= 2
+          ? formatTrainingFiles(state.trainingFiles)
+          : "请选择 2–12 段音频；每段不超过 25 MB，总计不超过 96 MB。";
+      }
+    });
+
+    startButton.addEventListener("click", async () => {
+      const displayName = String(nameInput?.value || "").trim();
+      const files = state.trainingFiles;
+      if (!displayName) {
+        showToast("请填写训练模型名称");
+        nameInput?.focus();
+        return;
+      }
+      if (!Array.isArray(files) || files.length < 2) {
+        showToast("请至少选择两段纯人声音频");
+        return;
+      }
+      if (!consentInput?.checked) {
+        showToast("请先确认音频与声音授权");
+        return;
+      }
+      const endpoint = getOfficialEndpoint();
+      const routes = trainingRoutes(endpoint);
+      startButton.disabled = true;
+      setTrainingUi(1, "正在创建隔离训练任务…");
+      try {
+        const initBody = new FormData();
+        initBody.set("display_name", displayName);
+        initBody.set("consent", "true");
+        initBody.set("epochs", "80");
+        const initPayload = await readJson(await fetch(routes.init, { method: "POST", body: initBody }));
+        const job = {
+          jobId: initPayload.jobId,
+          token: initPayload.uploadToken,
+          endpoint,
+          progress: 1,
+          displayName,
+        };
+        saveJob(job);
+        for (let slot = 0; slot < files.length; slot += 1) {
+          await uploadWithRetry(routes.upload(job.jobId, job.token, slot), files[slot], slot, files.length);
+        }
+        setTrainingUi(20, "音频上传完成，正在校验总时长并进入 GPU 队列…");
+        const startBody = new FormData();
+        startBody.set("confirm", "true");
+        await readJson(await fetch(routes.start(job.jobId, job.token), { method: "POST", body: startBody }));
+        pollTraining(job);
+      } catch (error) {
+        console.error("RVC training start failed:", error);
+        setTrainingUi(0, `❌ 训练任务启动失败：${error.message}`, false);
+        clearStoredJob();
+        if (cancelButton) cancelButton.classList.add("hidden");
+      }
+    });
+
+    cancelButton?.addEventListener("click", async () => {
+      const job = state.trainingJob;
+      if (!job) return;
+      cancelButton.disabled = true;
+      try {
+        const body = new FormData();
+        body.set("confirm", "true");
+        await fetch(trainingRoutes(job.endpoint).cancel(job.jobId, job.token), { method: "POST", body });
+        setTrainingUi(job.progress || 20, "正在安全停止训练任务…");
+      } finally {
+        cancelButton.disabled = false;
+      }
+    });
+
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(storageKey) || "null");
+      if (stored?.jobId && stored?.token && stored?.endpoint) {
+        state.trainingJob = stored;
+        setTrainingUi(stored.progress || 20, "正在恢复上一次训练任务状态…");
+        pollTraining(stored);
+      }
+    } catch {
+      clearStoredJob();
+    }
   }
 
   function setupEventListeners() {
@@ -3363,6 +3825,7 @@
     }
 
     setupRecording();
+    setupModelTraining();
   }
 
   document.addEventListener("DOMContentLoaded", async () => {

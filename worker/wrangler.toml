@@ -26,3 +26,12 @@ namespace_id = "2026081501"
   # One normal submission plus one automatic mobile-network retry.
   limit = 2
   period = 60
+
+[[ratelimits]]
+name = "POSTPREP_RVC_TRAIN_RATE_LIMITER"
+namespace_id = "2026082401"
+
+  [ratelimits.simple]
+  # Chunked dataset uploads plus eight-second status polling.
+  limit = 90
+  period = 60

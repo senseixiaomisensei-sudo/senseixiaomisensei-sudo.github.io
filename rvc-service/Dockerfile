@@ -30,13 +30,18 @@ RUN git clone --filter=blob:none --no-checkout https://github.com/RVC-Project/Re
     && git -C ${RVC_OFFICIAL_ROOT} checkout --detach ${RVC_COMMIT} \
     && test "$(git -C ${RVC_OFFICIAL_ROOT} rev-parse HEAD)" = "${RVC_COMMIT}" \
     && printf '%s\n' "${RVC_COMMIT}" > ${RVC_OFFICIAL_ROOT}/.postprep-rvc-commit \
-    && mkdir -p ${RVC_OFFICIAL_ROOT}/assets/hubert_base \
+    && mkdir -p ${RVC_OFFICIAL_ROOT}/assets/hubert_base ${RVC_OFFICIAL_ROOT}/assets/rmvpe ${RVC_OFFICIAL_ROOT}/assets/pretrained_v2 \
     && curl -fL "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/${HF_REVISION}/hubert_base/config.json?download=true" -o ${RVC_OFFICIAL_ROOT}/assets/hubert_base/config.json \
     && curl -fL "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/${HF_REVISION}/hubert_base/preprocessor_config.json?download=true" -o ${RVC_OFFICIAL_ROOT}/assets/hubert_base/preprocessor_config.json \
     && curl -fL "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/${HF_REVISION}/hubert_base/pytorch_model.bin?download=true" -o ${RVC_OFFICIAL_ROOT}/assets/hubert_base/pytorch_model.bin \
     && echo "cc8c20f4b90a520757260197a3ff2505705a7adbd20ad9eeaa4e1a9b38442ef5  ${RVC_OFFICIAL_ROOT}/assets/hubert_base/pytorch_model.bin" | sha256sum -c - \
     && curl -fL "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/${HF_REVISION}/rmvpe.pt?download=true" -o ${RVC_OFFICIAL_ROOT}/rmvpe.pt \
-    && echo "6d62215f4306e3ca278246188607209f09af3dc77ed4232efdd069798c4ec193  ${RVC_OFFICIAL_ROOT}/rmvpe.pt" | sha256sum -c -
+    && echo "6d62215f4306e3ca278246188607209f09af3dc77ed4232efdd069798c4ec193  ${RVC_OFFICIAL_ROOT}/rmvpe.pt" | sha256sum -c - \
+    && cp ${RVC_OFFICIAL_ROOT}/rmvpe.pt ${RVC_OFFICIAL_ROOT}/assets/rmvpe/rmvpe.pt \
+    && curl -fL "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/${HF_REVISION}/pretrained_v2/f0G40k.pth?download=true" -o ${RVC_OFFICIAL_ROOT}/assets/pretrained_v2/f0G40k.pth \
+    && echo "3b2c44035e782c4b14ddc0bede9e2f4a724d025cd073f736d4f43708453adfcb  ${RVC_OFFICIAL_ROOT}/assets/pretrained_v2/f0G40k.pth" | sha256sum -c - \
+    && curl -fL "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/${HF_REVISION}/pretrained_v2/f0D40k.pth?download=true" -o ${RVC_OFFICIAL_ROOT}/assets/pretrained_v2/f0D40k.pth \
+    && echo "6b6ab091e70801b28e3f41f335f2fc5f3f35c75b39ae2628d419644ec2b0fa09  ${RVC_OFFICIAL_ROOT}/assets/pretrained_v2/f0D40k.pth" | sha256sum -c -
 COPY app ./app
 
 EXPOSE 8080

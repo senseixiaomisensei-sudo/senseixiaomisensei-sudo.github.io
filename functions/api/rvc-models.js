@@ -27,6 +27,8 @@ export async function onRequest(context) {
           license: typeof model.license === "string" ? model.license.slice(0, 120) : "unverified",
           source: typeof model.source === "string" && /^https:\/\//u.test(model.source) ? model.source.slice(0, 500) : "",
           modelVersion: typeof model.modelVersion === "string" ? model.modelVersion.slice(0, 40) : "",
+          trained: model.trained === true,
+          createdAt: typeof model.createdAt === "string" ? model.createdAt.slice(0, 40) : "",
         }))
       : [];
     return json(request, env, { models });

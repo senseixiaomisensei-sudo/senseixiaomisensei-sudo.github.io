@@ -250,6 +250,8 @@ test("rvc models passes through the mounted model list only", async () => {
       license: "unverified",
       source: "",
       modelVersion: "",
+      trained: false,
+      createdAt: "",
     }]);
     assert.equal(forwarded.url, "https://gpu.example/v1/models");
   } finally {

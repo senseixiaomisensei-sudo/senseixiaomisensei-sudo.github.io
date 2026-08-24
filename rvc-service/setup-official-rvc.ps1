@@ -10,6 +10,8 @@ $OfficialRepository = 'https://github.com/RVC-Project/Retrieval-based-Voice-Conv
 $HuggingFaceRevision = 'e6d0c1a17da07c33557852f9dfa2bd44cc75737d'
 $HubertSha256 = 'cc8c20f4b90a520757260197a3ff2505705a7adbd20ad9eeaa4e1a9b38442ef5'
 $RmvpeSha256 = '6d62215f4306e3ca278246188607209f09af3dc77ed4232efdd069798c4ec193'
+$PretrainedG40kSha256 = '3b2c44035e782c4b14ddc0bede9e2f4a724d025cd073f736d4f43708453adfcb'
+$PretrainedD40kSha256 = '6b6ab091e70801b28e3f41f335f2fc5f3f35c75b39ae2628d419644ec2b0fa09'
 
 $resolvedRoot = [System.IO.Path]::GetFullPath($InstallRoot)
 if ([System.IO.Path]::GetPathRoot($resolvedRoot) -eq $resolvedRoot) {
@@ -35,12 +37,16 @@ if ($actualCommit -ne $OfficialCommit) {
 Set-Content -LiteralPath (Join-Path $resolvedRoot '.postprep-rvc-commit') -Value $OfficialCommit -Encoding ascii
 
 $hubertRoot = Join-Path $resolvedRoot 'assets\hubert_base'
+$pretrainedV2Root = Join-Path $resolvedRoot 'assets\pretrained_v2'
 New-Item -ItemType Directory -Path $hubertRoot -Force | Out-Null
+New-Item -ItemType Directory -Path $pretrainedV2Root -Force | Out-Null
 $downloads = @(
   @('hubert_base/config.json', (Join-Path $hubertRoot 'config.json'), 1492, ''),
   @('hubert_base/preprocessor_config.json', (Join-Path $hubertRoot 'preprocessor_config.json'), 225, ''),
   @('hubert_base/pytorch_model.bin', (Join-Path $hubertRoot 'pytorch_model.bin'), 189206711, $HubertSha256),
-  @('rmvpe.pt', (Join-Path $resolvedRoot 'rmvpe.pt'), 181184272, $RmvpeSha256)
+  @('rmvpe.pt', (Join-Path $resolvedRoot 'rmvpe.pt'), 181184272, $RmvpeSha256),
+  @('pretrained_v2/f0G40k.pth', (Join-Path $pretrainedV2Root 'f0G40k.pth'), 73106273, $PretrainedG40kSha256),
+  @('pretrained_v2/f0D40k.pth', (Join-Path $pretrainedV2Root 'f0D40k.pth'), 142875703, $PretrainedD40kSha256)
 )
 foreach ($item in $downloads) {
   $remotePath, $destination, $expectedSize, $expectedHash = $item
@@ -59,6 +65,12 @@ foreach ($item in $downloads) {
       throw "Official asset SHA-256 mismatch: $destination"
     }
   }
+}
+$rmvpeTrainingRoot = Join-Path $resolvedRoot 'assets\rmvpe'
+New-Item -ItemType Directory -Path $rmvpeTrainingRoot -Force | Out-Null
+$rmvpeTrainingPath = Join-Path $rmvpeTrainingRoot 'rmvpe.pt'
+if (-not (Test-Path -LiteralPath $rmvpeTrainingPath) -or (Get-Item -LiteralPath $rmvpeTrainingPath).Length -ne 181184272) {
+  Copy-Item -LiteralPath (Join-Path $resolvedRoot 'rmvpe.pt') -Destination $rmvpeTrainingPath -Force
 }
 Write-Host "Pinned official RVC runtime ready: $resolvedRoot @ $OfficialCommit"
 

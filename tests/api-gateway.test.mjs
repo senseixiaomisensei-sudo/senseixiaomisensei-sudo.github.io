@@ -220,3 +220,49 @@ test("rvc output route rejects an arbitrary job address before any upstream fetc
     globalThis.fetch = originalFetch;
   }
 });
+
+test("rvc training upload uses a separate limiter and a token-constrained tunnel path", async () => {
+  const originalFetch = globalThis.fetch;
+  let forwarded;
+  let limiterKey = "";
+  globalThis.fetch = async (url, options) => {
+    forwarded = { url: String(url), options };
+    return Response.json({ state: "uploading", files: 1 });
+  };
+  try {
+    const jobId = "11111111-2222-4333-8444-555555555555";
+    const token = "training-token-with-at-least-32-characters";
+    const request = new Request(
+      `https://postprep-text-gateway.example.workers.dev/rvc/train/upload/${jobId}/0?token=${token}`,
+      {
+        method: "POST",
+        headers: { Origin: PAGES_ORIGIN, "Content-Type": "multipart/form-data; boundary=test" },
+        body: "--test--",
+      },
+    );
+    const env = {
+      ...BASE_ENV,
+      POSTPREP_RVC_DIRECT_BASE_URL: "https://voice-relay-example.trycloudflare.com",
+      POSTPREP_RVC_INFERENCE_TOKEN: "rvc-direct-token-with-at-least-32-characters",
+      POSTPREP_RVC_TRAIN_RATE_LIMITER: {
+        limit: async ({ key }) => {
+          limiterKey = key;
+          return { success: true };
+        },
+      },
+    };
+    const response = await gateway.fetch(request, env);
+    assert.equal(response.status, 200);
+    assert.match(limiterKey, /^rvc-train-upload:/u);
+    assert.equal(
+      forwarded.url,
+      `https://voice-relay-example.trycloudflare.com/v1/training/${jobId}/audio/0?token=${token}`,
+    );
+    assert.equal(
+      forwarded.options.headers.get("Authorization"),
+      `Bearer ${env.POSTPREP_RVC_INFERENCE_TOKEN}`,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

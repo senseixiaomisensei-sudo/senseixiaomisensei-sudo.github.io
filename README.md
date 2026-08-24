@@ -4,7 +4,7 @@
 
 Skills 中心提供本项目原创的 MIT Skills、本机预览 `SKILL.md`，以及经人机验证和服务端代理保护的 GitHub 公开 Skill 发现。Skill 权限护照可静态展示来源、许可证、固定提交版本、脚本/网络/环境变量/文件/Shell/动态执行/混淆与提示注入信号；它不会自动下载、安装或执行第三方代码。
 
-AI 变声器（RVC）提供角色声音选择、上传或录制自己的声音、一键 RVC 声音转换：先在本机做文件预检，再经受保护网关调用 GPU 服务；角色模型由 GPU 服务自动发现并即时列出，输出为短期、令牌保护的下载。模型权重不随仓库发布。部署说明见 [RVC_DEPLOYMENT.md](docs/RVC_DEPLOYMENT.md) 与 [rvc-service](rvc-service/README.md)。
+AI 变声器（RVC）提供角色声音选择、上传或录制自己的声音、一键 RVC 声音转换：先在本机做文件预检，再经受保护网关调用 GPU 服务；角色模型由 GPU 服务自动发现并即时列出，输出为短期、令牌保护的下载。用户还可以逐段上传获授权的纯人声音频，按固定 RVC v2 训练链路生成自定义名称的 `.pth` 与 FAISS 索引，并在独立训练模型分区使用。模型权重不随仓库发布。部署说明见 [RVC_DEPLOYMENT.md](docs/RVC_DEPLOYMENT.md) 与 [rvc-service](rvc-service/README.md)。
 
 ## 访问
 
