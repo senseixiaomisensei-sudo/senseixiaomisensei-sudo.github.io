@@ -11,6 +11,7 @@
   // It is intentionally limited to a short clip so mobile WebViews cannot sit
   // for minutes and then fail inside a dynamic-shape ONNX node.
   const LOCAL_MAX_AUDIO_SECONDS = 20;
+  const DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 180;
   const CLOUD_STATUS_TIMEOUT_MS = 15000;
   const CLOUD_MODELS_TIMEOUT_MS = 20000;
   const CLOUD_STATUS_ATTEMPTS = 2;
@@ -124,7 +125,7 @@
       resampleKeep: "40 kHz / 48 kHz (标准)",
       checkingService: "正在连接云端 RVC 引擎；此检查不会上传音频…",
       serviceReady: "🟢 云端 RVC 引擎已就绪",
-      serviceOffline: "云端 RVC 引擎连接暂缓；可在选好音频后直接开始重试，不会自动切换到本地模式。",
+      serviceOffline: "云端 RVC 引擎连接暂缓；纯人声会在云端不可达时自动切换到设备端推理。",
       serviceLoading: "正在从本地缓存或 CDN 加载模型权重...",
       convert: "开始变声",
       converting: "正在变声中...",
@@ -206,7 +207,7 @@
       resampleKeep: "40 kHz / 48 kHz (Standard)",
       checkingService: "Connecting to the cloud RVC engine; no audio is uploaded…",
       serviceReady: "🟢 Cloud RVC engine is ready",
-      serviceOffline: "The cloud RVC engine is reconnecting. You can retry after choosing audio; the page will not switch to local mode automatically.",
+      serviceOffline: "The cloud RVC engine is reconnecting. Voice clips automatically fall back to on-device processing when the cloud is unavailable.",
       serviceLoading: "Loading model weights...",
       convert: "Convert now",
       converting: "Converting...",
@@ -2483,8 +2484,11 @@
     }
 
     const usesBrowserInference = isOwnModel || state.inferenceMode === "local";
-    if (usesBrowserInference && state.audio.duration > LOCAL_MAX_AUDIO_SECONDS) {
-      if (statusEl) statusEl.textContent = `本地兼容与导入模型仅处理 ${LOCAL_MAX_AUDIO_SECONDS} 秒以内的短音频，已阻止长音频 ONNX 推理以避免卡死或形状错误。公共角色请切换到“云端 RVC 引擎”。`;
+    const deviceAudioLimit = isOwnModel ? LOCAL_MAX_AUDIO_SECONDS : DEVICE_FALLBACK_MAX_AUDIO_SECONDS;
+    if (usesBrowserInference && state.audio.duration > deviceAudioLimit) {
+      if (statusEl) statusEl.textContent = isOwnModel
+        ? `导入模型仍只支持 ${LOCAL_MAX_AUDIO_SECONDS} 秒以内的短音频。`
+        : `设备端最多处理 ${DEVICE_FALLBACK_MAX_AUDIO_SECONDS / 60} 分钟纯人声；请保持页面前台并确保设备有足够电量与内存。`;
       if (convertBtn) convertBtn.disabled = true;
       if (convertLabel) convertLabel.textContent = isOwnModel ? "请使用短音频" : "请切换云端模式";
       return;
@@ -2665,7 +2669,7 @@
     }
 
     if (badgeText) {
-      badgeText.textContent = isOfficial ? "云端 RVC 引擎（推荐）" : "本地兼容模式";
+      badgeText.textContent = isOfficial ? "智能混合（云端优先）" : "仅设备端模式";
     }
     if (badge) {
       badge.className = isOfficial
@@ -3190,14 +3194,30 @@
     });
   }
 
-  async function runWebRvcInference() {
-    if (state.busy || !state.audio || !state.selectedModelId) return;
+  async function runWebRvcInference({ allowLong = false, fallback = false } = {}) {
+    if (state.busy || !state.audio || !state.selectedModelId) return false;
+    if (fallback) {
+      showProgressBar(true);
+      updateProgressBar(2);
+    }
 
-    if (state.audio.duration > LOCAL_MAX_AUDIO_SECONDS) {
+    if (state.audioMode !== "voice") {
+      const message = "设备端兜底只处理纯人声；带伴奏翻唱仍需要云端 GPU 分离与回混。";
+      updateStatusDisplay(message);
+      showToast(message);
+      return false;
+    }
+    if (state.audio.duration > DEVICE_FALLBACK_MAX_AUDIO_SECONDS) {
+      const message = `设备端兜底最多处理 ${DEVICE_FALLBACK_MAX_AUDIO_SECONDS / 60} 分钟纯人声，请裁剪音频后重试。`;
+      updateStatusDisplay(message);
+      showToast(message);
+      return false;
+    }
+    if (!allowLong && state.audio.duration > LOCAL_MAX_AUDIO_SECONDS) {
       const message = `本地兼容模式只支持 ${LOCAL_MAX_AUDIO_SECONDS} 秒以内的短音频。为避免移动设备长时间卡住或触发 ONNX 形状错误，已停止本地推理；请切换到“云端 RVC 引擎”。`;
       updateStatusDisplay(message);
       showToast(message);
-      return;
+      return false;
     }
 
     const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
@@ -3319,8 +3339,15 @@
       }
       const freshAudioInput = new Float32Array(state.audio.float32);
 
-      // 3. Run Pipeline in Web Worker
-      updateStatusDisplay("🚀 [2/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
+      // 3. Run Pipeline in Web Worker. Long fallback jobs use the existing
+      // fixed-frame worker windows, but receive a duration-aware deadline so
+      // a three-minute phone conversion is not killed by the old 120s cap.
+      const localTimeoutMs = allowLong
+        ? Math.min(30 * 60 * 1000, Math.max(180000, Math.ceil((Number(state.audio.duration) || 0) * 6000) + 180000))
+        : 120000;
+      updateStatusDisplay(fallback
+        ? "📱 云端暂时不可达，正在切换到用户设备端分段推理；请保持页面在前台…"
+        : "🚀 [2/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
       const result = await runPipelineInWorker(
         rvc,
         {
@@ -3369,9 +3396,7 @@
             : deriveStableNoiseSeed(freshAudioInput, selectedModel.id),
           noiseScale: selectedModel.noiseScale ?? 0.5,
           outputSampleRate: selectedModel.sampleRate || 40000,
-          // The short local mode should fail quickly and visibly rather than
-          // trapping a mobile browser for ten minutes.
-          timeout: 120000,
+          timeout: localTimeoutMs,
         }
       );
 
@@ -3391,27 +3416,29 @@
         resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.wav`;
       }
       if (resultMeta) {
-        resultMeta.textContent = t("resultMeta", {
-          model: selectedModel.name,
-          pitch: (pitchVal > 0 ? "+" : "") + pitchVal,
-          elapsed: elapsedSec,
-        });
+        resultMeta.textContent = state.lang === "en"
+          ? `Voice: ${selectedModel.name} · Pitch: ${pitchVal > 0 ? "+" : ""}${pitchVal} · Time: ${elapsedSec}s · On-device ONNX/WebAssembly`
+          : `角色：${selectedModel.name} · 音高变调：${pitchVal > 0 ? "+" : ""}${pitchVal} · 耗时：${elapsedSec}s · 用户设备端 ONNX/WebAssembly`;
       }
       if (resultSection) {
         resultSection.hidden = false;
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
 
-      updateStatusDisplay(`🎉 变声成功！用时 ${elapsedSec} 秒，结果已生成在下方。`);
-      showToast("🎉 变声完成！可在下方试听或下载");
+      updateStatusDisplay(`🎉 设备端变声成功！用时 ${elapsedSec} 秒，结果已生成在下方。`);
+      showToast("🎉 设备端变声完成！可在下方试听或下载");
+      return true;
     } catch (err) {
       console.error("RVC Inference Error:", err);
       const rawMessage = String(err?.message || err || "");
       const message = /ReshapeHelper|requested_shape_size|cannot be reshaped/iu.test(rawMessage)
-        ? "本机推理组件仍在使用旧缓存，请刷新页面后重新变声。"
-        : "本机变声处理失败，请重新选择一段较短的纯人声音频后重试。";
+        ? "设备端推理组件仍在使用旧缓存，请刷新页面后重新变声。"
+        : allowLong
+          ? "设备端长音频分段推理失败，请保持页面前台并换一段纯人声重试。"
+          : "本机变声处理失败，请重新选择一段较短的纯人声音频后重试。";
       showToast(message);
       updateStatusDisplay(`❌ ${message}`);
+      return false;
     } finally {
       state.busy = false;
       if (convertBtn) {
@@ -3422,7 +3449,29 @@
     }
   }
 
-  async function runOfficialRvcInference() {
+  const DEVICE_FALLBACK_CODES = new Set([
+    "RVC_BACKEND_TIMEOUT",
+    "RVC_BACKEND_UNAVAILABLE",
+    "RVC_NETWORK_INTERRUPTED",
+    "RVC_OUTPUT_UNAVAILABLE",
+    "RVC_RELAY_UNAVAILABLE",
+    "UPSTREAM_UNAVAILABLE",
+  ]);
+
+  function hasDeviceFallbackModel(model) {
+    return Boolean(model && Array.isArray(model.chunks) && model.chunks.length > 0);
+  }
+
+  function isDeviceFallbackEligible(error) {
+    const code = typeof error?.code === "string" ? error.code : "";
+    if (code) return DEVICE_FALLBACK_CODES.has(code);
+    const status = Number(error?.httpStatus) || 0;
+    if (status === 400 || status === 401 || status === 403 || status === 404 || status === 415 || status === 422) return false;
+    if (status >= 500 || status === 408 || status === 425 || status === 429) return true;
+    return !status && /网络|连接|超时|查询|下载|请求/i.test(String(error?.message || ""));
+  }
+
+  async function runOfficialRvcInference({ allowDeviceFallback = false } = {}) {
     if (state.busy || !state.audio?.file || !state.selectedModelId) return;
     const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
     if (!selectedModel) {
@@ -3656,6 +3705,10 @@
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
+      if (allowDeviceFallback && state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
+        updateStatusDisplay("⚠️ 云端 RVC 当前不可达，准备切换到用户设备端推理…");
+        return { fallback: true, error };
+      }
       const failureMessage = cloudRvcFailureMessage(error);
       const diagnostic = error?.requestId ? ` · 诊断号 ${error.requestId}` : "";
       updateStatusDisplay(`❌ ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}`);
@@ -3678,9 +3731,20 @@
       return runWebRvcInference();
     }
     if (state.inferenceMode === "local") {
-      return runWebRvcInference();
+      return runWebRvcInference({ allowLong: true });
     }
-    return runOfficialRvcInference();
+    if (state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && state.engineReady === false) {
+      const cloudReady = await refreshOfficialService();
+      if (cloudReady === false) {
+        updateStatusDisplay("📱 检测到电脑端云引擎离线，正在使用当前用户设备处理纯人声…");
+        return runWebRvcInference({ allowLong: true, fallback: true });
+      }
+    }
+    const cloudResult = await runOfficialRvcInference({ allowDeviceFallback: true });
+    if (cloudResult?.fallback) {
+      return runWebRvcInference({ allowLong: true, fallback: true });
+    }
+    return cloudResult;
   }
 
   function setupModelTraining() {

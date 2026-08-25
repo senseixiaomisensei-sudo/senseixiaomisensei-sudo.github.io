@@ -164,5 +164,6 @@ test("RVC watchdog automatically recovers the local service and public tunnel", 
   assert.match(watchdog, /postprep-ae6\.pages\.dev\/rvc-api\/status/u);
   assert.match(watchdog, /start-all\.ps1/u);
   assert.match(watchdog, /-NoWatchdog/u);
+  assert.match(watchdog, /-WindowStyle Hidden/u);
   assert.match(watchdog, /Local\\PostPrepRvcWatchdog/u);
 });

@@ -56,7 +56,7 @@
               <h3 class="mt-1 text-base font-black text-ink">选择变声模式</h3>
             </div>
             <span id="rvc-mode-badge" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-              <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i><span id="rvc-mode-badge-text">云端 RVC 引擎（推荐）</span>
+              <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i><span id="rvc-mode-badge-text">智能混合（云端优先）</span>
             </span>
           </div>
 
@@ -65,29 +65,29 @@
             <button id="rvc-mode-official" type="button" class="flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-4 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="true" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
-                  <i class="fa-solid fa-fire text-amber-500"></i>云端 RVC 引擎 <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">推荐</span>
+                  <i class="fa-solid fa-fire text-amber-500"></i>智能混合模式 <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">推荐</span>
                 </span>
                 <i id="rvc-mode-official-check" class="fa-solid fa-circle-check text-brand text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted">本网站托管的 RVC 推理服务：PyTorch + HuBERT + RMVPE + FAISS 检索。RVC 是开源变声引擎名称，不是需要上传的文件。适合手机、长音频和网络稳定性较差的场景。</p>
+              <p class="mt-2 text-xs leading-5 text-muted">电脑在线时优先使用高质量 PyTorch RVC；电脑离线或隧道中断时，纯人声自动改由当前用户设备分段处理。带伴奏翻唱仍使用云端 GPU。</p>
             </button>
 
             <!-- 模式 2: 极速免上传模式 -->
             <button id="rvc-mode-local" type="button" class="flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-4 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="false" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
-                  <i class="fa-solid fa-bolt text-teal-600"></i>本地兼容模式 <span class="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800">免上传</span>
+                  <i class="fa-solid fa-bolt text-teal-600"></i>仅设备端模式 <span class="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800">免上传</span>
                 </span>
                 <i id="rvc-mode-local-check" class="fa-regular fa-circle text-zinc-300 text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted">纯浏览器 WebAssembly 推理，音频不上传。为避免手机网页卡死与 ONNX 长音频形状错误，仅适合 20 秒以内的短片段；云端模式不会自动降级到这里。</p>
+              <p class="mt-2 text-xs leading-5 text-muted">纯浏览器 WebAssembly 推理，音频不上传。云端不可达时，纯人声会自动切换到用户设备端分段处理；请保持页面在前台。带伴奏翻唱仍需要云端 GPU。</p>
             </button>
           </div>
 
           <!-- 本地闪存预热与高级设置（免配置，进阶可折叠） -->
           <div id="rvc-local-prewarm-wrap" class="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3 text-xs text-muted">
             <span id="rvc-cache-status" class="flex items-center gap-1.5 font-medium">
-                <i class="fa-solid fa-circle-info text-sky-500"></i>本地模式只使用浏览器缓存；云端模式使用受保护的 GPU 服务
+                <i class="fa-solid fa-circle-info text-sky-500"></i>设备端使用浏览器缓存；智能混合模式优先使用受保护的 GPU 服务
             </span>
             <div class="flex items-center gap-2">
               <button id="rvc-preload-btn" type="button" class="inline-flex items-center gap-1 rounded bg-teal-50 px-2 py-0.5 font-bold text-brand hover:bg-teal-100">
@@ -410,6 +410,6 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
   <script src="assets/postprep.js?v=20260820-v10"></script>
-<script src="assets/rvc.js?v=20260824-V1-r2"></script>
+<script src="assets/rvc.js?v=20260825-mixed-r1"></script>
 </body>
 </html>
