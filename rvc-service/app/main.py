@@ -147,9 +147,7 @@ class AudioProfile:
     rms: float = 0.0
     clipped_fraction: float = 0.0
     high_band_ratio: float = 0.0
-    median_f0: float = 0.0
     high_energy: bool = False
-    high_pitch: bool = False
 
 
 @dataclass
@@ -544,7 +542,6 @@ def normalize_audio(source: Path, destination: Path) -> None:
 def analyze_audio_profile(path: Path) -> AudioProfile:
     """Detect only the extreme-input branch; ordinary audio remains untouched."""
     try:
-        import librosa
         import numpy as np
         import soundfile as sf
 
@@ -562,22 +559,6 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
         frequencies = np.fft.rfftfreq(min(audio.size, sample_rate * 30), d=1 / sample_rate)
         total_energy = float(np.sum(np.square(spectrum))) + 1e-12
         high_band_ratio = float(np.sum(np.square(spectrum[frequencies >= 3500])) / total_energy)
-        median_f0 = 0.0
-        try:
-            f0 = librosa.yin(
-                audio,
-                fmin=55,
-                fmax=min(1100, sample_rate / 2 - 1),
-                sr=sample_rate,
-                frame_length=1024,
-                hop_length=160,
-                trough_threshold=0.12,
-            )
-            voiced = f0[np.isfinite(f0) & (f0 > 0)]
-            if voiced.size:
-                median_f0 = float(np.median(voiced))
-        except (RuntimeError, ValueError):
-            median_f0 = 0.0
         high_energy = bool(
             clipped_fraction >= 0.0005
             or rms >= 0.22
@@ -589,9 +570,7 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
             rms=rms,
             clipped_fraction=clipped_fraction,
             high_band_ratio=high_band_ratio,
-            median_f0=median_f0,
             high_energy=high_energy,
-            high_pitch=median_f0 >= 420,
         )
     except (ImportError, OSError, RuntimeError, ValueError):
         return AudioProfile()
@@ -841,8 +820,8 @@ def select_f0_method(input_wav: Path, requested_method: str) -> str:
     if requested_method != "auto":
         return requested_method
     try:
-        import librosa
         import numpy as np
+        import parselmouth
         import soundfile as sf
 
         audio, sample_rate = sf.read(str(input_wav), dtype="float32", always_2d=False)
@@ -850,15 +829,15 @@ def select_f0_method(input_wav: Path, requested_method: str) -> str:
             audio = np.mean(audio, axis=1)
         if len(audio) < sample_rate * 2:
             return "rmvpe"
-        f0 = librosa.yin(
-            audio,
-            fmin=55,
-            fmax=min(1100, sample_rate / 2 - 1),
-            sr=sample_rate,
-            frame_length=1024,
-            hop_length=160,
-            trough_threshold=0.12,
+        pitch = parselmouth.Sound(
+            np.ascontiguousarray(audio, dtype=np.float64),
+            sampling_frequency=float(sample_rate),
+        ).to_pitch_ac(
+            time_step=0.01,
+            pitch_floor=55.0,
+            pitch_ceiling=min(1100.0, sample_rate / 2 - 1),
         )
+        f0 = np.asarray(pitch.selected_array["frequency"], dtype=np.float64)
         valid = np.isfinite(f0) & (f0 > 0)
         voiced = f0[valid]
         if voiced.size < 20:
