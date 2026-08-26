@@ -66,6 +66,8 @@ test("training service follows the pinned official RVC v2 pipeline", async () =>
   assert.match(runtime, /"collectionName": collection_name/u);
   assert.match(service, /collection_name: str = Form\("我的训练模型"\)/u);
   assert.match(proxy, /TRAIN_UPLOAD_RE/u);
+  assert.match(proxy, /MAX_TTS_BODY_BYTES = 8 \* 1024/u);
+  assert.match(proxy, /expected_type = "application\/json"/u);
 });
 
 test("the protected worker exposes only constrained training routes", async () => {

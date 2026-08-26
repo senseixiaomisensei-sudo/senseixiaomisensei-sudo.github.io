@@ -8569,17 +8569,23 @@ async function processAudioInFixedFrameWindows(audio, processor, config = {}, on
   const inputSampleRate = config.inputSampleRate ?? 16e3;
   const outputSampleRate = config.outputSampleRate ?? 40e3;
   const frameCount = Math.max(1, Math.floor(config.frameCount ?? 100));
-  const stepSamples = Math.max(1, Math.round(frameCount * inputSampleRate / 100));
+  const frameSamples = Math.max(1, Math.round(frameCount * inputSampleRate / 100));
+  const overlapSamples = Math.min(
+    Math.max(0, Math.round((config.crossfadeDuration ?? 0.05) * inputSampleRate)),
+    Math.max(0, frameSamples - 1)
+  );
+  const stepSamples = Math.max(1, frameSamples - overlapSamples);
   const lookAheadSamples = Math.max(0, Math.round((config.lookAheadDuration ?? 0.04) * inputSampleRate));
-  const windowSamples = stepSamples + lookAheadSamples;
-  const totalChunks = Math.max(1, Math.ceil(audio.length / stepSamples));
+  const windowSamples = frameSamples + lookAheadSamples;
+  const totalChunks = audio.length <= frameSamples
+    ? 1
+    : 1 + Math.ceil((audio.length - frameSamples) / stepSamples);
   const processedChunks = [];
-  let totalLength = 0;
 
   for (let index = 0; index < totalChunks; index++) {
     onProgress?.(index + 1, totalChunks);
     const startSample = index * stepSamples;
-    const validInputSamples = Math.max(0, Math.min(stepSamples, audio.length - startSample));
+    const validInputSamples = Math.max(0, Math.min(frameSamples, audio.length - startSample));
     const window = new Float32Array(windowSamples);
     window.set(audio.subarray(startSample, Math.min(audio.length, startSample + windowSamples)));
     const processed = await processor({
@@ -8596,17 +8602,32 @@ async function processAudioInFixedFrameWindows(audio, processor, config = {}, on
     );
     const trimmed = processed.slice(0, validOutputSamples);
     processedChunks.push(trimmed);
-    totalLength += trimmed.length;
     if (index < totalChunks - 1) {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
   }
 
-  const merged = new Float32Array(totalLength);
-  let offset = 0;
-  for (const chunk of processedChunks) {
-    merged.set(chunk, offset);
-    offset += chunk.length;
+  const targetLength = Math.max(0, Math.round(audio.length * outputSampleRate / inputSampleRate));
+  const outputOverlapSamples = Math.max(0, Math.round(overlapSamples * outputSampleRate / inputSampleRate));
+  const merged = new Float32Array(targetLength);
+  let writeEnd = 0;
+  for (let index = 0; index < processedChunks.length; index++) {
+    const chunk = processedChunks[index];
+    const chunkStart = Math.round(index * stepSamples * outputSampleRate / inputSampleRate);
+    const writable = Math.max(0, Math.min(chunk.length, targetLength - chunkStart));
+    if (index === 0 || outputOverlapSamples <= 0) {
+      merged.set(chunk.subarray(0, writable), chunkStart);
+    } else {
+      const overlap = Math.min(outputOverlapSamples, writable, Math.max(0, writeEnd - chunkStart));
+      for (let sample = 0; sample < overlap; sample++) {
+        const incoming = (sample + 1) / (overlap + 1);
+        merged[chunkStart + sample] = merged[chunkStart + sample] * (1 - incoming) + chunk[sample] * incoming;
+      }
+      if (writable > overlap) {
+        merged.set(chunk.subarray(overlap, writable), chunkStart + overlap);
+      }
+    }
+    writeEnd = Math.max(writeEnd, chunkStart + writable);
   }
   return merged;
 }
@@ -13107,6 +13128,67 @@ function createBiquadBandpass(f0, Q, sr) {
   return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
 }
 
+function createBiquadLowpass(f0, Q, sr) {
+  const w0 = 2.0 * Math.PI * f0 / sr;
+  const alpha = Math.sin(w0) / (2.0 * Q);
+  const cosw0 = Math.cos(w0);
+  const b0 = (1.0 - cosw0) / 2.0;
+  const b1 = 1.0 - cosw0;
+  const b2 = (1.0 - cosw0) / 2.0;
+  const a0 = 1.0 + alpha;
+  const a1 = -2.0 * cosw0;
+  const a2 = 1.0 - alpha;
+  return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+
+// Repair only objectively detected sub-frame harsh bursts. Normal speech and
+// sustained high notes return untouched; a short region is selected only when
+// it contains repeated >0.45 adjacent-sample jumps (or one extreme >0.75
+// jump), a signature produced by the browser vocoder during the supplied
+// stress sample. Smooth attack/release avoids creating new edit boundaries.
+function suppressDetectedHarshBursts(audio, sampleRate = 40000) {
+  if (!audio || audio.length < 3) return audio;
+  const blockSamples = Math.max(16, Math.round(sampleRate * 0.01));
+  const blocks = Math.ceil(audio.length / blockSamples);
+  const flagged = new Uint8Array(blocks);
+  let detected = false;
+  for (let block = 0; block < blocks; block++) {
+    const start = Math.max(1, block * blockSamples);
+    const end = Math.min(audio.length, (block + 1) * blockSamples);
+    let largeJumps = 0;
+    let maximumJump = 0;
+    for (let index = start; index < end; index++) {
+      const jump = Math.abs(audio[index] - audio[index - 1]);
+      if (jump > 0.45) largeJumps++;
+      if (jump > maximumJump) maximumJump = jump;
+    }
+    if (largeJumps >= 2 || maximumJump > 0.75) {
+      flagged[block] = 1;
+      detected = true;
+    }
+  }
+  if (!detected) return audio;
+  const expanded = new Uint8Array(flagged);
+  for (let block = 0; block < blocks; block++) {
+    if (!flagged[block]) continue;
+    if (block > 0) expanded[block - 1] = 1;
+    if (block + 1 < blocks) expanded[block + 1] = 1;
+  }
+  const filtered = new Float32Array(audio);
+  applyBiquadFilterInPlace(filtered, createBiquadLowpass(Math.min(10000, sampleRate * 0.24), 0.7071067811865476, sampleRate));
+  const output = new Float32Array(audio);
+  const attack = Math.exp(-1 / Math.max(1, sampleRate * 0.002));
+  const release = Math.exp(-1 / Math.max(1, sampleRate * 0.012));
+  let blend = 0;
+  for (let index = 0; index < output.length; index++) {
+    const target = expanded[Math.floor(index / blockSamples)] ? 0.78 : 0;
+    const coefficient = target > blend ? attack : release;
+    blend = coefficient * blend + (1 - coefficient) * target;
+    output[index] = audio[index] * (1 - blend) + filtered[index] * blend;
+  }
+  return output;
+}
+
 // Dynamic anti-metallic mastering: tames the HiFiGAN "low-end boom + 3-5kHz
 // resonance + over-bright high" signature without dulling the source.
 function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
@@ -13399,7 +13481,10 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     let finalAudio = outputAudio;
     // 1. Blend RMS envelope using official RVC semantics (1 = unchanged).
     finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 1.0, finalSr);
-    // 2. Apply only a transparent global safety gain. The former always-on
+    // 2. Repair only detected millisecond harsh bursts; normal audio is
+    // returned unchanged by this guard.
+    finalAudio = suppressDetectedHarshBursts(finalAudio, finalSr);
+    // 3. Apply only a transparent global safety gain. The former always-on
     // multi-band "anti-metallic" master introduced shared colour/modulation.
     finalAudio = normalizeOutputPeak(finalAudio);
 

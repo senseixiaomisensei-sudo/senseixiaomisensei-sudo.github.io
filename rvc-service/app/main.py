@@ -17,6 +17,7 @@ import asyncio
 import gc
 import json
 import logging
+import math
 import os
 import secrets
 import shutil
@@ -31,7 +32,7 @@ from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from app.separation_runtime import (
     SeparationRuntimeError,
     remix_song,
@@ -40,12 +41,21 @@ from app.separation_runtime import (
 )
 from app.training_runtime import TrainingRuntimeError, run_training
 
+try:
+    from edge_tts import Communicate
+    HAS_EDGE_TTS = True
+except ImportError:  # pragma: no cover - optional until the service environment is updated
+    Communicate = None
+    HAS_EDGE_TTS = False
+
 
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
+TTS_MAX_TEXT_CHARS = 800
+TTS_DEFAULT_VOICE = os.getenv("RVC_TTS_VOICE", "zh-CN-XiaoxiaoNeural")
 MIN_AUDIO_SECONDS = 1
 MAX_AUDIO_SECONDS = 600
-LONG_AUDIO_THRESHOLD_SECONDS = 45
-LONG_CHUNK_SECONDS = 40
+LONG_AUDIO_THRESHOLD_SECONDS = 20
+LONG_CHUNK_SECONDS = 20
 LONG_CHUNK_CROSSFADE_SECONDS = 0.5
 OUTPUT_RETENTION_SECONDS = max(900, min(int(os.getenv("RVC_OUTPUT_RETENTION_SECONDS", "7200")), 21600))
 MAX_CONCURRENCY = max(1, min(int(os.getenv("RVC_MAX_CONCURRENCY", "1")), 2))
@@ -684,11 +694,25 @@ def render_conversion(
 def split_long_audio(input_wav: Path, chunk_root: Path, duration_seconds: float) -> list[Path]:
     chunk_root.mkdir(parents=True, exist_ok=True)
     chunks: list[Path] = []
-    start = 0.0
-    step = LONG_CHUNK_SECONDS - LONG_CHUNK_CROSSFADE_SECONDS
-    while start < duration_seconds - 0.05:
-        chunk_duration = min(LONG_CHUNK_SECONDS, duration_seconds - start)
-        chunk_path = chunk_root / f"source-{len(chunks):03d}.wav"
+    maximum_step = LONG_CHUNK_SECONDS - LONG_CHUNK_CROSSFADE_SECONDS
+    chunk_count = max(
+        1,
+        math.ceil(
+            max(0.0, duration_seconds - LONG_CHUNK_CROSSFADE_SECONDS)
+            / maximum_step
+        ),
+    )
+    # Balance the duration across every chunk instead of leaving a tiny final
+    # fragment.  Upstream RVC can spend disproportionate time padding very
+    # short tails after a long job; equal chunks also keep memory predictable.
+    chunk_duration = (
+        duration_seconds + LONG_CHUNK_CROSSFADE_SECONDS * (chunk_count - 1)
+    ) / chunk_count
+    step = chunk_duration - LONG_CHUNK_CROSSFADE_SECONDS
+    for index in range(chunk_count):
+        start = index * step
+        current_duration = min(chunk_duration, duration_seconds - start)
+        chunk_path = chunk_root / f"source-{index:03d}.wav"
         result = subprocess.run(
             [
                 "ffmpeg",
@@ -701,7 +725,7 @@ def split_long_audio(input_wav: Path, chunk_root: Path, duration_seconds: float)
                 "-i",
                 str(input_wav),
                 "-t",
-                f"{chunk_duration:.6f}",
+                f"{current_duration:.6f}",
                 "-ac",
                 "1",
                 "-ar",
@@ -718,9 +742,6 @@ def split_long_audio(input_wav: Path, chunk_root: Path, duration_seconds: float)
         if result.returncode != 0 or not chunk_path.is_file() or chunk_path.stat().st_size <= 44:
             raise RvcServiceError(502, "RVC_LONG_AUDIO_SPLIT_FAILED")
         chunks.append(chunk_path)
-        if start + chunk_duration >= duration_seconds - 0.05:
-            break
-        start += step
     if not chunks:
         raise RvcServiceError(502, "RVC_LONG_AUDIO_SPLIT_FAILED")
     return chunks
@@ -815,6 +836,71 @@ def render_duration_safe_conversion(
     return "+".join(dict.fromkeys(methods))
 
 
+async def render_duration_safe_conversion_async(
+    model_path: Path,
+    input_wav: Path,
+    output_wav: Path,
+    work_root: Path,
+    duration_seconds: float,
+    pitch: int,
+    index_rate: float,
+    protect: float,
+    filter_radius: int,
+    resample_rate: int,
+    rms_mix_rate: float,
+    f0_method: str,
+) -> str:
+    """Run short clips unchanged and yield the GPU between long-audio chunks."""
+    if duration_seconds <= LONG_AUDIO_THRESHOLD_SECONDS:
+        async with inference_lock:
+            return await asyncio.to_thread(
+                render_conversion,
+                model_path,
+                input_wav,
+                output_wav,
+                pitch,
+                index_rate,
+                protect,
+                filter_radius,
+                resample_rate,
+                rms_mix_rate,
+                f0_method,
+            )
+
+    source_chunks = await asyncio.to_thread(split_long_audio, input_wav, work_root / "source", duration_seconds)
+    output_chunks: list[Path] = []
+    methods: list[str] = []
+    for index, source_chunk in enumerate(source_chunks):
+        converted_chunk = work_root / f"converted-{index:03d}.wav"
+        async with inference_lock:
+            method = await asyncio.to_thread(
+                render_conversion,
+                model_path,
+                source_chunk,
+                converted_chunk,
+                pitch,
+                index_rate,
+                protect,
+                filter_radius,
+                resample_rate,
+                rms_mix_rate,
+                f0_method,
+            )
+        methods.append(method)
+        output_chunks.append(converted_chunk)
+        await asyncio.to_thread(gc.collect)
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                await asyncio.to_thread(torch.cuda.empty_cache)
+        except (ImportError, RuntimeError):
+            pass
+        await asyncio.sleep(0)
+    await asyncio.to_thread(join_long_audio, output_chunks, output_wav, duration_seconds)
+    return "+".join(dict.fromkeys(methods))
+
+
 def select_f0_method(input_wav: Path, requested_method: str) -> str:
     """Use FCPE for sustained singing and RMVPE for ordinary/unclear speech."""
     if requested_method != "auto":
@@ -897,6 +983,43 @@ async def healthz(request: Request) -> dict[str, object]:
 async def list_models(request: Request) -> dict[str, list[dict]]:
     ensure_authorized(request)
     return {"models": await asyncio.to_thread(scan_models)}
+
+
+@app.get("/v1/tts-health")
+async def tts_health(request: Request) -> dict[str, bool]:
+    ensure_authorized(request)
+    return {"ready": HAS_EDGE_TTS}
+
+
+@app.post("/v1/tts")
+async def synthesize_tts(request: Request) -> Response:
+    ensure_authorized(request)
+    if not HAS_EDGE_TTS or Communicate is None:
+        raise RvcServiceError(503, "RVC_TTS_UNAVAILABLE")
+    try:
+        payload = await request.json()
+    except (ValueError, TypeError):
+        raise RvcServiceError(400, "RVC_TTS_INVALID_INPUT") from None
+    text = str(payload.get("text") or "").strip()
+    if not text:
+        raise RvcServiceError(400, "RVC_TTS_EMPTY_TEXT")
+    if len(text) > TTS_MAX_TEXT_CHARS:
+        raise RvcServiceError(413, "RVC_TTS_TEXT_TOO_LONG")
+    try:
+        communicate = Communicate(text, TTS_DEFAULT_VOICE)
+        audio = bytearray()
+        async for chunk in communicate.stream():
+            if chunk.get("type") == "audio":
+                audio.extend(chunk.get("data") or b"")
+    except Exception:  # edge-tts wraps websocket/network failures in provider-specific exceptions
+        raise RvcServiceError(502, "RVC_TTS_SYNTH_FAILED") from None
+    if not audio:
+        raise RvcServiceError(502, "RVC_TTS_EMPTY_OUTPUT")
+    return Response(
+        content=bytes(audio),
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
 
 
 def valid_request_id(value: str) -> bool:
@@ -1250,65 +1373,68 @@ async def process_conversion_job(
     duration_seconds: float,
 ) -> None:
     try:
-        async with outputs_lock:
-            record = outputs.get(job_id)
-            if record:
-                record.state = "processing"
-                record.stage = "separating" if audio_mode == "song" else "converting"
-        async with inference_lock:
-            if audio_mode == "song":
+        if audio_mode == "song":
+            async with inference_lock:
+                async with outputs_lock:
+                    record = outputs.get(job_id)
+                    if record:
+                        record.state = "processing"
+                        record.stage = "separating"
                 await asyncio.to_thread(release_cached_models)
                 stems = await asyncio.to_thread(separate_song, input_raw, job_root / "stems")
-                async with outputs_lock:
-                    record = outputs.get(job_id)
-                    if record:
-                        record.stage = "converting"
-                separated_vocals = job_root / "separated-vocals-16k.wav"
-                converted_vocals = job_root / "converted-vocals.wav"
-                await asyncio.to_thread(normalize_audio, stems.vocals, separated_vocals)
-                used_f0_method = await asyncio.to_thread(
-                    render_duration_safe_conversion,
-                    model_path,
-                    separated_vocals,
-                    converted_vocals,
-                    job_root / "long-vocals",
-                    duration_seconds,
-                    pitch,
-                    index_rate,
-                    protect,
-                    filter_radius,
-                    resample,
-                    rms_mix_rate,
-                    f0_method,
-                )
-                async with outputs_lock:
-                    record = outputs.get(job_id)
-                    if record:
-                        record.stage = "remixing"
-                await asyncio.to_thread(
-                    remix_song,
-                    stems.instrumental,
-                    converted_vocals,
-                    output_wav,
-                    duration_seconds,
-                    stems.sample_rate,
-                )
-            else:
-                used_f0_method = await asyncio.to_thread(
-                    render_duration_safe_conversion,
-                    model_path,
-                    input_wav,
-                    output_wav,
-                    job_root / "long-voice",
-                    duration_seconds,
-                    pitch,
-                    index_rate,
-                    protect,
-                    filter_radius,
-                    resample,
-                    rms_mix_rate,
-                    f0_method,
-                )
+            async with outputs_lock:
+                record = outputs.get(job_id)
+                if record:
+                    record.stage = "converting"
+            separated_vocals = job_root / "separated-vocals-16k.wav"
+            converted_vocals = job_root / "converted-vocals.wav"
+            await asyncio.to_thread(normalize_audio, stems.vocals, separated_vocals)
+            used_f0_method = await render_duration_safe_conversion_async(
+                model_path,
+                separated_vocals,
+                converted_vocals,
+                job_root / "long-vocals",
+                duration_seconds,
+                pitch,
+                index_rate,
+                protect,
+                filter_radius,
+                resample,
+                rms_mix_rate,
+                f0_method,
+            )
+            async with outputs_lock:
+                record = outputs.get(job_id)
+                if record:
+                    record.stage = "remixing"
+            await asyncio.to_thread(
+                remix_song,
+                stems.instrumental,
+                converted_vocals,
+                output_wav,
+                duration_seconds,
+                stems.sample_rate,
+            )
+        else:
+            async with outputs_lock:
+                record = outputs.get(job_id)
+                if record:
+                    record.state = "processing"
+                    record.stage = "converting"
+            used_f0_method = await render_duration_safe_conversion_async(
+                model_path,
+                input_wav,
+                output_wav,
+                job_root / "long-voice",
+                duration_seconds,
+                pitch,
+                index_rate,
+                protect,
+                filter_radius,
+                resample,
+                rms_mix_rate,
+                f0_method,
+            )
         async with outputs_lock:
             record = outputs.get(job_id)
             if record:
@@ -1372,6 +1498,8 @@ async def process_conversion_job(
         )
     finally:
         shutil.rmtree(job_root, ignore_errors=True)
+        if duration_seconds > LONG_AUDIO_THRESHOLD_SECONDS:
+            await asyncio.to_thread(release_cached_models)
 
 
 @app.post("/v1/convert")

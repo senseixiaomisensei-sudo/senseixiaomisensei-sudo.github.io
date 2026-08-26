@@ -24,6 +24,7 @@ UPSTREAM_HOST = os.getenv("RVC_UPSTREAM_HOST", "127.0.0.1")
 UPSTREAM_PORT = int(os.getenv("RVC_UPSTREAM_PORT", "8088"))
 TOKEN = os.getenv("RVC_GATEWAY_TOKEN", "").strip()
 MAX_BODY_BYTES = 26 * 1024 * 1024
+MAX_TTS_BODY_BYTES = 8 * 1024
 JOB_RE = re.compile(r"^/v1/output/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.I)
 TRAIN_JOB_RE = re.compile(r"^/v1/training/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.I)
 TRAIN_ACTION_RE = re.compile(
@@ -37,7 +38,7 @@ TRAIN_UPLOAD_RE = re.compile(
 OUTPUT_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
 
 
-def _read_chunked(reader) -> bytes:
+def _read_chunked(reader, max_bytes: int = MAX_BODY_BYTES) -> bytes:
     chunks: list[bytes] = []
     total = 0
     while True:
@@ -55,7 +56,7 @@ def _read_chunked(reader) -> bytes:
                 if not trailer or trailer in (b"\r\n", b"\n"):
                     return b"".join(chunks)
         total += size
-        if total > MAX_BODY_BYTES:
+        if total > max_bytes:
             raise OverflowError("request body too large")
         chunk = reader.read(size)
         if len(chunk) != size or reader.read(2) != b"\r\n":
@@ -89,8 +90,10 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def _target(self) -> str | None:
         parsed = urlsplit(self.path)
-        if parsed.path in {"/healthz", "/v1/models"}:
+        if parsed.path in {"/healthz", "/v1/models", "/v1/tts-health"}:
             return parsed.path if not parsed.query else None
+        if parsed.path == "/v1/tts":
+            return parsed.path if self.command == "POST" and not parsed.query else None
         if parsed.path == "/v1/convert":
             return parsed.path if self.command == "POST" and not parsed.query else None
         if parsed.path == "/v1/training/init":
@@ -112,9 +115,10 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         return None
 
     def _body(self) -> bytes:
+        max_bytes = MAX_TTS_BODY_BYTES if urlsplit(self.path).path == "/v1/tts" else MAX_BODY_BYTES
         transfer_encoding = self.headers.get("Transfer-Encoding", "").lower()
         if "chunked" in transfer_encoding:
-            return _read_chunked(self.rfile)
+            return _read_chunked(self.rfile, max_bytes)
         value = self.headers.get("Content-Length")
         if value is None:
             raise ValueError("missing content length")
@@ -122,7 +126,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             length = int(value)
         except ValueError as exc:
             raise ValueError("invalid content length") from exc
-        if length < 0 or length > MAX_BODY_BYTES:
+        if length < 0 or length > max_bytes:
             raise OverflowError("request body too large")
         body = self.rfile.read(length)
         if len(body) != length:
@@ -155,7 +159,8 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         }
         if self.command == "POST":
             content_type = self.headers.get("Content-Type", "")
-            if not content_type.lower().startswith("multipart/form-data"):
+            expected_type = "application/json" if urlsplit(self.path).path == "/v1/tts" else "multipart/form-data"
+            if not content_type.lower().startswith(expected_type):
                 self._json_error(415, "UNSUPPORTED_MEDIA_TYPE")
                 return
             headers["Content-Type"] = content_type

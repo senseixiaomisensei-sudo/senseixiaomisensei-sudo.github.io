@@ -41,7 +41,7 @@ test("song mode is an additive PyMSS separation, RVC vocal conversion and backin
   assert.match(service, /audio_mode: str = Form\("voice"\)/u);
   assert.match(service, /if audio_mode == "song":/u);
   assert.match(service, /separate_song, input_raw/u);
-  assert.match(service, /render_duration_safe_conversion,[\s\S]*separated_vocals,[\s\S]*converted_vocals/u);
+  assert.match(service, /render_duration_safe_conversion_async\([\s\S]*separated_vocals,[\s\S]*converted_vocals/u);
   assert.match(service, /remix_song,/u);
   assert.match(separation, /model_bs_roformer_ep_368_sdr_12\.9628\.ckpt/u);
   assert.match(separation, /amix=inputs=2:duration=first/u);
@@ -60,7 +60,7 @@ test("long audio uses a separate resilient contract without changing short conve
     readFile(new URL("rvc.html", root), "utf8"),
   ]);
   assert.match(client, /LONG_AUDIO_THRESHOLD_SECONDS = 45/u);
-  assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 180/u);
+  assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 300/u);
   assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
   assert.match(client, /MAX_AUDIO_SECONDS = 600/u);
   assert.match(client, /DURABLE_CLOUD_JOB_SECONDS = 40/u);
@@ -72,9 +72,15 @@ test("long audio uses a separate resilient contract without changing short conve
   assert.match(service, /OUTPUT_RETENTION_SECONDS = max\(900,[\s\S]*"7200"/u);
   assert.match(service, /record\.state not in \{"queued", "processing"\}/u);
   assert.match(service, /record\.stage = "encoding"/u);
-  assert.match(service, /LONG_CHUNK_SECONDS = 40/u);
+  assert.match(service, /LONG_AUDIO_THRESHOLD_SECONDS = 20/u);
+  assert.match(service, /LONG_CHUNK_SECONDS = 20/u);
   assert.match(service, /LONG_CHUNK_CROSSFADE_SECONDS = 0\.5/u);
+  assert.match(service, /chunk_count = max\([\s\S]*math\.ceil/u);
+  assert.match(service, /chunk_duration = \([\s\S]*duration_seconds \+ LONG_CHUNK_CROSSFADE_SECONDS/u);
   assert.match(service, /def render_duration_safe_conversion\(/u);
+  assert.match(service, /async def render_duration_safe_conversion_async\(/u);
+  assert.match(service, /for index, source_chunk in enumerate\(source_chunks\):[\s\S]*async with inference_lock:[\s\S]*await asyncio\.sleep\(0\)/u);
+  assert.match(service, /if duration_seconds > LONG_AUDIO_THRESHOLD_SECONDS:[\s\S]*release_cached_models/u);
   assert.match(service, /acrossfade=d=\{LONG_CHUNK_CROSSFADE_SECONDS\}/u);
   assert.match(gateway, /id: "rvc-output"[\s\S]*skipRateLimit: true/u);
   assert.match(page, /最长 10 分钟/u);

@@ -6,6 +6,7 @@ const RVC_DIRECT_BASE_BINDING = "POSTPREP_RVC_DIRECT_BASE_URL";
 const RVC_DIRECT_TOKEN_BINDING = "POSTPREP_RVC_INFERENCE_TOKEN";
 const MAX_RVC_UPLOAD_BYTES = 25 * 1024 * 1024;
 const MAX_RVC_TRAIN_UPLOAD_BYTES = 26 * 1024 * 1024;
+const MAX_RVC_TTS_BYTES = 8 * 1024;
 const DEFAULT_PUBLIC_SITE_ORIGINS = Object.freeze([
   "https://senseixiaomisensei-sudo.github.io",
   "https://postprep-ae6.pages.dev",
@@ -136,6 +137,27 @@ function requestRoute(request) {
       rateBinding: TEXT_RATE_LIMITER_BINDING,
       ratePrefix: "rvc-models",
       message: "Use GET for the voice list",
+    };
+  }
+  if (path === "/rvc/tts/health") {
+    return {
+      id: "rvc-tts-health",
+      method: "GET",
+      rateBinding: TEXT_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc-tts-health",
+      directPath: "/v1/tts-health",
+      message: "Use GET for text-to-speech status",
+    };
+  }
+  if (path === "/rvc/tts") {
+    return {
+      id: "rvc-tts",
+      method: "POST",
+      rateBinding: TEXT_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc-tts",
+      maxBytes: MAX_RVC_TTS_BYTES,
+      directPath: "/v1/tts",
+      message: "Use POST for text-to-speech",
     };
   }
   const outputMatch = path.match(/^\/rvc\/output\/([^/]+)$/u);

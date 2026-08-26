@@ -11,7 +11,7 @@
   // It is intentionally limited to a short clip so mobile WebViews cannot sit
   // for minutes and then fail inside a dynamic-shape ONNX node.
   const LOCAL_MAX_AUDIO_SECONDS = 20;
-  const DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 180;
+  const DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 300;
   const CLOUD_STATUS_TIMEOUT_MS = 15000;
   const CLOUD_MODELS_TIMEOUT_MS = 20000;
   const CLOUD_STATUS_ATTEMPTS = 2;
@@ -29,6 +29,7 @@
   const OFFICIAL_RVC_STATUS_ENDPOINT = String(globalThis.POSTPREP_RVC_STATUS_ENDPOINT || "/rvc/status").trim();
   const OFFICIAL_RVC_MODELS_ENDPOINT = String(globalThis.POSTPREP_RVC_MODELS_ENDPOINT || "/rvc/models").trim();
   const OFFICIAL_RVC_MEDIA_ENDPOINT = String(globalThis.POSTPREP_RVC_MEDIA_ENDPOINT || "").trim();
+  const OFFICIAL_RVC_TTS_BASE = OFFICIAL_RVC_ENDPOINT.replace(/\/+$/u, "");
   const COLLECTION_STORAGE_KEY = "postprep_rvc_custom_collections_v1";
   // 本机 edge-tts 服务（rvc-service）地址。
   // 优先级：locaStorage 里"一键适配"保存的地址 > 全局注入 __RVC_TTS_BASE__（postprep-config.js）> 同源。
@@ -42,7 +43,15 @@
       if (saved && typeof saved === "string" && saved.trim()) return saved.trim();
     } catch (e) {}
     if (TTS_INJECTED_BASE) return TTS_INJECTED_BASE;
+    if (OFFICIAL_RVC_TTS_BASE) return OFFICIAL_RVC_TTS_BASE;
     return TTS_SAME_ORIGIN;
+  };
+  const ttsEndpoint = (base, kind) => {
+    const normalized = String(base || "").replace(/\/+$/u, "");
+    if (/\/(?:rvc|rvc-api)$/u.test(normalized)) {
+      return kind === "health" ? `${normalized}/tts/health` : `${normalized}/tts`;
+    }
+    return kind === "health" ? `${normalized}/v1/tts-health` : `${normalized}/v1/tts`;
   };
   // 候选探测地址（"一键适配"自动尝试）。
   // 核心思想：如果这个"文本朗读"页面本身就是那台电脑部署的（serve.js 绑 0.0.0.0），
@@ -55,6 +64,7 @@
       const host = (typeof window !== "undefined" && window.location && window.location.hostname) || "";
       // 0) 同源最优先：serve.js 已把 /v1/tts 反向代理到本机 rvc-service，
       //    所以任何设备连到部署本页面的电脑(8124)后，走同源即可自动成功，无需知道 IP/端口/跨域。
+      if (OFFICIAL_RVC_TTS_BASE) arr.push(OFFICIAL_RVC_TTS_BASE);
       if (TTS_SAME_ORIGIN) arr.push(TTS_SAME_ORIGIN);
       if (TTS_INJECTED_BASE) arr.push(TTS_INJECTED_BASE);
       // 1) 由当前访问主机名推导 8080（兜底：若未走代理，直连电脑 8080）
@@ -3282,7 +3292,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260826-v38", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260826-v39", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -4282,7 +4292,7 @@
       });
     }
 
-    // 文本朗读（TTS，第三输入源）：探测本机 edge-tts 服务 → 合成中性人声 → 自动用当前角色变声
+    // 文本朗读（TTS，第三输入源）：探测受保护或本机 edge-tts 服务 → 合成中性人声 → 自动用当前角色变声
     const ttsSynth = document.getElementById("rvc-tts-synth");
     const ttsConvert = document.getElementById("rvc-tts-convert");
     const ttsReady = document.getElementById("rvc-tts-ready");
@@ -4301,10 +4311,10 @@
       state.ttsEnabled = ok;
       if (!ttsReady) return;
       if (ok) {
-        ttsReady.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>本机 TTS 服务正常 · 可角色朗读';
+        ttsReady.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>TTS 服务正常 · 可角色朗读';
         ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700";
       } else {
-        ttsReady.innerHTML = '<i class="fa-solid fa-plug-circle-xmark text-red-500"></i>未检测到本机 TTS 服务 (edge-tts)';
+        ttsReady.innerHTML = '<i class="fa-solid fa-plug-circle-xmark text-red-500"></i>未检测到 TTS 服务 (edge-tts)';
         ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700";
       }
     };
@@ -4314,7 +4324,7 @@
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 2500);
       try {
-        const res = await fetch(`${base}/v1/tts-health`, { method: "GET", signal: controller.signal }).catch(() => null);
+        const res = await fetch(ttsEndpoint(base, "health"), { method: "GET", signal: controller.signal }).catch(() => null);
         if (res && res.ok) {
           try { return (await res.json())?.ready === true; } catch { return true; }
         }
@@ -4346,15 +4356,18 @@
         return null;
       }
       if (!state.ttsEnabled) {
-        setTtsStatus("本机 TTS 服务未就绪，请先启动 rvc-service（见 tools/ 说明）。", "err");
+        setTtsStatus("TTS 服务未就绪，请稍后重试或使用一键适配连接本机服务。", "err");
         return null;
       }
-      setTtsStatus("正在合成中性人声…（本机 edge-tts）", null);
+      setTtsStatus("正在合成中性人声…", null);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 45000);
       try {
-        const res = await fetch(`${getTtsBase()}/v1/tts`, {
+        const res = await fetch(ttsEndpoint(getTtsBase(), "synthesize"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),
+          signal: controller.signal,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
@@ -4362,8 +4375,10 @@
         const file = new File([blob], `tts_${Date.now()}.mp3`, { type: res.headers.get("Content-Type") || "audio/mpeg" });
         return file;
       } catch (err) {
-        setTtsStatus(`合成失败：${err.message}。可用「一键适配」自动连接本机 rvc-service。`, "err");
+        setTtsStatus(`合成失败：${err.name === "AbortError" ? "等待超时" : err.message}。可稍后重试或用「一键适配」连接本机服务。`, "err");
         return null;
+      } finally {
+        clearTimeout(timer);
       }
     };
 

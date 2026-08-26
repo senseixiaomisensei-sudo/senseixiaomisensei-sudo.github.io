@@ -102,6 +102,9 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /Protected media route failed; using the already downloaded result blob/u);
   assert.match(client, /let base = OFFICIAL_RVC_MEDIA_ENDPOINT/u);
   assert.doesNotMatch(client, /setTimeout\(probeTts,\s*1000\)/u);
+  assert.match(client, /OFFICIAL_RVC_TTS_BASE/u);
+  assert.match(client, /`\$\{normalized\}\/tts\/health`/u);
+  assert.match(client, /`\$\{normalized\}\/tts`/u);
 
   const catalogPayload = JSON.parse(catalog);
   assert.ok(Array.isArray(catalogPayload.models));
@@ -162,6 +165,9 @@ test("GPU service pins and imports the official RVC inference source", async () 
   ]);
   assert.doesNotMatch(service + requirements, /rvc_python|rvc-python/u);
   assert.match(service, /OfficialRvcModel/u);
+  assert.match(service, /@app\.post\("\/v1\/tts"\)/u);
+  assert.match(service, /TTS_MAX_TEXT_CHARS = 800/u);
+  assert.match(requirements, /edge-tts==7\.2\.8/u);
   assert.match(runtime, /from infer\.vc\.modules import VC/u);
   assert.match(runtime, /8f2fdbf483955f924b4c87ab34919170d0b704ed/u);
   assert.match(dockerfile, /RVC_COMMIT=8f2fdbf483955f924b4c87ab34919170d0b704ed/u);

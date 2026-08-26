@@ -2,6 +2,7 @@
 fastapi==0.115.12
 python-multipart==0.0.20
 uvicorn[standard]==0.34.0
+edge-tts==7.2.8
 
 # Minimal inference dependencies used by the pinned official RVC source.
 # Torch/torchaudio are installed separately with the matching CUDA wheel.

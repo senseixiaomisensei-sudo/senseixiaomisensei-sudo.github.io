@@ -136,7 +136,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260826-stability-r1/u);
+  assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260826-long-audio-r3/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false \} = \{\}\)/u);
   assert.match(client, /function runWebRvcInference\(\{ allowLong = false, fallback = false \} = \{\}\)/u);
@@ -144,7 +145,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /OFFICIAL_RVC_MODELS_ENDPOINT/u);
   assert.match(client, /function officialRoutes\(endpoint\)/u);
   assert.match(client, /convertUrl: base/u);
-  assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 180/u);
+  assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 300/u);
   assert.match(client, /isDeviceFallbackEligible/u);
   assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
   assert.match(client, /runWebRvcInference\(\{ allowLong: true, fallback: true \}\)/u);
@@ -176,14 +177,14 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260826-v38/u);
+  assert.match(client, /v=20260826-v39/u);
   assert.match(client, /function preferredCloudOutputFormat\(durationSeconds = 0\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
   assert.match(client, /body\.set\("f0Method", "auto"\)/u);
   assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /normalizeCloudAudioBlob\(await outputResponse\.blob\(\), outputFormat\)/u);
-  assert.match(runtime, /v=20260826-v38/u);
+  assert.match(runtime, /v=20260826-v39/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.wasm/u);

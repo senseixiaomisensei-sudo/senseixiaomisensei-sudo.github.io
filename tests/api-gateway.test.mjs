@@ -183,6 +183,45 @@ test("rvc routes use the authenticated narrow tunnel when direct credentials are
   }
 });
 
+test("TTS uses the authenticated narrow tunnel with JSON and the text limiter", async () => {
+  const originalFetch = globalThis.fetch;
+  let forwarded;
+  let limiterKey = "";
+  globalThis.fetch = async (url, options) => {
+    forwarded = { url: String(url), options };
+    return new Response(new Uint8Array([73, 68, 51]), { headers: { "Content-Type": "audio/mpeg" } });
+  };
+  try {
+    const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc/tts", {
+      method: "POST",
+      headers: { Origin: PAGES_ORIGIN, "Content-Type": "application/json" },
+      body: JSON.stringify({ text: "发布之前，先让文字呼吸一下。" }),
+    });
+    const env = {
+      ...BASE_ENV,
+      POSTPREP_RVC_DIRECT_BASE_URL: "https://voice-relay-example.trycloudflare.com",
+      POSTPREP_RVC_INFERENCE_TOKEN: "rvc-direct-token-with-at-least-32-characters",
+      POSTPREP_RATE_LIMITER: {
+        limit: async ({ key }) => {
+          limiterKey = key;
+          return { success: true };
+        },
+      },
+    };
+    const response = await gateway.fetch(request, env);
+    assert.equal(response.status, 200);
+    assert.match(limiterKey, /^rvc-tts:/u);
+    assert.equal(forwarded.url, "https://voice-relay-example.trycloudflare.com/v1/tts");
+    assert.equal(forwarded.options.headers.get("Content-Type"), "application/json");
+    assert.equal(
+      forwarded.options.headers.get("Authorization"),
+      `Bearer ${env.POSTPREP_RVC_INFERENCE_TOKEN}`,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("rvc direct route rejects an arbitrary non-tunnel host", async () => {
   const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc/status", {
     headers: { Origin: PAGES_ORIGIN },

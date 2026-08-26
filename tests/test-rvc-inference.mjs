@@ -96,7 +96,11 @@ server.listen(PORT, "127.0.0.1", async () => {
     const fileInput = await page.locator("#rvc-audio-file");
     await fileInput.setInputFiles(testAudioPath);
 
-    await page.waitForTimeout(1000);
+    await page.waitForFunction(() => {
+      const status = document.getElementById("rvc-audio-status")?.textContent || "";
+      const button = document.getElementById("rvc-convert");
+      return !status.includes("正在分析") && button && !button.disabled;
+    }, { timeout: 120000 });
     if (process.env.POSTPREP_RVC_INDEX_RATE) {
       await page.locator("#rvc-index-rate").evaluate((element, value) => {
         element.value = value;
@@ -126,10 +130,12 @@ server.listen(PORT, "127.0.0.1", async () => {
       console.log("Triggering conversion click...");
       await convertBtn.click();
 
-      // Poll status for up to 90 seconds
+      // Long stability fixtures may need substantially more than the default
+      // short-smoke timeout while still exercising the same browser path.
+      const inferenceTimeoutMs = Math.max(90000, Number(process.env.POSTPREP_RVC_E2E_TIMEOUT_MS) || 90000);
       let finished = false;
       const start = Date.now();
-      while (Date.now() - start < 90000) {
+      while (Date.now() - start < inferenceTimeoutMs) {
         const currentStatus = await page.locator("#rvc-service-status").textContent();
         console.log(`[${Math.round((Date.now() - start)/1000)}s] Status:`, currentStatus);
 
