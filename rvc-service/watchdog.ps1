@@ -27,10 +27,12 @@ try {
   $failures = 0
   while ($true) {
     $healthy = $false
+    $localHealthy = $false
     try {
       $token = (Get-Content -LiteralPath $TokenFile -Raw).Trim()
       $local = Invoke-RestMethod -Uri "http://127.0.0.1:8088/healthz" -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 5
       if ($local.ready -eq $true) {
+        $localHealthy = $true
         $public = Invoke-RestMethod -Uri $PublicStatus -Headers @{ Origin = $Origin } -TimeoutSec 15
         $healthy = ($public.ready -eq $true)
       }
@@ -41,6 +43,13 @@ try {
     if ($healthy) {
       if ($failures -gt 0) { Write-WatchdogLog "service recovered without restart" }
       $failures = 0
+    } elseif (-not $localHealthy) {
+      # At logon there is no value in waiting through two public probes when
+      # the loopback GPU service is definitively absent. Start the complete
+      # service/tunnel/Worker sync immediately; transient public probe failures
+      # still retain the normal two-strike protection below.
+      $failures = $FailureThreshold
+      Write-WatchdogLog "local service is offline; immediate startup recovery"
     } else {
       $failures += 1
       Write-WatchdogLog "health check failed ($failures/$FailureThreshold)"

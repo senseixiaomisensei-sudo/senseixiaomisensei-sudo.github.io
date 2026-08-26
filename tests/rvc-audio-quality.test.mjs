@@ -136,7 +136,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260825-mixed-r1/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260826-stability-r1/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false \} = \{\}\)/u);
   assert.match(client, /function runWebRvcInference\(\{ allowLong = false, fallback = false \} = \{\}\)/u);
@@ -176,14 +176,14 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260823-v37/u);
+  assert.match(client, /v=20260826-v38/u);
   assert.match(client, /function preferredCloudOutputFormat\(durationSeconds = 0\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
   assert.match(client, /body\.set\("f0Method", "auto"\)/u);
   assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /normalizeCloudAudioBlob\(await outputResponse\.blob\(\), outputFormat\)/u);
-  assert.match(runtime, /v=20260823-v37/u);
+  assert.match(runtime, /v=20260826-v38/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.wasm/u);
@@ -297,4 +297,9 @@ test("retrieval codebook blends voiced frames and protects unvoiced consonants",
   assert.ok(Math.abs(unvoiced.hiddenStates[0] - 0.33) < 1e-6);
   assert.ok(Math.abs(unvoiced.hiddenStates[1] - 0.66) < 1e-6);
   assert.deepEqual([...protectionDisabled.hiddenStates], [1, 2, 1, 2]);
+});
+
+test("browser retrieval uses the official Top-8 neighbour count", () => {
+  assert.match(workerSource, /const neighborCount = Math\.min\(8, codebook\.count\)/u);
+  assert.doesNotMatch(extractFunction("applyRetrievalCodebook"), /new Float64Array\(4\)/u);
 });

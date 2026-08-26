@@ -12787,8 +12787,13 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
   const frameCount = features.upsampledFrameCount;
   const dimension = features.featureSize;
   const output = new Float32Array(features.hiddenStates);
-  const distances = new Float64Array(4);
-  const nearest = new Int32Array(4);
+  // Official RVC queries eight FAISS neighbours. The browser codebook is a
+  // compact projection of that index, but using the same Top-8 blend preserves
+  // more target-speaker detail than the former Top-4 shortcut without adding
+  // another neural inference pass.
+  const neighborCount = Math.min(8, codebook.count);
+  const distances = new Float64Array(neighborCount);
+  const nearest = new Int32Array(neighborCount);
   for (let frame = 0; frame < frameCount; frame += 2) {
     distances.fill(Infinity);
     nearest.fill(-1);
@@ -12800,8 +12805,8 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
         const delta = features.hiddenStates[featureOffset + dim] - codebook.centers[centerOffset + dim];
         distance += delta * delta;
       }
-      if (distance >= distances[3]) continue;
-      let position = 3;
+      if (distance >= distances[neighborCount - 1]) continue;
+      let position = neighborCount - 1;
       while (position > 0 && distance < distances[position - 1]) {
         distances[position] = distances[position - 1];
         nearest[position] = nearest[position - 1];
@@ -12811,12 +12816,12 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
       nearest[position] = center;
     }
     let weightTotal = 0;
-    const weights = new Float64Array(4);
+    const weights = new Float64Array(neighborCount);
     if (distances[0] <= 1e-12) {
       weights[0] = 1;
       weightTotal = 1;
     } else {
-      for (let candidate = 0; candidate < 4 && nearest[candidate] >= 0; candidate++) {
+      for (let candidate = 0; candidate < neighborCount && nearest[candidate] >= 0; candidate++) {
         const inverseSquared = 1 / Math.max(1e-12, distances[candidate] * distances[candidate]);
         weights[candidate] = inverseSquared;
         weightTotal += inverseSquared;
@@ -12830,7 +12835,7 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
       const pairedOffset = paired * dimension;
       for (let dim = 0; dim < dimension; dim++) {
         let retrieved = 0;
-        for (let candidate = 0; candidate < 4 && nearest[candidate] >= 0; candidate++) {
+        for (let candidate = 0; candidate < neighborCount && nearest[candidate] >= 0; candidate++) {
           retrieved += codebook.centers[nearest[candidate] * dimension + dim] * weights[candidate];
         }
         retrieved /= weightTotal;

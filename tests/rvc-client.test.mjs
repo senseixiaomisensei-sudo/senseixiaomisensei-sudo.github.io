@@ -44,6 +44,9 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /MediaRecorder/);
   assert.match(client, /getUserMedia/);
   assert.match(client, /loadModelAuto/);
+  assert.match(client, /function modelDownloadConcurrency\(nav = globalThis\.navigator\)/u);
+  assert.match(client, /controller\.abort\(\);\s*return buffer/u);
+  assert.match(client, /Math\.max\(chunkBytesLoaded\[idx\], bytesLoaded\)/u);
   assert.match(client, /runWebRvcInference/);
   assert.match(client, /function cloudUploadProgress\(evt, startedAt = Date\.now\(\)\)/u);
   assert.match(client, /音频已从浏览器发出/u);
@@ -65,6 +68,14 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.doesNotMatch(client, /RVC_INFERENCE_TOKEN/);
   assert.doesNotMatch(client, /api\.github\.com/);
   assert.doesNotMatch(client, /I HAVE THE RIGHTS/);
+
+  const downloadConcurrency = Function(
+    "MOBILE_AUDIO_USER_AGENT",
+    `"use strict"; return (${extractFunction(client, "modelDownloadConcurrency")});`,
+  )(/Android|iPhone|Mobile/iu);
+  assert.equal(downloadConcurrency({ hardwareConcurrency: 12, userAgent: "Desktop Chrome" }), 8);
+  assert.equal(downloadConcurrency({ hardwareConcurrency: 8, userAgent: "Android Mobile" }), 6);
+  assert.equal(downloadConcurrency({ hardwareConcurrency: 12, userAgent: "Desktop", connection: { saveData: true } }), 3);
 
   assert.match(config, /POSTPREP_RVC_API_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api"/u);
   assert.match(config, /POSTPREP_RVC_STATUS_ENDPOINT = "https:\/\/postprep-ae6\.pages\.dev\/rvc-api\/status"/u);
@@ -166,4 +177,6 @@ test("RVC watchdog automatically recovers the local service and public tunnel", 
   assert.match(watchdog, /-NoWatchdog/u);
   assert.match(watchdog, /-WindowStyle Hidden/u);
   assert.match(watchdog, /Local\\PostPrepRvcWatchdog/u);
+  assert.match(watchdog, /local service is offline; immediate startup recovery/u);
+  assert.match(watchdog, /\$failures = \$FailureThreshold/u);
 });

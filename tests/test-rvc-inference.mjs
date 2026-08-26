@@ -77,6 +77,9 @@ server.listen(PORT, "127.0.0.1", async () => {
   try {
     await page.goto(`http://127.0.0.1:${PORT}/rvc.html`, { waitUntil: "domcontentloaded", timeout: 20000 });
     await page.waitForTimeout(1500);
+    if (process.env.POSTPREP_RVC_FORCE_LOCAL === "1") {
+      await page.locator("#rvc-mode-local").click();
+    }
     const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     if (horizontalOverflow) throw new Error("RVC page has horizontal overflow at the test viewport");
 

@@ -1098,7 +1098,19 @@
     audioMode: "voice",
   };
 
-  // High-Performance Concurrency Pool (5 concurrent HTTP streams for max speed)
+  function modelDownloadConcurrency(nav = globalThis.navigator) {
+    const connection = nav?.connection || nav?.mozConnection || nav?.webkitConnection;
+    const effectiveType = String(connection?.effectiveType || "").toLowerCase();
+    if (connection?.saveData === true || effectiveType === "slow-2g" || effectiveType === "2g") return 3;
+    const cores = Math.max(1, Number(nav?.hardwareConcurrency) || 4);
+    const mobile = MOBILE_AUDIO_USER_AGENT.test(String(nav?.userAgent || ""));
+    if (!mobile && cores >= 8) return 8;
+    if (cores >= 4) return 6;
+    return 4;
+  }
+
+  // A fast desktop can keep more independent model fragments in flight while
+  // constrained phones avoid opening enough streams to starve the UI thread.
   class ConcurrencyPool {
     constructor(limit = 5) {
       this.limit = limit;
@@ -1122,7 +1134,8 @@
     }
   }
 
-  const globalDownloadPool = new ConcurrencyPool(5);
+  const activeModelDownloadConcurrency = modelDownloadConcurrency();
+  const globalDownloadPool = new ConcurrencyPool(activeModelDownloadConcurrency);
 
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
@@ -1246,9 +1259,12 @@
 
     const mirrors = getChunkMirrorUrls(chunkPath);
 
-    const fetchWithProgress = async (url) => {
+    const fetchWithProgress = async (url, raceSignal) => {
       const controller = new AbortController();
       let activityTimer = setTimeout(() => controller.abort(), 18000); // 18s inactivity watchdog
+      const abortFromRace = () => controller.abort();
+      if (raceSignal?.aborted) controller.abort();
+      else raceSignal?.addEventListener("abort", abortFromRace, { once: true });
 
       const resetActivity = () => {
         clearTimeout(activityTimer);
@@ -1256,7 +1272,7 @@
       };
 
       try {
-        const resp = await fetch(url, { signal: controller.signal });
+        const resp = await fetch(url, { signal: controller.signal, cache: "force-cache" });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
         const reader = resp.body ? resp.body.getReader() : null;
@@ -1294,36 +1310,54 @@
       } catch (err) {
         clearTimeout(activityTimer);
         throw err;
+      } finally {
+        raceSignal?.removeEventListener("abort", abortFromRace);
+      }
+    };
+
+    const delayedFetch = (url, delayMs, signal) => new Promise((resolve, reject) => {
+      let timer = 0;
+      const abort = () => {
+        clearTimeout(timer);
+        reject(new DOMException("Mirror race cancelled", "AbortError"));
+      };
+      if (signal.aborted) return abort();
+      signal.addEventListener("abort", abort, { once: true });
+      timer = setTimeout(() => {
+        signal.removeEventListener("abort", abort);
+        if (signal.aborted) return abort();
+        fetchWithProgress(url, signal).then(resolve, reject);
+      }, delayMs);
+    });
+
+    const raceMirrorGroup = async (indices) => {
+      const controller = new AbortController();
+      const delays = [0, 450, 1200];
+      try {
+        const buffer = await Promise.any(indices.map((index, order) => (
+          delayedFetch(mirrors[index], delays[order] || 0, controller.signal)
+        )));
+        controller.abort();
+        return buffer;
+      } finally {
+        controller.abort();
       }
     };
 
     let winningBuffer = null;
     let lastError = null;
 
-    // Retry loop: up to 3 attempts with progressive fallbacks
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // Race distinct mirror groups, but abort every losing transfer as soon as a
+    // complete fragment arrives. The previous Promise.any implementation left
+    // two duplicate 20 MiB downloads running for every winning fragment.
+    const mirrorGroups = [[0, 1, 5], [2, 3, 4], [6, 7, 0]];
+    for (let attempt = 0; attempt < mirrorGroups.length; attempt++) {
       try {
-        winningBuffer = await Promise.any([
-          fetchWithProgress(mirrors[0]),
-          fetchWithProgress(mirrors[1]),
-          new Promise((resolve, reject) => setTimeout(() => {
-            fetchWithProgress(mirrors[2]).then(resolve, reject);
-          }, 2000))
-        ]);
+        winningBuffer = await raceMirrorGroup(mirrorGroups[attempt]);
         if (winningBuffer && winningBuffer.byteLength > 0) break;
       } catch (raceErr) {
         lastError = raceErr;
-        // Fallback to secondary mirrors
-        for (let m = 2; m < mirrors.length; m++) {
-          try {
-            winningBuffer = await fetchWithProgress(mirrors[m]);
-            if (winningBuffer && winningBuffer.byteLength > 0) break;
-          } catch (e) {
-            lastError = e;
-          }
-        }
-        if (winningBuffer && winningBuffer.byteLength > 0) break;
-        if (attempt < 2) {
+        if (attempt < mirrorGroups.length - 1) {
           await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
         }
       }
@@ -1363,7 +1397,7 @@
       let totalLoaded = 0;
       for (let i = 0; i < totalCount; i++) totalLoaded += chunkBytesLoaded[i];
       if (typeof onProgress === "function") {
-        const msg = `⏳ [1/4] 正在下载 ${displayName}: 分片 ${completedCount}/${totalCount} (${(totalLoaded/1024/1024).toFixed(1)}MB / ${(estimatedTotalBytes/1024/1024).toFixed(1)}MB) · 5 线程断点极速加速中`;
+        const msg = `⏳ [1/4] 正在下载 ${displayName}: 分片 ${completedCount}/${totalCount} (${(totalLoaded/1024/1024).toFixed(1)}MB / ${(estimatedTotalBytes/1024/1024).toFixed(1)}MB) · ${activeModelDownloadConcurrency} 线程断点极速加速中`;
         onProgress(totalLoaded, estimatedTotalBytes, completedCount, totalCount, false, msg);
       }
     };
@@ -1377,7 +1411,7 @@
           idx,
           totalCount,
           (bytesLoaded) => {
-            chunkBytesLoaded[idx] = bytesLoaded;
+            chunkBytesLoaded[idx] = Math.max(chunkBytesLoaded[idx], bytesLoaded);
             reportProgress();
           }
         );
@@ -3248,7 +3282,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260823-v37", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260826-v38", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
