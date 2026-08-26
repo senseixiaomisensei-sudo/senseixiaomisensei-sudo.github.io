@@ -94,6 +94,39 @@
       workflowEyebrow: "VOICE WORKFLOW",
       workflowTitle: "三步完成变声",
       privacyBadge: "受保护 GPU 推理 · 用完即删",
+      ownModelHint: "上传你本地训练或转换好的 .onnx 角色模型。仅供当前设备使用，不发布，也不会上传。",
+      checkingServiceAction: "正在检查服务…",
+      rmsLabel: "音量跟随",
+      versionLabel: "版本 V1（分区导航 + 伴奏翻唱）",
+      modeTitle: "选择变声模式",
+      modeOfficialTitle: "智能混合模式",
+      modeRecommended: "推荐",
+      modeOfficialHint: "电脑在线时优先使用高质量 PyTorch RVC；电脑离线或隧道中断时，纯人声自动改由当前设备分段处理。带伴奏翻唱仍使用云端 GPU。",
+      modeLocalTitle: "仅设备端模式",
+      modeNoUpload: "免上传",
+      modeLocalHint: "纯浏览器 WebAssembly 推理，音频不上传。云端不可达时，纯人声会自动切换到当前设备分段处理；请保持页面在前台。带伴奏翻唱仍需要云端 GPU。",
+      cacheDefault: "设备端使用浏览器缓存；智能混合模式优先使用受保护的 GPU 服务",
+      preload: "一键预热闪存",
+      clearCache: "清理缓存",
+      createCollection: "创建分区",
+      collectionPlaceholder: "例如：我的动漫角色",
+      saveCollection: "保存分区",
+      cancel: "取消",
+      trainedTitle: "🎓 训练完成的模型",
+      trainedHint: "这些模型由下方训练功能生成，可在训练前填写自己的区域名称；点击后继续使用原有云端 RVC 变声流程。",
+      ownModelTitle: "🎓 导入我自己的模型",
+      chooseOnnx: "选择 .onnx 文件",
+      sourceTts: "文本朗读",
+      sourceTtsHint: "输入一段文字，使用可用的 TTS 服务生成朗读，再转换为当前角色。",
+      audioContent: "音频内容",
+      voiceOnly: "纯人声（默认）",
+      voiceOnlyHint: "沿用原有稳定链路，上传更省流量。",
+      songMode: "带伴奏翻唱",
+      songModeHint: "云端先分离人声，只变人声，再与原伴奏回混。",
+      ttsTextPlaceholder: "在这里输入你想让角色朗读的文字…（最多 800 字）",
+      ttsSynth: "合成朗读（中性）",
+      ttsConvert: "用当前角色朗读",
+      ttsIdle: "选角色 → 输文字 → 角色朗读。",
       stepModel: "1. 选择角色声音",
       stepModelHint: "先切换角色分区，再点角色卡片。搜索只查当前分区。",
       searchPlaceholder: "搜索角色…",
@@ -176,6 +209,39 @@
       workflowEyebrow: "VOICE WORKFLOW",
       workflowTitle: "Three steps to a new voice",
       privacyBadge: "Protected GPU · Ephemeral files",
+      ownModelHint: "Import a locally trained or converted .onnx voice model. It stays on this device and is never uploaded or published.",
+      checkingServiceAction: "Checking service…",
+      rmsLabel: "Volume envelope",
+      versionLabel: "Version V1 (collections + song conversion)",
+      modeTitle: "Choose an inference mode",
+      modeOfficialTitle: "Smart hybrid",
+      modeRecommended: "Recommended",
+      modeOfficialHint: "Uses high-quality PyTorch RVC while the host computer is online. If it is offline or the tunnel drops, dry vocals fall back to chunked on-device processing. Song conversion still requires the cloud GPU.",
+      modeLocalTitle: "On-device only",
+      modeNoUpload: "No upload",
+      modeLocalHint: "Runs WebAssembly in your browser without uploading audio. Keep the page in the foreground. Song conversion still requires the cloud GPU.",
+      cacheDefault: "On-device models use browser cache; Smart hybrid prefers the protected GPU service",
+      preload: "Preload models",
+      clearCache: "Clear cache",
+      createCollection: "Create collection",
+      collectionPlaceholder: "For example: My anime voices",
+      saveCollection: "Save collection",
+      cancel: "Cancel",
+      trainedTitle: "🎓 Trained models",
+      trainedHint: "Models created by the training tool appear here. You can name their collection before training, then select them for the existing cloud RVC workflow.",
+      ownModelTitle: "🎓 Import my own model",
+      chooseOnnx: "Choose .onnx file",
+      sourceTts: "Text to speech",
+      sourceTtsHint: "Generate speech with an available TTS service, then convert it to the selected character.",
+      audioContent: "Audio content",
+      voiceOnly: "Dry vocal (default)",
+      voiceOnlyHint: "Uses the established conversion path and uploads less data.",
+      songMode: "Song with backing track",
+      songModeHint: "The cloud separates vocals, converts only the voice, then remixes the original backing track.",
+      ttsTextPlaceholder: "Enter text for the character to read… (up to 800 characters)",
+      ttsSynth: "Generate neutral speech",
+      ttsConvert: "Read as selected character",
+      ttsIdle: "Pick a voice → enter text → generate speech.",
       stepModel: "1. Pick a character voice",
       stepModelHint: "Choose a collection first, then select a voice. Search stays inside the active collection.",
       searchPlaceholder: "Search voices…",
@@ -1539,6 +1605,44 @@
     return text;
   }
 
+  function resolveRvcLanguage() {
+    const documentLanguage = String(document.documentElement?.lang || "").toLowerCase();
+    if (documentLanguage.startsWith("en")) return "en";
+    if (documentLanguage.startsWith("zh")) return "zh";
+    try {
+      return window.localStorage.getItem("postprep-language") === "en" ? "en" : "zh";
+    } catch {
+      return "zh";
+    }
+  }
+
+  function applyRvcLanguage() {
+    state.lang = resolveRvcLanguage();
+    document.querySelectorAll("[data-rvc-i18n]").forEach((element) => {
+      const key = element.dataset.rvcI18n;
+      if (key && Object.prototype.hasOwnProperty.call(translations[state.lang] || {}, key)) {
+        element.textContent = t(key);
+      }
+    });
+    document.querySelectorAll("[data-rvc-i18n-placeholder]").forEach((element) => {
+      const key = element.dataset.rvcI18nPlaceholder;
+      if (key && Object.prototype.hasOwnProperty.call(translations[state.lang] || {}, key)) {
+        element.setAttribute("placeholder", t(key));
+      }
+    });
+    const tips = document.querySelector('[data-rvc-list="tips"]');
+    const localizedTips = translations[state.lang]?.tips;
+    if (tips && Array.isArray(localizedTips)) {
+      tips.innerHTML = localizedTips
+        .map((tip) => `<li class="flex gap-3"><i class="fa-solid fa-check mt-1 text-brand" aria-hidden="true"></i><span>${escapeHtml(tip)}</span></li>`)
+        .join("");
+    }
+    document.title = state.lang === "en" ? "AI Voice Changer | PostPrep" : "AI 变声器 | PostPrep";
+    renderAudioMode();
+    renderModelGallery();
+    updateStatusDisplay();
+  }
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -1719,6 +1823,15 @@
     return collectionDefinitions().find((collection) => collection.id === state.activeCollectionId) || null;
   }
 
+  function localizedCollectionName(collection) {
+    if (!collection || state.lang !== "en") return collection?.name || "";
+    if (collection.id === "blue-archive") return "Blue Archive";
+    if (collection.id === "jujutsu-kaisen") return "Jujutsu Kaisen";
+    if (collection.id === "other") return "Other voices";
+    if (collection.id === "local-imports") return "Local imports";
+    return collection.name;
+  }
+
   function renderCollectionNav() {
     const nav = document.getElementById("rvc-collection-nav");
     if (!nav) return;
@@ -1738,7 +1851,7 @@
       button.className = active
         ? "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg bg-brand px-3.5 py-2 text-xs font-black text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
         : "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg border border-line bg-white px-3.5 py-2 text-xs font-black text-ink shadow-xs hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1";
-      button.innerHTML = `<span>${escapeHtml(collection.name)}</span><span class="${active ? "bg-white/20 text-white" : "bg-zinc-100 text-muted"} rounded-full px-1.5 py-0.5 text-[10px]">${collection.count}</span>`;
+      button.innerHTML = `<span>${escapeHtml(localizedCollectionName(collection))}</span><span class="${active ? "bg-white/20 text-white" : "bg-zinc-100 text-muted"} rounded-full px-1.5 py-0.5 text-[10px]">${collection.count}</span>`;
       button.addEventListener("click", () => {
         state.activeCollectionId = collection.id;
         const search = document.getElementById("rvc-model-search");
@@ -1832,11 +1945,17 @@
       container.innerHTML = "";
       if (trainedContainer) trainedContainer.innerHTML = "";
       if (emptyEl) {
-        emptyEl.textContent = searchVal
-          ? `“${searchVal}”在当前分区没有匹配角色。`
-          : activeCollection?.custom
-            ? `“${activeCollection.name}”分区已创建。训练新模型时选择这个分区，完成后角色会自动出现在这里。`
-            : "当前分区还没有角色。";
+        emptyEl.textContent = state.lang === "en"
+          ? searchVal
+            ? `No matching voice for “${searchVal}” in this collection.`
+            : activeCollection?.custom
+              ? `“${localizedCollectionName(activeCollection)}” is ready. Select it when training a model and the voice will appear here when training finishes.`
+              : "This collection has no voices yet."
+          : searchVal
+            ? `“${searchVal}”在当前分区没有匹配角色。`
+            : activeCollection?.custom
+              ? `“${activeCollection.name}”分区已创建。训练新模型时选择这个分区，完成后角色会自动出现在这里。`
+              : "当前分区还没有角色。";
         emptyEl.classList.remove("hidden");
       }
       if (trainedSection) trainedSection.classList.add("hidden");
@@ -1847,8 +1966,8 @@
     renderModelCards(trainedContainer, trainedModels, true);
     container.classList.toggle("hidden", regularModels.length === 0);
     if (trainedSection) trainedSection.classList.toggle("hidden", trainedModels.length === 0);
-    if (trainedTitle) trainedTitle.textContent = `🎓 ${activeCollection?.name || "训练完成的模型"}`;
-    if (trainedCount) trainedCount.textContent = `${trainedModels.length} 个模型`;
+    if (trainedTitle) trainedTitle.textContent = `🎓 ${localizedCollectionName(activeCollection) || t("trainedTitle").replace(/^🎓\s*/u, "")}`;
+    if (trainedCount) trainedCount.textContent = state.lang === "en" ? `${trainedModels.length} model(s)` : `${trainedModels.length} 个模型`;
   }
 
   function showProgressBar(show) {
@@ -2530,28 +2649,34 @@
     const usesBrowserInference = isOwnModel || state.inferenceMode === "local";
     const deviceAudioLimit = isOwnModel ? LOCAL_MAX_AUDIO_SECONDS : DEVICE_FALLBACK_MAX_AUDIO_SECONDS;
     if (usesBrowserInference && state.audio.duration > deviceAudioLimit) {
-      if (statusEl) statusEl.textContent = isOwnModel
-        ? `导入模型仍只支持 ${LOCAL_MAX_AUDIO_SECONDS} 秒以内的短音频。`
-        : `设备端最多处理 ${DEVICE_FALLBACK_MAX_AUDIO_SECONDS / 60} 分钟纯人声；请保持页面前台并确保设备有足够电量与内存。`;
+      if (statusEl) statusEl.textContent = state.lang === "en"
+        ? isOwnModel
+          ? `Imported models currently support clips up to ${LOCAL_MAX_AUDIO_SECONDS} seconds.`
+          : `On-device mode supports dry vocals up to ${DEVICE_FALLBACK_MAX_AUDIO_SECONDS / 60} minutes. Keep the page in the foreground and ensure enough battery and memory.`
+        : isOwnModel
+          ? `导入模型仍只支持 ${LOCAL_MAX_AUDIO_SECONDS} 秒以内的短音频。`
+          : `设备端最多处理 ${DEVICE_FALLBACK_MAX_AUDIO_SECONDS / 60} 分钟纯人声；请保持页面前台并确保设备有足够电量与内存。`;
       if (convertBtn) convertBtn.disabled = true;
-      if (convertLabel) convertLabel.textContent = isOwnModel ? "请使用短音频" : "请切换云端模式";
+      if (convertLabel) convertLabel.textContent = state.lang === "en"
+        ? isOwnModel ? "Use a shorter clip" : "Switch to cloud mode"
+        : isOwnModel ? "请使用短音频" : "请切换云端模式";
       return;
     }
 
     if (statusEl) {
-      let engineLabel = "🟢 变声引擎已就绪";
+      let engineLabel = state.lang === "en" ? "🟢 Voice engine is ready" : "🟢 变声引擎已就绪";
       if (isOwnModel) {
-        engineLabel = "🎓 专属导入模型已就绪";
+        engineLabel = state.lang === "en" ? "🎓 Imported model is ready" : "🎓 专属导入模型已就绪";
       } else if (state.inferenceMode === "official" && state.engineReady === true) {
-        engineLabel = "🟢 云端 RVC 高保真引擎已就绪";
+        engineLabel = state.lang === "en" ? "🟢 Cloud RVC engine is ready" : "🟢 云端 RVC 高保真引擎已就绪";
       } else if (state.inferenceMode === "official") {
-        engineLabel = "🟡 云端 RVC 引擎正在连接；本次会直接重试";
+        engineLabel = state.lang === "en" ? "🟡 Cloud RVC is connecting; this request will retry" : "🟡 云端 RVC 引擎正在连接；本次会直接重试";
       } else {
-        engineLabel = "⚡ 极速免上传引擎已就绪";
+        engineLabel = state.lang === "en" ? "⚡ On-device engine is ready" : "⚡ 极速免上传引擎已就绪";
       }
-      statusEl.textContent = `${engineLabel} · 已选角色: ${selectedModel.name} · 音频: ${
-        state.audio.name
-      } (${formatTime(state.audio.duration)})`;
+      statusEl.textContent = state.lang === "en"
+        ? `${engineLabel} · Voice: ${selectedModel.name} · Audio: ${state.audio.name} (${formatTime(state.audio.duration)})`
+        : `${engineLabel} · 已选角色: ${selectedModel.name} · 音频: ${state.audio.name} (${formatTime(state.audio.duration)})`;
     }
     if (convertBtn) convertBtn.disabled = state.busy;
     if (convertLabel) convertLabel.textContent = state.busy ? t("converting") : t("convert");
@@ -2713,7 +2838,9 @@
     }
 
     if (badgeText) {
-      badgeText.textContent = isOfficial ? "智能混合（云端优先）" : "仅设备端模式";
+      badgeText.textContent = state.lang === "en"
+        ? isOfficial ? "Smart hybrid (cloud first)" : "On-device only"
+        : isOfficial ? "智能混合（云端优先）" : "仅设备端模式";
     }
     if (badge) {
       badge.className = isOfficial
@@ -2747,9 +2874,13 @@
         : "min-h-11 rounded-lg border-2 border-transparent bg-white px-3 py-2 text-left text-xs font-bold text-ink shadow-xs hover:border-brand/40";
     }
     if (hint) {
-      hint.textContent = song
-        ? "带伴奏翻唱会保留原始立体声文件：云端 PyMSS 分离人声与伴奏，RVC 只转换人声，随后按原时长回混。"
-        : "纯人声模式不会启动伴奏分离，原功能与音质参数保持不变。";
+      hint.textContent = state.lang === "en"
+        ? song
+          ? "Song mode keeps the original stereo track: cloud PyMSS separates vocals and accompaniment, RVC converts only the vocal, then remixes to the original duration."
+          : "Dry-vocal mode skips source separation and keeps the established quality path unchanged."
+        : song
+          ? "带伴奏翻唱会保留原始立体声文件：云端 PyMSS 分离人声与伴奏，RVC 只转换人声，随后按原时长回混。"
+          : "纯人声模式不会启动伴奏分离，原功能与音质参数保持不变。";
     }
   }
 
@@ -4503,10 +4634,13 @@
     setupModelTraining();
   }
 
+  document.addEventListener("postprep:languagechange", applyRvcLanguage);
+
   document.addEventListener("DOMContentLoaded", async () => {
+    state.lang = resolveRvcLanguage();
     loadCustomCollections();
     setupEventListeners();
     await initCatalog();
-    updateStatusDisplay();
+    applyRvcLanguage();
   });
 })();

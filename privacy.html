@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https: http:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https: http:; font-src 'self' data: https:; connect-src 'self' blob: data: https: http:; media-src 'self' blob: data: https: http:; worker-src 'self' blob:; frame-src https:; form-action 'self'">
+  <meta name="google-adsense-account" content="ca-pub-2239449670938714">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2239449670938714" crossorigin="anonymous"></script>
   <meta name="description" content="PostPrep 隐私说明：基础工具在浏览器中本地处理，云端处理经服务端代理与人机验证保护。">
   <title>隐私说明 | PostPrep</title>
   <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260812-skills">
@@ -33,12 +35,13 @@
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.servicesTitle">静态资源与人机验证</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端生成、深度处理、Skills 筛选或公开 GitHub Skill 权限护照时，浏览器会向 Cloudflare Turnstile 请求一次性验证令牌。Skills 筛选与公开 Skill 读取由服务端查询 GitHub 公开 API；为减少公开 API 限流，公开候选或 Skill 元数据可在服务端内存中短时缓存，缓存键不含草稿内容。若启用 AI 排序或深度解释，也只在你主动点击后传递当前文本。当前公开版本不加载第三方广告脚本。</p>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.servicesBody">页面样式、图标和首页图片都使用仓库内置资源。你主动使用云端功能时，浏览器可能请求 Cloudflare Turnstile 验证令牌；Google AdSense 自动广告脚本会在公开页面异步加载。</p>
         <a class="mt-3 inline-block text-sm font-semibold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark" href="https://www.cloudflare.com/turnstile-privacy-policy/" target="_blank" rel="noopener noreferrer" data-i18n="privacy.turnstilePolicy">查看 Cloudflare Turnstile 隐私说明</a>
       </section>
       <section class="py-8">
-        <h2 class="text-xl font-black" data-i18n="privacy.adsTitle">第三方代码</h2>
-        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.adsBody">当前公开版本不加载广告、统计或其他任意第三方脚本。云端处理只会访问配置的服务端代理和 Cloudflare Turnstile；你主动发起 Skills 筛选或公开 Skill 护照时，服务端还会查询 GitHub 公开 API。若未来启用新的第三方服务，会先完成代码审查并更新本说明与安全策略。</p>
+        <h2 class="text-xl font-black" data-i18n="privacy.adsTitle">广告与第三方代码</h2>
+        <p class="mt-3 text-sm leading-7 text-muted" data-i18n="privacy.adsBody">公开页面使用 Google AdSense 自动广告。Google 及其广告技术合作伙伴可能请求设备信息、IP 地址，使用 Cookie 或本地存储，并依据地区、同意状态和广告设置投放广告。广告不会读取 PostPrep 输入框中的草稿或音频内容。</p>
+        <a class="mt-3 inline-block text-sm font-semibold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark" href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" data-i18n="privacy.googleAdsPolicy">查看 Google 广告与 Cookie 说明</a>
       </section>
       <section class="py-8">
         <h2 class="text-xl font-black" data-i18n="privacy.controlTitle">你的选择</h2>
@@ -50,6 +53,6 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js"></script>
-  <script src="assets/postprep.js?v=20260812-trust-passport"></script>
+  <script src="assets/postprep.js?v=20260826-adsense-language"></script>
 </body>
 </html>

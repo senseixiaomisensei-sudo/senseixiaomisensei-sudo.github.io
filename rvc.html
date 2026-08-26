@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self' blob: data: http: https: https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://testingcf.jsdelivr.net https://gcore.jsdelivr.net https://*.jsdelivr.net https://cdn.jsdmirror.com https://gh-proxy.com https://raw.githubusercontent.com https://huggingface.co https://*.hf.co https://postprep-text-gateway.postprep.workers.dev; media-src 'self' blob: data: https://postprep-text-gateway.postprep.workers.dev https://postprep-ae6.pages.dev; worker-src 'self' blob:; frame-src 'none'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https: http:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https: http:; font-src 'self' data: https:; connect-src 'self' blob: data: https: http:; media-src 'self' blob: data: https: http: https://postprep-text-gateway.postprep.workers.dev https://postprep-ae6.pages.dev; worker-src 'self' blob:; frame-src https:; form-action 'self'">
+  <meta name="google-adsense-account" content="ca-pub-2239449670938714">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2239449670938714" crossorigin="anonymous"></script>
   <meta name="description" content="PostPrep AI 变声器：选择角色声音，上传或录制一段声音，一键变成角色音色。RVC 声音转换，简单三步。">
   <meta name="theme-color" content="#0F766E">
   <title>AI 变声器 | PostPrep</title>
@@ -22,7 +24,7 @@
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
         <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-              <i class="fa-solid fa-circle-check text-emerald-600"></i>版本 V1（分区导航 + 伴奏翻唱）
+              <i class="fa-solid fa-circle-check text-emerald-600"></i><span data-rvc-i18n="versionLabel">版本 V1（分区导航 + 伴奏翻唱）</span>
         </span>
       </div>
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
@@ -53,7 +55,7 @@
           <div class="flex items-center justify-between gap-2">
             <div>
               <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">INFERENCE MODE</p>
-              <h3 class="mt-1 text-base font-black text-ink">选择变声模式</h3>
+              <h3 class="mt-1 text-base font-black text-ink" data-rvc-i18n="modeTitle">选择变声模式</h3>
             </div>
             <span id="rvc-mode-badge" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
               <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i><span id="rvc-mode-badge-text">智能混合（云端优先）</span>
@@ -65,36 +67,36 @@
             <button id="rvc-mode-official" type="button" class="flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-4 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="true" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
-                  <i class="fa-solid fa-fire text-amber-500"></i>智能混合模式 <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">推荐</span>
+                  <i class="fa-solid fa-fire text-amber-500"></i><span data-rvc-i18n="modeOfficialTitle">智能混合模式</span> <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800" data-rvc-i18n="modeRecommended">推荐</span>
                 </span>
                 <i id="rvc-mode-official-check" class="fa-solid fa-circle-check text-brand text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted">电脑在线时优先使用高质量 PyTorch RVC；电脑离线或隧道中断时，纯人声自动改由当前用户设备分段处理。带伴奏翻唱仍使用云端 GPU。</p>
+              <p class="mt-2 text-xs leading-5 text-muted" data-rvc-i18n="modeOfficialHint">电脑在线时优先使用高质量 PyTorch RVC；电脑离线或隧道中断时，纯人声自动改由当前用户设备分段处理。带伴奏翻唱仍使用云端 GPU。</p>
             </button>
 
             <!-- 模式 2: 极速免上传模式 -->
             <button id="rvc-mode-local" type="button" class="flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-4 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="false" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
-                  <i class="fa-solid fa-bolt text-teal-600"></i>仅设备端模式 <span class="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800">免上传</span>
+                  <i class="fa-solid fa-bolt text-teal-600"></i><span data-rvc-i18n="modeLocalTitle">仅设备端模式</span> <span class="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800" data-rvc-i18n="modeNoUpload">免上传</span>
                 </span>
                 <i id="rvc-mode-local-check" class="fa-regular fa-circle text-zinc-300 text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted">纯浏览器 WebAssembly 推理，音频不上传。云端不可达时，纯人声会自动切换到用户设备端分段处理；请保持页面在前台。带伴奏翻唱仍需要云端 GPU。</p>
+              <p class="mt-2 text-xs leading-5 text-muted" data-rvc-i18n="modeLocalHint">纯浏览器 WebAssembly 推理，音频不上传。云端不可达时，纯人声会自动切换到用户设备端分段处理；请保持页面在前台。带伴奏翻唱仍需要云端 GPU。</p>
             </button>
           </div>
 
           <!-- 本地闪存预热与高级设置（免配置，进阶可折叠） -->
           <div id="rvc-local-prewarm-wrap" class="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3 text-xs text-muted">
             <span id="rvc-cache-status" class="flex items-center gap-1.5 font-medium">
-                <i class="fa-solid fa-circle-info text-sky-500"></i>设备端使用浏览器缓存；智能混合模式优先使用受保护的 GPU 服务
+                <i class="fa-solid fa-circle-info text-sky-500"></i><span data-rvc-i18n="cacheDefault">设备端使用浏览器缓存；智能混合模式优先使用受保护的 GPU 服务</span>
             </span>
             <div class="flex items-center gap-2">
               <button id="rvc-preload-btn" type="button" class="inline-flex items-center gap-1 rounded bg-teal-50 px-2 py-0.5 font-bold text-brand hover:bg-teal-100">
-                <i class="fa-solid fa-cloud-arrow-down"></i><span>一键预热闪存</span>
+                <i class="fa-solid fa-cloud-arrow-down"></i><span data-rvc-i18n="preload">一键预热闪存</span>
               </button>
               <button id="rvc-clear-cache-btn" type="button" class="hidden inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-zinc-600 hover:bg-zinc-200">
-                <i class="fa-solid fa-trash-can"></i><span>清理缓存</span>
+                <i class="fa-solid fa-trash-can"></i><span data-rvc-i18n="clearCache">清理缓存</span>
               </button>
             </div>
           </div>
@@ -122,16 +124,16 @@
             <div class="flex items-center gap-2">
               <div id="rvc-collection-nav" class="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1" role="tablist" aria-label="角色分区"></div>
               <button id="rvc-create-collection" type="button" class="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border border-brand bg-white px-3 py-2 text-xs font-black text-brand shadow-xs transition hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
-                <i class="fa-solid fa-folder-plus" aria-hidden="true"></i><span>创建分区</span>
+                <i class="fa-solid fa-folder-plus" aria-hidden="true"></i><span data-rvc-i18n="createCollection">创建分区</span>
               </button>
             </div>
             <div id="rvc-create-collection-form" class="mt-3 hidden grid gap-2 rounded-lg border border-brand/30 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
               <label class="min-w-0">
                 <span class="sr-only">新分区名称</span>
-                <input id="rvc-create-collection-name" type="text" maxlength="30" autocomplete="off" placeholder="例如：我的动漫角色" class="min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
+                <input id="rvc-create-collection-name" type="text" maxlength="30" autocomplete="off" data-rvc-i18n-placeholder="collectionPlaceholder" placeholder="例如：我的动漫角色" class="min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm focus:border-brand focus:ring-brand">
               </label>
-              <button id="rvc-create-collection-save" type="button" class="min-h-10 rounded-lg bg-brand px-4 py-2 text-xs font-black text-white hover:bg-brandDark">保存分区</button>
-              <button id="rvc-create-collection-cancel" type="button" class="min-h-10 rounded-lg border border-line bg-white px-4 py-2 text-xs font-black text-muted hover:border-brand hover:text-brand">取消</button>
+              <button id="rvc-create-collection-save" type="button" class="min-h-10 rounded-lg bg-brand px-4 py-2 text-xs font-black text-white hover:bg-brandDark" data-rvc-i18n="saveCollection">保存分区</button>
+              <button id="rvc-create-collection-cancel" type="button" class="min-h-10 rounded-lg border border-line bg-white px-4 py-2 text-xs font-black text-muted hover:border-brand hover:text-brand" data-rvc-i18n="cancel">取消</button>
             </div>
           </div>
           <div id="rvc-model-gallery" class="mt-4 max-h-[32rem] space-y-4 overflow-y-auto pr-1" role="listbox" aria-labelledby="rvc-step-model-label"></div>
@@ -139,8 +141,8 @@
           <div id="rvc-trained-models-section" class="mt-5 hidden rounded-xl border border-violet-200 bg-violet-50/50 p-4">
             <div class="flex flex-wrap items-end justify-between gap-2">
               <div>
-                <p id="rvc-trained-models-title" class="text-sm font-black text-ink">🎓 训练完成的模型</p>
-                <p class="mt-1 text-xs leading-5 text-muted">这些模型由下方训练功能生成，可在训练前填写自己的区域名称；点击后继续使用原有云端 RVC 变声流程。</p>
+                <p id="rvc-trained-models-title" class="text-sm font-black text-ink" data-rvc-i18n="trainedTitle">🎓 训练完成的模型</p>
+                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="trainedHint">这些模型由下方训练功能生成，可在训练前填写自己的区域名称；点击后继续使用原有云端 RVC 变声流程。</p>
               </div>
               <span id="rvc-trained-models-count" class="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-violet-700"></span>
             </div>
@@ -151,12 +153,12 @@
           <div class="mt-4 rounded-xl border border-dashed border-brand/40 bg-teal-50/50 p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
-                <p class="text-sm font-black text-ink">🎓 导入我自己的模型</p>
+                <p class="text-sm font-black text-ink" data-rvc-i18n="ownModelTitle">🎓 导入我自己的模型</p>
                 <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="ownModelHint">上传你本地训练/转换好的 <span class="font-bold text-brand">.onnx</span> 角色模型（参考 <code class="rounded bg-zinc-100 px-1 text-[11px]">tools/</code> 转换脚本）。仅供你本机使用，不发布给他人，也不会上传。</p>
                 <p id="rvc-own-model-status" class="mt-1.5 hidden text-xs font-bold text-emerald-700" role="status" aria-live="polite"></p>
               </div>
               <label class="inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-brand bg-white px-3.5 py-2 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
-                <i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i><span>选择 .onnx 文件</span>
+                <i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i><span data-rvc-i18n="chooseOnnx">选择 .onnx 文件</span>
                 <input id="rvc-own-model-file" type="file" accept=".onnx,application/onnx" class="sr-only">
               </label>
             </div>
@@ -215,20 +217,20 @@
               <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceRecordHint">直接用麦克风录一段，录完自动可用。</span>
             </button>
             <button id="rvc-source-tts" type="button" class="min-h-24 rounded-lg border border-line bg-white p-4 text-left transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="false">
-              <span class="flex items-center gap-3"><i class="fa-solid fa-language text-fuchsia-700" aria-hidden="true"></i><span class="font-black">文本朗读</span></span>
-              <span class="mt-2 block text-xs leading-5 text-muted">输入一段文字，自动使用可用的 TTS 服务生成朗读，再转换为当前角色。</span>
+              <span class="flex items-center gap-3"><i class="fa-solid fa-language text-fuchsia-700" aria-hidden="true"></i><span class="font-black" data-rvc-i18n="sourceTts">文本朗读</span></span>
+              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceTtsHint">输入一段文字，自动使用可用的 TTS 服务生成朗读，再转换为当前角色。</span>
             </button>
           </div>
           <div class="mt-4 rounded-xl border border-line bg-zinc-50/70 p-3">
-            <p class="text-xs font-black text-ink">音频内容</p>
+            <p class="text-xs font-black text-ink" data-rvc-i18n="audioContent">音频内容</p>
             <div class="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="音频内容类型">
               <button id="rvc-audio-mode-voice" type="button" role="radio" aria-checked="true" class="min-h-11 rounded-lg border-2 border-brand bg-teal-50 px-3 py-2 text-left text-xs font-bold text-ink shadow-xs">
-                <span class="block">纯人声（默认）</span>
-                <span class="mt-1 block font-medium leading-5 text-muted">沿用原有稳定链路，上传更省流量。</span>
+                <span class="block" data-rvc-i18n="voiceOnly">纯人声（默认）</span>
+                <span class="mt-1 block font-medium leading-5 text-muted" data-rvc-i18n="voiceOnlyHint">沿用原有稳定链路，上传更省流量。</span>
               </button>
               <button id="rvc-audio-mode-song" type="button" role="radio" aria-checked="false" class="min-h-11 rounded-lg border-2 border-transparent bg-white px-3 py-2 text-left text-xs font-bold text-ink shadow-xs hover:border-brand/40">
-                <span class="block">带伴奏翻唱</span>
-                <span class="mt-1 block font-medium leading-5 text-muted">云端先分离人声，只变人声，再与原伴奏回混。</span>
+                <span class="block" data-rvc-i18n="songMode">带伴奏翻唱</span>
+                <span class="mt-1 block font-medium leading-5 text-muted" data-rvc-i18n="songModeHint">云端先分离人声，只变人声，再与原伴奏回混。</span>
               </button>
             </div>
             <p id="rvc-audio-mode-hint" class="mt-2 text-xs leading-5 text-muted">纯人声模式不会启动伴奏分离，原功能与音质参数保持不变。</p>
@@ -257,15 +259,15 @@
                 class="min-h-9 w-full rounded-lg border border-line bg-white px-3 py-1.5 text-xs text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand sm:w-64">
               <span class="text-[11px] leading-4 text-muted">同一 Wi-Fi 下，其他设备一般会自动连上；连不上时手动填服务地址再试</span>
             </div>
-            <textarea id="rvc-tts-text" rows="3" maxlength="800" placeholder="在这里输入你想让角色朗读的文字…（最多 800 字）" class="mt-3 w-full resize-y rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand"></textarea>
+            <textarea id="rvc-tts-text" rows="3" maxlength="800" data-rvc-i18n-placeholder="ttsTextPlaceholder" placeholder="在这里输入你想让角色朗读的文字…（最多 800 字）" class="mt-3 w-full resize-y rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand"></textarea>
             <div class="mt-3 flex flex-wrap items-center gap-3">
               <button id="rvc-tts-synth" type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand bg-white px-5 py-2.5 text-sm font-bold text-brand shadow-sm transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>合成朗读（中性）</span>
+                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span data-rvc-i18n="ttsSynth">合成朗读（中性）</span>
               </button>
               <button id="rvc-tts-convert" type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-                <i class="fa-solid fa-radio" aria-hidden="true"></i><span>用当前角色朗读</span>
+                <i class="fa-solid fa-radio" aria-hidden="true"></i><span data-rvc-i18n="ttsConvert">用当前角色朗读</span>
               </button>
-              <span id="rvc-tts-status" class="text-xs leading-5 text-muted" role="status" aria-live="polite">选角色 → 输文字 → 角色朗读。</span>
+              <span id="rvc-tts-status" class="text-xs leading-5 text-muted" role="status" aria-live="polite" data-rvc-i18n="ttsIdle">选角色 → 输文字 → 角色朗读。</span>
             </div>
             <div id="rvc-tts-result" class="mt-3 hidden">
               <audio id="rvc-tts-preview" class="w-full" controls preload="metadata"></audio>
@@ -409,7 +411,7 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
-  <script src="assets/postprep.js?v=20260820-v10"></script>
-  <script src="assets/rvc.js?v=20260826-long-audio-r3"></script>
+  <script src="assets/postprep.js?v=20260826-adsense-language"></script>
+  <script src="assets/rvc.js?v=20260826-adsense-language-r4"></script>
 </body>
 </html>

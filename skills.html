@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://postprep-text-gateway.postprep.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https: http:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https: http:; font-src 'self' data: https:; connect-src 'self' blob: data: https: http:; media-src 'self' blob: data: https: http:; worker-src 'self' blob:; frame-src https:; form-action 'self'">
+  <meta name="google-adsense-account" content="ca-pub-2239449670938714">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2239449670938714" crossorigin="anonymous"></script>
   <meta name="description" content="PostPrep Skills 中心：下载原创开源 Skills、本机预览，以及基于 GitHub 公开数据的高星 Skill 发现。">
   <meta name="theme-color" content="#0F766E">
   <title>Skills 中心 | PostPrep</title>
@@ -118,6 +120,6 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js"></script>
-  <script src="assets/postprep.js?v=20260812-trust-passport"></script>
+  <script src="assets/postprep.js?v=20260826-adsense-language"></script>
 </body>
 </html>
