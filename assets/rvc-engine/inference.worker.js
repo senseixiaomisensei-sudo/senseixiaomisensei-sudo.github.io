@@ -8560,6 +8560,88 @@ async function processAudioInChunks(audio, processor, config = {}, onProgress) {
   }
   return mergeProcessedChunks(processedChunks, config);
 }
+function stabilizeAnalysisWindowBoundary(
+  currentFeatures,
+  currentPitch,
+  previousFeatures,
+  previousPitch,
+  stepFrames,
+  overlapFrames
+) {
+  if (!previousFeatures || !previousPitch || overlapFrames <= 0) {
+    return { features: currentFeatures, pitch: currentPitch };
+  }
+
+  let features = currentFeatures;
+  const featureSize = currentFeatures.featureSize;
+  if (
+    featureSize > 0 &&
+    featureSize === previousFeatures.featureSize &&
+    currentFeatures.hiddenStates instanceof Float32Array &&
+    previousFeatures.hiddenStates instanceof Float32Array
+  ) {
+    const availablePreviousFrames = Math.max(0, previousFeatures.upsampledFrameCount - stepFrames);
+    const featureOverlap = Math.min(
+      overlapFrames,
+      currentFeatures.upsampledFrameCount,
+      availablePreviousFrames
+    );
+    if (featureOverlap > 0) {
+      const hiddenStates = new Float32Array(currentFeatures.hiddenStates);
+      for (let frame = 0; frame < featureOverlap; frame++) {
+        const incoming = (frame + 1) / (featureOverlap + 1);
+        const previousOffset = (stepFrames + frame) * featureSize;
+        const currentOffset = frame * featureSize;
+        for (let dimension = 0; dimension < featureSize; dimension++) {
+          hiddenStates[currentOffset + dimension] =
+            previousFeatures.hiddenStates[previousOffset + dimension] * (1 - incoming) +
+            hiddenStates[currentOffset + dimension] * incoming;
+        }
+      }
+      features = { ...currentFeatures, hiddenStates };
+    }
+  }
+
+  let pitch = currentPitch;
+  if (currentPitch.f0 instanceof Float32Array && previousPitch.f0 instanceof Float32Array) {
+    const pitchOverlap = Math.min(
+      overlapFrames,
+      currentPitch.f0.length,
+      Math.max(0, previousPitch.f0.length - stepFrames)
+    );
+    if (pitchOverlap > 0) {
+      const f0 = new Float32Array(currentPitch.f0);
+      let firstCurrentVoiced = -1;
+      for (let frame = 0; frame < pitchOverlap; frame++) {
+        if (f0[frame] > 0) {
+          firstCurrentVoiced = frame;
+          break;
+        }
+      }
+      for (let frame = 0; frame < pitchOverlap; frame++) {
+        const previousHz = previousPitch.f0[stepFrames + frame] || 0;
+        const currentHz = f0[frame] || 0;
+        if (previousHz > 0 && currentHz > 0) {
+          const incoming = (frame + 1) / (pitchOverlap + 1);
+          f0[frame] = previousHz * (1 - incoming) + currentHz * incoming;
+        } else if (
+          previousHz > 0 &&
+          currentHz <= 0 &&
+          firstCurrentVoiced > frame &&
+          firstCurrentVoiced <= 3
+        ) {
+          // RMVPE can drop the first one to three frames of a sustained note
+          // when a fixed model window starts mid-vowel. Bridge only that short
+          // leading gap; genuine pauses and consonants remain unvoiced.
+          f0[frame] = previousHz;
+        }
+      }
+      pitch = { ...currentPitch, f0 };
+    }
+  }
+
+  return { features, pitch };
+}
 // The currently shipped browser ONNX voices were traced at 100 phone frames.
 // Their attention graph advertises a dynamic axis but contains a fixed Reshape;
 // feeding a longer mobile clip therefore fails inside OrtRun. Process one exact
@@ -8802,18 +8884,40 @@ async function extractHubertFeatures(audio, options) {
   const session = options.contentVec instanceof File ? await loadContentVecModel(options.contentVec, options.onModelProgress) : options.contentVec;
   return await runContentVecInference(session, processed);
 }
-const DEFAULT_BACKENDS = ["wasm"];
+function preferredInferenceBackends(runtimeNavigator = typeof navigator !== "undefined" ? navigator : null) {
+  return runtimeNavigator?.gpu && typeof runtimeNavigator.gpu.requestAdapter === "function"
+    ? ["webgpu", "wasm"]
+    : ["wasm"];
+}
+async function resolveInferenceBackends(
+  runtimeNavigator = typeof navigator !== "undefined" ? navigator : null,
+  runtimeEnvironment = typeof ne !== "undefined" ? ne : null
+) {
+  if (preferredInferenceBackends(runtimeNavigator)[0] !== "webgpu") return ["wasm"];
+  try {
+    const adapter = await runtimeNavigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+    if (!adapter) return ["wasm"];
+    if (runtimeEnvironment?.webgpu) runtimeEnvironment.webgpu.adapter = adapter;
+    return ["webgpu", "wasm"];
+  } catch {
+    return ["wasm"];
+  }
+}
+const DEFAULT_BACKENDS = preferredInferenceBackends();
 async function createSessionFromOnnxBuffer(onnxBuffer, options = {}) {
   const backends = normalizeBackends(options.preferredBackends);
   const sessionOptions = options.sessionOptions;
   let lastCause;
-  for (const backend of backends) {
+  const providerPlans = backends.includes("webgpu")
+    ? [backends, ["wasm"]]
+    : [backends];
+  for (const providers of providerPlans) {
     try {
       const session = await qu.create(onnxBuffer, {
         ...sessionOptions,
-        executionProviders: [backend]
+        executionProviders: providers
       });
-      return { session, backend };
+      return { session, backend: providers[0] };
     } catch (cause) {
       lastCause = cause; console.error("[worker-session-fail]", String(cause && cause.message || cause));
     }
@@ -13400,11 +13504,13 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     const { onnxBuffer, metaData } = await prepareModel(modelBuffer);
     ctx.onnxBuffer = onnxBuffer;
     ctx.modelMetaData = metaData;
-    const [rvcSession, contentVecBuffer, rmvpeBuffer] = await Promise.all([
-      createSessionFromOnnxBuffer(onnxBuffer).then((r) => r.session),
+    const generatorBackends = await resolveInferenceBackends();
+    const [rvcSessionResult, contentVecBuffer, rmvpeBuffer] = await Promise.all([
+      createSessionFromOnnxBuffer(onnxBuffer, { preferredBackends: generatorBackends }),
       files.contentVec instanceof ArrayBuffer ? files.contentVec : files.contentVec.arrayBuffer(),
       files.rmvpe instanceof ArrayBuffer ? files.rmvpe : files.rmvpe.arrayBuffer()
     ]);
+    const rvcSession = rvcSessionResult.session;
     const [contentVecSession, rmvpeSession] = await Promise.all([
       qu.create(contentVecBuffer, {
         executionProviders: ["wasm"],
@@ -13427,29 +13533,53 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       }
     }
     ctx.modelSession = rvcSession;
-    ctx.backend = "wasm";
+    ctx.backend = rvcSessionResult.backend;
+    consoleProxy.log(`[Worker] Generator execution provider: ${ctx.backend}`);
     emitStage(PIPELINE_STAGES[2]);
     const chunkingConfig = {
       inputSampleRate: options.inputSampleRate ?? 16e3,
       outputSampleRate: options.outputSampleRate ?? 40e3,
       frameCount: 100,
+      crossfadeDuration: 0.05,
       lookAheadDuration: 0.04
     };
+    const stepFrames = Math.max(
+      1,
+      chunkingConfig.frameCount - Math.round(chunkingConfig.crossfadeDuration * 100)
+    );
+    const analysisOverlapFrames = Math.max(
+      1,
+      Math.round((chunkingConfig.crossfadeDuration + chunkingConfig.lookAheadDuration) * 100)
+    );
+    let previousFeatures = null;
+    let previousPitch = null;
     let detectedSampleRate;
     const outputAudio = await processAudioInFixedFrameWindows(
       audio,
       async (chunk, currentChunk, totalChunks) => {
         callbacks.onEvent?.({ type: "chunk_step", step: "feature", current: currentChunk, total: totalChunks });
-        const features = await extractHubertFeatures(chunk.data, {
+        const rawFeatures = await extractHubertFeatures(chunk.data, {
           contentVec: contentVecSession
         });
         callbacks.onEvent?.({ type: "chunk_step", step: "pitch", current: currentChunk, total: totalChunks });
-        const pitch = await estimatePitch(chunk.data, {
+        const rawPitch = await estimatePitch(chunk.data, {
           rmvpe: rmvpeSession,
           medianFilter: options.medianFilter,
           medianFilterWindow: options.medianFilterWindow,
           aggressiveMedianFilter: options.aggressiveMedianFilter
         });
+        const stabilized = stabilizeAnalysisWindowBoundary(
+          rawFeatures,
+          rawPitch,
+          previousFeatures,
+          previousPitch,
+          stepFrames,
+          analysisOverlapFrames
+        );
+        const features = stabilized.features;
+        const pitch = stabilized.pitch;
+        previousFeatures = features;
+        previousPitch = pitch;
         const retrievedFeatures = applyRetrievalCodebook(
           features,
           pitch.f0,

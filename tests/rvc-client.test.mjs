@@ -122,7 +122,9 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   // former /rvc* wildcard for /rvc.html.
   const rvcRule = headersFile.split(/\r?\n/u).findIndex((line) => line.trim() === "/rvc.html");
   assert.ok(rvcRule >= 0);
-  const rvcBlock = headersFile.split(/\r?\n/u).slice(rvcRule, rvcRule + 6).join("\n");
+  const rvcBlock = headersFile.split(/\r?\n/u).slice(rvcRule, rvcRule + 9).join("\n");
+  assert.match(rvcBlock, /Cross-Origin-Opener-Policy: same-origin/u);
+  assert.match(rvcBlock, /Cross-Origin-Embedder-Policy: credentialless/u);
   assert.match(rvcBlock, /microphone=\(self\)/);
   assert.match(rvcBlock, /media-src 'self' blob:/);
   assert.match(headersFile.split(/\r?\n/u).slice(0, 7).join("\n"), /media-src 'self' blob:/);

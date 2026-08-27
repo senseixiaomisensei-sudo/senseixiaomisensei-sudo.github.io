@@ -6,6 +6,8 @@
   X-Frame-Options: DENY
 
 /rvc.html
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https: http:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https: http:; font-src 'self' data: https:; connect-src 'self' blob: data: https: http:; media-src 'self' blob: data: https: http: https://postprep-text-gateway.postprep.workers.dev https://postprep-ae6.pages.dev; worker-src 'self' blob:; frame-src https:; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

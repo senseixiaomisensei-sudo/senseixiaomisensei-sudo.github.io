@@ -21,6 +21,18 @@ const processFixedWindows = Function(
   `"use strict"; return (${extractFunction("processAudioInFixedFrameWindows")});`,
 )();
 
+const stabilizeAnalysisBoundary = Function(
+  `"use strict"; return (${extractFunction("stabilizeAnalysisWindowBoundary")});`,
+)();
+
+const preferredInferenceBackends = Function(
+  `"use strict"; return (${extractFunction("preferredInferenceBackends")});`,
+)();
+
+const resolveInferenceBackends = Function(
+  `"use strict"; const preferredInferenceBackends = arguments[0]; return (${extractFunction("resolveInferenceBackends")});`,
+)(preferredInferenceBackends);
+
 const suppressHarshBursts = Function(`
   "use strict";
   ${extractFunction("createBiquadLowpass")}
@@ -61,6 +73,77 @@ test("fixed browser RVC windows smooth a discontinuity at each one-second bounda
   const firstJoin = 38_000;
   assert.ok(Math.abs(output[firstJoin] - output[firstJoin - 1]) < 0.01);
   assert.ok(output[firstJoin] > -1 && output[firstJoin] < 1);
+});
+
+test("local RVC prefers WebGPU only when the browser exposes it and keeps WASM fallback", () => {
+  assert.deepEqual(preferredInferenceBackends({ gpu: { requestAdapter() {} } }), ["webgpu", "wasm"]);
+  assert.deepEqual(preferredInferenceBackends({}), ["wasm"]);
+  assert.deepEqual(preferredInferenceBackends(null), ["wasm"]);
+});
+
+test("local RVC verifies a GPU adapter before selecting WebGPU", async () => {
+  const runtimeEnvironment = { webgpu: {} };
+  const adapter = { name: "test-adapter" };
+  assert.deepEqual(
+    await resolveInferenceBackends({ gpu: { requestAdapter: async () => adapter } }, runtimeEnvironment),
+    ["webgpu", "wasm"],
+  );
+  assert.equal(runtimeEnvironment.webgpu.adapter, adapter);
+  assert.deepEqual(
+    await resolveInferenceBackends({ gpu: { requestAdapter: async () => null } }, { webgpu: {} }),
+    ["wasm"],
+  );
+});
+
+test("fixed-window analysis blends matching overlap frames and preserves the rest", () => {
+  const previousFeatures = {
+    hiddenStates: Float32Array.from({ length: 16 }, (_, index) => index),
+    upsampledFrameCount: 8,
+    featureSize: 2,
+  };
+  const currentFeatures = {
+    hiddenStates: new Float32Array(16).fill(100),
+    upsampledFrameCount: 8,
+    featureSize: 2,
+  };
+  const previousPitch = { f0: Float32Array.from([100, 100, 100, 100, 100, 200, 210, 220]), frameCount: 8 };
+  const currentPitch = { f0: Float32Array.from([0, 0, 230, 240, 250, 260, 270, 280]), frameCount: 8 };
+
+  const stabilized = stabilizeAnalysisBoundary(
+    currentFeatures,
+    currentPitch,
+    previousFeatures,
+    previousPitch,
+    5,
+    3,
+  );
+
+  assert.notEqual(stabilized.features.hiddenStates, currentFeatures.hiddenStates);
+  assert.ok(stabilized.features.hiddenStates[0] > previousFeatures.hiddenStates[10]);
+  assert.ok(stabilized.features.hiddenStates[0] < 100);
+  assert.equal(stabilized.features.hiddenStates[6], 100);
+  assert.deepEqual(Array.from(stabilized.pitch.f0.slice(0, 4)), [200, 210, 227.5, 240]);
+  assert.equal(stabilized.pitch.f0[4], 250);
+  assert.deepEqual(Array.from(currentPitch.f0.slice(0, 4)), [0, 0, 230, 240]);
+});
+
+test("fixed-window pitch continuity does not turn a genuine pause into a held note", () => {
+  const features = {
+    hiddenStates: new Float32Array(8),
+    upsampledFrameCount: 4,
+    featureSize: 2,
+  };
+  const previousPitch = { f0: Float32Array.from([180, 180, 180, 180]), frameCount: 4 };
+  const currentPitch = { f0: new Float32Array(4), frameCount: 4 };
+  const stabilized = stabilizeAnalysisBoundary(
+    features,
+    currentPitch,
+    features,
+    previousPitch,
+    2,
+    2,
+  );
+  assert.deepEqual(Array.from(stabilized.pitch.f0), [0, 0, 0, 0]);
 });
 
 test("local harsh-burst guard leaves normal audio untouched and suppresses a detected burst", () => {

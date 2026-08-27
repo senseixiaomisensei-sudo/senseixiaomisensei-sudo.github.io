@@ -43,6 +43,5 @@ test("RVC follows the shared language event and localizes its own controls", asy
   assert.match(source, /querySelectorAll\("\[data-rvc-i18n-placeholder\]"\)/u);
   assert.match(html, /data-rvc-i18n="modeOfficialTitle"/u);
   assert.match(html, /data-rvc-i18n="sourceTts"/u);
-  assert.match(html, /assets\/rvc\.js\?v=20260826-adsense-language-r4/u);
+  assert.match(html, /assets\/rvc\.js\?v=20260827-local-rvc-v5/u);
 });
-
