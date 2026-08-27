@@ -5,6 +5,10 @@
   Permissions-Policy: camera=(), microphone=(self), geolocation=()
   X-Frame-Options: DENY
 
+/rvc
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless
+
 /rvc.html
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: credentialless
