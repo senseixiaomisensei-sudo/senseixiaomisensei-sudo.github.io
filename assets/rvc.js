@@ -11,7 +11,7 @@
   // It is intentionally limited to a short clip so mobile WebViews cannot sit
   // for minutes and then fail inside a dynamic-shape ONNX node.
   const LOCAL_MAX_AUDIO_SECONDS = 20;
-  const DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 300;
+  const DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 1200;
   const CLOUD_STATUS_TIMEOUT_MS = 15000;
   const CLOUD_MODELS_TIMEOUT_MS = 20000;
   const CLOUD_STATUS_ATTEMPTS = 2;
@@ -135,7 +135,7 @@
       modelInstalled: "已就绪",
       modelPick: "已选择",
       stepAudio: "2. 上传或录制你的声音",
-      stepAudioHint: "云端模式支持最长 10 分钟；文件需在 25 MB 内，超长歌曲优先使用 MP3/M4A。",
+      stepAudioHint: "本地公开角色支持最长 20 分钟纯人声；云端模式最长 10 分钟。文件需在 25 MB 内；长音频优先使用 MP3/M4A，本地请保持页面前台并预留内存。",
       sourceUpload: "上传音频",
       sourceUploadHint: "选择电脑或手机里已有的录音文件。",
       sourceRecord: "录制声音",
@@ -187,7 +187,7 @@
       fileTooLarge: "文件超过大小限制 (25 MB)。",
       audioTooShort: "音频太短（不足 0.5 秒），请换一段更长的录音。",
       audioShortWarn: "音频不足 2 秒，建议使用稍长的句子获得更自然效果。",
-      audioTooLong: "音频超过 10 分钟。请裁剪后再转换。",
+      audioTooLong: "超过当前模式上限：本地公开角色 20 分钟，云端 10 分钟，导入模型 20 秒。请切换模式或裁剪。",
       decodeFailed: "无法解码此音频文件。请换成标准 WAV 或 MP3 重试。",
       missingModel: "请先选择一个角色声音。",
       missingAudio: "请先上传或录制一段你的声音。",
@@ -250,7 +250,7 @@
       modelInstalled: "Ready",
       modelPick: "Selected",
       stepAudio: "2. Upload or record your voice",
-      stepAudioHint: "Cloud mode accepts up to 10 minutes and 25 MB. Prefer MP3/M4A for long songs.",
+      stepAudioHint: "Published on-device voices accept 20 minutes of dry vocals; cloud mode accepts 10 minutes. Files must be under 25 MB. Prefer MP3/M4A; keep the local page in the foreground with enough memory.",
       sourceUpload: "Upload audio",
       sourceUploadHint: "Choose an existing audio file from your device.",
       sourceRecord: "Record voice",
@@ -302,7 +302,7 @@
       fileTooLarge: "File exceeds 25 MB limit.",
       audioTooShort: "Audio is too short (under 0.5s).",
       audioShortWarn: "Audio under 2s may sound robotic. Longer speech is recommended.",
-      audioTooLong: "Audio exceeds 10 minutes. Trim it before conversion.",
+      audioTooLong: "Current limits: 20 minutes for published on-device voices, 10 minutes for cloud, 20 seconds for imported models. Switch modes or trim the audio.",
       decodeFailed: "Could not decode audio. Try converting to standard MP3 or WAV.",
       missingModel: "Pick a character voice first.",
       missingAudio: "Upload or record your voice first.",
@@ -2647,6 +2647,12 @@
     }
 
     const usesBrowserInference = isOwnModel || state.inferenceMode === "local";
+    if (!usesBrowserInference && state.audio.duration > MAX_AUDIO_SECONDS) {
+      if (statusEl) statusEl.textContent = t("audioTooLong");
+      if (convertBtn) convertBtn.disabled = true;
+      if (convertLabel) convertLabel.textContent = t("convert");
+      return;
+    }
     const deviceAudioLimit = isOwnModel ? LOCAL_MAX_AUDIO_SECONDS : DEVICE_FALLBACK_MAX_AUDIO_SECONDS;
     if (usesBrowserInference && state.audio.duration > deviceAudioLimit) {
       if (statusEl) statusEl.textContent = state.lang === "en"
@@ -2658,8 +2664,8 @@
           : `设备端最多处理 ${DEVICE_FALLBACK_MAX_AUDIO_SECONDS / 60} 分钟纯人声；请保持页面前台并确保设备有足够电量与内存。`;
       if (convertBtn) convertBtn.disabled = true;
       if (convertLabel) convertLabel.textContent = state.lang === "en"
-        ? isOwnModel ? "Use a shorter clip" : "Switch to cloud mode"
-        : isOwnModel ? "请使用短音频" : "请切换云端模式";
+        ? "Use a shorter clip"
+        : "请裁剪音频";
       return;
     }
 
@@ -3064,6 +3070,19 @@
     });
   }
 
+  function audioDurationLimit(mode, modelId = "") {
+    if (String(modelId).startsWith("own:")) return LOCAL_MAX_AUDIO_SECONDS;
+    return mode === "local" ? DEVICE_FALLBACK_MAX_AUDIO_SECONDS : MAX_AUDIO_SECONDS;
+  }
+
+  function localInferenceTimeoutMs(duration, allowLong) {
+    if (!allowLong) return 120000;
+    const seconds = Math.max(0, Number(duration) || 0);
+    // Keep short-job deadlines unchanged; long jobs must not hit the old cap.
+    if (seconds <= 300) return Math.min(30 * 60 * 1000, Math.max(180000, Math.ceil(seconds * 6000) + 180000));
+    return Math.min(4 * 60 * 60 * 1000, Math.max(30 * 60 * 1000, Math.ceil(seconds * 10000) + 180000));
+  }
+
   async function handleAudioSelected(file, fallbackDuration = 0) {
     if (!file) return;
     const statusEl = document.getElementById("rvc-audio-status");
@@ -3071,7 +3090,7 @@
 
     try {
       const decoded = await decodeAudioFileTo16kMono(file);
-      if (decoded.duration > MAX_AUDIO_SECONDS) {
+      if (decoded.duration > audioDurationLimit(state.inferenceMode, state.selectedModelId)) {
         state.audio = null;
         if (statusEl) statusEl.textContent = t("audioTooLong");
         showToast(t("audioTooLong"));
@@ -3094,7 +3113,7 @@
     } catch (err) {
       console.error("Audio decode error:", err);
       const safeFallbackDuration = Number(fallbackDuration) || await probeAudioDuration(file);
-      if (safeFallbackDuration > MAX_AUDIO_SECONDS) {
+      if (safeFallbackDuration > audioDurationLimit(state.inferenceMode, state.selectedModelId)) {
         state.audio = null;
         if (statusEl) statusEl.textContent = t("audioTooLong");
         showToast(t("audioTooLong"));
@@ -3423,7 +3442,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260827-v40", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260828-v41", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -3517,9 +3536,7 @@
       // 3. Run Pipeline in Web Worker. Long fallback jobs use the existing
       // fixed-frame worker windows, but receive a duration-aware deadline so
       // a three-minute phone conversion is not killed by the old 120s cap.
-      const localTimeoutMs = allowLong
-        ? Math.min(30 * 60 * 1000, Math.max(180000, Math.ceil((Number(state.audio.duration) || 0) * 6000) + 180000))
-        : 120000;
+      const localTimeoutMs = localInferenceTimeoutMs(state.audio.duration, allowLong);
       updateStatusDisplay(fallback
         ? "📱 云端暂时不可达，正在切换到用户设备端分段推理；请保持页面在前台…"
         : "🚀 [2/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
@@ -3649,6 +3666,11 @@
 
   async function runOfficialRvcInference({ allowDeviceFallback = false } = {}) {
     if (state.busy || !state.audio?.file || !state.selectedModelId) return;
+    if (state.audio.duration > MAX_AUDIO_SECONDS) {
+      updateStatusDisplay(t("audioTooLong"));
+      showToast(t("audioTooLong"));
+      return;
+    }
     const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
     if (!selectedModel) {
       showToast(t("missingModel"));

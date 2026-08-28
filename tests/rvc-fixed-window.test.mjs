@@ -75,6 +75,78 @@ test("fixed browser RVC windows smooth a discontinuity at each one-second bounda
   assert.ok(output[firstJoin] > -1 && output[firstJoin] < 1);
 });
 
+test("long browser RVC windows crop symmetric context without changing the source timeline", async () => {
+  const input = Float32Array.from({ length: 260 }, (_, index) => Math.sin(index / 9));
+  const output = await processFixedWindows(
+    input,
+    async (chunk) => new Float32Array(chunk.data),
+    {
+      inputSampleRate: 100,
+      outputSampleRate: 100,
+      frameCount: 100,
+      contextDuration: 0.10,
+      crossfadeDuration: 0.05,
+      lookAheadDuration: 0,
+    },
+  );
+
+  assert.equal(output.length, input.length);
+  let maximumError = 0;
+  for (let index = 0; index < input.length; index++) {
+    maximumError = Math.max(maximumError, Math.abs(output[index] - input[index]));
+  }
+  assert.ok(maximumError < 1e-6, `context crop changed aligned audio by ${maximumError}`);
+});
+
+test("long browser RVC context removes synthetic window-edge corruption before merging", async () => {
+  const input = new Float32Array(260).fill(0.2);
+  const output = await processFixedWindows(
+    input,
+    async (chunk) => {
+      const processed = new Float32Array(chunk.data.slice(0, 100));
+      processed.fill(1, 0, 10);
+      processed.fill(-1, 90, 100);
+      return processed;
+    },
+    {
+      inputSampleRate: 100,
+      outputSampleRate: 100,
+      frameCount: 100,
+      contextDuration: 0.10,
+      crossfadeDuration: 0.05,
+      lookAheadDuration: 0,
+    },
+  );
+
+  assert.equal(output.length, input.length);
+  assert.ok(Array.from(output).every((sample) => Math.abs(sample - 0.2) < 1e-6));
+});
+
+test("20-minute PCM at real sample rates merges completely without retaining all windows", async () => {
+  const input = new Float32Array(1200 * 16000).fill(0.125);
+  input[input.length - 1] = 0.25;
+  let completed = 0;
+  const output = await processFixedWindows(input, async (chunk) => {
+    completed++;
+    return Float32Array.from({ length: 40000 }, (_, index) => chunk.data[Math.floor(index * 16000 / 40000)]);
+  }, { inputSampleRate: 16000, outputSampleRate: 40000, frameCount: 100, contextDuration: 0.15, crossfadeDuration: 0.05, lookAheadDuration: 0.04 });
+  assert.equal(output.length, 1200 * 40000);
+  assert.ok(completed > 1800);
+  assert.equal(output[0], 0.125);
+  assert.equal(output[output.length - 1], 0.25);
+  assert.ok(output.every(value => Number.isFinite(value) && value >= 0.125 && value <= 0.25));
+  assert.doesNotMatch(extractFunction("processAudioInFixedFrameWindows"), /processedChunks/u);
+});
+
+test("short zero-context windows retain zero padding at the last edge", async () => {
+  let tail;
+  await processFixedWindows(new Float32Array(50).fill(0.2), async (chunk) => {
+    tail = chunk.data;
+    return chunk.data;
+  }, { inputSampleRate: 100, outputSampleRate: 100, frameCount: 100, contextDuration: 0, lookAheadDuration: 0.04 });
+  assert.ok(tail.slice(50).every(value => value === 0));
+});
+
 test("local RVC prefers WebGPU only when the browser exposes it and keeps WASM fallback", () => {
   assert.deepEqual(preferredInferenceBackends({ gpu: { requestAdapter() {} } }), ["webgpu", "wasm"]);
   assert.deepEqual(preferredInferenceBackends({}), ["wasm"]);

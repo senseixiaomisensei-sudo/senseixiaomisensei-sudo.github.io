@@ -137,7 +137,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260827-local-rvc-v5/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260828-local-rvc-v6/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false \} = \{\}\)/u);
   assert.match(client, /function runWebRvcInference\(\{ allowLong = false, fallback = false \} = \{\}\)/u);
@@ -145,7 +145,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /OFFICIAL_RVC_MODELS_ENDPOINT/u);
   assert.match(client, /function officialRoutes\(endpoint\)/u);
   assert.match(client, /convertUrl: base/u);
-  assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 300/u);
+  assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 1200/u);
   assert.match(client, /isDeviceFallbackEligible/u);
   assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
   assert.match(client, /runWebRvcInference\(\{ allowLong: true, fallback: true \}\)/u);
@@ -177,14 +177,14 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260827-v40/u);
+  assert.match(client, /v=20260828-v41/u);
   assert.match(client, /function preferredCloudOutputFormat\(durationSeconds = 0\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
   assert.match(client, /body\.set\("f0Method", "auto"\)/u);
   assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /normalizeCloudAudioBlob\(await outputResponse\.blob\(\), outputFormat\)/u);
-  assert.match(runtime, /v=20260827-v40/u);
+  assert.match(runtime, /v=20260828-v41/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.wasm/u);
@@ -281,6 +281,48 @@ test("seeded synthesis noise is finite and exactly reproducible", () => {
   assert.deepEqual(first, repeat);
   assert.notDeepEqual(first, other);
   assert.equal(first.every(Number.isFinite), true);
+});
+
+test("overlapping browser windows reuse timeline-aligned latent and NSF noise", () => {
+  const counterRandom = evaluateFunction("counterRandom");
+  const timelineGaussian = evaluateFunction(
+    "timelineGaussian",
+    ["counterRandom"],
+    [counterRandom],
+  );
+  class Tensor {
+    constructor(_type, data, dims) {
+      this.data = data;
+      this.dims = dims;
+    }
+  }
+  const buildRndTensor = evaluateFunction(
+    "buildRndTensor",
+    ["Te", "timelineGaussian"],
+    [Tensor, timelineGaussian],
+  );
+  const buildSourceNoiseTensor = evaluateFunction(
+    "buildSourceNoiseTensor",
+    ["Te", "timelineGaussian"],
+    [Tensor, timelineGaussian],
+  );
+
+  const firstLatent = buildRndTensor(100, 12345, 0.35, 0).data;
+  const nextLatent = buildRndTensor(100, 12345, 0.35, 75).data;
+  for (let channel = 0; channel < 192; channel += 1) {
+    for (let frame = 0; frame < 25; frame += 1) {
+      assert.equal(
+        firstLatent[channel * 100 + 75 + frame],
+        nextLatent[channel * 100 + frame],
+      );
+    }
+  }
+
+  const firstSource = buildSourceNoiseTensor(100, 400, 67890, 0).data;
+  const nextSource = buildSourceNoiseTensor(100, 400, 67890, 30_000).data;
+  assert.deepEqual(firstSource.slice(30_000), nextSource.slice(0, 10_000));
+  assert.equal(firstLatent.every(Number.isFinite), true);
+  assert.equal(firstSource.every(Number.isFinite), true);
 });
 
 test("retrieval codebook blends voiced frames and protects unvoiced consonants", () => {

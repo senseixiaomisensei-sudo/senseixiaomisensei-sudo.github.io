@@ -8656,45 +8656,70 @@ async function processAudioInFixedFrameWindows(audio, processor, config = {}, on
     Math.max(0, Math.round((config.crossfadeDuration ?? 0.05) * inputSampleRate)),
     Math.max(0, frameSamples - 1)
   );
-  const stepSamples = Math.max(1, frameSamples - overlapSamples);
+  const contextSamples = Math.min(
+    Math.max(0, Math.round((config.contextDuration ?? 0) * inputSampleRate)),
+    Math.max(0, Math.floor((frameSamples - overlapSamples - 1) / 2))
+  );
+  const coreSamples = Math.max(1, frameSamples - contextSamples * 2);
+  const stepSamples = Math.max(1, coreSamples - overlapSamples);
   const lookAheadSamples = Math.max(0, Math.round((config.lookAheadDuration ?? 0.04) * inputSampleRate));
   const windowSamples = frameSamples + lookAheadSamples;
-  const totalChunks = audio.length <= frameSamples
+  const totalChunks = audio.length <= coreSamples
     ? 1
-    : 1 + Math.ceil((audio.length - frameSamples) / stepSamples);
-  const processedChunks = [];
+    : 1 + Math.ceil((audio.length - coreSamples) / stepSamples);
+  // Merge completed windows immediately instead of retaining a second full
+  // copy of all synthesized PCM, especially for 20-minute local inputs.
+  const targetLength = Math.max(0, Math.round(audio.length * outputSampleRate / inputSampleRate));
+  const outputOverlapSamples = Math.max(0, Math.round(overlapSamples * outputSampleRate / inputSampleRate));
+  const merged = new Float32Array(targetLength);
+  let writeEnd = 0;
 
   for (let index = 0; index < totalChunks; index++) {
     onProgress?.(index + 1, totalChunks);
     const startSample = index * stepSamples;
-    const validInputSamples = Math.max(0, Math.min(frameSamples, audio.length - startSample));
+    const analysisStartSample = startSample - contextSamples;
+    const validInputSamples = Math.max(0, Math.min(coreSamples, audio.length - startSample));
     const window = new Float32Array(windowSamples);
-    window.set(audio.subarray(startSample, Math.min(audio.length, startSample + windowSamples)));
+    const sourceStart = Math.max(0, analysisStartSample);
+    const sourceEnd = Math.min(audio.length, analysisStartSample + windowSamples);
+    if (sourceEnd > sourceStart) {
+      window.set(audio.subarray(sourceStart, sourceEnd), sourceStart - analysisStartSample);
+    }
+    // Official RVC pads both sides before inference and crops that context from
+    // each generated segment. Reflect only the out-of-range edge samples here;
+    // the middle of the window remains a zero-copy slice of the real signal.
+    if (contextSamples > 0 && audio.length > 1 && analysisStartSample < 0) {
+      const leftPadding = Math.min(windowSamples, -analysisStartSample);
+      for (let sample = 0; sample < leftPadding; sample++) {
+        window[sample] = audio[Math.min(audio.length - 1, -analysisStartSample - sample)];
+      }
+    }
+    const analysisEndSample = analysisStartSample + windowSamples;
+    if (contextSamples > 0 && audio.length > 1 && analysisEndSample > audio.length) {
+      const rightPaddingStart = Math.max(0, audio.length - analysisStartSample);
+      for (let sample = rightPaddingStart; sample < windowSamples; sample++) {
+        const distance = analysisStartSample + sample - audio.length + 1;
+        window[sample] = audio[Math.max(0, audio.length - 1 - distance)];
+      }
+    }
     const processed = await processor({
       data: window,
       index,
+      analysisStartSample,
       startTime: startSample / inputSampleRate,
       endTime: Math.min(audio.length, startSample + validInputSamples) / inputSampleRate,
       isFirst: index === 0,
       isLast: index === totalChunks - 1
     }, index + 1, totalChunks);
+    const cropStartSamples = Math.max(
+      0,
+      Math.round(contextSamples * outputSampleRate / inputSampleRate)
+    );
     const validOutputSamples = Math.min(
-      processed.length,
+      Math.max(0, processed.length - cropStartSamples),
       Math.max(1, Math.round(validInputSamples * outputSampleRate / inputSampleRate))
     );
-    const trimmed = processed.slice(0, validOutputSamples);
-    processedChunks.push(trimmed);
-    if (index < totalChunks - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-  }
-
-  const targetLength = Math.max(0, Math.round(audio.length * outputSampleRate / inputSampleRate));
-  const outputOverlapSamples = Math.max(0, Math.round(overlapSamples * outputSampleRate / inputSampleRate));
-  const merged = new Float32Array(targetLength);
-  let writeEnd = 0;
-  for (let index = 0; index < processedChunks.length; index++) {
-    const chunk = processedChunks[index];
+    const chunk = processed.subarray(cropStartSamples, cropStartSamples + validOutputSamples);
     const chunkStart = Math.round(index * stepSamples * outputSampleRate / inputSampleRate);
     const writable = Math.max(0, Math.min(chunk.length, targetLength - chunkStart));
     if (index === 0 || outputOverlapSamples <= 0) {
@@ -8710,6 +8735,9 @@ async function processAudioInFixedFrameWindows(audio, processor, config = {}, on
       }
     }
     writeEnd = Math.max(writeEnd, chunkStart + writable);
+    if (index < totalChunks - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
   }
   return merged;
 }
@@ -12781,8 +12809,18 @@ function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift 
       pitch: buildPitchTensor(shiftedF0, frameCount),
       nsff0: buildNsff0Tensor(shiftedF0, frameCount),
       sid: buildSpeakerTensor(speakerId),
-      rnd: buildRndTensor(frameCount, seed, options.noiseScale ?? 0.5),
-      source_noise: buildSourceNoiseTensor(frameCount, sourceUpp, mixNoiseSeed(seed, 0x534f5552))
+      rnd: buildRndTensor(
+        frameCount,
+        seed,
+        options.noiseScale ?? 0.5,
+        options.noiseFrameOffset ?? null
+      ),
+      source_noise: buildSourceNoiseTensor(
+        frameCount,
+        sourceUpp,
+        mixNoiseSeed(seed, 0x534f5552),
+        options.sourceSampleOffset ?? null
+      )
     };
   } catch (cause) {
     throw new RvcError(
@@ -12874,16 +12912,55 @@ function fillSeededGaussian(data, seed, scale = 1) {
   }
   return data;
 }
-function buildRndTensor(frameCount, seed = 20260821, noiseScale = 0.5) {
+function counterRandom(seed, timelineIndex, stream = 0) {
+  let value = (Number(seed) >>> 0)
+    ^ Math.imul(Number(timelineIndex) | 0, 0x9e3779b1)
+    ^ Math.imul(Number(stream) | 0, 0x85ebca6b);
+  value = Math.imul(value ^ value >>> 16, 0x21f0aaad);
+  value = Math.imul(value ^ value >>> 15, 0x735a2d97);
+  return ((value ^ value >>> 15) >>> 0) / 4294967296;
+}
+function timelineGaussian(seed, timelineIndex, stream = 0) {
+  const u1 = Math.max(1e-7, counterRandom(seed, timelineIndex, stream * 2));
+  const u2 = counterRandom(seed, timelineIndex, stream * 2 + 1);
+  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+function buildRndTensor(frameCount, seed = 20260821, noiseScale = 0.5, frameOffset = null) {
   const size = 1 * 192 * frameCount;
   const data = new Float32Array(size);
-  fillSeededGaussian(data, seed, Math.max(0, Math.min(1, Number(noiseScale))));
+  const scale = Math.max(0, Math.min(1, Number(noiseScale)));
+  if (frameOffset === null) {
+    fillSeededGaussian(data, seed, scale);
+    return new Te("float32", data, [1, 192, frameCount]);
+  }
+  // RVC's latent noise is [channel, phone_frame]. Fixed one-second browser
+  // generators must reuse the same noise for the same absolute frame in every
+  // overlapping window. Reseeding each window changes the timbre/phase at
+  // every join and is heard as a periodic metallic rasp through long audio.
+  for (let channel = 0; channel < 192; channel++) {
+    const channelOffset = channel * frameCount;
+    for (let frame = 0; frame < frameCount; frame++) {
+      data[channelOffset + frame] = timelineGaussian(
+        seed,
+        (Number(frameOffset) | 0) + frame,
+        channel
+      ) * scale;
+    }
+  }
   return new Te("float32", data, [1, 192, frameCount]);
 }
-function buildSourceNoiseTensor(frameCount, sourceUpp = 400, seed = 20260821) {
+function buildSourceNoiseTensor(frameCount, sourceUpp = 400, seed = 20260821, sampleOffset = null) {
   const audioLength = frameCount * Math.max(1, Math.round(sourceUpp));
   const data = new Float32Array(audioLength);
-  fillSeededGaussian(data, seed, 1);
+  if (sampleOffset === null) {
+    fillSeededGaussian(data, seed, 1);
+    return new Te("float32", data, [1, audioLength, 1]);
+  }
+  // The NSF excitation is an audio-rate timeline. Keep overlapping samples
+  // bit-identical instead of restarting a new random sequence per window.
+  for (let sample = 0; sample < audioLength; sample++) {
+    data[sample] = timelineGaussian(seed, (Number(sampleOffset) | 0) + sample, 0);
+  }
   return new Te("float32", data, [1, audioLength, 1]);
 }
 
@@ -13541,15 +13618,18 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       outputSampleRate: options.outputSampleRate ?? 40e3,
       frameCount: 100,
       crossfadeDuration: 0.05,
+      // The fixed browser generators accept only 100 phone frames. For long
+      // audio, reserve 150 ms on both sides as analysis context and crop it
+      // after synthesis. This mirrors official RVC's pad -> infer -> crop path
+      // and prevents the vocoder from restarting directly on every syllable.
+      contextDuration: audio.length > (options.inputSampleRate ?? 16e3) * 20 ? 0.15 : 0,
       lookAheadDuration: 0.04
     };
-    const stepFrames = Math.max(
-      1,
-      chunkingConfig.frameCount - Math.round(chunkingConfig.crossfadeDuration * 100)
-    );
+    const coreFrames = Math.max(1, chunkingConfig.frameCount - Math.round(chunkingConfig.contextDuration * 200));
+    const stepFrames = Math.max(1, coreFrames - Math.round(chunkingConfig.crossfadeDuration * 100));
     const analysisOverlapFrames = Math.max(
       1,
-      Math.round((chunkingConfig.crossfadeDuration + chunkingConfig.lookAheadDuration) * 100)
+      chunkingConfig.frameCount + Math.round(chunkingConfig.lookAheadDuration * 100) - stepFrames
     );
     let previousFeatures = null;
     let previousPitch = null;
@@ -13588,11 +13668,21 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
           options.protect ?? 0.33
         );
         callbacks.onEvent?.({ type: "chunk_step", step: "synth", current: currentChunk, total: totalChunks });
+        const noiseFrameOffset = Math.round(
+          (chunk.analysisStartSample ?? 0) * 100 / chunkingConfig.inputSampleRate
+        );
+        const sourceSampleOffset = Math.round(
+          (chunk.analysisStartSample ?? 0) * chunkingConfig.outputSampleRate / chunkingConfig.inputSampleRate
+        );
         const synthesized = await synthesizeVoice(rvcSession, retrievedFeatures, pitch, {
           speakerId: options.speakerId,
           pitchShift: options.pitchShift,
-          noiseSeed: mixNoiseSeed(options.noiseSeed ?? 20260821, currentChunk),
+          noiseSeed: chunkingConfig.contextDuration > 0
+            ? options.noiseSeed ?? 20260821
+            : mixNoiseSeed(options.noiseSeed ?? 20260821, currentChunk),
           noiseScale: options.noiseScale ?? 0.5,
+          noiseFrameOffset: chunkingConfig.contextDuration > 0 ? noiseFrameOffset : null,
+          sourceSampleOffset: chunkingConfig.contextDuration > 0 ? sourceSampleOffset : null,
           maxFrames: chunkingConfig.frameCount,
           sourceUpp: Math.max(1, Math.round((options.outputSampleRate ?? 40e3) / 100))
         });
