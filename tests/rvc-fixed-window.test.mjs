@@ -122,6 +122,17 @@ test("long browser RVC context removes synthetic window-edge corruption before m
   assert.ok(Array.from(output).every((sample) => Math.abs(sample - 0.2) < 1e-6));
 });
 
+test("long browser RVC overlap corrects strong opposite-polarity windows", async () => {
+  const input = new Float32Array(260).fill(0.2);
+  let current = 0;
+  const output = await processFixedWindows(input, async () => {
+    current += 1;
+    return new Float32Array(100).fill(current % 2 === 1 ? 0.4 : -0.4);
+  }, { inputSampleRate: 100, outputSampleRate: 100, frameCount: 100, contextDuration: 0.15, crossfadeDuration: 0.40, lookAheadDuration: 0 });
+  assert.equal(output.length, input.length);
+  assert.ok(output.every((value) => Math.abs(value - 0.4) < 1e-6));
+});
+
 test("20-minute PCM at real sample rates merges completely without retaining all windows", async () => {
   const input = new Float32Array(1200 * 16000).fill(0.125);
   input[input.length - 1] = 0.25;

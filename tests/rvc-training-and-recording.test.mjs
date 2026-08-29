@@ -15,15 +15,18 @@ test("recording negotiates browser formats and keeps a PCM WAV fallback", async 
   assert.match(client, /microphoneStream/u);
 });
 
-test("high-energy protection is conditional and leaves the normal path intact", async () => {
+test("extreme-input protection is conditional and leaves the normal path intact", async () => {
   const service = await readFile(new URL("rvc-service/app/main.py", root), "utf8");
   assert.match(service, /class AudioProfile/u);
   assert.match(service, /def analyze_audio_profile/u);
   assert.match(service, /if not profile\.high_energy:\s+return input_wav/u);
   assert.match(service, /HIGH_ENERGY_INPUT_FILTER/u);
   assert.match(service, /HIGH_ENERGY_OUTPUT_FILTER/u);
-  assert.match(service, /index_rate=min\(index_rate, 0\.22\) if profile\.high_energy else index_rate/u);
-  assert.match(service, /protect=min\(protect, 0\.18\) if profile\.high_energy else protect/u);
+  assert.match(service, /PITCH_COMPLEX_OUTPUT_FILTER/u);
+  assert.match(service, /profile\.high_pitch and not profile\.complex_pitch/u);
+  assert.match(service, /index_rate=min\(index_rate, 0\.22\) if profile\.high_energy else min\(index_rate, 0\.26\) if profile\.high_pitch or profile\.complex_pitch else index_rate/u);
+  assert.match(service, /protect=min\(protect, 0\.18\) if profile\.high_energy or profile\.high_pitch or profile\.complex_pitch else protect/u);
+  assert.match(service, /rms_mix_rate=min\(rms_mix_rate, 0\.90\) if profile\.high_energy or profile\.high_pitch or profile\.complex_pitch else rms_mix_rate/u);
 });
 
 test("training UI uploads multiple authorized clips and separates trained models", async () => {

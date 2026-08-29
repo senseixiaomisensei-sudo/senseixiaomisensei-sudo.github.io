@@ -129,11 +129,14 @@ SHOUT_HARSHNESS_FILTER = (
     "alimiter=limit=0.90:attack=5:release=100:level=0"
 )
 HIGH_ENERGY_INPUT_FILTER = (
-    # This branch is selected only after objective peak/RMS analysis.  Normal
-    # speech keeps the exact established preprocessing path above.
-    "acompressor=threshold=0.36:ratio=2.2:attack=0.8:release=90:knee=2.5:makeup=1,"
-    "asoftclip=type=tanh:threshold=0.92:output=0.88:oversample=4,"
-    "alimiter=limit=0.86:attack=2:release=90:level=0"
+    # This branch is selected from the unsmoothed upload/stem, before the
+    # standard limiter can hide clipping evidence from the profile detector.
+    "highpass=f=45:p=2,"
+    "lowpass=f=7600:p=1,"
+    "afftdn=nr=6:nf=-55:tn=1:ad=0.8,"
+    "speechnorm=p=0.88:e=3:c=2:r=0.0005:f=0.0005:m=0.06,"
+    "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
+    "alimiter=limit=0.86:attack=2:release=100:level=0"
 )
 HIGH_ENERGY_OUTPUT_FILTER = (
     "adeclick=threshold=1.8:burst=2,"
@@ -141,6 +144,12 @@ HIGH_ENERGY_OUTPUT_FILTER = (
     "lowpass=f=11500:p=2,"
     "acompressor=threshold=0.72:ratio=1.6:attack=1:release=80:knee=2:makeup=1,"
     "alimiter=limit=0.88:attack=3:release=90:level=0"
+)
+PITCH_COMPLEX_OUTPUT_FILTER = (
+    "adeclick=threshold=2:burst=2,"
+    "deesser=i=0.20:m=0.30:f=0.54,"
+    "lowpass=f=13000:p=1,"
+    "alimiter=limit=0.89:attack=3:release=90:level=0"
 )
 
 
@@ -158,6 +167,8 @@ class AudioProfile:
     clipped_fraction: float = 0.0
     high_band_ratio: float = 0.0
     high_energy: bool = False
+    high_pitch: bool = False
+    complex_pitch: bool = False
 
 
 @dataclass
@@ -524,12 +535,14 @@ def probe_duration(path: Path) -> float:
     return duration
 
 
-def normalize_audio(source: Path, destination: Path) -> None:
+def normalize_audio(source: Path, destination: Path) -> AudioProfile:
     duration = probe_duration(source)
     if duration < MIN_AUDIO_SECONDS:
         raise RvcServiceError(400, "RVC_AUDIO_TOO_SHORT")
     if duration > MAX_AUDIO_SECONDS:
         raise RvcServiceError(400, "RVC_AUDIO_TOO_LONG")
+    profile = analyze_audio_profile(source)
+    selected_filter = HIGH_ENERGY_INPUT_FILTER if profile.high_energy else INPUT_SAFETY_FILTER
     result = subprocess.run(
         [
             "ffmpeg", "-nostdin", "-v", "error", "-i", str(source), "-vn",
@@ -537,7 +550,7 @@ def normalize_audio(source: Path, destination: Path) -> None:
             # The high-threshold guard contains excessive shout peaks before
             # feature extraction without applying a cosmetic EQ to normal
             # speech.
-            "-af", INPUT_SAFETY_FILTER,
+            "-af", selected_filter,
             "-ac", "1", "-ar", "16000", "-c:a", "pcm_f32le", str(destination),
         ],
         check=False,
@@ -547,6 +560,7 @@ def normalize_audio(source: Path, destination: Path) -> None:
     )
     if result.returncode != 0 or not destination.is_file() or destination.stat().st_size < 1:
         raise RvcServiceError(400, "RVC_INVALID_AUDIO")
+    return profile
 
 
 def analyze_audio_profile(path: Path) -> AudioProfile:
@@ -555,7 +569,20 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
         import numpy as np
         import soundfile as sf
 
-        audio, sample_rate = sf.read(str(path), dtype="float32", always_2d=False)
+        try:
+            audio, sample_rate = sf.read(str(path), dtype="float32", always_2d=False)
+        except (OSError, RuntimeError, ValueError):
+            decoded = subprocess.run(
+                ["ffmpeg", "-nostdin", "-v", "error", "-i", str(path), "-t", "30", "-vn", "-ac", "1", "-ar", "16000", "-f", "f32le", "pipe:1"],
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                timeout=90,
+            )
+            if decoded.returncode != 0 or len(decoded.stdout) < 8000 * 4:
+                return AudioProfile()
+            audio = np.frombuffer(decoded.stdout, dtype="<f4").copy()
+            sample_rate = 16000
         if getattr(audio, "ndim", 1) > 1:
             audio = np.mean(audio, axis=1)
         audio = np.asarray(audio, dtype=np.float32)
@@ -565,8 +592,9 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
         peak = float(np.max(absolute))
         rms = float(np.sqrt(np.mean(np.square(audio, dtype=np.float64))))
         clipped_fraction = float(np.mean(absolute >= 0.985))
-        spectrum = np.abs(np.fft.rfft(audio[: min(audio.size, sample_rate * 30)]))
-        frequencies = np.fft.rfftfreq(min(audio.size, sample_rate * 30), d=1 / sample_rate)
+        analysis_audio = audio[: min(audio.size, sample_rate * 30)]
+        spectrum = np.abs(np.fft.rfft(analysis_audio))
+        frequencies = np.fft.rfftfreq(analysis_audio.size, d=1 / sample_rate)
         total_energy = float(np.sum(np.square(spectrum))) + 1e-12
         high_band_ratio = float(np.sum(np.square(spectrum[frequencies >= 3500])) / total_energy)
         high_energy = bool(
@@ -575,12 +603,34 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
             or (peak >= 0.88 and rms >= 0.15)
             or (peak >= 0.82 and high_band_ratio >= 0.18)
         )
+        high_pitch = False
+        complex_pitch = False
+        try:
+            import parselmouth
+
+            pitch = parselmouth.Sound(
+                np.ascontiguousarray(analysis_audio, dtype=np.float64),
+                sampling_frequency=float(sample_rate),
+            ).to_pitch_ac(time_step=0.01, pitch_floor=55.0, pitch_ceiling=min(1100.0, sample_rate / 2 - 1))
+            f0 = np.asarray(pitch.selected_array["frequency"], dtype=np.float64)
+            valid = np.isfinite(f0) & (f0 > 0)
+            voiced = f0[valid]
+            if voiced.size >= 20:
+                p10, p90, p95 = np.percentile(voiced, [10, 90, 95])
+                consecutive = valid[1:] & valid[:-1]
+                jumps = np.abs(12 * np.log2(np.maximum(f0[1:][consecutive], 1) / np.maximum(f0[:-1][consecutive], 1)))
+                high_pitch = bool(p90 >= 440 or p95 >= 650)
+                complex_pitch = bool(12 * np.log2(max(p90, 1) / max(p10, 1)) >= 18 or (jumps.size >= 20 and float(np.mean(jumps >= 3)) >= 0.08))
+        except (ImportError, OSError, RuntimeError, ValueError):
+            pass
         return AudioProfile(
             peak=peak,
             rms=rms,
             clipped_fraction=clipped_fraction,
             high_band_ratio=high_band_ratio,
             high_energy=high_energy,
+            high_pitch=high_pitch,
+            complex_pitch=complex_pitch,
         )
     except (ImportError, OSError, RuntimeError, ValueError):
         return AudioProfile()
@@ -619,15 +669,20 @@ def render_conversion(
     resample_rate: int,
     rms_mix_rate: float,
     f0_method: str,
+    profile_hint: AudioProfile | None = None,
 ) -> str:
     inference = acquire_model(model_path)
     # Upstream 2.3.260718 removed the old post-F0 median-filter parameter.
     # Keep accepting it at the HTTP boundary for backward compatibility, but
     # use the exact upstream RMVPE/FCPE/PM pipeline without an invented filter.
     _ = filter_radius
-    profile = analyze_audio_profile(input_wav)
-    inference_input = prepare_inference_audio(input_wav, profile)
-    selected_method = select_f0_method(inference_input, f0_method)
+    profile = profile_hint or analyze_audio_profile(input_wav)
+    inference_input = input_wav if profile_hint is not None else prepare_inference_audio(input_wav, profile)
+    selected_method = (
+        "fcpe"
+        if f0_method == "auto" and profile.high_pitch and not profile.complex_pitch
+        else select_f0_method(inference_input, f0_method)
+    )
     methods = [selected_method]
     if f0_method == "auto":
         methods.append("fcpe" if selected_method == "rmvpe" else "rmvpe")
@@ -644,10 +699,10 @@ def render_conversion(
                 # Reduce retrieval grain and preserve transients only for an
                 # objectively high-energy input.  Ordinary/mid-range audio
                 # retains the caller's exact established settings.
-                index_rate=min(index_rate, 0.22) if profile.high_energy else index_rate,
-                protect=min(protect, 0.18) if profile.high_energy else protect,
+                index_rate=min(index_rate, 0.22) if profile.high_energy else min(index_rate, 0.26) if profile.high_pitch or profile.complex_pitch else index_rate,
+                protect=min(protect, 0.18) if profile.high_energy or profile.high_pitch or profile.complex_pitch else protect,
                 resample_rate=resample_rate,
-                rms_mix_rate=min(rms_mix_rate, 0.90) if profile.high_energy else rms_mix_rate,
+                rms_mix_rate=min(rms_mix_rate, 0.90) if profile.high_energy or profile.high_pitch or profile.complex_pitch else rms_mix_rate,
             )
             if output_wav.is_file() and output_wav.stat().st_size > 44:
                 used_method = method
@@ -667,6 +722,8 @@ def render_conversion(
     model_id = model_path.parent.name if model_path.parent != MODELS_DIR else model_path.stem
     if profile.high_energy:
         output_filter = HIGH_ENERGY_OUTPUT_FILTER
+    elif profile.high_pitch or profile.complex_pitch:
+        output_filter = PITCH_COMPLEX_OUTPUT_FILTER
     elif model_id in SHOUT_HARSHNESS_GUARD_MODELS:
         output_filter = SHOUT_HARSHNESS_FILTER
     else:
@@ -800,6 +857,7 @@ def render_duration_safe_conversion(
     resample_rate: int,
     rms_mix_rate: float,
     f0_method: str,
+    profile_hint: AudioProfile | None = None,
 ) -> str:
     if duration_seconds <= LONG_AUDIO_THRESHOLD_SECONDS:
         return render_conversion(
@@ -813,6 +871,7 @@ def render_duration_safe_conversion(
             resample_rate,
             rms_mix_rate,
             f0_method,
+            profile_hint,
         )
     source_chunks = split_long_audio(input_wav, work_root / "source", duration_seconds)
     output_chunks: list[Path] = []
@@ -830,6 +889,7 @@ def render_duration_safe_conversion(
             resample_rate,
             rms_mix_rate,
             f0_method,
+            profile_hint,
         ))
         output_chunks.append(converted_chunk)
     join_long_audio(output_chunks, output_wav, duration_seconds)
@@ -849,6 +909,7 @@ async def render_duration_safe_conversion_async(
     resample_rate: int,
     rms_mix_rate: float,
     f0_method: str,
+    profile_hint: AudioProfile | None = None,
 ) -> str:
     """Run short clips unchanged and yield the GPU between long-audio chunks."""
     if duration_seconds <= LONG_AUDIO_THRESHOLD_SECONDS:
@@ -865,6 +926,7 @@ async def render_duration_safe_conversion_async(
                 resample_rate,
                 rms_mix_rate,
                 f0_method,
+                profile_hint,
             )
 
     source_chunks = await asyncio.to_thread(split_long_audio, input_wav, work_root / "source", duration_seconds)
@@ -885,6 +947,7 @@ async def render_duration_safe_conversion_async(
                 resample_rate,
                 rms_mix_rate,
                 f0_method,
+                profile_hint,
             )
         methods.append(method)
         output_chunks.append(converted_chunk)
@@ -1371,6 +1434,7 @@ async def process_conversion_job(
     started_at: float,
     audio_mode: str,
     duration_seconds: float,
+    input_profile: AudioProfile,
 ) -> None:
     try:
         if audio_mode == "song":
@@ -1388,7 +1452,7 @@ async def process_conversion_job(
                     record.stage = "converting"
             separated_vocals = job_root / "separated-vocals-16k.wav"
             converted_vocals = job_root / "converted-vocals.wav"
-            await asyncio.to_thread(normalize_audio, stems.vocals, separated_vocals)
+            vocal_profile = await asyncio.to_thread(normalize_audio, stems.vocals, separated_vocals)
             used_f0_method = await render_duration_safe_conversion_async(
                 model_path,
                 separated_vocals,
@@ -1402,6 +1466,7 @@ async def process_conversion_job(
                 resample,
                 rms_mix_rate,
                 f0_method,
+                vocal_profile,
             )
             async with outputs_lock:
                 record = outputs.get(job_id)
@@ -1434,6 +1499,7 @@ async def process_conversion_job(
                 resample,
                 rms_mix_rate,
                 f0_method,
+                input_profile,
             )
         async with outputs_lock:
             record = outputs.get(job_id)
@@ -1597,8 +1663,9 @@ async def create_job(
             raise RvcServiceError(400, "RVC_AUDIO_TOO_SHORT")
         if duration_seconds > MAX_AUDIO_SECONDS:
             raise RvcServiceError(400, "RVC_AUDIO_TOO_LONG")
+        input_profile = AudioProfile()
         if audio_mode == "voice":
-            await asyncio.to_thread(normalize_audio, input_raw, input_wav)
+            input_profile = await asyncio.to_thread(normalize_audio, input_raw, input_wav)
         expires_at = job_expiry()
         download_token = secrets.token_urlsafe(32)
         async with outputs_lock:
@@ -1633,6 +1700,7 @@ async def create_job(
             started_at=started_at,
             audio_mode=audio_mode,
             duration_seconds=duration_seconds,
+            input_profile=input_profile,
         ))
         job_tasks.add(task)
         task.add_done_callback(job_tasks.discard)

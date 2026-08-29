@@ -20,11 +20,12 @@ namespace_id = "2026081201"
 
 [[ratelimits]]
 name = "POSTPREP_RVC_RATE_LIMITER"
-namespace_id = "2026081501"
+namespace_id = "2026082901"
 
   [ratelimits.simple]
-  # One normal submission plus one automatic mobile-network retry.
-  limit = 2
+  # Three normal submissions per minute (roughly one every 20 seconds), plus
+  # one automatic mobile-network retry shared across that minute.
+  limit = 4
   period = 60
 
 [[ratelimits]]

@@ -68,6 +68,13 @@ test("shout F0 repair only removes isolated octave errors", () => {
   assert.equal(repaired[6], 380, "sustained pitch motion must remain untouched");
 });
 
+test("high and complex contours opt into isolated F0 repair", () => {
+  const hasHighOrComplexPitch = evaluateFunction("hasHighOrComplexPitch");
+  assert.equal(hasHighOrComplexPitch(Float32Array.from([220, 222, 224, 226, 225, 223, 221, 220])), false);
+  assert.equal(hasHighOrComplexPitch(Float32Array.from([520, 525, 530, 535, 530, 525, 520, 515])), true);
+  assert.equal(hasHighOrComplexPitch(Float32Array.from([110, 112, 220, 114, 116, 440, 118, 120, 122])), true);
+});
+
 test("RMS mix follows official semantics: 1 is unchanged and 0 follows source", () => {
   const applyRmsVolumeEnvelope = evaluateFunction("applyRmsVolumeEnvelope");
   const source = sine(3200, 0.1, 20);
@@ -133,7 +140,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(page, /value="crepe"|value="fcpe"|value="harvest"/u);
   assert.doesNotMatch(client, /pitchInput\.value = String\(model\.defaultPitch\)/u);
   assert.doesNotMatch(workerSource, /filteredF0 = stabilizeShoutingPitchF0/u);
-  assert.match(workerSource, /hasShoutDynamics\(audio\) \? repairIsolatedShoutF0Errors\(f0\) : f0/u);
+  assert.match(workerSource, /hasShoutDynamics\(audio\) \|\| hasHighOrComplexPitch\(f0\)/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
@@ -146,6 +153,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /function officialRoutes\(endpoint\)/u);
   assert.match(client, /convertUrl: base/u);
   assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 1200/u);
+  assert.match(client, /RVC_SUBMISSION_COOLDOWN_MS = 20 \* 1000/u);
+  assert.match(client, /cooldownRemainingMs = RVC_SUBMISSION_COOLDOWN_MS/u);
   assert.match(client, /isDeviceFallbackEligible/u);
   assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
   assert.match(client, /runWebRvcInference\(\{ allowLong: true, fallback: true \}\)/u);
@@ -201,6 +210,13 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /adeclick=threshold=2\.5:burst=2/u);
   assert.match(service, /afftdn=nr=6:nf=-55:tn=1:ad=0\.8/u);
   assert.match(service, /speechnorm=p=0\.88:e=3:c=2/u);
+  assert.match(service, /profile = analyze_audio_profile\(source\)/u);
+  assert.match(service, /selected_filter = HIGH_ENERGY_INPUT_FILTER if profile\.high_energy else INPUT_SAFETY_FILTER/u);
+  assert.match(service, /high_pitch: bool = False/u);
+  assert.match(service, /complex_pitch: bool = False/u);
+  assert.match(service, /profile_hint: AudioProfile \| None = None/u);
+  assert.match(service, /profile\.high_pitch and not profile\.complex_pitch/u);
+  assert.match(service, /PITCH_COMPLEX_OUTPUT_FILTER/u);
   assert.match(service, /def select_f0_method\(/u);
   assert.match(service, /methods\.append\("fcpe" if selected_method == "rmvpe" else "rmvpe"\)/u);
   assert.match(service, /return used_method/u);

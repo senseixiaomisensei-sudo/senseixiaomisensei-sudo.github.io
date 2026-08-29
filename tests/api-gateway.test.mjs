@@ -144,10 +144,10 @@ test("rvc route uses a separate limiter and fixed Pages upstream", async () => {
   }
 });
 
-test("rvc limiter reserves one retry for mobile connection drops", async () => {
+test("rvc limiter allows three submissions per minute and reserves one mobile retry", async () => {
   const config = await readFile(new URL("../worker/wrangler.toml", import.meta.url), "utf8");
   const rvcLimiter = config.split('name = "POSTPREP_RVC_RATE_LIMITER"')[1] || "";
-  assert.match(rvcLimiter, /limit = 2/u);
+  assert.match(rvcLimiter, /limit = 4/u);
   assert.match(rvcLimiter, /period = 60/u);
 });
 

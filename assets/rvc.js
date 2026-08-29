@@ -19,6 +19,7 @@
   const CLOUD_MAX_CONVERT_TIMEOUT_MS = 600000;
   const CLOUD_MAX_LONG_JOB_TIMEOUT_MS = 45 * 60 * 1000;
   const CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND = 64 * 1024;
+  const RVC_SUBMISSION_COOLDOWN_MS = 20 * 1000;
   // Android WebViews and several in-app Chinese browsers are inconsistent at
   // reading duration metadata from a Blob-backed 40 kHz WAV. The inference
   // itself is fine, but their native audio controls can display 0:00 / 0:00.
@@ -1172,6 +1173,7 @@
     activeCollectionId: "blue-archive",
     customCollections: [],
     audioMode: "voice",
+    lastCloudSubmissionAt: 0,
   };
 
   function modelDownloadConcurrency(nav = globalThis.navigator) {
@@ -2448,8 +2450,8 @@
 
   const CLOUD_RVC_ERROR_MESSAGES = Object.freeze({
     RATE_LIMITED: Object.freeze({
-      zh: "当前网络 60 秒内已经提交过任务，请等待 60 秒后再试",
-      en: "This network already submitted a job in the last 60 seconds. Please wait and retry",
+      zh: "当前网络每分钟可提交 3 条正常任务（约每 20 秒一条）；已达上限时请等待窗口刷新",
+      en: "This network can submit three normal jobs per minute (about one every 20 seconds). Wait for the window to refresh after reaching the limit",
     }),
     RVC_INFERENCE_FAILED: Object.freeze({
       zh: "这段音频未通过本次推理；纯录音请选择纯人声，歌曲请选择带伴奏翻唱后重试",
@@ -3701,6 +3703,14 @@
       showToast("云端 RVC 引擎接受 WAV、MP3、M4A、OGG、WebM、FLAC 或 AAC，请先转换格式。");
       return;
     }
+
+    const cooldownRemainingMs = RVC_SUBMISSION_COOLDOWN_MS - (Date.now() - state.lastCloudSubmissionAt);
+    if (cooldownRemainingMs > 0) {
+      const seconds = Math.ceil(cooldownRemainingMs / 1000);
+      showToast(state.lang === "en" ? `Wait ${seconds}s before the next cloud audio` : `请等待 ${seconds} 秒后再提交下一条云端音频`);
+      return;
+    }
+    state.lastCloudSubmissionAt = Date.now();
 
     state.busy = true;
     if (convertBtn) {

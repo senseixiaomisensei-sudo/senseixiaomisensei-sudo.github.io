@@ -42,6 +42,8 @@ test("song mode is an additive PyMSS separation, RVC vocal conversion and backin
   assert.match(service, /if audio_mode == "song":/u);
   assert.match(service, /separate_song, input_raw/u);
   assert.match(service, /render_duration_safe_conversion_async\([\s\S]*separated_vocals,[\s\S]*converted_vocals/u);
+  assert.match(service, /vocal_profile = await asyncio\.to_thread\(normalize_audio, stems\.vocals, separated_vocals\)/u);
+  assert.match(service, /input_profile = await asyncio\.to_thread\(normalize_audio, input_raw, input_wav\)/u);
   assert.match(service, /remix_song,/u);
   assert.match(separation, /model_bs_roformer_ep_368_sdr_12\.9628\.ckpt/u);
   assert.match(separation, /amix=inputs=2:duration=first/u);

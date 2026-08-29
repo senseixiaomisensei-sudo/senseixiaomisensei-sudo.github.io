@@ -8726,12 +8726,33 @@ async function processAudioInFixedFrameWindows(audio, processor, config = {}, on
       merged.set(chunk.subarray(0, writable), chunkStart);
     } else {
       const overlap = Math.min(outputOverlapSamples, writable, Math.max(0, writeEnd - chunkStart));
+      let polarity = 1;
+      if (contextSamples > 0 && overlap >= 32) {
+        let dot = 0;
+        let existingEnergy = 0;
+        let incomingEnergy = 0;
+        for (let sample = 0; sample < overlap; sample += 2) {
+          const existing = merged[chunkStart + sample];
+          const incomingSample = chunk[sample];
+          dot += existing * incomingSample;
+          existingEnergy += existing * existing;
+          incomingEnergy += incomingSample * incomingSample;
+        }
+        const correlation = dot / Math.sqrt(existingEnergy * incomingEnergy + 1e-12);
+        // Sustained high notes can restart with opposite waveform polarity.
+        // Sign inversion is acoustically transparent and prevents cancellation.
+        if (correlation < -0.35) polarity = -1;
+      }
       for (let sample = 0; sample < overlap; sample++) {
         const incoming = (sample + 1) / (overlap + 1);
-        merged[chunkStart + sample] = merged[chunkStart + sample] * (1 - incoming) + chunk[sample] * incoming;
+        merged[chunkStart + sample] = merged[chunkStart + sample] * (1 - incoming) + chunk[sample] * polarity * incoming;
       }
       if (writable > overlap) {
-        merged.set(chunk.subarray(overlap, writable), chunkStart + overlap);
+        if (polarity === 1) {
+          merged.set(chunk.subarray(overlap, writable), chunkStart + overlap);
+        } else {
+          for (let sample = overlap; sample < writable; sample++) merged[chunkStart + sample] = -chunk[sample];
+        }
       }
     }
     writeEnd = Math.max(writeEnd, chunkStart + writable);
@@ -12768,6 +12789,26 @@ function hasShoutDynamics(audio) {
   const rms = Math.sqrt(sumSquares / audio.length);
   return rms >= 0.18 && loudSamples / audio.length >= 0.01;
 }
+function hasHighOrComplexPitch(f0) {
+  const voiced = [];
+  let largeAdjacentJumps = 0;
+  let adjacentVoiced = 0;
+  for (let i = 0; i < f0.length; i++) {
+    const value = f0[i];
+    if (value > 0 && isFinite(value)) voiced.push(value);
+    if (i > 0 && value > 0 && f0[i - 1] > 0) {
+      adjacentVoiced++;
+      if (Math.abs(12 * Math.log2(value / f0[i - 1])) >= 3) largeAdjacentJumps++;
+    }
+  }
+  if (voiced.length < 8) return false;
+  voiced.sort((left, right) => left - right);
+  const percentile = (ratio) => voiced[Math.min(voiced.length - 1, Math.floor((voiced.length - 1) * ratio))];
+  const p10 = percentile(0.10);
+  const p90 = percentile(0.90);
+  const pitchRange = p10 > 0 ? 12 * Math.log2(p90 / p10) : 0;
+  return p90 >= 440 || pitchRange >= 18 || (adjacentVoiced >= 8 && largeAdjacentJumps / adjacentVoiced >= 0.08);
+}
 async function estimatePitch(audio, options) {
   const session = options.rmvpe instanceof File ? await loadRmvpeModel(options.rmvpe) : options.rmvpe;
   const { f0, frameCount } = await runRmvpeInference(session, audio);
@@ -12780,7 +12821,9 @@ async function estimatePitch(audio, options) {
   // A shout may cause a one-frame octave hop that sounds like a bubble or
   // electronic chirp. Repair only isolated outliers; never smooth a sustained
   // pitch move or vibrato.
-  let filteredF0 = hasShoutDynamics(audio) ? repairIsolatedShoutF0Errors(f0) : f0;
+  let filteredF0 = hasShoutDynamics(audio) || hasHighOrComplexPitch(f0)
+    ? repairIsolatedShoutF0Errors(f0)
+    : f0;
   if (medianFilterEnabled) {
     if (aggressiveMode) {
       filteredF0 = aggressiveMedianFilterF0(f0, windowSize);
