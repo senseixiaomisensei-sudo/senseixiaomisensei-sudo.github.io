@@ -11,10 +11,11 @@
 //   * 命令末尾会打印一段需粘贴进 site/assets/rvc-models.json 的模型配置片段（默认音高可自行微调）。
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, "$1");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_ROOT = path.resolve(__dirname, "..");
 const CHAR_DST = path.join(SITE_ROOT, "models", "characters");
 const MANIFEST_PATH = path.join(SITE_ROOT, "models", "manifest.json");
@@ -54,6 +55,7 @@ async function chunkAndManifest(onnxPath, name) {
   const dstDir = path.join(CHAR_DST, name);
   fs.mkdirSync(dstDir, { recursive: true });
   const buf = fs.readFileSync(onnxPath);
+  const sha256 = createHash("sha256").update(buf).digest("hex");
   const totalChunks = Math.ceil(buf.length / CHUNK_SIZE);
   const chunkList = [];
   for (let i = 0; i < totalChunks; i++) {
@@ -65,7 +67,7 @@ async function chunkAndManifest(onnxPath, name) {
 
   let manifest = {};
   try { manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8")); } catch {}
-  manifest[`${name}.onnx`] = { totalSize: buf.length, chunks: chunkList };
+  manifest[`${name}.onnx`] = { totalSize: buf.length, sha256, chunks: chunkList };
   fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
   console.log(`    已写 ${totalChunks} 个分片，并更新 manifest.json`);
   return { totalChunks, chunkList };

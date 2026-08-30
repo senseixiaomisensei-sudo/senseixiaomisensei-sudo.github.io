@@ -12753,27 +12753,43 @@ function aggressiveMedianFilterF0(f0, windowSize = 5) {
   }
   return result;
 }
-function repairIsolatedShoutF0Errors(f0) {
+function repairIsolatedShoutF0Errors(f0, maxRunLength = 3) {
   const len = f0.length;
   if (len < 3) return f0;
   const out = new Float32Array(f0);
-  for (let i = 1; i < len - 1; i++) {
-    const prev = out[i - 1];
-    const curr = out[i];
-    const next = out[i + 1];
-    if (curr > 0 && prev > 0 && next > 0) {
-      const ratioPrev = curr / prev;
-      const ratioNext = curr / next;
-      const neighborRatio = next / prev;
-      if (Math.abs(neighborRatio - 1.0) < 0.35) {
-        if (
-          (ratioPrev > 1.50 && ratioNext > 1.50) ||
-          (ratioPrev < 0.66 && ratioNext < 0.66)
-        ) {
-          out[i] = (prev + next) * 0.5;
-        }
-      }
+  const boundedRunLength = Math.max(1, Math.min(4, Math.floor(maxRunLength) || 3));
+  const isOctaveBandOutlier = (value, reference) => value / reference > 1.50 || value / reference < 0.66;
+  let start = 1;
+  while (start < len - 1) {
+    const left = out[start - 1];
+    if (!(left > 0) || !(out[start] > 0) || !isOctaveBandOutlier(out[start], left)) {
+      start++;
+      continue;
     }
+    let end = start;
+    while (
+      end < len - 1 &&
+      end - start < boundedRunLength &&
+      out[end] > 0 &&
+      isOctaveBandOutlier(out[end], left)
+    ) {
+      end++;
+    }
+    const right = out[end];
+    const runLength = end - start;
+    const neighborsAgree = right > 0 && Math.abs(right / left - 1.0) < 0.35;
+    const sameOutlierSide = neighborsAgree && Array.from(out.subarray(start, end)).every((value) => (
+      (value / left > 1.50 && value / right > 1.50) ||
+      (value / left < 0.66 && value / right < 0.66)
+    ));
+    if (runLength > 0 && runLength <= boundedRunLength && sameOutlierSide) {
+      for (let offset = 0; offset < runLength; offset++) {
+        out[start + offset] = left + (right - left) * ((offset + 1) / (runLength + 1));
+      }
+      start = end;
+      continue;
+    }
+    start++;
   }
   return out;
 }
@@ -12818,9 +12834,10 @@ async function estimatePitch(audio, options) {
   const medianFilterEnabled = options.medianFilter === true;
   const aggressiveMode = options.aggressiveMedianFilter === true;
   const windowSize = options.medianFilterWindow ?? (aggressiveMode ? 5 : 3);
-  // A shout may cause a one-frame octave hop that sounds like a bubble or
-  // electronic chirp. Repair only isolated outliers; never smooth a sustained
-  // pitch move or vibrato.
+  // A shout or complex phrase may cause a 10–30 ms octave excursion that
+  // sounds like a bubble or electronic chirp. Repair only a short run that is
+  // bracketed by agreeing voiced neighbours; sustained notes and vibrato stay
+  // untouched.
   let filteredF0 = hasShoutDynamics(audio) || hasHighOrComplexPitch(f0)
     ? repairIsolatedShoutF0Errors(f0)
     : f0;

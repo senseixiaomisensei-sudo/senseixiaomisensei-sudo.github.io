@@ -680,7 +680,7 @@ def render_conversion(
     inference_input = input_wav if profile_hint is not None else prepare_inference_audio(input_wav, profile)
     selected_method = (
         "fcpe"
-        if f0_method == "auto" and profile.high_pitch and not profile.complex_pitch
+        if f0_method == "auto" and (profile.high_pitch or profile.complex_pitch)
         else select_f0_method(inference_input, f0_method)
     )
     methods = [selected_method]

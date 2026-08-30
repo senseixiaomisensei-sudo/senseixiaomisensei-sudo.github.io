@@ -1,7 +1,7 @@
 {
-  "version": 13,
-  "updatedAt": "2026-08-24",
-  "_readme": "v48 精选目录：20 个蔚蓝档案与 5 个咒术回战公开社区 RVC v2 模型；新增角色分区与自训练模型自定义区域。全部公开模型经过哈希、权重安全加载、结构、索引和真实推理检查。技术检查不等于角色/表演者授权，也不等于任何输入下零伪影保证。",
+  "version": 14,
+  "updatedAt": "2026-08-30",
+  "_readme": "v49 精选目录：21 个蔚蓝档案与 5 个咒术回战 RVC v2 模型；新增本站训练的 Key 浏览器本地模型。全部模型经过哈希、权重安全加载、结构、索引和真实推理检查。技术检查不等于角色/表演者授权，也不等于任何输入下零伪影保证。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",
@@ -818,6 +818,40 @@
         "models/characters/megumi/chunk_3.bin",
         "models/characters/megumi/chunk_4.bin",
         "models/characters/megumi/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "key",
+      "name": "天童凯伊 (Kei)",
+      "avatarText": "凯伊",
+      "description": "千年科学学园 · 特异现象调查部 · 冷静锐利少女声线 · 本站训练 RVC v2 · 40k / 80 epochs",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "千年",
+        "RVC v2"
+      ],
+      "collectionId": "blue-archive",
+      "collectionName": "蔚蓝档案",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；高音或快速变调会自动使用更稳的音高提取分支",
+      "sampleRate": 40000,
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.26,
+      "source": "https://bluearchive.fandom.com/wiki/Tendou_Kei/Audio",
+      "license": "Character voice copyright and model-training authorization unverified",
+      "checkpointSha256": "be27f3fdc4baf71fd6ce305ea4c08667641cc87318ea42239cfbd43dbc608251",
+      "indexSha256": "9bd81dd0531a64b835c9b56df909b5939d3cd258e10b69b0a05826001fb88741",
+      "datasetProvenanceSha256": "0e1fd6bf67c90732e20a64facf5c7866ff5a3883882c682868190b29cebdbd1c",
+      "modelVersion": "8f2fdbf48395:80e:key-wiki-0e1fd6bf67c9",
+      "retrieval": "models/characters/key/retrieval.bin",
+      "chunks": [
+        "models/characters/key/chunk_0.bin",
+        "models/characters/key/chunk_1.bin",
+        "models/characters/key/chunk_2.bin",
+        "models/characters/key/chunk_3.bin",
+        "models/characters/key/chunk_4.bin",
+        "models/characters/key/chunk_5.bin"
       ]
     }
   ]

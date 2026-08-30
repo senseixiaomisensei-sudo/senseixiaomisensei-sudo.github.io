@@ -345,5 +345,17 @@
       "models/characters/megumi/chunk_4.bin",
       "models/characters/megumi/chunk_5.bin"
     ]
+  },
+  "key.onnx": {
+    "totalSize": 110813613,
+    "sha256": "0fa2bd7752c3cca9edb955458c706428a82444101be549c0ee2147e378f2a7a1",
+    "chunks": [
+      "models/characters/key/chunk_0.bin",
+      "models/characters/key/chunk_1.bin",
+      "models/characters/key/chunk_2.bin",
+      "models/characters/key/chunk_3.bin",
+      "models/characters/key/chunk_4.bin",
+      "models/characters/key/chunk_5.bin"
+    ]
   }
 }

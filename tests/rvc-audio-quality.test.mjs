@@ -9,24 +9,24 @@ const workerSource = await readFile(
   "utf8",
 );
 
-function extractFunction(name) {
+function extractFunction(name, sourceText = workerSource) {
   const marker = `function ${name}`;
-  const start = workerSource.indexOf(marker);
+  const start = sourceText.indexOf(marker);
   assert.ok(start >= 0, `missing ${name}`);
-  const bodyStart = workerSource.indexOf("{", start);
+  const bodyStart = sourceText.indexOf("{", start);
   let depth = 0;
-  for (let index = bodyStart; index < workerSource.length; index += 1) {
-    if (workerSource[index] === "{") depth += 1;
-    if (workerSource[index] === "}") {
+  for (let index = bodyStart; index < sourceText.length; index += 1) {
+    if (sourceText[index] === "{") depth += 1;
+    if (sourceText[index] === "}") {
       depth -= 1;
-      if (depth === 0) return workerSource.slice(start, index + 1);
+      if (depth === 0) return sourceText.slice(start, index + 1);
     }
   }
   throw new Error(`unterminated ${name}`);
 }
 
-function evaluateFunction(name, dependencyNames = [], dependencyValues = []) {
-  const source = extractFunction(name);
+function evaluateFunction(name, dependencyNames = [], dependencyValues = [], sourceText = workerSource) {
+  const source = extractFunction(name, sourceText);
   return Function(...dependencyNames, `"use strict"; return (${source});`)(...dependencyValues);
 }
 
@@ -66,6 +66,18 @@ test("shout F0 repair only removes isolated octave errors", () => {
   assert.ok(repaired[2] > 220 && repaired[2] < 230, "isolated octave hop should be repaired");
   assert.equal(repaired[5], 300, "sustained pitch motion must remain untouched");
   assert.equal(repaired[6], 380, "sustained pitch motion must remain untouched");
+
+  const shortRun = Float32Array.from([220, 222, 440, 444, 442, 224, 226]);
+  const repairedRun = repairIsolatedShoutF0Errors(shortRun);
+  assert.ok(repairedRun[2] > 220 && repairedRun[2] < 225, "short octave run should be interpolated");
+  assert.ok(repairedRun[4] > 222 && repairedRun[4] < 225, "short octave run should rejoin its neighbours");
+
+  const sustainedOctave = Float32Array.from([220, 222, 440, 442, 444, 446, 448, 450]);
+  assert.deepEqual(
+    repairIsolatedShoutF0Errors(sustainedOctave),
+    sustainedOctave,
+    "a sustained high note must not be flattened",
+  );
 });
 
 test("high and complex contours opt into isolated F0 repair", () => {
@@ -73,6 +85,27 @@ test("high and complex contours opt into isolated F0 repair", () => {
   assert.equal(hasHighOrComplexPitch(Float32Array.from([220, 222, 224, 226, 225, 223, 221, 220])), false);
   assert.equal(hasHighOrComplexPitch(Float32Array.from([520, 525, 530, 535, 530, 525, 520, 515])), true);
   assert.equal(hasHighOrComplexPitch(Float32Array.from([110, 112, 220, 114, 116, 440, 118, 120, 122])), true);
+});
+
+test("cloud submission cooldown survives reloads without trusting corrupt timestamps", async () => {
+  const clientSource = await readFile(new URL("assets/rvc.js", root), "utf8");
+  const dependencies = ["RVC_SUBMISSION_STORAGE_KEY", "RVC_SUBMISSION_COOLDOWN_MS"];
+  const values = ["postprep_rvc_last_cloud_submission_v1", 20_000];
+  const readCloudSubmissionTimestamp = evaluateFunction("readCloudSubmissionTimestamp", dependencies, values, clientSource);
+  const persistCloudSubmissionTimestamp = evaluateFunction("persistCloudSubmissionTimestamp", [dependencies[0]], [values[0]], clientSource);
+  const valuesByKey = new Map([[values[0], "90000"]]);
+  const storage = {
+    getItem: (key) => valuesByKey.get(key) || null,
+    setItem: (key, value) => valuesByKey.set(key, value),
+  };
+
+  assert.equal(readCloudSubmissionTimestamp(storage, 100_000), 90_000);
+  persistCloudSubmissionTimestamp(105_000, storage);
+  assert.equal(readCloudSubmissionTimestamp(storage, 105_001), 105_000);
+  valuesByKey.set(values[0], "200001");
+  assert.equal(readCloudSubmissionTimestamp(storage, 100_000), 0);
+  valuesByKey.set(values[0], "not-a-number");
+  assert.equal(readCloudSubmissionTimestamp(storage, 100_000), 0);
 });
 
 test("RMS mix follows official semantics: 1 is unchanged and 0 follows source", () => {
@@ -144,7 +177,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260828-local-rvc-v6/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260830-local-rvc-v7/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false \} = \{\}\)/u);
   assert.match(client, /function runWebRvcInference\(\{ allowLong = false, fallback = false \} = \{\}\)/u);
@@ -155,6 +188,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 1200/u);
   assert.match(client, /RVC_SUBMISSION_COOLDOWN_MS = 20 \* 1000/u);
   assert.match(client, /cooldownRemainingMs = RVC_SUBMISSION_COOLDOWN_MS/u);
+  assert.match(client, /postprep_rvc_last_cloud_submission_v1/u);
+  assert.match(client, /persistCloudSubmissionTimestamp\(state\.lastCloudSubmissionAt\)/u);
   assert.match(client, /isDeviceFallbackEligible/u);
   assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
   assert.match(client, /runWebRvcInference\(\{ allowLong: true, fallback: true \}\)/u);
@@ -186,18 +221,18 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260828-v41/u);
+  assert.match(client, /v=20260830-v42/u);
   assert.match(client, /function preferredCloudOutputFormat\(durationSeconds = 0\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
   assert.match(client, /body\.set\("f0Method", "auto"\)/u);
   assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /normalizeCloudAudioBlob\(await outputResponse\.blob\(\), outputFormat\)/u);
-  assert.match(runtime, /v=20260828-v41/u);
+  assert.match(runtime, /v=20260830-v42/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.wasm/u);
-  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260824-v34"/u);
+  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260830-v35"/u);
   assert.match(client, /function officialMediaUrl\(jobId, token\)/u);
   assert.match(client, /await attachResultAudio\(resultAudio, mediaUrl \|\| state\.resultUrl, Boolean\(mediaUrl\)\)/u);
   assert.match(page, /media-src[^;"]*https:\/\/postprep-ae6\.pages\.dev/u);
@@ -215,7 +250,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /high_pitch: bool = False/u);
   assert.match(service, /complex_pitch: bool = False/u);
   assert.match(service, /profile_hint: AudioProfile \| None = None/u);
-  assert.match(service, /profile\.high_pitch and not profile\.complex_pitch/u);
+  assert.match(service, /profile\.high_pitch or profile\.complex_pitch/u);
   assert.match(service, /PITCH_COMPLEX_OUTPUT_FILTER/u);
   assert.match(service, /def select_f0_method\(/u);
   assert.match(service, /methods\.append\("fcpe" if selected_method == "rmvpe" else "rmvpe"\)/u);
@@ -233,9 +268,10 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
 test("all deployed character models expose caller-controlled noise without hidden random operators", async () => {
   const catalog = JSON.parse(await readFile(new URL("assets/rvc-models.json", root), "utf8"));
   const manifest = JSON.parse(await readFile(new URL("models/manifest.json", root), "utf8"));
-  assert.equal(catalog.models.length, 25);
+  assert.equal(catalog.models.length, 26);
   assert.ok(catalog.models.some((model) => model.id === "momoi"));
   assert.ok(catalog.models.some((model) => model.id === "reisa"));
+  assert.ok(catalog.models.some((model) => model.id === "key"));
   for (const model of catalog.models) {
     let hasRndInput = false;
     let hasSourceNoiseInput = false;
@@ -266,6 +302,13 @@ test("v24 exporter exposes both latent and NSF excitation noise", async () => {
   assert.match(source, /z_p = \(m_p \+ torch\.exp\(logs_p\) \* rnd\) \* x_mask/u);
   assert.match(source, /source_noise/u);
   assert.doesNotMatch(source, /torch\.randn_like/u);
+});
+
+test("model publisher handles Unicode workspace paths and records content hashes", async () => {
+  const source = await readFile(new URL("tools/publish-own-model.mjs", root), "utf8");
+  assert.match(source, /fileURLToPath\(import\.meta\.url\)/u);
+  assert.match(source, /createHash\("sha256"\)\.update\(buf\)\.digest\("hex"\)/u);
+  assert.match(source, /totalSize: buf\.length, sha256, chunks: chunkList/u);
 });
 
 test("continuous F0 is not flattened while the coarse embedding stays bounded", () => {

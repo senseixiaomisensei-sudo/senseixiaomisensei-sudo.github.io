@@ -20,6 +20,7 @@
   const CLOUD_MAX_LONG_JOB_TIMEOUT_MS = 45 * 60 * 1000;
   const CLOUD_MIN_EXPECTED_UPLOAD_BYTES_PER_SECOND = 64 * 1024;
   const RVC_SUBMISSION_COOLDOWN_MS = 20 * 1000;
+  const RVC_SUBMISSION_STORAGE_KEY = "postprep_rvc_last_cloud_submission_v1";
   // Android WebViews and several in-app Chinese browsers are inconsistent at
   // reading duration metadata from a Blob-backed 40 kHz WAV. The inference
   // itself is fine, but their native audio controls can display 0:00 / 0:00.
@@ -1098,8 +1099,63 @@
               "models/characters/megumi/chunk_4.bin",
               "models/characters/megumi/chunk_5.bin"
           ]
+      },
+      {
+          "id": "key",
+          "name": "天童凯伊 (Kei)",
+          "avatarText": "凯伊",
+          "description": "千年科学学园 · 特异现象调查部 · 冷静锐利少女声线 · 本站训练 RVC v2 · 40k / 80 epochs",
+          "tags": [
+              "女声",
+              "蔚蓝档案",
+              "千年",
+              "RVC v2"
+          ],
+          "collectionId": "blue-archive",
+          "collectionName": "蔚蓝档案",
+          "defaultPitch": 0,
+          "pitchNote": "同音域输入建议 0；高音或快速变调会自动使用更稳的音高提取分支",
+          "sampleRate": 40000,
+          "noiseScale": 0.3,
+          "defaultIndexRate": 0.26,
+          "source": "https://bluearchive.fandom.com/wiki/Tendou_Kei/Audio",
+          "license": "Character voice copyright and model-training authorization unverified",
+          "checkpointSha256": "be27f3fdc4baf71fd6ce305ea4c08667641cc87318ea42239cfbd43dbc608251",
+          "indexSha256": "9bd81dd0531a64b835c9b56df909b5939d3cd258e10b69b0a05826001fb88741",
+          "datasetProvenanceSha256": "0e1fd6bf67c90732e20a64facf5c7866ff5a3883882c682868190b29cebdbd1c",
+          "modelVersion": "8f2fdbf48395:80e:key-wiki-0e1fd6bf67c9",
+          "retrieval": "models/characters/key/retrieval.bin",
+          "chunks": [
+              "models/characters/key/chunk_0.bin",
+              "models/characters/key/chunk_1.bin",
+              "models/characters/key/chunk_2.bin",
+              "models/characters/key/chunk_3.bin",
+              "models/characters/key/chunk_4.bin",
+              "models/characters/key/chunk_5.bin"
+          ]
       }
   ];
+
+  function readCloudSubmissionTimestamp(storage, now = Date.now()) {
+    try {
+      const target = storage || globalThis.localStorage;
+      const timestamp = Number(target?.getItem(RVC_SUBMISSION_STORAGE_KEY));
+      return Number.isFinite(timestamp) && timestamp > 0 && timestamp <= now + RVC_SUBMISSION_COOLDOWN_MS
+        ? timestamp
+        : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function persistCloudSubmissionTimestamp(timestamp, storage) {
+    try {
+      const target = storage || globalThis.localStorage;
+      target?.setItem(RVC_SUBMISSION_STORAGE_KEY, String(timestamp));
+    } catch {
+      // Private browsing and embedded WebViews may disable persistent storage.
+    }
+  }
 
   const CHARACTER_SAMPLE_RATES = Object.freeze({
     koyuki: 48000,
@@ -1173,7 +1229,7 @@
     activeCollectionId: "blue-archive",
     customCollections: [],
     audioMode: "voice",
-    lastCloudSubmissionAt: 0,
+    lastCloudSubmissionAt: readCloudSubmissionTimestamp(),
   };
 
   function modelDownloadConcurrency(nav = globalThis.navigator) {
@@ -1218,7 +1274,7 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
-  const CHARACTER_MODEL_ASSET_VERSION = "20260824-v34";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260830-v35";
 
   function characterModelCacheKey(model) {
     const id = String(model?.id || "character");
@@ -3444,7 +3500,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260828-v41", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260830-v42", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -3711,6 +3767,7 @@
       return;
     }
     state.lastCloudSubmissionAt = Date.now();
+    persistCloudSubmissionTimestamp(state.lastCloudSubmissionAt);
 
     state.busy = true;
     if (convertBtn) {
