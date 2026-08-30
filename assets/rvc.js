@@ -2110,6 +2110,213 @@
     return new File([buffer], `${stem}.postprep-16k.wav`, { type: "audio/wav" });
   }
 
+  // 与本地 worker 的 conditionInputAudio 相同的透明输入条件化: 去直流 +
+  // 48Hz 高通 + 只在高包络处启用的缓释安全增益 + 峰值 0.90 归一。普通与
+  // 安静的人声原样通过, 只有热峰值/嘶吼包络会被压住, 避免云端官方 RVC 在
+  // 过热输入上激发刺耳谐波 (破音/电音)。
+  function conditionCloudUploadAudio(samples) {
+    const count = samples?.length || 0;
+    if (!count) return samples;
+    let mean = 0;
+    for (let i = 0; i < count; i += 1) mean += samples[i];
+    mean /= count;
+    const w0 = (2.0 * Math.PI * 48) / 16000;
+    const cosw0 = Math.cos(w0);
+    const alpha = Math.sin(w0) / (2.0 * 0.7071067811865476);
+    const a0 = 1.0 + alpha;
+    const b0 = (1.0 + cosw0) / 2.0 / a0;
+    const b1 = -(1.0 + cosw0) / a0;
+    const b2 = (1.0 + cosw0) / 2.0 / a0;
+    const a1 = (-2.0 * cosw0) / a0;
+    const a2 = (1.0 - alpha) / a0;
+    const out = new Float32Array(count);
+    let x1 = 0;
+    let x2 = 0;
+    let y1 = 0;
+    let y2 = 0;
+    for (let i = 0; i < count; i += 1) {
+      const x0 = samples[i] - mean;
+      const y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+      out[i] = y0;
+      x2 = x1;
+      x1 = x0;
+      y2 = y1;
+      y1 = y0;
+    }
+    const threshold = 0.58;
+    const compressionRatio = 4;
+    const envelopeAttack = Math.exp(-1 / Math.max(1, 16000 * 0.0015));
+    const envelopeRelease = Math.exp(-1 / Math.max(1, 16000 * 0.12));
+    const gainRelease = Math.exp(-1 / Math.max(1, 16000 * 0.15));
+    let envelope = 0;
+    let gain = 1;
+    for (let i = 0; i < count; i += 1) {
+      const magnitude = Math.abs(out[i]);
+      const envelopeCoefficient = magnitude > envelope ? envelopeAttack : envelopeRelease;
+      envelope = envelopeCoefficient * envelope + (1 - envelopeCoefficient) * magnitude;
+      const desiredGain = envelope > threshold
+        ? (threshold + (envelope - threshold) / compressionRatio) / envelope
+        : 1;
+      const gainCoefficient = desiredGain < gain ? envelopeAttack : gainRelease;
+      gain = gainCoefficient * gain + (1 - gainCoefficient) * desiredGain;
+      out[i] *= gain;
+    }
+    let peak = 0;
+    for (let i = 0; i < count; i += 1) {
+      const magnitude = Math.abs(out[i]);
+      if (magnitude > peak) peak = magnitude;
+    }
+    if (peak > 0.9 && Number.isFinite(peak)) {
+      const scale = 0.9 / peak;
+      for (let i = 0; i < count; i += 1) out[i] *= scale;
+    }
+    return out;
+  }
+
+  // 只修"客观检测到的毫秒级毛刺": 判定签名与本地 worker 的
+  // suppressDetectedHarshBursts 一致 (5ms 块内重复 >0.45 的相邻样本跳变,
+  // 或单次 >0.75 的极端跳变), 未检出时原样返回, 不引入任何染色。
+  function suppressDetectedHarshBurstsCloud(audio, sampleRate = 44100) {
+    if (!audio || audio.length === 0) return audio;
+    const blockSamples = Math.max(1, Math.round(sampleRate * 0.005));
+    const blocks = Math.floor(audio.length / blockSamples);
+    if (blocks < 2) return audio;
+    const flagged = new Uint8Array(blocks);
+    let detected = false;
+    for (let block = 0; block < blocks; block += 1) {
+      const start = block * blockSamples;
+      const end = start + blockSamples;
+      let largeJumps = 0;
+      let maximumJump = 0;
+      for (let index = start + 1; index < end; index += 1) {
+        const jump = Math.abs(audio[index] - audio[index - 1]);
+        if (jump > 0.45) largeJumps += 1;
+        if (jump > maximumJump) maximumJump = jump;
+      }
+      if (largeJumps >= 2 || maximumJump > 0.75) {
+        flagged[block] = 1;
+        detected = true;
+      }
+    }
+    if (!detected) return audio;
+    const expanded = new Uint8Array(flagged);
+    for (let block = 0; block < blocks; block += 1) {
+      if (!flagged[block]) continue;
+      if (block > 0) expanded[block - 1] = 1;
+      if (block + 1 < blocks) expanded[block + 1] = 1;
+    }
+    const filtered = new Float32Array(audio);
+    const w0 = (2.0 * Math.PI * Math.min(10000, sampleRate * 0.24)) / sampleRate;
+    const alphaLp = Math.sin(w0) / (2.0 * 0.7071067811865476);
+    const cosw0Lp = Math.cos(w0);
+    const aa0 = 1.0 + alphaLp;
+    const coeffs = [
+      ((1.0 - cosw0Lp) / 2.0) / aa0,
+      (1.0 - cosw0Lp) / aa0,
+      ((1.0 - cosw0Lp) / 2.0) / aa0,
+      (-2.0 * cosw0Lp) / aa0,
+      (1.0 - alphaLp) / aa0,
+    ];
+    {
+      let lx1 = 0;
+      let lx2 = 0;
+      let ly1 = 0;
+      let ly2 = 0;
+      for (let i = 0; i < filtered.length; i += 1) {
+        const x0 = filtered[i];
+        const y0 = coeffs[0] * x0 + coeffs[1] * lx1 + coeffs[2] * lx2 - coeffs[3] * ly1 - coeffs[4] * ly2;
+        filtered[i] = y0;
+        lx2 = lx1;
+        lx1 = x0;
+        ly2 = ly1;
+        ly1 = y0;
+      }
+    }
+    const output = new Float32Array(audio);
+    const attack = Math.exp(-1 / Math.max(1, sampleRate * 0.002));
+    const release = Math.exp(-1 / Math.max(1, sampleRate * 0.012));
+    let blend = 0;
+    for (let index = 0; index < output.length; index += 1) {
+      const target = expanded[Math.floor(index / blockSamples)] ? 0.78 : 0;
+      const coefficient = target > blend ? attack : release;
+      blend = coefficient * blend + (1 - coefficient) * target;
+      output[index] = audio[index] * (1 - blend) + filtered[index] * blend;
+    }
+    return output;
+  }
+
+  function encodeWav16AtRate(samples, sampleRate = 44100) {
+    const sampleCount = Math.max(0, samples?.length || 0);
+    const buffer = new ArrayBuffer(44 + sampleCount * 2);
+    const view = new DataView(buffer);
+    const writeAscii = (offset, value) => {
+      for (let index = 0; index < value.length; index += 1) {
+        view.setUint8(offset + index, value.charCodeAt(index));
+      }
+    };
+    writeAscii(0, "RIFF");
+    view.setUint32(4, 36 + sampleCount * 2, true);
+    writeAscii(8, "WAVE");
+    writeAscii(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeAscii(36, "data");
+    view.setUint32(40, sampleCount * 2, true);
+    for (let index = 0; index < sampleCount; index += 1) {
+      const sample = Math.max(-1, Math.min(1, Number(samples[index]) || 0));
+      view.setInt16(44 + index * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    }
+    return buffer;
+  }
+
+  // 云端纯人声结果的透明抛光: 解码 → 仅对检测到的毫秒级毛刺做局部低通 →
+  // 峰值超 0.90 时整体等比回落。正常结果解码后听感不变; 任何解码失败都返
+  // 回 null, 由调用方回退到云端原始文件, 不影响成片返回。
+  async function polishCloudVoiceAudio(blob) {
+    try {
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextCtor) return null;
+      const arrayBuffer = await blob.arrayBuffer();
+      const audioContext = new AudioContextCtor();
+      let decoded;
+      try {
+        decoded = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+      } finally {
+        audioContext.close?.();
+      }
+      const channels = decoded.numberOfChannels;
+      const length = decoded.length;
+      let mono;
+      if (channels > 1) {
+        mono = new Float32Array(length);
+        for (let channel = 0; channel < channels; channel += 1) {
+          const data = decoded.getChannelData(channel);
+          for (let i = 0; i < length; i += 1) mono[i] += data[i] / channels;
+        }
+      } else {
+        mono = new Float32Array(decoded.getChannelData(0));
+      }
+      const polished = suppressDetectedHarshBurstsCloud(mono, decoded.sampleRate);
+      let peak = 0;
+      for (let i = 0; i < polished.length; i += 1) {
+        const magnitude = Math.abs(polished[i]);
+        if (magnitude > peak) peak = magnitude;
+      }
+      if (peak > 0.9 && Number.isFinite(peak)) {
+        const scale = 0.9 / peak;
+        for (let i = 0; i < polished.length; i += 1) polished[i] *= scale;
+      }
+      return new Blob([encodeWav16AtRate(polished, decoded.sampleRate)], { type: "audio/wav" });
+    } catch (error) {
+      console.warn("Cloud voice polish skipped:", error);
+      return null;
+    }
+  }
+
   function prepareCloudUploadAudio(audio, audioMode = "voice") {
     const original = audio?.file;
     if (!original || !(audio?.float32 instanceof Float32Array)) {
@@ -2120,11 +2327,16 @@
     if (audioMode === "song") {
       return { file: original, optimized: false, originalBytes: original.size, preservesMix: true };
     }
-    const normalizedWav = encodeMono16kWav(audio.float32, original.name);
+    const conditioned = conditionCloudUploadAudio(audio.float32);
+    const normalizedWav = encodeMono16kWav(conditioned, original.name);
     const extension = String(original.name || "").toLowerCase().split(".").pop();
     const isBrowserRecording = /^mic_recording_\d+/iu.test(String(original.name || ""));
     const originalBytesPerSecond = original.size / Math.max(0.5, Number(audio.duration) || 0.5);
-    const shouldUseNormalized = isBrowserRecording
+    // 纯人声模式统一上传条件化后的 16k 单声道 WAV: 官方 RVC 引擎内部本来就会把
+    // 输入重采样到 16k 提取特征, 带外内容不参与转换; 统一路径让每个云端任务都
+    // 获得峰值安全的热输入保护 (与本地管线的 conditionInputAudio 一致)。
+    const shouldUseNormalized = true
+      || isBrowserRecording
       || extension === "wav"
       || original.size > 5 * 1024 * 1024
       || (originalBytesPerSecond > 64 * 1024 && normalizedWav.size < original.size);
@@ -3500,7 +3712,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260830-v42", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260830-v43", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -3931,24 +4143,36 @@
       const outputResponse = await pollCloudOutput(outputUrl, jobTimeoutMs, longJob);
       updateProgressBar(82);
       updateStatusDisplay("📥 [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
-      const outputBlob = longJob
+      const rawOutputBlob = longJob
         ? await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs)
         : await normalizeCloudAudioBlob(await outputResponse.blob(), outputFormat);
+      // 纯人声模式: 客户端透明抛光 (仅检测到的毫秒级毛刺做局部低通 + 热峰
+      // 值回落), 与本地管线的输出守卫一致; 歌曲模式保留云端原混音不动。
+      // 抛光失败时回退云端原始文件, 不影响成片返回。
+      const outputBlob = state.audioMode === "song"
+        ? rawOutputBlob
+        : ((await polishCloudVoiceAudio(rawOutputBlob)) || rawOutputBlob);
+      const polishedVoiceOutput = outputBlob !== rawOutputBlob;
 
       if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
       state.resultUrl = URL.createObjectURL(outputBlob);
       if (resultDownload) {
         resultDownload.href = state.resultUrl;
-        resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.${outputFormat}`;
+        resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.${polishedVoiceOutput ? "wav" : outputFormat}`;
       }
       if (resultAudio) {
-        const mediaUrl = officialMediaUrl(payload.jobId, payload.downloadToken);
-        try {
-          await attachResultAudio(resultAudio, mediaUrl || state.resultUrl, Boolean(mediaUrl));
-        } catch (mediaError) {
-          if (!mediaUrl) throw mediaError;
-          console.warn("Protected media route failed; using the already downloaded result blob", mediaError);
+        if (polishedVoiceOutput) {
+          // 抛光后的结果与下载文件一致, 直接用它试听。
           await attachResultAudio(resultAudio, state.resultUrl, false);
+        } else {
+          const mediaUrl = officialMediaUrl(payload.jobId, payload.downloadToken);
+          try {
+            await attachResultAudio(resultAudio, mediaUrl || state.resultUrl, Boolean(mediaUrl));
+          } catch (mediaError) {
+            if (!mediaUrl) throw mediaError;
+            console.warn("Protected media route failed; using the already downloaded result blob", mediaError);
+            await attachResultAudio(resultAudio, state.resultUrl, false);
+          }
         }
         resultAudio.hidden = false;
       }

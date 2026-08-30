@@ -12757,7 +12757,7 @@ function repairIsolatedShoutF0Errors(f0, maxRunLength = 3) {
   const len = f0.length;
   if (len < 3) return f0;
   const out = new Float32Array(f0);
-  const boundedRunLength = Math.max(1, Math.min(4, Math.floor(maxRunLength) || 3));
+  const boundedRunLength = Math.max(1, Math.min(12, Math.floor(maxRunLength) || 3));
   const isOctaveBandOutlier = (value, reference) => value / reference > 1.50 || value / reference < 0.66;
   let start = 1;
   while (start < len - 1) {
@@ -12837,9 +12837,12 @@ async function estimatePitch(audio, options) {
   // A shout or complex phrase may cause a 10–30 ms octave excursion that
   // sounds like a bubble or electronic chirp. Repair only a short run that is
   // bracketed by agreeing voiced neighbours; sustained notes and vibrato stay
-  // untouched.
-  let filteredF0 = hasShoutDynamics(audio) || hasHighOrComplexPitch(f0)
-    ? repairIsolatedShoutF0Errors(f0)
+  // untouched. High or complex passages also produce longer octave runs
+  // (50–120 ms) that survive the short-run repair and are heard as electronic
+  // warbling, so those chunks allow a longer — still neighbour-locked — repair.
+  const shoutLikeChunk = hasShoutDynamics(audio) || hasHighOrComplexPitch(f0);
+  let filteredF0 = shoutLikeChunk
+    ? repairIsolatedShoutF0Errors(f0, shoutLikeChunk ? 10 : 3)
     : f0;
   if (medianFilterEnabled) {
     if (aggressiveMode) {
@@ -12848,6 +12851,10 @@ async function estimatePitch(audio, options) {
       filteredF0 = medianFilterF0(f0, windowSize);
     }
   }
+  // Reject voiced F0 on frames whose energy is dominated by low-frequency
+  // rumble (wind, fans, traffic). RMVPE's permissive salience threshold turns
+  // that noise into a pitch track, and the vocoder then "sings" the wind.
+  filteredF0 = applyVoicingSanityGate(filteredF0, audio);
   return {
     f0: filteredF0,
     frameCount,
@@ -13380,6 +13387,88 @@ function createBiquadLowpass(f0, Q, sr) {
   const a1 = -2.0 * cosw0;
   const a2 = 1.0 - alpha;
   return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+}
+
+function createBiquadHighpass(f0, Q, sr) {
+  const w0 = 2.0 * Math.PI * f0 / sr;
+  const alpha = Math.sin(w0) / (2.0 * Q);
+  const cosw0 = Math.cos(w0);
+  const a0 = 1.0 + alpha;
+  const b0 = ((1.0 + cosw0) / 2.0) / a0;
+  const b1 = (-(1.0 + cosw0)) / a0;
+  const b2 = ((1.0 + cosw0) / 2.0) / a0;
+  const a1 = (-2.0 * cosw0) / a0;
+  const a2 = (1.0 - alpha) / a0;
+  return [b0, b1, b2, a1, a2];
+}
+
+// Noise-rejection voicing gate ("wind is not a singer"). RMVPE's salience
+// threshold is intentionally permissive, so steady low-rumble noise (wind,
+// fans, traffic) can earn a voiced F0 track — and the vocoder then sings the
+// noise as a hollow electronic tone. Real voice always carries ample energy
+// above ~300 Hz (harmonics plus formants), while wind stays concentrated in
+// the sub-200 Hz rumble, so frames whose 300 Hz-high-passed share of total
+// energy falls under the ratio below are demoted to unvoiced. Only demotion
+// happens here: voiced frames keep their decoded pitch untouched, and a
+// single low-ratio frame inside real voice is kept voiced (neighbour
+// agreement required) so genuine low, soft vowels never flicker.
+function applyVoicingSanityGate(f0, audio, sampleRate = 16000) {
+  if (!audio || audio.length === 0 || !f0 || f0.length === 0) return f0;
+  const hop = 160; // matches the RMVPE frame hop at 16 kHz
+  const frameCount = Math.min(f0.length, Math.floor(audio.length / hop));
+  if (frameCount < 3) return f0;
+  const highpassed = new Float32Array(audio.length);
+  highpassed.set(audio);
+  applyBiquadFilterInPlace(highpassed, createBiquadHighpass(300, 0.7071067811865476, sampleRate));
+  const VOICE_BAND_RATIO = 0.18;
+  const ratios = new Float32Array(frameCount).fill(1);
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (!(f0[frame] > 0)) continue;
+    const start = frame * hop;
+    const end = Math.min(audio.length, start + hop * 3);
+    let sumAll = 0;
+    let sumBand = 0;
+    for (let i = start; i < end; i++) {
+      sumAll += audio[i] * audio[i];
+      sumBand += highpassed[i] * highpassed[i];
+    }
+    const count = Math.max(1, end - start);
+    const rmsAll = Math.sqrt(sumAll / count);
+    if (rmsAll < 1e-4) continue; // near-silence: keep the decoder's verdict
+    ratios[frame] = Math.sqrt(sumBand / count) / rmsAll;
+  }
+  // Decide on a ~50 ms smoothed ratio: brief dips inside real voice and brief
+  // gust peaks inside wind must not flip the verdict frame by frame. Only
+  // voiced frames contribute to the average, so a lone spurious F0 frame
+  // inside wind is judged against its neighbouring noise frames instead of
+  // being protected by them.
+  const belowRatio = new Uint8Array(frameCount);
+  const smoothingRadius = 2;
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (!(f0[frame] > 0)) continue;
+    const window = [];
+    for (let offset = -smoothingRadius; offset <= smoothingRadius; offset++) {
+      const index = Math.min(frameCount - 1, Math.max(0, frame + offset));
+      if (!(f0[index] > 0)) continue;
+      window.push(ratios[index]);
+    }
+    // Median of the voiced neighbourhood: robust against one- or two-frame
+    // ratio blips in either direction.
+    if (window.length > 0) {
+      window.sort((left, right) => left - right);
+      const median = window[Math.floor(window.length / 2)];
+      if (median < VOICE_BAND_RATIO) belowRatio[frame] = 1;
+    }
+  }
+  const output = new Float32Array(f0);
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (!belowRatio[frame]) continue;
+    const previousVoiced = frame > 0 && f0[frame - 1] > 0 && !belowRatio[frame - 1];
+    const nextVoiced = frame + 1 < frameCount && f0[frame + 1] > 0 && !belowRatio[frame + 1];
+    if (previousVoiced && nextVoiced) continue;
+    output[frame] = 0;
+  }
+  return output;
 }
 
 // Repair only objectively detected sub-frame harsh bursts. Normal speech and

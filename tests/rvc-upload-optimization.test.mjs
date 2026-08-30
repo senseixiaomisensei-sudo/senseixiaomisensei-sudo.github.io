@@ -27,6 +27,7 @@ const helpers = Function(`
   const TRANSIENT_CLOUD_OUTPUT_CODES = new Set(["RATE_LIMITER_UNAVAILABLE", "RVC_BACKEND_TIMEOUT", "RVC_BACKEND_UNAVAILABLE", "RVC_NETWORK_INTERRUPTED", "RVC_OUTPUT_UNAVAILABLE", "RVC_RELAY_UNAVAILABLE", "UPSTREAM_UNAVAILABLE"]);
   const TRANSIENT_CLOUD_OUTPUT_STATUSES = new Set([0, 408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 530]);
   ${extractFunction("encodeMono16kWav")}
+  ${extractFunction("conditionCloudUploadAudio")}
   ${extractFunction("prepareCloudUploadAudio")}
   ${extractFunction("cloudRequestTimeoutMs")}
   ${extractFunction("cloudJobTimeoutMs")}
@@ -50,15 +51,17 @@ test("large WAV uploads are reduced to 16 kHz mono without shortening the clip",
   assert.ok(prepared.file.size < original.size / 4);
 });
 
-test("already compact short MP3 uploads stay untouched", () => {
+test("voice-mode uploads are always conditioned 16 kHz mono WAV (peak-safe input)", () => {
   const original = new File([new Uint8Array(96 * 1024)], "short.mp3", { type: "audio/mpeg" });
   const prepared = helpers.prepareCloudUploadAudio({
     file: original,
     float32: new Float32Array(16000 * 4),
     duration: 4,
   });
-  assert.equal(prepared.optimized, false);
-  assert.equal(prepared.file, original);
+  assert.equal(prepared.optimized, true);
+  assert.notEqual(prepared.file, original);
+  assert.match(prepared.file.name, /\.postprep-16k\.wav$/u);
+  assert.ok(prepared.file.size > 0);
 });
 
 test("song mode preserves the original full-band stereo-capable upload", () => {
