@@ -2276,6 +2276,54 @@
   // 云端纯人声结果的透明抛光: 解码 → 仅对检测到的毫秒级毛刺做局部低通 →
   // 峰值超 0.90 时整体等比回落。正常结果解码后听感不变; 任何解码失败都返
   // 回 null, 由调用方回退到云端原始文件, 不影响成片返回。
+  // 容器嗅探: 抖音/微信导出的音频常是 MP4/AAC 容器却带着 .mp3 扩展名。
+  // 中继按扩展名放行, GPU 服务按真实容器打开, 于是报
+  // DENIED_ERROR_NO_SUPPORTED_STREAMS (不支持的音频流)。嗅探魔数后把上传
+  // 文件重标成正确的扩展名与 MIME, 字节完全不动, 不影响音质。
+  function sniffAudioContainer(header) {
+    if (!header || header.length < 12) return null;
+    if (header[0] === 0x49 && header[1] === 0x44 && header[2] === 0x33) return "mp3";
+    if (header[0] === 0x66 && header[1] === 0x4c && header[2] === 0x61 && header[3] === 0x43) return "flac";
+    if (header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46
+      && header[8] === 0x57 && header[9] === 0x41 && header[10] === 0x56 && header[11] === 0x45) return "wav";
+    if (header[0] === 0x4f && header[1] === 0x67 && header[2] === 0x67 && header[3] === 0x53) return "ogg";
+    if (header[4] === 0x66 && header[5] === 0x74 && header[6] === 0x79 && header[7] === 0x70) return "mp4";
+    if (header[0] === 0x1a && header[1] === 0x45 && header[2] === 0xdf && header[3] === 0xa3) return "webm";
+    if (header[0] === 0xff && (header[1] & 0xe0) === 0xe0) {
+      return (header[1] & 0x06) === 0 ? "aac" : "mp3";
+    }
+    return null;
+  }
+
+  const UPLOAD_MIME_BY_KIND = {
+    mp3: "audio/mpeg",
+    m4a: "audio/mp4",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    flac: "audio/flac",
+    webm: "audio/webm",
+    aac: "audio/aac",
+  };
+
+  async function fixUploadContainer(file) {
+    try {
+      if (!file || typeof file.slice !== "function") return file;
+      const header = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+      const kind = sniffAudioContainer(header);
+      if (!kind) return file;
+      const extension = String(file.name || "").toLowerCase().split(".").pop();
+      const targetExtension = kind === "mp4" ? "m4a" : kind;
+      if (extension === targetExtension) return file;
+      const stem = String(file.name || "audio").replace(/\.[^.]+$/u, "").replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 48) || "audio";
+      return new File([file], `${stem}.postprep-${targetExtension}.${targetExtension}`, {
+        type: UPLOAD_MIME_BY_KIND[targetExtension],
+      });
+    } catch (error) {
+      console.warn("Upload container fix skipped:", error);
+      return file;
+    }
+  }
+
   async function polishCloudVoiceAudio(blob) {
     try {
       const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
@@ -3958,6 +4006,8 @@
     const protect = parseFloat(document.getElementById("rvc-protect")?.value || "0.25");
     const rmsMixRate = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1");
     const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
+    // 纠正错误标称的音频容器 (mp4-in-mp3 等), 避免中继放行后 GPU 服务拒收。
+    state.audio.file = await fixUploadContainer(state.audio.file);
     const preparedUpload = prepareCloudUploadAudio(state.audio, state.audioMode);
     const uploadFile = preparedUpload.file;
     if (!uploadFile || uploadFile.size < 1 || uploadFile.size > MAX_AUDIO_BYTES) {

@@ -228,5 +228,52 @@ test("local engine and rvc client cache versions are bumped for the voice fix", 
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
   assert.match(runtimeSource, /inference\.worker\.js\?v=20260830-v43/u);
   assert.match(clientSource, /rvc-web-runtime\.js\?v=20260830-v43/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20260830-voice-fix-v8/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20260830-voice-fix-v9/u);
+});
+
+test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {
+  const extractClientFunction = (name) => {
+    const marker = clientSource.includes(`async function ${name}`)
+      ? `async function ${name}`
+      : `function ${name}`;
+    const start = clientSource.indexOf(marker);
+    assert.ok(start >= 0, `missing ${name}`);
+    const bodyStart = clientSource.indexOf("{", start);
+    let depth = 0;
+    for (let index = bodyStart; index < clientSource.length; index += 1) {
+      if (clientSource[index] === "{") depth += 1;
+      if (clientSource[index] === "}") {
+        depth -= 1;
+        if (depth === 0) return clientSource.slice(start, index + 1);
+      }
+    }
+    throw new Error(`unterminated ${name}`);
+  };
+  const sniff = new Function(`"use strict"; return (${extractClientFunction("sniffAudioContainer")});`)();
+  const fixUpload = new Function("sniffAudioContainer", "UPLOAD_MIME_BY_KIND", `"use strict"; return (${extractClientFunction("fixUploadContainer")});`)(
+    sniff,
+    { mp3: "audio/mpeg", m4a: "audio/mp4", wav: "audio/wav", ogg: "audio/ogg", flac: "audio/flac", webm: "audio/webm", aac: "audio/aac" },
+  );
+
+  assert.equal(sniff(new Uint8Array([0, 0, 0, 32, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d])), "mp4");
+  assert.equal(sniff(new Uint8Array([0x49, 0x44, 0x33, 0x04, 0, 0, 0, 0, 0, 0, 0, 0])), "mp3");
+  assert.equal(sniff(new Uint8Array([0xff, 0xf1, 0x50, 0x80, 0, 0, 0, 0, 0, 0, 0, 0])), "aac");
+  assert.equal(sniff(new Uint8Array([0xff, 0xfb, 0x90, 0x00, 0, 0, 0, 0, 0, 0, 0, 0])), "mp3");
+  assert.equal(sniff(new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x41, 0x56, 0x45])), "wav");
+  assert.equal(sniff(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])), null);
+
+  // 抖音导出: mp4 字节流却叫 .mp3, 修完后名字与 MIME 纠正为 m4a, 字节不变
+  const mp4Bytes = new Uint8Array(2048);
+  mp4Bytes.set([0, 0, 0, 32, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d], 0);
+  const mislabeled = new File([mp4Bytes], "douyin-clip.mp3", { type: "audio/mpeg" });
+  const fixed = await fixUpload(mislabeled);
+  assert.match(fixed.name, /\.m4a$/u);
+  assert.equal(fixed.type, "audio/mp4");
+  assert.equal(fixed.size, mislabeled.size, "bytes must be untouched");
+  const roundTrip = new Uint8Array(await fixed.arrayBuffer());
+  assert.deepEqual([...roundTrip.slice(0, 12)], [...mp4Bytes.slice(0, 12)]);
+
+  // 正确标称的文件原样返回
+  const proper = new File([mp4Bytes], "ok.m4a", { type: "audio/mp4" });
+  assert.equal(await fixUpload(proper), proper);
 });
