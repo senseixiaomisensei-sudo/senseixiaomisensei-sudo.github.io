@@ -357,5 +357,41 @@
       "models/characters/key/chunk_4.bin",
       "models/characters/key/chunk_5.bin"
     ]
+  },
+  "nonomi.onnx": {
+    "totalSize": 110813613,
+    "sha256": "9c996879079acefaf6da2241540279cd6fa839eca03f431f93c6e80f39e5b4fb",
+    "chunks": [
+      "models/characters/nonomi/chunk_0.bin",
+      "models/characters/nonomi/chunk_1.bin",
+      "models/characters/nonomi/chunk_2.bin",
+      "models/characters/nonomi/chunk_3.bin",
+      "models/characters/nonomi/chunk_4.bin",
+      "models/characters/nonomi/chunk_5.bin"
+    ]
+  },
+  "serika.onnx": {
+    "totalSize": 110813613,
+    "sha256": "3ebb3264a290fe5984a109962bd1c25a3ea884471d00f444a937b2dc3d3ff461",
+    "chunks": [
+      "models/characters/serika/chunk_0.bin",
+      "models/characters/serika/chunk_1.bin",
+      "models/characters/serika/chunk_2.bin",
+      "models/characters/serika/chunk_3.bin",
+      "models/characters/serika/chunk_4.bin",
+      "models/characters/serika/chunk_5.bin"
+    ]
+  },
+  "ayane.onnx": {
+    "totalSize": 110813613,
+    "sha256": "9a79a27057a9bc7111fc6a89ccc939472fb0c7aef1cc27f163d59ab60f0b3b47",
+    "chunks": [
+      "models/characters/ayane/chunk_0.bin",
+      "models/characters/ayane/chunk_1.bin",
+      "models/characters/ayane/chunk_2.bin",
+      "models/characters/ayane/chunk_3.bin",
+      "models/characters/ayane/chunk_4.bin",
+      "models/characters/ayane/chunk_5.bin"
+    ]
   }
 }

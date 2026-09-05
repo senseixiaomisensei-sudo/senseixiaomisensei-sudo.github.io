@@ -136,6 +136,11 @@
               <button id="rvc-create-collection-cancel" type="button" class="min-h-10 rounded-lg border border-line bg-white px-4 py-2 text-xs font-black text-muted hover:border-brand hover:text-brand" data-rvc-i18n="cancel">取消</button>
             </div>
           </div>
+          <div id="rvc-school-browser" class="mt-4 rounded-xl border border-line bg-white p-3">
+            <label for="rvc-school-filter" class="text-sm font-bold">学院 / School</label>
+            <select id="rvc-school-filter" class="mt-2 min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm"></select>
+            <div id="rvc-school-roster" class="mt-3 text-xs leading-6 text-muted" aria-live="polite"></div>
+          </div>
           <div id="rvc-model-gallery" class="mt-4 max-h-[32rem] space-y-4 overflow-y-auto pr-1" role="listbox" aria-labelledby="rvc-step-model-label"></div>
           <p id="rvc-model-empty" class="mt-4 hidden rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" data-rvc-i18n="modelEmpty">没有找到匹配的角色。换个关键词试试。</p>
           <div id="rvc-trained-models-section" class="mt-5 hidden rounded-xl border border-violet-200 bg-violet-50/50 p-4">
@@ -412,6 +417,7 @@
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
   <script src="assets/postprep.js?v=20260826-adsense-language"></script>
-  <script src="assets/rvc.js?v=20260830-local-rvc-v7"></script>
+  <script src="assets/rvc-schools.js?v=20260905-schools"></script>
+  <script src="assets/rvc.js?v=20260905-schools"></script>
 </body>
 </html>

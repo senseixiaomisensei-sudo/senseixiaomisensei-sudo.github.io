@@ -333,808 +333,900 @@
   };
 
   const EMBEDDED_RVC_CATALOG = [
-      {
-          "id": "arona",
-          "name": "阿罗娜 (Arona)",
-          "avatarText": "阿罗娜",
-          "description": "联邦学生会什亭之匣 · 明亮轻快导航员声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "什亭之匣"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1nRIkq1AHzR",
-          "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/Arona_President.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "152ce87951192224b08efdedf2b487fb57509420626437df7d21ef2c74307118",
-          "indexSha256": "735227b51d2928509a15aeb3ccb3415188a979138b93bc0b597013986dda7377",
-          "retrieval": "models/characters/arona/retrieval.bin",
-          "chunks": [
-              "models/characters/arona/chunk_0.bin",
-              "models/characters/arona/chunk_1.bin",
-              "models/characters/arona/chunk_2.bin",
-              "models/characters/arona/chunk_3.bin",
-              "models/characters/arona/chunk_4.bin",
-              "models/characters/arona/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "arisu",
-          "name": "天童爱丽丝 (Arisu)",
-          "avatarText": "爱丽丝",
-          "description": "千年游戏开发部 · 清亮机械勇者少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/8IG",
-          "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/TendouAlice.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "2ec7e8c4050c06b1ad2964695ed40d2deab9d8f8c43065f3ffbdf70e02c016cf",
-          "indexSha256": "1dcef1f47371b506051ad30c476b0fa6fcd291ac38dd5e5924baeb203d848240",
-          "retrieval": "models/characters/arisu/retrieval.bin",
-          "chunks": [
-              "models/characters/arisu/chunk_0.bin",
-              "models/characters/arisu/chunk_1.bin",
-              "models/characters/arisu/chunk_2.bin",
-              "models/characters/arisu/chunk_3.bin",
-              "models/characters/arisu/chunk_4.bin",
-              "models/characters/arisu/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "shiroko",
-          "name": "砂狼白子 (Shiroko)",
-          "avatarText": "白子",
-          "description": "阿拜多斯对策委员会 · 沉稳清冷少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "阿拜多斯"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1nJAISi8n53",
-          "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/SunaookamiShiroko.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "f0f672b2251fff17fe801531e18c38fa9902d387cb45c7c0c687cf9184a4360c",
-          "indexSha256": "fc78b75cf68bbba4130867b8082c2b3a1ab27faaf21d271d824c835d853a62a1",
-          "retrieval": "models/characters/shiroko/retrieval.bin",
-          "chunks": [
-              "models/characters/shiroko/chunk_0.bin",
-              "models/characters/shiroko/chunk_1.bin",
-              "models/characters/shiroko/chunk_2.bin",
-              "models/characters/shiroko/chunk_3.bin",
-              "models/characters/shiroko/chunk_4.bin",
-              "models/characters/shiroko/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "hoshino",
-          "name": "小鸟游星野 (Hoshino)",
-          "avatarText": "星野",
-          "description": "阿拜多斯对策委员会 · 慵懒柔和少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "阿拜多斯"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1nHTeq4owIB",
-          "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/TakanashiHoshino.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "56cc39ce5a4042ec0954fe1a47f8d30b1900f6fb185ba28a161397762aa52230",
-          "indexSha256": "d287b69451c5d2725ccf4e51942d032a6aff252ddcb4b46ad68f96dc515be544",
-          "retrieval": "models/characters/hoshino/retrieval.bin",
-          "chunks": [
-              "models/characters/hoshino/chunk_0.bin",
-              "models/characters/hoshino/chunk_1.bin",
-              "models/characters/hoshino/chunk_2.bin",
-              "models/characters/hoshino/chunk_3.bin",
-              "models/characters/hoshino/chunk_4.bin",
-              "models/characters/hoshino/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "yuuka",
-          "name": "早濑优香 (Yuuka)",
-          "avatarText": "优香",
-          "description": "千年研讨会 · 清晰理智少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1nHTIILWUmw",
-          "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/HayaseYuuka.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "bdd7b78638e95ad2f6ca5995408721bc7f058374ace8ba3fe51da2982d5f1986",
-          "indexSha256": "154e86b7e0ffbf570048860fb10f7ba8a7bd3e14d9fe4cd211560e9c784950c9",
-          "retrieval": "models/characters/yuuka/retrieval.bin",
-          "chunks": [
-              "models/characters/yuuka/chunk_0.bin",
-              "models/characters/yuuka/chunk_1.bin",
-              "models/characters/yuuka/chunk_2.bin",
-              "models/characters/yuuka/chunk_3.bin",
-              "models/characters/yuuka/chunk_4.bin",
-              "models/characters/yuuka/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "hina",
-          "name": "空崎日奈 (Hina)",
-          "avatarText": "日奈",
-          "description": "格黑娜风纪委员会 · 沉稳有力少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "格黑娜"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1uY0qGj0jOZ",
-          "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/SorasakiHina.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "ebc6edcb2b657f57937156eff878e51bf392d7c9c65c3d23a7aef7eb2f3eaf16",
-          "indexSha256": "189e199f6e33ddfca5e1c6351bcc331dc3a71a0680ad7565ef6d05c3b07c593a",
-          "retrieval": "models/characters/hina/retrieval.bin",
-          "chunks": [
-              "models/characters/hina/chunk_0.bin",
-              "models/characters/hina/chunk_1.bin",
-              "models/characters/hina/chunk_2.bin",
-              "models/characters/hina/chunk_3.bin",
-              "models/characters/hina/chunk_4.bin",
-              "models/characters/hina/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "noa",
-          "name": "生盐诺亚 (Noa)",
-          "avatarText": "诺亚",
-          "description": "千年研讨会 · 温和从容少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/?q=Ushio+Noa",
-          "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/UshioNoa.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "4f0d38867fafc07487026981175d2eefb2d28a9c731dcdbab808b41bc069016d",
-          "indexSha256": "a2baefac31b22c26474b57f9e15ffd09b0e5248ffee8a48a7a69234302b4ee94",
-          "retrieval": "models/characters/noa/retrieval.bin",
-          "chunks": [
-              "models/characters/noa/chunk_0.bin",
-              "models/characters/noa/chunk_1.bin",
-              "models/characters/noa/chunk_2.bin",
-              "models/characters/noa/chunk_3.bin",
-              "models/characters/noa/chunk_4.bin",
-              "models/characters/noa/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "koharu",
-          "name": "下江小春 (Koharu)",
-          "avatarText": "小春",
-          "description": "三一补课部 · 明亮紧张少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "三一"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1l8t96WteuX",
-          "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/ShimoeKoharu.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "ec375a8ccae860747f2e9e06f80f92127502550c8e89fa44b9e70af5ac3db57d",
-          "indexSha256": "507b54bb32721696ea3850a53eff9965a601bfa37f85fa4cefb29998740d9cef",
-          "retrieval": "models/characters/koharu/retrieval.bin",
-          "chunks": [
-              "models/characters/koharu/chunk_0.bin",
-              "models/characters/koharu/chunk_1.bin",
-              "models/characters/koharu/chunk_2.bin",
-              "models/characters/koharu/chunk_3.bin",
-              "models/characters/koharu/chunk_4.bin",
-              "models/characters/koharu/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "momoi",
-          "name": "才羽桃井 (Momoi)",
-          "avatarText": "桃井",
-          "description": "千年游戏开发部 · 活泼高能少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1m9xfSNza5Q",
-          "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/SaibaMomoi.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "a500a4987abb793783ac2a54ff96908c31eb61fa1d0ca25b33a149c46ac81aeb",
-          "indexSha256": "367e1103527003a48ba5b1e5dd0f8b6b5a22b1b78fe352b1b88aeb8ea0e33258",
-          "retrieval": "models/characters/momoi/retrieval.bin",
-          "chunks": [
-              "models/characters/momoi/chunk_0.bin",
-              "models/characters/momoi/chunk_1.bin",
-              "models/characters/momoi/chunk_2.bin",
-              "models/characters/momoi/chunk_3.bin",
-              "models/characters/momoi/chunk_4.bin",
-              "models/characters/momoi/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "midori",
-          "name": "才羽绿 (Midori)",
-          "avatarText": "绿",
-          "description": "千年游戏开发部 · 轻柔克制少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/8IF",
-          "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/SaibaMidori.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "5d7c9728c94abb58dd3c5b0fc111550f4acb1ccb0fb3c713bf1ae04a7af86de1",
-          "indexSha256": "3aabf9bd4633c705186f7b5d94d7317ee4e0adb7ae9f610eb1fb530a4d8ef7cb",
-          "retrieval": "models/characters/midori/retrieval.bin",
-          "chunks": [
-              "models/characters/midori/chunk_0.bin",
-              "models/characters/midori/chunk_1.bin",
-              "models/characters/midori/chunk_2.bin",
-              "models/characters/midori/chunk_3.bin",
-              "models/characters/midori/chunk_4.bin",
-              "models/characters/midori/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "reisa",
-          "name": "宇泽玲纱 (Reisa)",
-          "avatarText": "玲纱",
-          "description": "三一正义实现委员会 · 元气直率少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "三一"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1leyy90dKiC",
-          "source": "https://huggingface.co/spaces/andhikagg/rvc-blue-archive/tree/main/weights/blue-archive/uzawa-reisa",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "e0d4a0f14bf334cfb5009b6d9ee59ea540a8471934d8b9064d5990b10b81a18a",
-          "indexSha256": "deb1cfff28cbd7e645decd2a7a3e79d4b8e05bbc8b32cefb7aec66c94b624b9d",
-          "retrieval": "models/characters/reisa/retrieval.bin",
-          "chunks": [
-              "models/characters/reisa/chunk_0.bin",
-              "models/characters/reisa/chunk_1.bin",
-              "models/characters/reisa/chunk_2.bin",
-              "models/characters/reisa/chunk_3.bin",
-              "models/characters/reisa/chunk_4.bin",
-              "models/characters/reisa/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "yuzu",
-          "name": "花冈柚子 (Yuzu)",
-          "avatarText": "柚子",
-          "description": "千年游戏开发部 · 纤细内向少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/8II",
-          "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/HanaokaYuzu.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "c8aa31f36a5ee5fae466217d3a6ed931e6512ed58f78f1ee535e52a7d22f1aec",
-          "indexSha256": "0764aeed793827e30e8c4b7687a733acf27ed9afacbb3dbc0ac4353e45d634be",
-          "retrieval": "models/characters/yuzu/retrieval.bin",
-          "chunks": [
-              "models/characters/yuzu/chunk_0.bin",
-              "models/characters/yuzu/chunk_1.bin",
-              "models/characters/yuzu/chunk_2.bin",
-              "models/characters/yuzu/chunk_3.bin",
-              "models/characters/yuzu/chunk_4.bin",
-              "models/characters/yuzu/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "toki",
-          "name": "飞鸟马时 (Toki)",
-          "avatarText": "时",
-          "description": "千年 C&C · 冷静利落少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/?q=Asuma+Toki",
-          "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/AsumaToki.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "9e9b8deaa840620047a78c71f8aeb22fa46b4c12b43906ed0b9f20880928c939",
-          "indexSha256": "2db922d0d1bfb4b911ecd5c81d9404560d6207e1efac060742c7491181a6da75",
-          "retrieval": "models/characters/toki/retrieval.bin",
-          "chunks": [
-              "models/characters/toki/chunk_0.bin",
-              "models/characters/toki/chunk_1.bin",
-              "models/characters/toki/chunk_2.bin",
-              "models/characters/toki/chunk_3.bin",
-              "models/characters/toki/chunk_4.bin",
-              "models/characters/toki/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "asuna",
-          "name": "一之濑明日奈 (Asuna)",
-          "avatarText": "明日奈",
-          "description": "千年 C&C · 开朗明亮少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/?q=Ichinose+Asuna",
-          "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/IchinoseAsuna.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "3aba85f50b6817d58c26e5653b3d22c71a3cead759c0d1d709399cd80fd791b4",
-          "indexSha256": "ba4c6becfc53c0d6c6d8b14c72913c5341d5bce4b678459ff983808d455b3ede",
-          "retrieval": "models/characters/asuna/retrieval.bin",
-          "chunks": [
-              "models/characters/asuna/chunk_0.bin",
-              "models/characters/asuna/chunk_1.bin",
-              "models/characters/asuna/chunk_2.bin",
-              "models/characters/asuna/chunk_3.bin",
-              "models/characters/asuna/chunk_4.bin",
-              "models/characters/asuna/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "aru",
-          "name": "陆八魔爱露 (Aru)",
-          "avatarText": "爱露",
-          "description": "格黑娜便利屋68 · 自信张扬少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "格黑娜"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/?q=Rikuhachima+Aru",
-          "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/RikuhachimaAru.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "a543c781358021d2436df894fda1605fed005209b8a28746b1d4d88c8ec01781",
-          "indexSha256": "206816de6751786dc09a9bf5d76ba17c719ae40155bf5e2faae824133f632395",
-          "retrieval": "models/characters/aru/retrieval.bin",
-          "chunks": [
-              "models/characters/aru/chunk_0.bin",
-              "models/characters/aru/chunk_1.bin",
-              "models/characters/aru/chunk_2.bin",
-              "models/characters/aru/chunk_3.bin",
-              "models/characters/aru/chunk_4.bin",
-              "models/characters/aru/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "kirara",
-          "name": "夜樱绮罗罗 (Kirara)",
-          "avatarText": "绮罗罗",
-          "description": "格黑娜 · 明快外向少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "格黑娜"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1uYkgvbkX03",
-          "source": "https://huggingface.co/RegalHyperus/MiscellaneousRVCModels/resolve/main/KiraraYozakuraJP.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "16af2edf48f9996112eb1888fe31d308ea9b63eb343068e26f5d5b6639d32142",
-          "indexSha256": "2047677dc16cf48ae713b438e40c7bb039b0e64c6af6567cac93d6588bbd8cec",
-          "retrieval": "models/characters/kirara/retrieval.bin",
-          "chunks": [
-              "models/characters/kirara/chunk_0.bin",
-              "models/characters/kirara/chunk_1.bin",
-              "models/characters/kirara/chunk_2.bin",
-              "models/characters/kirara/chunk_3.bin",
-              "models/characters/kirara/chunk_4.bin",
-              "models/characters/kirara/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "koyuki",
-          "name": "黑崎小雪 (Koyuki)",
-          "avatarText": "小雪",
-          "description": "千年研讨会 · 俏皮高能少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 48000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1mwT3t4VMAr",
-          "source": "https://huggingface.co/TokiBotan/KurosakiKoyukiRVCV2/resolve/main/KurosakiKoyuki.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "d73d3ce1403178bb064300a9cf3daa69c77dec4af686d42713754ef76eea032a",
-          "indexSha256": "0f66eb4acd0e3b88ef4a4b36f7b64f5473df48b3cd75a1bc094daa739bd80f0a",
-          "retrieval": "models/characters/koyuki/retrieval.bin",
-          "chunks": [
-              "models/characters/koyuki/chunk_0.bin",
-              "models/characters/koyuki/chunk_1.bin",
-              "models/characters/koyuki/chunk_2.bin",
-              "models/characters/koyuki/chunk_3.bin",
-              "models/characters/koyuki/chunk_4.bin",
-              "models/characters/koyuki/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "kayoko",
-          "name": "鬼方佳世子 (Kayoko)",
-          "avatarText": "佳世子",
-          "description": "格黑娜便利屋68 · 低沉冷静少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "格黑娜"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1quuIua5L3T",
-          "source": "https://huggingface.co/RegalHyperus/new-rvc-models/resolve/main/KayokoOnikataJP.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "bfe47515acd3372b29b4224e0c7d626def0806cec5b1d263969e8267860e8c42",
-          "indexSha256": "12d47f208e26adc23db83855f7902ed9f98dc89f9ccb11f36bb1df3871438b69",
-          "retrieval": "models/characters/kayoko/retrieval.bin",
-          "chunks": [
-              "models/characters/kayoko/chunk_0.bin",
-              "models/characters/kayoko/chunk_1.bin",
-              "models/characters/kayoko/chunk_2.bin",
-              "models/characters/kayoko/chunk_3.bin",
-              "models/characters/kayoko/chunk_4.bin",
-              "models/characters/kayoko/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "seia",
-          "name": "百合园圣娅 (Seia)",
-          "avatarText": "圣娅",
-          "description": "三一茶话会 · 清柔平静少女声线 · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "三一"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 40000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://voice-models.com/model/1ER9jCeaNm0",
-          "source": "https://huggingface.co/sxndypz/rvc-v2-models/resolve/main/seia.zip",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "a3d27a43a7c58b369d868363c4557e65fc82fa2db7c86678f9058af189ab849b",
-          "indexSha256": "1806c1f43a78f0b86360d794d743b6593df6082fc60f1b9e0516a53f7f3c4ce8",
-          "retrieval": "models/characters/seia/retrieval.bin",
-          "chunks": [
-              "models/characters/seia/chunk_0.bin",
-              "models/characters/seia/chunk_1.bin",
-              "models/characters/seia/chunk_2.bin",
-              "models/characters/seia/chunk_3.bin",
-              "models/characters/seia/chunk_4.bin",
-              "models/characters/seia/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "mika",
-          "name": "圣园未花 (Mika)",
-          "avatarText": "未花",
-          "description": "三一茶话会 · 甜亮而有力度的少女声线 · 32k · 公开社区 RVC v2",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "三一",
-              "32k"
-          ],
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-          "sampleRate": 32000,
-          "noiseScale": 0.35,
-          "defaultIndexRate": 0.35,
-          "marketplace": "https://huggingface.co/spaces/andhikagg/rvc-blue-archive/tree/main/weights/blue-archive/misono-mika",
-          "source": "https://huggingface.co/spaces/andhikagg/rvc-blue-archive/tree/main/weights/blue-archive/misono-mika",
-          "license": "Community model; repository terms vary; character/performer authorization unverified",
-          "checkpointSha256": "0d8b3aa3ec3e768743d8b7ed4df1e66c9de89d985c873e45b15f2a588b3c8fd4",
-          "indexSha256": "f0f95e71508bcc0d227e0d2eccff229939ace4f79e0b5e0e72ead7d2a12f30f1",
-          "retrieval": "models/characters/mika/retrieval.bin",
-          "chunks": [
-              "models/characters/mika/chunk_0.bin",
-              "models/characters/mika/chunk_1.bin",
-              "models/characters/mika/chunk_2.bin",
-              "models/characters/mika/chunk_3.bin",
-              "models/characters/mika/chunk_4.bin",
-              "models/characters/mika/chunk_5.bin"
-          ]
-      }
-,
-      {
-          "id": "gojo",
-          "name": "五条悟 (Satoru Gojo)",
-          "avatarText": "五条悟",
-          "description": "《咒术回战》· 清亮从容的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
-          "tags": [
-              "男声",
-              "咒术回战",
-              "日语",
-              "48k"
-          ],
-          "collectionId": "jujutsu-kaisen",
-          "collectionName": "咒术回战",
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；跨音域时小步调节，避免一次性大幅移调",
-          "sampleRate": 48000,
-          "noiseScale": 0.3,
-          "defaultIndexRate": 0.3,
-          "marketplace": "https://voice-models.com/model/1ntfr5panFt",
-          "source": "https://huggingface.co/Kuma6/Satoru-Gojo/resolve/main/Gojo.zip",
-          "license": "Community model; creator requests credit; character/performer authorization unverified",
-          "checkpointSha256": "8a473aaae82a9e7be0bbde859fc3b654c877b340fb002e462bbf5c68b38ab6fa",
-          "indexSha256": "8e643bf9f1ee96e7eb954d9b1dd56cf7fa7bb1c6ec3d02580e394eab2368543",
-          "retrieval": "models/characters/gojo/retrieval.bin",
-          "chunks": [
-              "models/characters/gojo/chunk_0.bin",
-              "models/characters/gojo/chunk_1.bin",
-              "models/characters/gojo/chunk_2.bin",
-              "models/characters/gojo/chunk_3.bin",
-              "models/characters/gojo/chunk_4.bin",
-              "models/characters/gojo/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "sukuna",
-          "name": "两面宿傩 (Ryomen Sukuna)",
-          "avatarText": "宿傩",
-          "description": "《咒术回战》· 低沉强势的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
-          "tags": [
-              "男声",
-              "咒术回战",
-              "日语",
-              "48k"
-          ],
-          "collectionId": "jujutsu-kaisen",
-          "collectionName": "咒术回战",
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；低沉角色建议保留原调并控制输入峰值",
-          "sampleRate": 48000,
-          "noiseScale": 0.3,
-          "defaultIndexRate": 0.3,
-          "marketplace": "https://voice-models.com/model/1nui7agzFO0",
-          "source": "https://huggingface.co/Kuma6/Sukuna/resolve/main/Sukuna.zip",
-          "license": "Community model; creator requests credit; character/performer authorization unverified",
-          "checkpointSha256": "e66c9c880131788736b086badd8835fa1177b1a387ea9f1a530313496342516d",
-          "indexSha256": "b10493894265c1692c9dde370a95e13703dac3a50d229b651c29215ddd80fd82",
-          "retrieval": "models/characters/sukuna/retrieval.bin",
-          "chunks": [
-              "models/characters/sukuna/chunk_0.bin",
-              "models/characters/sukuna/chunk_1.bin",
-              "models/characters/sukuna/chunk_2.bin",
-              "models/characters/sukuna/chunk_3.bin",
-              "models/characters/sukuna/chunk_4.bin",
-              "models/characters/sukuna/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "geto",
-          "name": "夏油杰 (Suguru Geto)",
-          "avatarText": "夏油杰",
-          "description": "《咒术回战》· 沉稳柔和的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
-          "tags": [
-              "男声",
-              "咒术回战",
-              "日语",
-              "48k"
-          ],
-          "collectionId": "jujutsu-kaisen",
-          "collectionName": "咒术回战",
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；平稳人声更利于保留角色质感",
-          "sampleRate": 48000,
-          "noiseScale": 0.3,
-          "defaultIndexRate": 0.3,
-          "marketplace": "https://voice-models.com/model/1nsS1R5evxB",
-          "source": "https://huggingface.co/Kuma6/Suguru-Geto/resolve/main/Geto.zip",
-          "license": "Community model; creator requests credit; character/performer authorization unverified",
-          "checkpointSha256": "29377d351b87e9873e71a6ea4fee2130a2b0222751494ff6c408ea21ac95094b",
-          "indexSha256": "509f8327fb3b588ade669a253eddc0ffe3aa2b7a6aeb9205d1878676f916808e",
-          "retrieval": "models/characters/geto/retrieval.bin",
-          "chunks": [
-              "models/characters/geto/chunk_0.bin",
-              "models/characters/geto/chunk_1.bin",
-              "models/characters/geto/chunk_2.bin",
-              "models/characters/geto/chunk_3.bin",
-              "models/characters/geto/chunk_4.bin",
-              "models/characters/geto/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "toji",
-          "name": "伏黑甚尔 (Toji Fushiguro)",
-          "avatarText": "甚尔",
-          "description": "《咒术回战》· 粗粝有力的成年男声 · 日语公开社区 RVC v2 · 48k / 400 epochs",
-          "tags": [
-              "男声",
-              "咒术回战",
-              "日语",
-              "48k"
-          ],
-          "collectionId": "jujutsu-kaisen",
-          "collectionName": "咒术回战",
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；高能输入会沿用既有峰值保护链",
-          "sampleRate": 48000,
-          "noiseScale": 0.3,
-          "defaultIndexRate": 0.3,
-          "marketplace": "https://voice-models.com/model/1nqAeDDuwe6",
-          "source": "https://huggingface.co/Kuma6/Toji-Fushiguro/resolve/main/Toji.zip",
-          "license": "Community model; creator requests credit; character/performer authorization unverified",
-          "checkpointSha256": "7f9da37feac47f5b6fd06962c01292253866528ecae5284a5693f1a07b887122",
-          "indexSha256": "3ca686e1b45e2d76910cc0ec4e99be225837be7e984dc81062459e5f33545672",
-          "retrieval": "models/characters/toji/retrieval.bin",
-          "chunks": [
-              "models/characters/toji/chunk_0.bin",
-              "models/characters/toji/chunk_1.bin",
-              "models/characters/toji/chunk_2.bin",
-              "models/characters/toji/chunk_3.bin",
-              "models/characters/toji/chunk_4.bin",
-              "models/characters/toji/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "megumi",
-          "name": "伏黑惠 (Megumi Fushiguro)",
-          "avatarText": "伏黑惠",
-          "description": "《咒术回战》· 冷静克制的青年男声 · 日语公开社区 RVC v2 · 48k / 400 epochs",
-          "tags": [
-              "男声",
-              "咒术回战",
-              "日语",
-              "48k"
-          ],
-          "collectionId": "jujutsu-kaisen",
-          "collectionName": "咒术回战",
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；使用清晰近讲人声效果更稳定",
-          "sampleRate": 48000,
-          "noiseScale": 0.3,
-          "defaultIndexRate": 0.3,
-          "marketplace": "https://voice-models.com/model/1nqEz5uruf5",
-          "source": "https://huggingface.co/Kuma6/Megumi-Fushiguro/resolve/main/Megumi.zip",
-          "license": "Community model; creator requests credit; character/performer authorization unverified",
-          "checkpointSha256": "5607805eca963f7cffd25962ecdd47366ba38377cccdca254bd1a4c7c871424f",
-          "indexSha256": "3cb0baec983878498ba311bc861a0677d35125c400bf89a3c5ef8c1a037aa7e5",
-          "retrieval": "models/characters/megumi/retrieval.bin",
-          "chunks": [
-              "models/characters/megumi/chunk_0.bin",
-              "models/characters/megumi/chunk_1.bin",
-              "models/characters/megumi/chunk_2.bin",
-              "models/characters/megumi/chunk_3.bin",
-              "models/characters/megumi/chunk_4.bin",
-              "models/characters/megumi/chunk_5.bin"
-          ]
-      },
-      {
-          "id": "key",
-          "name": "天童凯伊 (Kei)",
-          "avatarText": "凯伊",
-          "description": "千年科学学园 · 特异现象调查部 · 冷静锐利少女声线 · 本站训练 RVC v2 · 40k / 80 epochs",
-          "tags": [
-              "女声",
-              "蔚蓝档案",
-              "千年",
-              "RVC v2"
-          ],
-          "collectionId": "blue-archive",
-          "collectionName": "蔚蓝档案",
-          "defaultPitch": 0,
-          "pitchNote": "同音域输入建议 0；高音或快速变调会自动使用更稳的音高提取分支",
-          "sampleRate": 40000,
-          "noiseScale": 0.3,
-          "defaultIndexRate": 0.26,
-          "source": "https://bluearchive.fandom.com/wiki/Tendou_Kei/Audio",
-          "license": "Character voice copyright and model-training authorization unverified",
-          "checkpointSha256": "be27f3fdc4baf71fd6ce305ea4c08667641cc87318ea42239cfbd43dbc608251",
-          "indexSha256": "9bd81dd0531a64b835c9b56df909b5939d3cd258e10b69b0a05826001fb88741",
-          "datasetProvenanceSha256": "0e1fd6bf67c90732e20a64facf5c7866ff5a3883882c682868190b29cebdbd1c",
-          "modelVersion": "8f2fdbf48395:80e:key-wiki-0e1fd6bf67c9",
-          "retrieval": "models/characters/key/retrieval.bin",
-          "chunks": [
-              "models/characters/key/chunk_0.bin",
-              "models/characters/key/chunk_1.bin",
-              "models/characters/key/chunk_2.bin",
-              "models/characters/key/chunk_3.bin",
-              "models/characters/key/chunk_4.bin",
-              "models/characters/key/chunk_5.bin"
-          ]
-      }
-  ];
+  {
+    "id": "arona",
+    "name": "阿罗娜 (Arona)",
+    "avatarText": "阿罗娜",
+    "description": "联邦学生会什亭之匣 · 明亮轻快导航员声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "什亭之匣"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1nRIkq1AHzR",
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/Arona_President.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "152ce87951192224b08efdedf2b487fb57509420626437df7d21ef2c74307118",
+    "indexSha256": "735227b51d2928509a15aeb3ccb3415188a979138b93bc0b597013986dda7377",
+    "retrieval": "models/characters/arona/retrieval.bin",
+    "chunks": [
+      "models/characters/arona/chunk_0.bin",
+      "models/characters/arona/chunk_1.bin",
+      "models/characters/arona/chunk_2.bin",
+      "models/characters/arona/chunk_3.bin",
+      "models/characters/arona/chunk_4.bin",
+      "models/characters/arona/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "arisu",
+    "name": "天童爱丽丝 (Arisu)",
+    "avatarText": "爱丽丝",
+    "description": "千年游戏开发部 · 清亮机械勇者少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/8IG",
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/TendouAlice.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "2ec7e8c4050c06b1ad2964695ed40d2deab9d8f8c43065f3ffbdf70e02c016cf",
+    "indexSha256": "1dcef1f47371b506051ad30c476b0fa6fcd291ac38dd5e5924baeb203d848240",
+    "retrieval": "models/characters/arisu/retrieval.bin",
+    "chunks": [
+      "models/characters/arisu/chunk_0.bin",
+      "models/characters/arisu/chunk_1.bin",
+      "models/characters/arisu/chunk_2.bin",
+      "models/characters/arisu/chunk_3.bin",
+      "models/characters/arisu/chunk_4.bin",
+      "models/characters/arisu/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "shiroko",
+    "name": "砂狼白子 (Shiroko)",
+    "avatarText": "白子",
+    "description": "阿拜多斯对策委员会 · 沉稳清冷少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "阿拜多斯"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1nJAISi8n53",
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/SunaookamiShiroko.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "f0f672b2251fff17fe801531e18c38fa9902d387cb45c7c0c687cf9184a4360c",
+    "indexSha256": "fc78b75cf68bbba4130867b8082c2b3a1ab27faaf21d271d824c835d853a62a1",
+    "retrieval": "models/characters/shiroko/retrieval.bin",
+    "chunks": [
+      "models/characters/shiroko/chunk_0.bin",
+      "models/characters/shiroko/chunk_1.bin",
+      "models/characters/shiroko/chunk_2.bin",
+      "models/characters/shiroko/chunk_3.bin",
+      "models/characters/shiroko/chunk_4.bin",
+      "models/characters/shiroko/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "hoshino",
+    "name": "小鸟游星野 (Hoshino)",
+    "avatarText": "星野",
+    "description": "阿拜多斯对策委员会 · 慵懒柔和少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "阿拜多斯"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1nHTeq4owIB",
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/TakanashiHoshino.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "56cc39ce5a4042ec0954fe1a47f8d30b1900f6fb185ba28a161397762aa52230",
+    "indexSha256": "d287b69451c5d2725ccf4e51942d032a6aff252ddcb4b46ad68f96dc515be544",
+    "retrieval": "models/characters/hoshino/retrieval.bin",
+    "chunks": [
+      "models/characters/hoshino/chunk_0.bin",
+      "models/characters/hoshino/chunk_1.bin",
+      "models/characters/hoshino/chunk_2.bin",
+      "models/characters/hoshino/chunk_3.bin",
+      "models/characters/hoshino/chunk_4.bin",
+      "models/characters/hoshino/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "yuuka",
+    "name": "早濑优香 (Yuuka)",
+    "avatarText": "优香",
+    "description": "千年研讨会 · 清晰理智少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1nHTIILWUmw",
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/HayaseYuuka.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "bdd7b78638e95ad2f6ca5995408721bc7f058374ace8ba3fe51da2982d5f1986",
+    "indexSha256": "154e86b7e0ffbf570048860fb10f7ba8a7bd3e14d9fe4cd211560e9c784950c9",
+    "retrieval": "models/characters/yuuka/retrieval.bin",
+    "chunks": [
+      "models/characters/yuuka/chunk_0.bin",
+      "models/characters/yuuka/chunk_1.bin",
+      "models/characters/yuuka/chunk_2.bin",
+      "models/characters/yuuka/chunk_3.bin",
+      "models/characters/yuuka/chunk_4.bin",
+      "models/characters/yuuka/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "hina",
+    "name": "空崎日奈 (Hina)",
+    "avatarText": "日奈",
+    "description": "格黑娜风纪委员会 · 沉稳有力少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "格黑娜"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1uY0qGj0jOZ",
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/SorasakiHina.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "ebc6edcb2b657f57937156eff878e51bf392d7c9c65c3d23a7aef7eb2f3eaf16",
+    "indexSha256": "189e199f6e33ddfca5e1c6351bcc331dc3a71a0680ad7565ef6d05c3b07c593a",
+    "retrieval": "models/characters/hina/retrieval.bin",
+    "chunks": [
+      "models/characters/hina/chunk_0.bin",
+      "models/characters/hina/chunk_1.bin",
+      "models/characters/hina/chunk_2.bin",
+      "models/characters/hina/chunk_3.bin",
+      "models/characters/hina/chunk_4.bin",
+      "models/characters/hina/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "noa",
+    "name": "生盐诺亚 (Noa)",
+    "avatarText": "诺亚",
+    "description": "千年研讨会 · 温和从容少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/?q=Ushio+Noa",
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/UshioNoa.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "4f0d38867fafc07487026981175d2eefb2d28a9c731dcdbab808b41bc069016d",
+    "indexSha256": "a2baefac31b22c26474b57f9e15ffd09b0e5248ffee8a48a7a69234302b4ee94",
+    "retrieval": "models/characters/noa/retrieval.bin",
+    "chunks": [
+      "models/characters/noa/chunk_0.bin",
+      "models/characters/noa/chunk_1.bin",
+      "models/characters/noa/chunk_2.bin",
+      "models/characters/noa/chunk_3.bin",
+      "models/characters/noa/chunk_4.bin",
+      "models/characters/noa/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "koharu",
+    "name": "下江小春 (Koharu)",
+    "avatarText": "小春",
+    "description": "三一补课部 · 明亮紧张少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "三一"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1l8t96WteuX",
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/ShimoeKoharu.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "ec375a8ccae860747f2e9e06f80f92127502550c8e89fa44b9e70af5ac3db57d",
+    "indexSha256": "507b54bb32721696ea3850a53eff9965a601bfa37f85fa4cefb29998740d9cef",
+    "retrieval": "models/characters/koharu/retrieval.bin",
+    "chunks": [
+      "models/characters/koharu/chunk_0.bin",
+      "models/characters/koharu/chunk_1.bin",
+      "models/characters/koharu/chunk_2.bin",
+      "models/characters/koharu/chunk_3.bin",
+      "models/characters/koharu/chunk_4.bin",
+      "models/characters/koharu/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "momoi",
+    "name": "才羽桃井 (Momoi)",
+    "avatarText": "桃井",
+    "description": "千年游戏开发部 · 活泼高能少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1m9xfSNza5Q",
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/SaibaMomoi.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "a500a4987abb793783ac2a54ff96908c31eb61fa1d0ca25b33a149c46ac81aeb",
+    "indexSha256": "367e1103527003a48ba5b1e5dd0f8b6b5a22b1b78fe352b1b88aeb8ea0e33258",
+    "retrieval": "models/characters/momoi/retrieval.bin",
+    "chunks": [
+      "models/characters/momoi/chunk_0.bin",
+      "models/characters/momoi/chunk_1.bin",
+      "models/characters/momoi/chunk_2.bin",
+      "models/characters/momoi/chunk_3.bin",
+      "models/characters/momoi/chunk_4.bin",
+      "models/characters/momoi/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "midori",
+    "name": "才羽绿 (Midori)",
+    "avatarText": "绿",
+    "description": "千年游戏开发部 · 轻柔克制少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/8IF",
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/SaibaMidori.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "5d7c9728c94abb58dd3c5b0fc111550f4acb1ccb0fb3c713bf1ae04a7af86de1",
+    "indexSha256": "3aabf9bd4633c705186f7b5d94d7317ee4e0adb7ae9f610eb1fb530a4d8ef7cb",
+    "retrieval": "models/characters/midori/retrieval.bin",
+    "chunks": [
+      "models/characters/midori/chunk_0.bin",
+      "models/characters/midori/chunk_1.bin",
+      "models/characters/midori/chunk_2.bin",
+      "models/characters/midori/chunk_3.bin",
+      "models/characters/midori/chunk_4.bin",
+      "models/characters/midori/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "reisa",
+    "name": "宇泽玲纱 (Reisa)",
+    "avatarText": "玲纱",
+    "description": "三一正义实现委员会 · 元气直率少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "三一"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1leyy90dKiC",
+    "source": "https://huggingface.co/spaces/andhikagg/rvc-blue-archive/tree/main/weights/blue-archive/uzawa-reisa",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "e0d4a0f14bf334cfb5009b6d9ee59ea540a8471934d8b9064d5990b10b81a18a",
+    "indexSha256": "deb1cfff28cbd7e645decd2a7a3e79d4b8e05bbc8b32cefb7aec66c94b624b9d",
+    "retrieval": "models/characters/reisa/retrieval.bin",
+    "chunks": [
+      "models/characters/reisa/chunk_0.bin",
+      "models/characters/reisa/chunk_1.bin",
+      "models/characters/reisa/chunk_2.bin",
+      "models/characters/reisa/chunk_3.bin",
+      "models/characters/reisa/chunk_4.bin",
+      "models/characters/reisa/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "yuzu",
+    "name": "花冈柚子 (Yuzu)",
+    "avatarText": "柚子",
+    "description": "千年游戏开发部 · 纤细内向少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/8II",
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/HanaokaYuzu.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "c8aa31f36a5ee5fae466217d3a6ed931e6512ed58f78f1ee535e52a7d22f1aec",
+    "indexSha256": "0764aeed793827e30e8c4b7687a733acf27ed9afacbb3dbc0ac4353e45d634be",
+    "retrieval": "models/characters/yuzu/retrieval.bin",
+    "chunks": [
+      "models/characters/yuzu/chunk_0.bin",
+      "models/characters/yuzu/chunk_1.bin",
+      "models/characters/yuzu/chunk_2.bin",
+      "models/characters/yuzu/chunk_3.bin",
+      "models/characters/yuzu/chunk_4.bin",
+      "models/characters/yuzu/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "toki",
+    "name": "飞鸟马时 (Toki)",
+    "avatarText": "时",
+    "description": "千年 C&C · 冷静利落少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/?q=Asuma+Toki",
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/AsumaToki.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "9e9b8deaa840620047a78c71f8aeb22fa46b4c12b43906ed0b9f20880928c939",
+    "indexSha256": "2db922d0d1bfb4b911ecd5c81d9404560d6207e1efac060742c7491181a6da75",
+    "retrieval": "models/characters/toki/retrieval.bin",
+    "chunks": [
+      "models/characters/toki/chunk_0.bin",
+      "models/characters/toki/chunk_1.bin",
+      "models/characters/toki/chunk_2.bin",
+      "models/characters/toki/chunk_3.bin",
+      "models/characters/toki/chunk_4.bin",
+      "models/characters/toki/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "asuna",
+    "name": "一之濑明日奈 (Asuna)",
+    "avatarText": "明日奈",
+    "description": "千年 C&C · 开朗明亮少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/?q=Ichinose+Asuna",
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/resolve/main/IchinoseAsuna.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "3aba85f50b6817d58c26e5653b3d22c71a3cead759c0d1d709399cd80fd791b4",
+    "indexSha256": "ba4c6becfc53c0d6c6d8b14c72913c5341d5bce4b678459ff983808d455b3ede",
+    "retrieval": "models/characters/asuna/retrieval.bin",
+    "chunks": [
+      "models/characters/asuna/chunk_0.bin",
+      "models/characters/asuna/chunk_1.bin",
+      "models/characters/asuna/chunk_2.bin",
+      "models/characters/asuna/chunk_3.bin",
+      "models/characters/asuna/chunk_4.bin",
+      "models/characters/asuna/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "aru",
+    "name": "陆八魔爱露 (Aru)",
+    "avatarText": "爱露",
+    "description": "格黑娜便利屋68 · 自信张扬少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "格黑娜"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/?q=Rikuhachima+Aru",
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/RikuhachimaAru.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "a543c781358021d2436df894fda1605fed005209b8a28746b1d4d88c8ec01781",
+    "indexSha256": "206816de6751786dc09a9bf5d76ba17c719ae40155bf5e2faae824133f632395",
+    "retrieval": "models/characters/aru/retrieval.bin",
+    "chunks": [
+      "models/characters/aru/chunk_0.bin",
+      "models/characters/aru/chunk_1.bin",
+      "models/characters/aru/chunk_2.bin",
+      "models/characters/aru/chunk_3.bin",
+      "models/characters/aru/chunk_4.bin",
+      "models/characters/aru/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "kirara",
+    "name": "夜樱绮罗罗 (Kirara)",
+    "avatarText": "绮罗罗",
+    "description": "格黑娜 · 明快外向少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "格黑娜"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1uYkgvbkX03",
+    "source": "https://huggingface.co/RegalHyperus/MiscellaneousRVCModels/resolve/main/KiraraYozakuraJP.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "16af2edf48f9996112eb1888fe31d308ea9b63eb343068e26f5d5b6639d32142",
+    "indexSha256": "2047677dc16cf48ae713b438e40c7bb039b0e64c6af6567cac93d6588bbd8cec",
+    "retrieval": "models/characters/kirara/retrieval.bin",
+    "chunks": [
+      "models/characters/kirara/chunk_0.bin",
+      "models/characters/kirara/chunk_1.bin",
+      "models/characters/kirara/chunk_2.bin",
+      "models/characters/kirara/chunk_3.bin",
+      "models/characters/kirara/chunk_4.bin",
+      "models/characters/kirara/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "koyuki",
+    "name": "黑崎小雪 (Koyuki)",
+    "avatarText": "小雪",
+    "description": "千年研讨会 · 俏皮高能少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 48000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1mwT3t4VMAr",
+    "source": "https://huggingface.co/TokiBotan/KurosakiKoyukiRVCV2/resolve/main/KurosakiKoyuki.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "d73d3ce1403178bb064300a9cf3daa69c77dec4af686d42713754ef76eea032a",
+    "indexSha256": "0f66eb4acd0e3b88ef4a4b36f7b64f5473df48b3cd75a1bc094daa739bd80f0a",
+    "retrieval": "models/characters/koyuki/retrieval.bin",
+    "chunks": [
+      "models/characters/koyuki/chunk_0.bin",
+      "models/characters/koyuki/chunk_1.bin",
+      "models/characters/koyuki/chunk_2.bin",
+      "models/characters/koyuki/chunk_3.bin",
+      "models/characters/koyuki/chunk_4.bin",
+      "models/characters/koyuki/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "kayoko",
+    "name": "鬼方佳世子 (Kayoko)",
+    "avatarText": "佳世子",
+    "description": "格黑娜便利屋68 · 低沉冷静少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "格黑娜"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1quuIua5L3T",
+    "source": "https://huggingface.co/RegalHyperus/new-rvc-models/resolve/main/KayokoOnikataJP.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "bfe47515acd3372b29b4224e0c7d626def0806cec5b1d263969e8267860e8c42",
+    "indexSha256": "12d47f208e26adc23db83855f7902ed9f98dc89f9ccb11f36bb1df3871438b69",
+    "retrieval": "models/characters/kayoko/retrieval.bin",
+    "chunks": [
+      "models/characters/kayoko/chunk_0.bin",
+      "models/characters/kayoko/chunk_1.bin",
+      "models/characters/kayoko/chunk_2.bin",
+      "models/characters/kayoko/chunk_3.bin",
+      "models/characters/kayoko/chunk_4.bin",
+      "models/characters/kayoko/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "seia",
+    "name": "百合园圣娅 (Seia)",
+    "avatarText": "圣娅",
+    "description": "三一茶话会 · 清柔平静少女声线 · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "三一"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://voice-models.com/model/1ER9jCeaNm0",
+    "source": "https://huggingface.co/sxndypz/rvc-v2-models/resolve/main/seia.zip",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "a3d27a43a7c58b369d868363c4557e65fc82fa2db7c86678f9058af189ab849b",
+    "indexSha256": "1806c1f43a78f0b86360d794d743b6593df6082fc60f1b9e0516a53f7f3c4ce8",
+    "retrieval": "models/characters/seia/retrieval.bin",
+    "chunks": [
+      "models/characters/seia/chunk_0.bin",
+      "models/characters/seia/chunk_1.bin",
+      "models/characters/seia/chunk_2.bin",
+      "models/characters/seia/chunk_3.bin",
+      "models/characters/seia/chunk_4.bin",
+      "models/characters/seia/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "mika",
+    "name": "圣园未花 (Mika)",
+    "avatarText": "未花",
+    "description": "三一茶话会 · 甜亮而有力度的少女声线 · 32k · 公开社区 RVC v2",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "三一",
+      "32k"
+    ],
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+    "sampleRate": 32000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "marketplace": "https://huggingface.co/spaces/andhikagg/rvc-blue-archive/tree/main/weights/blue-archive/misono-mika",
+    "source": "https://huggingface.co/spaces/andhikagg/rvc-blue-archive/tree/main/weights/blue-archive/misono-mika",
+    "license": "Community model; repository terms vary; character/performer authorization unverified",
+    "checkpointSha256": "0d8b3aa3ec3e768743d8b7ed4df1e66c9de89d985c873e45b15f2a588b3c8fd4",
+    "indexSha256": "f0f95e71508bcc0d227e0d2eccff229939ace4f79e0b5e0e72ead7d2a12f30f1",
+    "retrieval": "models/characters/mika/retrieval.bin",
+    "chunks": [
+      "models/characters/mika/chunk_0.bin",
+      "models/characters/mika/chunk_1.bin",
+      "models/characters/mika/chunk_2.bin",
+      "models/characters/mika/chunk_3.bin",
+      "models/characters/mika/chunk_4.bin",
+      "models/characters/mika/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "gojo",
+    "name": "五条悟 (Satoru Gojo)",
+    "avatarText": "五条悟",
+    "description": "《咒术回战》· 清亮从容的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+    "tags": [
+      "男声",
+      "咒术回战",
+      "日语",
+      "48k"
+    ],
+    "collectionId": "jujutsu-kaisen",
+    "collectionName": "咒术回战",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域时小步调节，避免一次性大幅移调",
+    "sampleRate": 48000,
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "marketplace": "https://voice-models.com/model/1ntfr5panFt",
+    "source": "https://huggingface.co/Kuma6/Satoru-Gojo/resolve/main/Gojo.zip",
+    "license": "Community model; creator requests credit; character/performer authorization unverified",
+    "checkpointSha256": "8a473aaae82a9e7be0bbde859fc3b654c877b340fb002e462bbf5c68b38ab6fa",
+    "indexSha256": "8e643bf9f1ee96e7eb954d9b1dd56cf7fa7bb1c6ec3d02580e394eab2368543",
+    "retrieval": "models/characters/gojo/retrieval.bin",
+    "chunks": [
+      "models/characters/gojo/chunk_0.bin",
+      "models/characters/gojo/chunk_1.bin",
+      "models/characters/gojo/chunk_2.bin",
+      "models/characters/gojo/chunk_3.bin",
+      "models/characters/gojo/chunk_4.bin",
+      "models/characters/gojo/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "sukuna",
+    "name": "两面宿傩 (Ryomen Sukuna)",
+    "avatarText": "宿傩",
+    "description": "《咒术回战》· 低沉强势的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+    "tags": [
+      "男声",
+      "咒术回战",
+      "日语",
+      "48k"
+    ],
+    "collectionId": "jujutsu-kaisen",
+    "collectionName": "咒术回战",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；低沉角色建议保留原调并控制输入峰值",
+    "sampleRate": 48000,
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "marketplace": "https://voice-models.com/model/1nui7agzFO0",
+    "source": "https://huggingface.co/Kuma6/Sukuna/resolve/main/Sukuna.zip",
+    "license": "Community model; creator requests credit; character/performer authorization unverified",
+    "checkpointSha256": "e66c9c880131788736b086badd8835fa1177b1a387ea9f1a530313496342516d",
+    "indexSha256": "b10493894265c1692c9dde370a95e13703dac3a50d229b651c29215ddd80fd82",
+    "retrieval": "models/characters/sukuna/retrieval.bin",
+    "chunks": [
+      "models/characters/sukuna/chunk_0.bin",
+      "models/characters/sukuna/chunk_1.bin",
+      "models/characters/sukuna/chunk_2.bin",
+      "models/characters/sukuna/chunk_3.bin",
+      "models/characters/sukuna/chunk_4.bin",
+      "models/characters/sukuna/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "geto",
+    "name": "夏油杰 (Suguru Geto)",
+    "avatarText": "夏油杰",
+    "description": "《咒术回战》· 沉稳柔和的成年男声 · 日语公开社区 RVC v2 · 48k / 600 epochs",
+    "tags": [
+      "男声",
+      "咒术回战",
+      "日语",
+      "48k"
+    ],
+    "collectionId": "jujutsu-kaisen",
+    "collectionName": "咒术回战",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；平稳人声更利于保留角色质感",
+    "sampleRate": 48000,
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "marketplace": "https://voice-models.com/model/1nsS1R5evxB",
+    "source": "https://huggingface.co/Kuma6/Suguru-Geto/resolve/main/Geto.zip",
+    "license": "Community model; creator requests credit; character/performer authorization unverified",
+    "checkpointSha256": "29377d351b87e9873e71a6ea4fee2130a2b0222751494ff6c408ea21ac95094b",
+    "indexSha256": "509f8327fb3b588ade669a253eddc0ffe3aa2b7a6aeb9205d1878676f916808e",
+    "retrieval": "models/characters/geto/retrieval.bin",
+    "chunks": [
+      "models/characters/geto/chunk_0.bin",
+      "models/characters/geto/chunk_1.bin",
+      "models/characters/geto/chunk_2.bin",
+      "models/characters/geto/chunk_3.bin",
+      "models/characters/geto/chunk_4.bin",
+      "models/characters/geto/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "toji",
+    "name": "伏黑甚尔 (Toji Fushiguro)",
+    "avatarText": "甚尔",
+    "description": "《咒术回战》· 粗粝有力的成年男声 · 日语公开社区 RVC v2 · 48k / 400 epochs",
+    "tags": [
+      "男声",
+      "咒术回战",
+      "日语",
+      "48k"
+    ],
+    "collectionId": "jujutsu-kaisen",
+    "collectionName": "咒术回战",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；高能输入会沿用既有峰值保护链",
+    "sampleRate": 48000,
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "marketplace": "https://voice-models.com/model/1nqAeDDuwe6",
+    "source": "https://huggingface.co/Kuma6/Toji-Fushiguro/resolve/main/Toji.zip",
+    "license": "Community model; creator requests credit; character/performer authorization unverified",
+    "checkpointSha256": "7f9da37feac47f5b6fd06962c01292253866528ecae5284a5693f1a07b887122",
+    "indexSha256": "3ca686e1b45e2d76910cc0ec4e99be225837be7e984dc81062459e5f33545672",
+    "retrieval": "models/characters/toji/retrieval.bin",
+    "chunks": [
+      "models/characters/toji/chunk_0.bin",
+      "models/characters/toji/chunk_1.bin",
+      "models/characters/toji/chunk_2.bin",
+      "models/characters/toji/chunk_3.bin",
+      "models/characters/toji/chunk_4.bin",
+      "models/characters/toji/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "megumi",
+    "name": "伏黑惠 (Megumi Fushiguro)",
+    "avatarText": "伏黑惠",
+    "description": "《咒术回战》· 冷静克制的青年男声 · 日语公开社区 RVC v2 · 48k / 400 epochs",
+    "tags": [
+      "男声",
+      "咒术回战",
+      "日语",
+      "48k"
+    ],
+    "collectionId": "jujutsu-kaisen",
+    "collectionName": "咒术回战",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；使用清晰近讲人声效果更稳定",
+    "sampleRate": 48000,
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "marketplace": "https://voice-models.com/model/1nqEz5uruf5",
+    "source": "https://huggingface.co/Kuma6/Megumi-Fushiguro/resolve/main/Megumi.zip",
+    "license": "Community model; creator requests credit; character/performer authorization unverified",
+    "checkpointSha256": "5607805eca963f7cffd25962ecdd47366ba38377cccdca254bd1a4c7c871424f",
+    "indexSha256": "3cb0baec983878498ba311bc861a0677d35125c400bf89a3c5ef8c1a037aa7e5",
+    "retrieval": "models/characters/megumi/retrieval.bin",
+    "chunks": [
+      "models/characters/megumi/chunk_0.bin",
+      "models/characters/megumi/chunk_1.bin",
+      "models/characters/megumi/chunk_2.bin",
+      "models/characters/megumi/chunk_3.bin",
+      "models/characters/megumi/chunk_4.bin",
+      "models/characters/megumi/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "key",
+    "name": "天童凯伊 (Kei)",
+    "avatarText": "凯伊",
+    "description": "千年科学学园 · 特异现象调查部 · 冷静锐利少女声线 · 本站训练 RVC v2 · 40k / 80 epochs",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年",
+      "RVC v2"
+    ],
+    "collectionId": "blue-archive",
+    "collectionName": "蔚蓝档案",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；高音或快速变调会自动使用更稳的音高提取分支",
+    "sampleRate": 40000,
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.26,
+    "source": "https://bluearchive.fandom.com/wiki/Tendou_Kei/Audio",
+    "license": "Character voice copyright and model-training authorization unverified",
+    "checkpointSha256": "be27f3fdc4baf71fd6ce305ea4c08667641cc87318ea42239cfbd43dbc608251",
+    "indexSha256": "9bd81dd0531a64b835c9b56df909b5939d3cd258e10b69b0a05826001fb88741",
+    "datasetProvenanceSha256": "0e1fd6bf67c90732e20a64facf5c7866ff5a3883882c682868190b29cebdbd1c",
+    "modelVersion": "8f2fdbf48395:80e:key-wiki-0e1fd6bf67c9",
+    "retrieval": "models/characters/key/retrieval.bin",
+    "chunks": [
+      "models/characters/key/chunk_0.bin",
+      "models/characters/key/chunk_1.bin",
+      "models/characters/key/chunk_2.bin",
+      "models/characters/key/chunk_3.bin",
+      "models/characters/key/chunk_4.bin",
+      "models/characters/key/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "nonomi",
+    "name": "十六夜野乃美 (Nonomi)",
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/IzayoiNonomi.zip",
+    "sampleRate": 40000,
+    "checkpointSha256": "0c5acc244323d4f455b6a7f6b74e6e7d60504c3e0eb3e21065af01c5deae6b18",
+    "indexSha256": "2c9a63fe0d2e06b6c48f9dc0e4cc545cb871c7ba99f687ea7945ccf2a4a77033",
+    "avatarText": "野乃美",
+    "description": "阿拜多斯对策委员会 · 日语社区 RVC v2 声线",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "阿拜多斯"
+    ],
+    "collectionId": "blue-archive",
+    "collectionName": "蔚蓝档案",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请先试听小幅调整",
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "license": "Community model; character/performer authorization unverified",
+    "retrieval": "models/characters/nonomi/retrieval.bin",
+    "chunks": [
+      "models/characters/nonomi/chunk_0.bin",
+      "models/characters/nonomi/chunk_1.bin",
+      "models/characters/nonomi/chunk_2.bin",
+      "models/characters/nonomi/chunk_3.bin",
+      "models/characters/nonomi/chunk_4.bin",
+      "models/characters/nonomi/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "serika",
+    "name": "黑见芹香 (Serika)",
+    "source": "https://huggingface.co/spaces/Ilzhabimantara/rvc-Blue-archives-hoyogames/resolve/main/weights/blue-archive/kuromi-serika/",
+    "sampleRate": 40000,
+    "checkpointSha256": "725d93fac82e864fb9b01042698832c55b574a8b8cbdc5cf14cc30821c08bc71",
+    "indexSha256": "bcd3754e79195175628d54d614768d9c6458c25b325ae75782b7edf4417af834",
+    "avatarText": "芹香",
+    "description": "阿拜多斯对策委员会 · 日语社区 RVC v2 声线",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "阿拜多斯"
+    ],
+    "collectionId": "blue-archive",
+    "collectionName": "蔚蓝档案",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请先试听小幅调整",
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "license": "Community model; character/performer authorization unverified",
+    "retrieval": "models/characters/serika/retrieval.bin",
+    "chunks": [
+      "models/characters/serika/chunk_0.bin",
+      "models/characters/serika/chunk_1.bin",
+      "models/characters/serika/chunk_2.bin",
+      "models/characters/serika/chunk_3.bin",
+      "models/characters/serika/chunk_4.bin",
+      "models/characters/serika/chunk_5.bin"
+    ]
+  },
+  {
+    "id": "ayane",
+    "name": "奥空绫音 (Ayane)",
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/OkusoraAyane.zip",
+    "sampleRate": 40000,
+    "checkpointSha256": "9953556bf704f41478c0ca902097dc17005c1a655232a06e91c375d47fb0ddc5",
+    "indexSha256": "37d5dd684d15ff99b7760cf8bca895ceff52978aa3322818cf5052a0dbe1eff1",
+    "avatarText": "绫音",
+    "description": "阿拜多斯对策委员会 · 日语社区 RVC v2 声线",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "阿拜多斯"
+    ],
+    "collectionId": "blue-archive",
+    "collectionName": "蔚蓝档案",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请先试听小幅调整",
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "license": "Community model; character/performer authorization unverified",
+    "retrieval": "models/characters/ayane/retrieval.bin",
+    "chunks": [
+      "models/characters/ayane/chunk_0.bin",
+      "models/characters/ayane/chunk_1.bin",
+      "models/characters/ayane/chunk_2.bin",
+      "models/characters/ayane/chunk_3.bin",
+      "models/characters/ayane/chunk_4.bin",
+      "models/characters/ayane/chunk_5.bin"
+    ]
+  }
+];
 
   function readCloudSubmissionTimestamp(storage, now = Date.now()) {
     try {
@@ -1975,6 +2067,57 @@
     target.appendChild(grid);
   }
 
+  function renderSchoolBrowser(searchVal) {
+    const wrapper = document.getElementById("rvc-school-browser");
+    const select = document.getElementById("rvc-school-filter");
+    const roster = document.getElementById("rvc-school-roster");
+    const directory = window.PostPrepSchools;
+    if (!wrapper || !select || !roster || !directory) return "";
+    const visible = state.activeCollectionId === "blue-archive";
+    wrapper.hidden = !visible;
+    if (!visible) return "";
+    const previous = select.value;
+    select.innerHTML = "";
+    const option = (value, label) => {
+      const node = document.createElement("option");
+      node.value = value;
+      node.textContent = label;
+      select.appendChild(node);
+    };
+    option("", state.lang === "en" ? "All schools · available voices" : "全部学院 · 可用声线");
+    directory.schools.forEach(school => {
+      const count = state.catalog.filter(model => directory.schoolFor(model) === school.id).length;
+      option(school.id, (state.lang === "en" ? school.en : school.name) + " · " + count);
+    });
+    select.value = previous;
+    select.onchange = () => renderModelGallery();
+    const school = directory.schools.find(item => item.id === select.value);
+    roster.innerHTML = "";
+    if (school) {
+      const note = document.createElement("p");
+      note.textContent = state.lang === "en"
+        ? "Character directory. Only installed voices appear as selectable cards below."
+        : "角色目录：下方仅显示已接入的可选声线。“待接入”表示本站尚无可用模型；日服角色保留日文名便于检索。";
+      roster.appendChild(note);
+      school.students.filter(student => !searchVal || student.join(" ").toLowerCase().includes(searchVal)).forEach(student => {
+        const row = document.createElement("p");
+        const available = state.catalog.some(model => model.id === student[0]);
+        row.textContent = student[1] + " / " + student[3] + " · " + (state.lang === "en"
+          ? available ? "Voice available" : "Voice not installed"
+          : available ? "声线已接入" : "声线待接入");
+        roster.appendChild(row);
+      });
+      const source = document.createElement("a");
+      source.href = school.source;
+      source.target = "_blank";
+      source.rel = "noopener noreferrer";
+      source.className = "text-brand underline";
+      source.textContent = state.lang === "en" ? "Character reference" : "查看角色资料来源";
+      roster.appendChild(source);
+    }
+    return select.value;
+  }
+
   function renderModelGallery() {
     const container = document.getElementById("rvc-model-gallery");
     const trainedContainer = document.getElementById("rvc-trained-model-gallery");
@@ -1986,9 +2129,11 @@
     if (!container) return;
 
     renderCollectionNav();
+    const selectedSchool = renderSchoolBrowser(searchVal);
     const activeCollection = selectedCollectionDefinition();
     const filtered = state.catalog.filter((m) => {
       if (String(m.collectionId || "other") !== state.activeCollectionId) return false;
+      if (selectedSchool && window.PostPrepSchools?.schoolFor(m) !== selectedSchool) return false;
       if (!searchVal) return true;
       return (
         m.name.toLowerCase().includes(searchVal) ||

@@ -1,7 +1,7 @@
 {
-  "version": 14,
-  "updatedAt": "2026-08-30",
-  "_readme": "v49 精选目录：21 个蔚蓝档案与 5 个咒术回战 RVC v2 模型；新增本站训练的 Key 浏览器本地模型。全部模型经过哈希、权重安全加载、结构、索引和真实推理检查。技术检查不等于角色/表演者授权，也不等于任何输入下零伪影保证。",
+  "version": 15,
+  "updatedAt": "2026-09-05",
+  "_readme": "新增阿拜多斯野乃美、芹香、绫音；新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",
@@ -852,6 +852,99 @@
         "models/characters/key/chunk_3.bin",
         "models/characters/key/chunk_4.bin",
         "models/characters/key/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "nonomi",
+      "name": "十六夜野乃美 (Nonomi)",
+      "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/IzayoiNonomi.zip",
+      "sampleRate": 40000,
+      "checkpointSha256": "0c5acc244323d4f455b6a7f6b74e6e7d60504c3e0eb3e21065af01c5deae6b18",
+      "indexSha256": "2c9a63fe0d2e06b6c48f9dc0e4cc545cb871c7ba99f687ea7945ccf2a4a77033",
+      "avatarText": "野乃美",
+      "description": "阿拜多斯对策委员会 · 日语社区 RVC v2 声线",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "阿拜多斯"
+      ],
+      "collectionId": "blue-archive",
+      "collectionName": "蔚蓝档案",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；跨音域请先试听小幅调整",
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "license": "Community model; character/performer authorization unverified",
+      "retrieval": "models/characters/nonomi/retrieval.bin",
+      "chunks": [
+        "models/characters/nonomi/chunk_0.bin",
+        "models/characters/nonomi/chunk_1.bin",
+        "models/characters/nonomi/chunk_2.bin",
+        "models/characters/nonomi/chunk_3.bin",
+        "models/characters/nonomi/chunk_4.bin",
+        "models/characters/nonomi/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "serika",
+      "name": "黑见芹香 (Serika)",
+      "source": "https://huggingface.co/spaces/Ilzhabimantara/rvc-Blue-archives-hoyogames/resolve/main/weights/blue-archive/kuromi-serika/",
+      "sampleRate": 40000,
+      "checkpointSha256": "725d93fac82e864fb9b01042698832c55b574a8b8cbdc5cf14cc30821c08bc71",
+      "indexSha256": "bcd3754e79195175628d54d614768d9c6458c25b325ae75782b7edf4417af834",
+      "avatarText": "芹香",
+      "description": "阿拜多斯对策委员会 · 日语社区 RVC v2 声线",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "阿拜多斯"
+      ],
+      "collectionId": "blue-archive",
+      "collectionName": "蔚蓝档案",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；跨音域请先试听小幅调整",
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "license": "Community model; character/performer authorization unverified",
+      "retrieval": "models/characters/serika/retrieval.bin",
+      "chunks": [
+        "models/characters/serika/chunk_0.bin",
+        "models/characters/serika/chunk_1.bin",
+        "models/characters/serika/chunk_2.bin",
+        "models/characters/serika/chunk_3.bin",
+        "models/characters/serika/chunk_4.bin",
+        "models/characters/serika/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "ayane",
+      "name": "奥空绫音 (Ayane)",
+      "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/OkusoraAyane.zip",
+      "sampleRate": 40000,
+      "checkpointSha256": "9953556bf704f41478c0ca902097dc17005c1a655232a06e91c375d47fb0ddc5",
+      "indexSha256": "37d5dd684d15ff99b7760cf8bca895ceff52978aa3322818cf5052a0dbe1eff1",
+      "avatarText": "绫音",
+      "description": "阿拜多斯对策委员会 · 日语社区 RVC v2 声线",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "阿拜多斯"
+      ],
+      "collectionId": "blue-archive",
+      "collectionName": "蔚蓝档案",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；跨音域请先试听小幅调整",
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "license": "Community model; character/performer authorization unverified",
+      "retrieval": "models/characters/ayane/retrieval.bin",
+      "chunks": [
+        "models/characters/ayane/chunk_0.bin",
+        "models/characters/ayane/chunk_1.bin",
+        "models/characters/ayane/chunk_2.bin",
+        "models/characters/ayane/chunk_3.bin",
+        "models/characters/ayane/chunk_4.bin",
+        "models/characters/ayane/chunk_5.bin"
       ]
     }
   ]
