@@ -1953,12 +1953,17 @@
     return `trained:${cleanCollectionName(name) || "我的训练模型"}`;
   }
 
+  function isRemovedCollection(name) {
+    return /喜羊羊.*灰太狼|pleasant\s*goat.*(?:big\s*big\s*)?wolf/iu.test(String(name || ""));
+  }
+
   function loadCustomCollections() {
     try {
       const parsed = JSON.parse(window.localStorage.getItem(COLLECTION_STORAGE_KEY) || "[]");
       state.customCollections = Array.isArray(parsed)
-        ? [...new Set(parsed.map(cleanCollectionName).filter(Boolean))].slice(0, 24)
+        ? [...new Set(parsed.map(cleanCollectionName).filter(name => name && !isRemovedCollection(name)))].slice(0, 24)
         : [];
+      persistCustomCollections();
     } catch {
       state.customCollections = [];
     }
@@ -1974,6 +1979,7 @@
     const definitions = new Map();
     state.catalog.forEach((model) => {
       const name = cleanCollectionName(model.collectionName) || (model.trained === true ? "我的训练模型" : "其他角色");
+      if (isRemovedCollection(name)) return;
       const id = String(model.collectionId || (model.trained === true ? trainedCollectionId(name) : "other"));
       if (!definitions.has(id)) {
         definitions.set(id, {
@@ -1986,6 +1992,7 @@
       definitions.get(id).count += 1;
     });
     state.customCollections.forEach((name) => {
+      if (isRemovedCollection(name)) return;
       const id = trainedCollectionId(name);
       if (!definitions.has(id)) definitions.set(id, { id, name, custom: true, count: 0 });
     });
@@ -2106,6 +2113,7 @@
     const roster = document.getElementById("rvc-school-roster");
     const directory = window.PostPrepSchools;
     if (!wrapper || !select || !roster || !directory) return "";
+    directory.syncCatalog(state.catalog);
     const visible = state.activeCollectionId === "blue-archive";
     wrapper.hidden = !visible;
     if (!visible) return "";
@@ -3888,8 +3896,8 @@
 
   async function runWebRvcInference({ allowLong = false, fallback = false } = {}) {
     if (state.busy || !state.audio || !state.selectedModelId) return false;
-    const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
-    if (selectedModel?.supportsDevice === false) {
+    const deviceModel = state.catalog.find((model) => model.id === state.selectedModelId);
+    if (deviceModel?.supportsDevice === false) {
       showToast("该声线仅支持服务端转换，请切换到云端模式。");
       return false;
     }
@@ -4384,7 +4392,7 @@
       // 纯人声模式: 客户端透明抛光 (仅检测到的毫秒级毛刺做局部低通 + 热峰
       // 值回落), 与本地管线的输出守卫一致; 歌曲模式保留云端原混音不动。
       // 抛光失败时回退云端原始文件, 不影响成片返回。
-      const outputBlob = state.audioMode === "song"
+      const outputBlob = state.audioMode === "song" || outputFormat === "mp3"
         ? rawOutputBlob
         : ((await polishCloudVoiceAudio(rawOutputBlob)) || rawOutputBlob);
       const polishedVoiceOutput = outputBlob !== rawOutputBlob;
@@ -4398,7 +4406,19 @@
       if (resultAudio) {
         if (polishedVoiceOutput) {
           // 抛光后的结果与下载文件一致, 直接用它试听。
-          await attachResultAudio(resultAudio, state.resultUrl, false);
+          try {
+            await attachResultAudio(resultAudio, state.resultUrl, false);
+          } catch (mediaError) {
+            // WebAudio and the native media demuxer do not support identical formats.
+            // Keep the already downloaded original when native playback rejects polish.
+            URL.revokeObjectURL(state.resultUrl);
+            state.resultUrl = URL.createObjectURL(rawOutputBlob);
+            if (resultDownload) {
+              resultDownload.href = state.resultUrl;
+              resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.${outputFormat}`;
+            }
+            await attachResultAudio(resultAudio, state.resultUrl, false);
+          }
         } else {
           const mediaUrl = officialMediaUrl(payload.jobId, payload.downloadToken);
           try {

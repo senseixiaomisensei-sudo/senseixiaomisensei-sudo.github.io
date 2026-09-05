@@ -15,8 +15,16 @@ let browser;
 try {
   browser = await chromium.launch({ headless: true, executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe" });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on("pageerror", error => console.error(error.message));
+  await page.addInitScript(() => localStorage.setItem("postprep_rvc_custom_collections_v1", JSON.stringify(["喜羊羊与灰太狼", "保留分区"])));
   await page.goto("http://127.0.0.1:" + server.address().port + "/rvc.html");
   await page.locator('[data-model-id="ayane"]').waitFor();
+  assert.doesNotMatch(await page.locator("#rvc-collection-nav").innerText(), /喜羊羊/);
+  assert.match(await page.locator("#rvc-collection-nav").innerText(), /保留分区/);
+  for (const school of ["millennium", "gehenna", "trinity", "shittim"]) {
+    await page.selectOption("#rvc-school-filter", school);
+    assert.ok(await page.locator("#rvc-model-gallery [data-model-id]").count() > 0, school);
+  }
   await page.selectOption("#rvc-school-filter", "abydos");
   assert.equal(await page.locator("#rvc-model-gallery [data-model-id]").count(), 5);
   await page.locator("#rvc-model-search").fill("Ayane");

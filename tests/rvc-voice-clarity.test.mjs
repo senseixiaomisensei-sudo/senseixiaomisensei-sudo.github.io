@@ -188,7 +188,7 @@ test("worker wires the gate and the complex-chunk repair window", () => {
 test("cloud voice path conditions uploads and polishes voice-mode output", async () => {
   assert.match(clientSource, /const conditioned = conditionCloudUploadAudio\(audio\.float32\);/u);
   assert.match(clientSource, /await polishCloudVoiceAudio\(rawOutputBlob\)/u);
-  assert.match(clientSource, /state\.audioMode === "song"\s*\n\s*\? rawOutputBlob/u);
+  assert.match(clientSource, /state\.audioMode === "song" \|\| outputFormat === "mp3"\s*\n\s*\? rawOutputBlob/u);
   assert.match(clientSource, /polishedVoiceOutput \? "wav" : outputFormat/u);
 
   const conditionInput = evaluateFunction("conditionCloudUploadAudio", [], [], clientSource);

@@ -30,9 +30,25 @@
         ["tsumugi", "ツムギ", "ツムギ", "Tsumugi"],
       ] },
   ];
+  // Restore schools from the installed catalog; these rows do not imply new models.
+  const installedSchools = [
+    ["millennium", "千年科学学园", "Millennium Science School", "千年"],
+    ["gehenna", "格黑娜学园", "Gehenna Academy", "格黑娜"],
+    ["trinity", "三一综合学园", "Trinity General School", "三一", "圣三一"],
+    ["shittim", "什亭之匣（其他）", "Shittim Chest (Other)", "什亭之匣"],
+  ];
+  for (const [id, name, en, tag, alias] of installedSchools) {
+    schools.push({ id, name, en, tag, alias, students: [], source: "assets/rvc-models.json" });
+  }
+  function syncCatalog(models) {
+    for (const school of schools.filter(item => installedSchools.some(([id]) => id === item.id))) {
+      school.students = models.filter(model => (model.tags || []).some(tag => tag === school.tag || tag === school.alias))
+        .map(model => [model.id, model.name, "", model.id]);
+    }
+  }
   function schoolFor(model) {
     return schools.find(school => school.students.some(student => student[0] === model.id)
-      || (model.tags || []).includes(school.tag))?.id || "";
+      || (model.tags || []).some(tag => tag === school.tag || tag === school.alias))?.id || "";
   }
-  window.PostPrepSchools = Object.freeze({ schools, schoolFor });
+  window.PostPrepSchools = Object.freeze({ schools, schoolFor, syncCatalog });
 })();
