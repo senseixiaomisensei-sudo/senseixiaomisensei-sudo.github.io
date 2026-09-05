@@ -2107,16 +2107,81 @@
     target.appendChild(grid);
   }
 
+  const INTERNAL_SCHOOLS = [
+    { id: "abydos", name: "阿拜多斯高等学校", en: "Abydos High School", tag: "阿拜多斯",
+      source: "https://www.bluearchive.jp/kivotostest/abydos/1/result",
+      students: [
+        ["shiroko", "砂狼白子", "シロコ", "Shiroko"],
+        ["hoshino", "小鸟游星野", "ホシノ", "Hoshino"],
+        ["nonomi", "十六夜野乃美", "ノノミ", "Nonomi"],
+        ["serika", "黑见芹香", "セリカ", "Serika"],
+        ["ayane", "奥空绫音", "アヤネ", "Ayane"],
+      ] },
+    { id: "highlander", name: "高地人铁道学院", en: "Highlander Railroad Academy", tag: "高地人",
+      source: "https://www.tanita.co.jp/content/bluearchive/",
+      students: [
+        ["hikari", "橘光", "橘ヒカリ", "Hikari"],
+        ["nozomi", "橘望", "橘ノゾミ", "Nozomi"],
+        ["aoba", "内海青叶", "内海アオバ", "Aoba"],
+        ["suou", "朝雾苏芳", "朝霧スオウ", "Suou"],
+      ] },
+    { id: "wildhunt", name: "狂猎艺术学院", en: "Wild Hunt Academy of Arts", tag: "狂猎",
+      source: "https://game8.jp/blue-archive/711367",
+      students: [
+        ["eri", "エリ", "エリ", "Eri"],
+        ["kanoe", "カノエ", "カノエ", "Kanoe"],
+        ["miyo", "ミヨ", "ミヨ", "Miyo"],
+        ["fuyu", "フユ", "フユ", "Fuyu"],
+        ["ritsu", "リツ", "リツ", "Ritsu"],
+        ["rena", "レナ", "レナ", "Rena"],
+        ["tsumugi", "ツムギ", "ツムギ", "Tsumugi"],
+      ] },
+    { id: "millennium", name: "千年科学学园", en: "Millennium Science School", tag: "千年", students: [], source: "assets/rvc-models.json" },
+    { id: "gehenna", name: "格黑娜学园", en: "Gehenna Academy", tag: "格黑娜", students: [], source: "assets/rvc-models.json" },
+    { id: "trinity", name: "三一综合学园", en: "Trinity General School", tag: "三一", alias: "圣三一", students: [], source: "assets/rvc-models.json" },
+    { id: "shittim", name: "什亭之匣（其他）", en: "Shittim Chest (Other)", tag: "什亭之匣", students: [], source: "assets/rvc-models.json" },
+  ];
+
+  function getSchoolsDirectory() {
+    const external = window.PostPrepSchools;
+    if (external && Array.isArray(external.schools) && typeof external.schoolFor === "function") {
+      return external;
+    }
+    if (!window.PostPrepSchools) {
+      window.PostPrepSchools = {
+        schools: INTERNAL_SCHOOLS,
+        schoolFor(model) {
+          if (!model) return "";
+          return INTERNAL_SCHOOLS.find(s => (s.students || []).some(st => st[0] === model.id)
+            || (model.tags || []).some(t => t === s.tag || t === s.alias))?.id || "";
+        },
+        syncCatalog(models) {
+          if (!Array.isArray(models)) return;
+          for (const school of INTERNAL_SCHOOLS) {
+            if (school.id === "abydos" || school.id === "highlander" || school.id === "wildhunt") continue;
+            school.students = models.filter(m => m && (m.tags || []).some(t => t === school.tag || t === school.alias))
+              .map(m => [m.id, m.name, "", m.id]);
+          }
+        },
+      };
+    }
+    return window.PostPrepSchools;
+  }
+
   function renderSchoolBrowser(searchVal) {
     const wrapper = document.getElementById("rvc-school-browser");
     const select = document.getElementById("rvc-school-filter");
     const roster = document.getElementById("rvc-school-roster");
-    const directory = window.PostPrepSchools;
-    if (!wrapper || !select || !roster || !directory) return "";
-    directory.syncCatalog(state.catalog);
     const visible = state.activeCollectionId === "blue-archive";
-    wrapper.hidden = !visible;
-    if (!visible) return "";
+    if (wrapper) wrapper.hidden = !visible;
+    if (!wrapper || !select || !roster || !visible) return "";
+    const directory = getSchoolsDirectory();
+    if (!directory || !Array.isArray(directory.schools)) return "";
+    try {
+      directory.syncCatalog?.(state.catalog);
+    } catch (e) {
+      console.warn("syncCatalog failed", e);
+    }
     const previous = select.value;
     select.innerHTML = "";
     const option = (value, label) => {
@@ -2131,6 +2196,9 @@
       option(school.id, (state.lang === "en" ? school.en : school.name) + " · " + count);
     });
     select.value = previous;
+    if (select.value !== previous && previous !== "") {
+      select.value = "";
+    }
     select.onchange = () => renderModelGallery();
     const school = directory.schools.find(item => item.id === select.value);
     roster.innerHTML = "";
@@ -2140,7 +2208,7 @@
         ? "Character directory. Only installed voices appear as selectable cards below."
         : "角色目录：下方仅显示已接入的可选声线。“待接入”表示本站尚无可用模型；日服角色保留日文名便于检索。";
       roster.appendChild(note);
-      school.students.filter(student => !searchVal || student.join(" ").toLowerCase().includes(searchVal)).forEach(student => {
+      (school.students || []).filter(student => !searchVal || student.join(" ").toLowerCase().includes(searchVal)).forEach(student => {
         const row = document.createElement("p");
         const available = state.catalog.some(model => model.id === student[0]);
         row.textContent = student[1] + " / " + student[3] + " · " + (state.lang === "en"
@@ -2148,13 +2216,15 @@
           : available ? "声线已接入" : "声线待接入");
         roster.appendChild(row);
       });
-      const source = document.createElement("a");
-      source.href = school.source;
-      source.target = "_blank";
-      source.rel = "noopener noreferrer";
-      source.className = "text-brand underline";
-      source.textContent = state.lang === "en" ? "Character reference" : "查看角色资料来源";
-      roster.appendChild(source);
+      if (school.source) {
+        const source = document.createElement("a");
+        source.href = school.source;
+        source.target = "_blank";
+        source.rel = "noopener noreferrer";
+        source.className = "text-brand underline";
+        source.textContent = state.lang === "en" ? "Character reference" : "查看角色资料来源";
+        roster.appendChild(source);
+      }
     }
     return select.value;
   }
@@ -2169,12 +2239,22 @@
     const searchVal = (document.getElementById("rvc-model-search")?.value || "").trim().toLowerCase();
     if (!container) return;
 
-    renderCollectionNav();
-    const selectedSchool = renderSchoolBrowser(searchVal);
+    try {
+      renderCollectionNav();
+    } catch (e) {
+      console.error("renderCollectionNav failed", e);
+    }
+    let selectedSchool = "";
+    try {
+      selectedSchool = renderSchoolBrowser(searchVal);
+    } catch (e) {
+      console.error("renderSchoolBrowser failed", e);
+    }
     const activeCollection = selectedCollectionDefinition();
+    const directory = getSchoolsDirectory();
     const filtered = state.catalog.filter((m) => {
       if (String(m.collectionId || "other") !== state.activeCollectionId) return false;
-      if (selectedSchool && window.PostPrepSchools?.schoolFor(m) !== selectedSchool) return false;
+      if (selectedSchool && directory?.schoolFor?.(m) !== selectedSchool) return false;
       if (!searchVal) return true;
       return (
         m.name.toLowerCase().includes(searchVal) ||
@@ -2374,12 +2454,16 @@
       const end = start + blockSamples;
       let largeJumps = 0;
       let maximumJump = 0;
+      let jumpEnergy = 0;
+      let curvatureEnergy = 0;
       for (let index = start + 1; index < end; index += 1) {
         const jump = Math.abs(audio[index] - audio[index - 1]);
+        jumpEnergy += jump * jump;
+        if (index > 1) curvatureEnergy += (audio[index] - 2 * audio[index - 1] + audio[index - 2]) ** 2;
         if (jump > 0.45) largeJumps += 1;
         if (jump > maximumJump) maximumJump = jump;
       }
-      if (largeJumps >= 2 || maximumJump > 0.75) {
+      if ((largeJumps >= 2 || maximumJump > 0.75) && curvatureEnergy > 1.4 * jumpEnergy) {
         flagged[block] = 1;
         detected = true;
       }
@@ -3533,7 +3617,11 @@
   }
 
   async function initCatalog() {
-    renderModelGallery();
+    try {
+      renderModelGallery();
+    } catch (e) {
+      console.error("Initial renderModelGallery failed", e);
+    }
     try {
       const res = await fetch("assets/rvc-models.json?v=" + Date.now());
       if (res.ok) {
@@ -3548,13 +3636,26 @@
     } catch (e) {
       console.warn("Failed to load rvc-models.json", e);
     }
-    await refreshOfficialService();
-    // 合并用户本地上传的 .onnx 模型（仅本机，不回传）
-    await loadOwnModelsFromDB();
-    renderModelGallery();
-    // Only update the recommendation label; preserve the official 0-semitone
-    // default and any value the user selected.
-    applyCharacterPitch(getSelectedModel());
+    try {
+      await refreshOfficialService();
+    } catch (e) {
+      console.warn("refreshOfficialService failed", e);
+    }
+    try {
+      await loadOwnModelsFromDB();
+    } catch (e) {
+      console.warn("loadOwnModelsFromDB failed", e);
+    }
+    try {
+      renderModelGallery();
+    } catch (e) {
+      console.error("Post-fetch renderModelGallery failed", e);
+    }
+    try {
+      applyCharacterPitch(getSelectedModel());
+    } catch (e) {
+      console.warn("applyCharacterPitch failed", e);
+    }
   }
 
   function probeAudioDuration(file) {
@@ -3953,7 +4054,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260830-v43", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260905-v44", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);

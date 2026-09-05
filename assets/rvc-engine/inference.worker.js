@@ -12609,7 +12609,7 @@ async function runRmvpeInference(session, audio) {
       f0 = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         const hz = i < outputFrames ? data[i] : 0;
-        f0[i] = hz >= 50 && hz <= 1100 ? hz : 0;
+        f0[i] = Number.isFinite(hz) && hz >= 40 && hz <= 2000 ? hz : 0;
       }
     } else if (outputTensor.dims.length === 3 && (outputTensor.dims[1] === RMVPE_PARAMS.nClass || outputTensor.dims[2] === RMVPE_PARAMS.nClass)) {
       const salienceData = outputTensor.data;
@@ -12619,7 +12619,7 @@ async function runRmvpeInference(session, audio) {
       f0 = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         const hz = i < f0All.length ? f0All[i] : 0;
-        f0[i] = hz >= 50 && hz <= 1100 ? hz : 0;
+        f0[i] = Number.isFinite(hz) && hz >= 40 && hz <= 2000 ? hz : 0;
       }
     } else {
       throw new Error(
@@ -13487,12 +13487,16 @@ function suppressDetectedHarshBursts(audio, sampleRate = 40000) {
     const end = Math.min(audio.length, (block + 1) * blockSamples);
     let largeJumps = 0;
     let maximumJump = 0;
+    let jumpEnergy = 0;
+    let curvatureEnergy = 0;
     for (let index = start; index < end; index++) {
       const jump = Math.abs(audio[index] - audio[index - 1]);
+      jumpEnergy += jump * jump;
+      if (index > 1) curvatureEnergy += (audio[index] - 2 * audio[index - 1] + audio[index - 2]) ** 2;
       if (jump > 0.45) largeJumps++;
       if (jump > maximumJump) maximumJump = jump;
     }
-    if (largeJumps >= 2 || maximumJump > 0.75) {
+    if ((largeJumps >= 2 || maximumJump > 0.75) && curvatureEnergy > 1.4 * jumpEnergy) {
       flagged[block] = 1;
       detected = true;
     }

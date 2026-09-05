@@ -592,7 +592,11 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
         peak = float(np.max(absolute))
         rms = float(np.sqrt(np.mean(np.square(audio, dtype=np.float64))))
         clipped_fraction = float(np.mean(absolute >= 0.985))
-        analysis_audio = audio[: min(audio.size, sample_rate * 30)]
+        if audio.size > sample_rate * 30:
+            window = sample_rate * 10
+            analysis_audio = np.concatenate([audio[:window], audio[audio.size // 2:audio.size // 2 + window], audio[-window:]])
+        else:
+            analysis_audio = audio
         spectrum = np.abs(np.fft.rfft(analysis_audio))
         frequencies = np.fft.rfftfreq(analysis_audio.size, d=1 / sample_rate)
         total_energy = float(np.sum(np.square(spectrum))) + 1e-12
@@ -611,7 +615,7 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
             pitch = parselmouth.Sound(
                 np.ascontiguousarray(analysis_audio, dtype=np.float64),
                 sampling_frequency=float(sample_rate),
-            ).to_pitch_ac(time_step=0.01, pitch_floor=55.0, pitch_ceiling=min(1100.0, sample_rate / 2 - 1))
+            ).to_pitch_ac(time_step=0.01, pitch_floor=40.0, pitch_ceiling=min(2000.0, sample_rate / 2 - 1))
             f0 = np.asarray(pitch.selected_array["frequency"], dtype=np.float64)
             valid = np.isfinite(f0) & (f0 > 0)
             voiced = f0[valid]

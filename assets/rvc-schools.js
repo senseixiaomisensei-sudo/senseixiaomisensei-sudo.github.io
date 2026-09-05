@@ -41,12 +41,14 @@
     schools.push({ id, name, en, tag, alias, students: [], source: "assets/rvc-models.json" });
   }
   function syncCatalog(models) {
+    if (!Array.isArray(models)) return;
     for (const school of schools.filter(item => installedSchools.some(([id]) => id === item.id))) {
-      school.students = models.filter(model => (model.tags || []).some(tag => tag === school.tag || tag === school.alias))
+      school.students = models.filter(model => model && (model.tags || []).some(tag => tag === school.tag || tag === school.alias))
         .map(model => [model.id, model.name, "", model.id]);
     }
   }
   function schoolFor(model) {
+    if (!model) return "";
     return schools.find(school => school.students.some(student => student[0] === model.id)
       || (model.tags || []).some(tag => tag === school.tag || tag === school.alias))?.id || "";
   }

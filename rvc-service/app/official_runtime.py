@@ -131,6 +131,9 @@ class OfficialRvcModel:
         self.info = RuntimeInfo(root=root, device=device, is_half=is_half)
         self._vc = VC(_config(device, is_half))
         self._vc.get_vc(staged_model.name)
+        from types import MethodType
+        from app.pitch_safety import safe_get_f0
+        self._vc.pipeline.get_f0 = MethodType(safe_get_f0, self._vc.pipeline)
         self._index_path = str(staged_index) if staged_index else ""
 
     def infer(
@@ -183,7 +186,13 @@ class OfficialRvcModel:
         if not result or result[0] is None or result[1] is None:
             raise OfficialRuntimeError(str(status))
         sample_rate, audio = result
-        sf.write(str(output_path), audio, int(sample_rate), subtype="PCM_16")
+        audio = np.asarray(audio)
+        if np.issubdtype(audio.dtype, np.integer):
+            audio = audio.astype(np.float32) / max(abs(np.iinfo(audio.dtype).min), np.iinfo(audio.dtype).max)
+        if not np.isfinite(audio).all():
+            raise OfficialRuntimeError("RVC produced non-finite audio")
+        # Keep floating-point headroom until the final output limiter.
+        sf.write(str(output_path), audio, int(sample_rate), subtype="FLOAT")
 
 
 def runtime_info() -> RuntimeInfo:
