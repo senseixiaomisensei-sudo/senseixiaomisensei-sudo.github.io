@@ -109,8 +109,8 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   const catalogPayload = JSON.parse(catalog);
   assert.ok(Array.isArray(catalogPayload.models));
   assert.ok(catalogPayload.models.every((model) => /^[A-Za-z0-9_-]{1,64}$/u.test(model.id)));
-  assert.equal(catalogPayload.models.length, 29);
-  assert.equal(catalogPayload.models.filter((model) => model.tags?.includes("蔚蓝档案")).length, 24);
+  assert.equal(catalogPayload.models.length, 30);
+  assert.equal(catalogPayload.models.filter((model) => model.tags?.includes("蔚蓝档案")).length, 25);
   assert.ok(catalogPayload.models.some((model) => model.id === "key"));
   assert.equal(catalogPayload.models.filter((model) => model.collectionId === "jujutsu-kaisen").length, 5);
   assert.deepEqual(

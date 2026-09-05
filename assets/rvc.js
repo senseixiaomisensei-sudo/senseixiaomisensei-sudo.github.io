@@ -1225,6 +1225,39 @@
       "models/characters/ayane/chunk_4.bin",
       "models/characters/ayane/chunk_5.bin"
     ]
+  },
+  {
+    "id": "maki",
+    "name": "小涂真纪 (Maki)",
+    "source": "https://www.101soundboards.com/tts/1034740-konuri-maki-blue-archive-sq-tts-text-to-speech/download_model",
+    "sampleRate": 40000,
+    "rvcVersion": "v1",
+    "supportsDevice": false,
+    "checkpointSha256": "170a9e6e3f7c79c0eb82f3aa0d8dfad5325e593582386bcac07a46cbc4e51f70",
+    "indexSha256": "9576619fa1375174ad1d239769c2ea4049c46ecd295b046a28a21ac2e2a939ed",
+    "avatarText": "真纪",
+    "description": "千年科学学园 · 仅服务端转换 · 日语社区 RVC 声线",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "collectionId": "blue-archive",
+    "collectionName": "蔚蓝档案",
+    "defaultPitch": 0,
+    "pitchNote": "同音域输入建议 0；跨音域请先试听小幅调整",
+    "noiseScale": 0.3,
+    "defaultIndexRate": 0.3,
+    "license": "Community model; character/performer authorization unverified",
+    "retrieval": "models/characters/maki/retrieval.bin",
+    "chunks": [
+      "models/characters/maki/chunk_0.bin",
+      "models/characters/maki/chunk_1.bin",
+      "models/characters/maki/chunk_2.bin",
+      "models/characters/maki/chunk_3.bin",
+      "models/characters/maki/chunk_4.bin",
+      "models/characters/maki/chunk_5.bin"
+    ]
   }
 ];
 
@@ -2405,6 +2438,7 @@
     writeAscii(12, "fmt ");
     view.setUint32(16, 16, true);
     view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
     view.setUint32(24, sampleRate, true);
     view.setUint32(28, sampleRate * 2, true);
     view.setUint16(32, 2, true);
@@ -2412,7 +2446,8 @@
     writeAscii(36, "data");
     view.setUint32(40, sampleCount * 2, true);
     for (let index = 0; index < sampleCount; index += 1) {
-      const sample = Math.max(-1, Math.min(1, Number(samples[index]) || 0));
+      const value = Number(samples[index]);
+      const sample = Number.isFinite(value) ? Math.max(-1, Math.min(1, value)) : 0;
       view.setInt16(44 + index * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
     }
     return buffer;
@@ -3853,6 +3888,11 @@
 
   async function runWebRvcInference({ allowLong = false, fallback = false } = {}) {
     if (state.busy || !state.audio || !state.selectedModelId) return false;
+    const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
+    if (selectedModel?.supportsDevice === false) {
+      showToast("该声线仅支持服务端转换，请切换到云端模式。");
+      return false;
+    }
     if (fallback) {
       showProgressBar(true);
       updateProgressBar(2);
@@ -4115,7 +4155,7 @@
   ]);
 
   function hasDeviceFallbackModel(model) {
-    return Boolean(model && Array.isArray(model.chunks) && model.chunks.length > 0);
+    return Boolean(model && model.supportsDevice !== false && Array.isArray(model.chunks) && model.chunks.length > 0);
   }
 
   function isDeviceFallbackEligible(error) {

@@ -1,7 +1,7 @@
 {
-  "version": 15,
+  "version": 16,
   "updatedAt": "2026-09-05",
-  "_readme": "新增阿拜多斯野乃美、芹香、绫音；新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。",
+  "_readme": "新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。真纪 V1 仅支持服务端转换。",
   "baseModels": {
     "hubert": {
       "name": "hubert.onnx",
@@ -945,6 +945,39 @@
         "models/characters/ayane/chunk_3.bin",
         "models/characters/ayane/chunk_4.bin",
         "models/characters/ayane/chunk_5.bin"
+      ]
+    },
+    {
+      "id": "maki",
+      "name": "小涂真纪 (Maki)",
+      "source": "https://www.101soundboards.com/tts/1034740-konuri-maki-blue-archive-sq-tts-text-to-speech/download_model",
+      "sampleRate": 40000,
+      "rvcVersion": "v1",
+      "supportsDevice": false,
+      "checkpointSha256": "170a9e6e3f7c79c0eb82f3aa0d8dfad5325e593582386bcac07a46cbc4e51f70",
+      "indexSha256": "9576619fa1375174ad1d239769c2ea4049c46ecd295b046a28a21ac2e2a939ed",
+      "avatarText": "真纪",
+      "description": "千年科学学园 · 仅服务端转换 · 日语社区 RVC 声线",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "千年"
+      ],
+      "collectionId": "blue-archive",
+      "collectionName": "蔚蓝档案",
+      "defaultPitch": 0,
+      "pitchNote": "同音域输入建议 0；跨音域请先试听小幅调整",
+      "noiseScale": 0.3,
+      "defaultIndexRate": 0.3,
+      "license": "Community model; character/performer authorization unverified",
+      "retrieval": "models/characters/maki/retrieval.bin",
+      "chunks": [
+        "models/characters/maki/chunk_0.bin",
+        "models/characters/maki/chunk_1.bin",
+        "models/characters/maki/chunk_2.bin",
+        "models/characters/maki/chunk_3.bin",
+        "models/characters/maki/chunk_4.bin",
+        "models/characters/maki/chunk_5.bin"
       ]
     }
   ]

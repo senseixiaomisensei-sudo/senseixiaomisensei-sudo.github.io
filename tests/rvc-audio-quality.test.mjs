@@ -268,7 +268,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
 test("all deployed character models expose caller-controlled noise without hidden random operators", async () => {
   const catalog = JSON.parse(await readFile(new URL("assets/rvc-models.json", root), "utf8"));
   const manifest = JSON.parse(await readFile(new URL("models/manifest.json", root), "utf8"));
-  assert.equal(catalog.models.length, 29);
+  assert.equal(catalog.models.length, 30);
   assert.ok(catalog.models.some((model) => model.id === "momoi"));
   assert.ok(catalog.models.some((model) => model.id === "reisa"));
   assert.ok(catalog.models.some((model) => model.id === "key"));

@@ -393,5 +393,17 @@
       "models/characters/ayane/chunk_4.bin",
       "models/characters/ayane/chunk_5.bin"
     ]
+  },
+  "maki.onnx": {
+    "totalSize": 110420397,
+    "sha256": "986273711405da096e30033715fb32c4fa246d7e45ae2da50a7ac94138cd6d68",
+    "chunks": [
+      "models/characters/maki/chunk_0.bin",
+      "models/characters/maki/chunk_1.bin",
+      "models/characters/maki/chunk_2.bin",
+      "models/characters/maki/chunk_3.bin",
+      "models/characters/maki/chunk_4.bin",
+      "models/characters/maki/chunk_5.bin"
+    ]
   }
 }

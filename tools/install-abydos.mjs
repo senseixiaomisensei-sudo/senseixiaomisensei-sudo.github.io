@@ -4,8 +4,9 @@ import { spawnSync } from "node:child_process";
 
 const root = path.resolve(import.meta.dirname, "..");
 const runtime = path.resolve(root, "../rvc-local");
-const stage = path.join(runtime, "work/abydos-expansion");
-const ids = ["nonomi", "serika", "ayane"];
+const extra = process.argv.includes("--maki-hanako");
+const stage = path.join(runtime, extra ? "work/maki-hanako-expansion" : "work/abydos-expansion");
+const ids = extra ? (process.argv.includes("--maki-only") ? ["maki"] : ["maki", "hanako"]) : ["nonomi", "serika", "ayane"];
 const report = JSON.parse(fs.readFileSync(path.join(stage, "verification/report.json"), "utf8"));
 for (const id of ids) {
   if (!report.voices.some(voice => voice.id === id && voice.passedSignalChecks)) {
@@ -22,9 +23,9 @@ for (const id of ids) {
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "models/manifest.json"), "utf8"));
   const model = {
     ...verified,
-    avatarText: { nonomi: "野乃美", serika: "芹香", ayane: "绫音" }[id],
-    description: "阿拜多斯对策委员会 · 日语社区 RVC v2 声线",
-    tags: ["女声", "蔚蓝档案", "阿拜多斯"],
+    avatarText: { nonomi: "野乃美", serika: "芹香", ayane: "绫音", maki: "真纪", hanako: "花子" }[id],
+    description: (extra ? (id === "maki" ? "千年科学学园 · 仅服务端转换" : "圣三一综合学园") : "阿拜多斯对策委员会") + " · 日语社区 RVC 声线",
+    tags: ["女声", "蔚蓝档案", extra ? (id === "maki" ? "千年" : "圣三一") : "阿拜多斯"],
     collectionId: "blue-archive", collectionName: "蔚蓝档案",
     defaultPitch: 0, pitchNote: "同音域输入建议 0；跨音域请先试听小幅调整",
     noiseScale: 0.3, defaultIndexRate: 0.3,
@@ -46,9 +47,9 @@ for (const id of ids) {
   }
   fs.writeFileSync(path.join(mounted, "meta.json"), JSON.stringify(model, null, 2) + "\n");
 }
-catalog.version = 15;
+catalog.version = extra ? 16 : 15;
 catalog.updatedAt = "2026-09-05";
-catalog._readme = "新增阿拜多斯野乃美、芹香、绫音；新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。";
+catalog._readme = "新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。真纪 V1 仅支持服务端转换。";
 fs.writeFileSync(catalogPath, JSON.stringify(catalog, null, 2) + "\n");
 const clientPath = path.join(root, "assets/rvc.js");
 const client = fs.readFileSync(clientPath, "utf8");
