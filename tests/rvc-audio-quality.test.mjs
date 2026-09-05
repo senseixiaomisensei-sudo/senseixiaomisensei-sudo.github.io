@@ -246,7 +246,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /afftdn=nr=6:nf=-55:tn=1:ad=0\.8/u);
   assert.match(service, /speechnorm=p=0\.88:e=3:c=2/u);
   assert.match(service, /profile = analyze_audio_profile\(source\)/u);
-  assert.match(service, /selected_filter = HIGH_ENERGY_INPUT_FILTER if profile\.high_energy else INPUT_SAFETY_FILTER/u);
+  assert.match(service, /selected_filter = SINGING_INPUT_FILTER if singing else HIGH_ENERGY_INPUT_FILTER if profile\.high_energy else INPUT_SAFETY_FILTER/u);
   assert.match(service, /high_pitch: bool = False/u);
   assert.match(service, /complex_pitch: bool = False/u);
   assert.match(service, /profile_hint: AudioProfile \| None = None/u);
