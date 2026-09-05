@@ -124,6 +124,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   const rvcRule = headersFile.split(/\r?\n/u).findIndex((line) => line.trim() === "/rvc.html");
   assert.ok(rvcRule >= 0);
   const rvcBlock = headersFile.split(/\r?\n/u).slice(rvcRule, rvcRule + 9).join("\n");
+  assert.match(rvcBlock, /Cache-Control: no-store/u);
   assert.match(rvcBlock, /Cross-Origin-Opener-Policy: same-origin/u);
   assert.match(rvcBlock, /Cross-Origin-Embedder-Policy: credentialless/u);
   const canonicalRvcRule = headersFile.split(/\r?\n/u).findIndex((line) => line.trim() === "/rvc");

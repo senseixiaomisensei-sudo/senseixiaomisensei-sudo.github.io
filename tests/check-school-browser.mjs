@@ -16,8 +16,11 @@ try {
   browser = await chromium.launch({ headless: true, executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe" });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   page.on("pageerror", error => console.error(error.message));
-  await page.addInitScript(() => localStorage.setItem("postprep_rvc_custom_collections_v1", JSON.stringify(["喜羊羊与灰太狼", "保留分区"])));
-  await page.goto("http://127.0.0.1:" + server.address().port + "/rvc.html");
+  await page.addInitScript(() => {
+    try { localStorage.setItem("postprep_rvc_custom_collections_v1", JSON.stringify(["喜羊羊与灰太狼", "保留分区"])); } catch {}
+  });
+  const testUrl = process.env.POSTPREP_TEST_URL || ("http://127.0.0.1:" + server.address().port + "/rvc.html");
+  await page.goto(testUrl);
   await page.locator('[data-model-id="ayane"]').waitFor();
   assert.doesNotMatch(await page.locator("#rvc-collection-nav").innerText(), /喜羊羊/);
   assert.match(await page.locator("#rvc-collection-nav").innerText(), /保留分区/);
