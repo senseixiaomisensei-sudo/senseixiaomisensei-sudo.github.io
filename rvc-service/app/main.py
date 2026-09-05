@@ -110,6 +110,14 @@ INPUT_SAFETY_FILTER = (
     "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
     "alimiter=limit=0.90:attack=5:release=100:level=0"
 )
+# Separated singing is already denoised. Speech half-cycle normalization and
+# a second adaptive denoiser can reshape synthetic vowels and sustained notes.
+# Retain only band/peak safety for song stems; do not reshape their harmonics.
+SINGING_INPUT_FILTER = (
+    "highpass=f=45:p=2,"
+    "lowpass=f=7600:p=1,"
+    "alimiter=limit=0.90:attack=5:release=100:level=0:latency=1"
+)
 # RVC generators can emit isolated full-band impulses or an over-bright upper
 # spectrum on high-energy input.  Repair clicks first, then apply a restrained
 # de-esser/anti-alias low-pass before the final true-peak guard.  Four public
@@ -535,14 +543,14 @@ def probe_duration(path: Path) -> float:
     return duration
 
 
-def normalize_audio(source: Path, destination: Path) -> AudioProfile:
+def normalize_audio(source: Path, destination: Path, *, singing: bool = False) -> AudioProfile:
     duration = probe_duration(source)
     if duration < MIN_AUDIO_SECONDS:
         raise RvcServiceError(400, "RVC_AUDIO_TOO_SHORT")
     if duration > MAX_AUDIO_SECONDS:
         raise RvcServiceError(400, "RVC_AUDIO_TOO_LONG")
     profile = analyze_audio_profile(source)
-    selected_filter = HIGH_ENERGY_INPUT_FILTER if profile.high_energy else INPUT_SAFETY_FILTER
+    selected_filter = SINGING_INPUT_FILTER if singing else HIGH_ENERGY_INPUT_FILTER if profile.high_energy else INPUT_SAFETY_FILTER
     result = subprocess.run(
         [
             "ffmpeg", "-nostdin", "-v", "error", "-i", str(source), "-vn",
@@ -1456,7 +1464,7 @@ async def process_conversion_job(
                     record.stage = "converting"
             separated_vocals = job_root / "separated-vocals-16k.wav"
             converted_vocals = job_root / "converted-vocals.wav"
-            vocal_profile = await asyncio.to_thread(normalize_audio, stems.vocals, separated_vocals)
+            vocal_profile = await asyncio.to_thread(normalize_audio, stems.vocals, separated_vocals, singing=True)
             used_f0_method = await render_duration_safe_conversion_async(
                 model_path,
                 separated_vocals,
