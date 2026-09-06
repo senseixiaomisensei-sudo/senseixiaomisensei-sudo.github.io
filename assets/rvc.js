@@ -2997,10 +2997,7 @@
       } catch (error) {
         transientFailures += 1;
         if (error?.requestId) lastRequestId = error.requestId;
-        const structuredCode = typeof error?.code === "string" ? error.code : "";
-        const retryableError = structuredCode
-          ? longJob && TRANSIENT_CLOUD_OUTPUT_CODES.has(structuredCode)
-          : longJob ? isTransientCloudOutputError(error) : true;
+        const retryableError = isTransientCloudOutputError(error);
         if (!retryableError || transientFailures >= maxTransientFailures || Date.now() >= deadline) throw error;
         updateStatusDisplay(`🔄 [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`);
         await waitFor(Math.min(longJob ? 15000 : 8000, 1800 * transientFailures));

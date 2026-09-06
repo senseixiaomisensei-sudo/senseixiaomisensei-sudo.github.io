@@ -26,7 +26,7 @@ import tempfile
 import uuid
 from collections import OrderedDict
 from contextlib import asynccontextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import AsyncIterator
@@ -538,7 +538,18 @@ def probe_duration(path: Path) -> float:
         duration = float(result.stdout.strip())
     except (TypeError, ValueError):
         duration = 0.0
-    if result.returncode != 0 or duration <= 0:
+    if result.returncode == 0 and (not math.isfinite(duration) or duration <= 0):
+        # MediaRecorder WebM streams often have no container duration. Decode
+        # a bounded mono stream so valid recordings work without trusting tags.
+        decoded = subprocess.run(
+            ["ffmpeg", "-nostdin", "-v", "error", "-i", str(path),
+             "-t", str(MAX_AUDIO_SECONDS + 1), "-vn", "-ac", "1", "-ar", "8000",
+             "-f", "s16le", "pipe:1"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=120,
+            check=False,
+        )
+        duration = len(decoded.stdout) / 16000 if decoded.returncode == 0 else 0
+    if result.returncode != 0 or not math.isfinite(duration) or duration <= 0:
         raise RvcServiceError(400, "RVC_INVALID_AUDIO")
     return duration
 
@@ -571,7 +582,7 @@ def normalize_audio(source: Path, destination: Path, *, singing: bool = False) -
     return profile
 
 
-def analyze_audio_profile(path: Path) -> AudioProfile:
+def analyze_audio_profile(path: Path, pitch_shift: int = 0) -> AudioProfile:
     """Detect only the extreme-input branch; ordinary audio remains untouched."""
     try:
         import numpy as np
@@ -631,7 +642,8 @@ def analyze_audio_profile(path: Path) -> AudioProfile:
                 p10, p90, p95 = np.percentile(voiced, [10, 90, 95])
                 consecutive = valid[1:] & valid[:-1]
                 jumps = np.abs(12 * np.log2(np.maximum(f0[1:][consecutive], 1) / np.maximum(f0[:-1][consecutive], 1)))
-                high_pitch = bool(p90 >= 440 or p95 >= 650)
+                pitch_scale = 2 ** (pitch_shift / 12)
+                high_pitch = bool(p90 * pitch_scale >= 440 or p95 * pitch_scale >= 650)
                 complex_pitch = bool(12 * np.log2(max(p90, 1) / max(p10, 1)) >= 18 or (jumps.size >= 20 and float(np.mean(jumps >= 3)) >= 0.08))
         except (ImportError, OSError, RuntimeError, ValueError):
             pass
@@ -689,6 +701,9 @@ def render_conversion(
     # use the exact upstream RMVPE/FCPE/PM pipeline without an invented filter.
     _ = filter_radius
     profile = profile_hint or analyze_audio_profile(input_wav)
+    if pitch > 0 and not profile.high_pitch:
+        shifted_profile = analyze_audio_profile(input_wav, pitch_shift=pitch)
+        profile = replace(profile, high_pitch=shifted_profile.high_pitch)
     inference_input = input_wav if profile_hint is not None else prepare_inference_audio(input_wav, profile)
     selected_method = (
         "fcpe"
