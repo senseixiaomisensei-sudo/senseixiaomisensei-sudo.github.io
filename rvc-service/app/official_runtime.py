@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import os
 import hashlib
+import json
+import math
 import shutil
 import sys
 import tempfile
@@ -20,6 +22,40 @@ from pathlib import Path
 
 OFFICIAL_COMMIT = "8f2fdbf483955f924b4c87ab34919170d0b704ed"
 OFFICIAL_TAG = "2.3.260718"
+UPSTREAM_NOISE_SCALE = 0.66666
+DEFAULT_NOISE_SCALE = 0.35
+
+
+def model_noise_scale(model_path: Path) -> float:
+    """Use the same operator-owned synthesis setting as the browser engine."""
+    try:
+        metadata = json.loads((model_path.parent / "meta.json").read_text(encoding="utf-8"))
+        value = metadata.get("noiseScale", DEFAULT_NOISE_SCALE)
+        if isinstance(value, bool):
+            return DEFAULT_NOISE_SCALE
+        value = float(value)
+        if math.isfinite(value) and 0 < value <= 1:
+            return value
+    except (OSError, ValueError, TypeError, AttributeError):
+        pass
+    return DEFAULT_NOISE_SCALE
+
+
+def configure_synthesis_noise(synthesizer, noise_scale: float):
+    """Scale only the prior's random component, without changing model weights.
+
+    The pinned upstream v1/v2, F0/non-F0 infer methods hard-code 0.66666.
+    Adjusting log standard deviation before their sampling step is exactly
+    equivalent to replacing that multiplier; the mean and voiced mask stay
+    untouched. A model-scoped hook also works during CUDA graph capture.
+    """
+    log_ratio = math.log(noise_scale / UPSTREAM_NOISE_SCALE)
+
+    def scale_prior_noise(_module, _inputs, result):
+        mean, log_std, mask = result
+        return mean, log_std + log_ratio, mask
+
+    return synthesizer.enc_p.register_forward_hook(scale_prior_noise)
 
 
 class OfficialRuntimeError(RuntimeError):
@@ -131,6 +167,8 @@ class OfficialRvcModel:
         self.info = RuntimeInfo(root=root, device=device, is_half=is_half)
         self._vc = VC(_config(device, is_half))
         self._vc.get_vc(staged_model.name)
+        self.noise_scale = model_noise_scale(model_path)
+        self._noise_hook = configure_synthesis_noise(self._vc.net_g, self.noise_scale)
         from types import MethodType
         from app.pitch_safety import safe_get_f0
         self._vc.pipeline.get_f0 = MethodType(safe_get_f0, self._vc.pipeline)
