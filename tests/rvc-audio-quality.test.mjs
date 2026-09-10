@@ -177,7 +177,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260905-schools/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260910-recovery-quality/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false \} = \{\}\)/u);
   assert.match(client, /function runWebRvcInference\(\{ allowLong = false, fallback = false \} = \{\}\)/u);
@@ -244,7 +244,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /indexRate: indexRateVal/u);
   assert.match(service, /adeclick=threshold=2\.5:burst=2/u);
   assert.match(service, /afftdn=nr=6:nf=-55:tn=1:ad=0\.8/u);
-  assert.match(service, /speechnorm=p=0\.88:e=3:c=2/u);
+  assert.match(service, /afftdn=nr=6:nf=-55:tn=1:ad=0\.8:gs=8/u);
+  assert.doesNotMatch(service, /speechnorm=p=/u, "quiet breath/noise must not receive half-cycle expansion");
   assert.match(service, /profile = analyze_audio_profile\(source\)/u);
   assert.match(service, /selected_filter = SINGING_INPUT_FILTER if singing else HIGH_ENERGY_INPUT_FILTER if profile\.high_energy else INPUT_SAFETY_FILTER/u);
   assert.match(service, /high_pitch: bool = False/u);

@@ -105,8 +105,9 @@ INPUT_SAFETY_FILTER = (
     "lowpass=f=7600:p=1,"
     # Gentle tracked FFT denoising improves low-SNR and reverberant uploads
     # without a gate, so quiet consonants and sustained singing notes remain.
-    "afftdn=nr=6:nf=-55:tn=1:ad=0.8,"
-    "speechnorm=p=0.88:e=3:c=2:r=0.0005:f=0.0005:m=0.06,"
+    # Smooth adjacent FFT gains to reduce musical/granular denoising artifacts.
+    # Do not amplify quiet half-cycles: that lifts room noise and alters breaths.
+    "afftdn=nr=6:nf=-55:tn=1:ad=0.8:gs=8,"
     "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
     "alimiter=limit=0.90:attack=5:release=100:level=0"
 )
@@ -141,8 +142,7 @@ HIGH_ENERGY_INPUT_FILTER = (
     # standard limiter can hide clipping evidence from the profile detector.
     "highpass=f=45:p=2,"
     "lowpass=f=7600:p=1,"
-    "afftdn=nr=6:nf=-55:tn=1:ad=0.8,"
-    "speechnorm=p=0.88:e=3:c=2:r=0.0005:f=0.0005:m=0.06,"
+    "afftdn=nr=6:nf=-55:tn=1:ad=0.8:gs=8,"
     "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
     "alimiter=limit=0.86:attack=2:release=100:level=0"
 )

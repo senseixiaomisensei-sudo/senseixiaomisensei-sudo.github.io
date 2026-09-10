@@ -75,10 +75,21 @@ server.listen(PORT, "127.0.0.1", async () => {
   page.on("pageerror", (err) => console.log("[Browser Error]", String(err)));
 
   try {
+    if (process.env.POSTPREP_RVC_TEST_OUTAGE === "1") {
+      await page.route("**/rvc-api**", async route => {
+        if (route.request().method() !== "POST") return route.continue();
+        await route.fulfill({ status: 503, contentType: "application/json",
+          headers: { "Access-Control-Allow-Origin": "*" },
+          body: JSON.stringify({ code: "UPSTREAM_UNAVAILABLE", message: "Injected test outage" }) });
+      });
+    }
     await page.goto(process.env.POSTPREP_RVC_TEST_URL || `http://127.0.0.1:${PORT}/rvc.html`, { waitUntil: "domcontentloaded", timeout: 20000 });
     await page.waitForTimeout(1500);
     if (process.env.POSTPREP_RVC_FORCE_LOCAL === "1") {
       await page.locator("#rvc-mode-local").click();
+    }
+    if (process.env.POSTPREP_RVC_TEST_SONG === "1") {
+      await page.locator("#rvc-audio-mode-song").click();
     }
     const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     if (horizontalOverflow) throw new Error("RVC page has horizontal overflow at the test viewport");
@@ -136,6 +147,11 @@ server.listen(PORT, "127.0.0.1", async () => {
       let finished = false;
       const start = Date.now();
       while (Date.now() - start < inferenceTimeoutMs) {
+        if (process.env.POSTPREP_RVC_TEST_OUTAGE === "1" && process.env.POSTPREP_RVC_TEST_SONG === "1"
+            && await page.locator("#rvc-song-local-fallback").isVisible()) {
+          await page.locator("#rvc-song-local-fallback").click();
+          console.log("Confirmed explicit song-to-local continuation");
+        }
         const currentStatus = await page.locator("#rvc-service-status").textContent();
         console.log(`[${Math.round((Date.now() - start)/1000)}s] Status:`, currentStatus);
 

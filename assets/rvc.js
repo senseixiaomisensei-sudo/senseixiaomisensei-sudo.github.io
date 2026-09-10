@@ -4270,7 +4270,7 @@
     const status = Number(error?.httpStatus) || 0;
     if (status === 400 || status === 401 || status === 403 || status === 404 || status === 415 || status === 422) return false;
     if (status >= 500 || status === 408 || status === 425 || status === 429) return true;
-    return !status && /网络|连接|超时|查询|下载|请求/i.test(String(error?.message || ""));
+    return !status && /网络|连接|超时|查询|下载|请求|network|fetch|timeout|connection/i.test(String(error?.message || ""));
   }
 
   async function runOfficialRvcInference({ allowDeviceFallback = false } = {}) {
@@ -4374,7 +4374,7 @@
 
       // XMLHttpRequest gives upload progress on mobile browsers. Retry once
       // only for a connection-level drop or a transient gateway response;
-      // do not silently route the request to the local ONNX compatibility path.
+      // after that, the caller explicitly handles on-device fallback.
       let ticker = null;
       const uploadAndInfer = (attempt) => new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -4455,6 +4455,7 @@
         xhr.ontimeout = () => {
           if (ticker) clearInterval(ticker);
           const error = new Error(`上传或推理超时 (${Math.round(requestTimeoutMs / 1000)}s)，建议裁短音频后重试`);
+          error.code = "RVC_BACKEND_TIMEOUT";
           error.retryable = false;
           reject(error);
         };
@@ -4551,9 +4552,22 @@
         updateStatusDisplay("⚠️ 云端 RVC 当前不可达，准备切换到用户设备端推理…");
         return { fallback: true, error };
       }
+      if (allowDeviceFallback && state.audioMode === "song" && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
+        const localButton = document.getElementById("rvc-song-local-fallback");
+        if (localButton) {
+          localButton.hidden = false;
+          localButton.textContent = state.lang === "en" ? "Continue on-device without backing-track separation" : "转为本地直接变声（不分离伴奏）";
+        }
+        updateStatusDisplay(state.lang === "en"
+          ? "Cloud song conversion is unavailable. Your audio is retained. Retry cloud, or choose on-device conversion below; it cannot separate the backing track. Use dry vocals for best results."
+          : "云端歌曲翻唱暂不可用，原音频已保留。可重试云端，或点下方按钮接续本地变声；本地不能分离伴奏，混音会一起变声，建议改用纯人声。");
+        return false;
+      }
       const failureMessage = cloudRvcFailureMessage(error);
       const diagnostic = error?.requestId ? ` · 诊断号 ${error.requestId}` : "";
-      updateStatusDisplay(`❌ ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}`);
+      const deviceHint = !hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)
+        ? (state.lang === "en" ? " · This voice is cloud-only; choose an on-device voice to continue locally." : " · 该角色仅支持云端；如需本地接续，请更换支持设备端的角色。") : "";
+      updateStatusDisplay(`❌ ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}${deviceHint}`);
       showToast(`❌ ${failureMessage}`);
       return false;
     } finally {
@@ -4568,6 +4582,8 @@
   }
 
   async function runRvcInference() {
+    const localButton = document.getElementById("rvc-song-local-fallback");
+    if (localButton) localButton.hidden = true;
     const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
     if (selectedModel && String(selectedModel.id).startsWith(OWN_MODEL_PREFIX)) {
       return runWebRvcInference();
@@ -4588,6 +4604,13 @@
     }
     return cloudResult;
   }
+
+  document.getElementById("rvc-song-local-fallback")?.addEventListener("click", () => {
+    if (state.busy) return;
+    setAudioMode("voice");
+    setInferenceMode("local");
+    runRvcInference();
+  });
 
   function setupModelTraining() {
     const filesInput = document.getElementById("rvc-training-files");
