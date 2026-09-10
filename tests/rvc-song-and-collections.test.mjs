@@ -42,7 +42,7 @@ test("song mode is an additive PyMSS separation, RVC vocal conversion and backin
   assert.match(service, /if audio_mode == "song":/u);
   assert.match(service, /separate_song, input_raw/u);
   assert.match(service, /render_duration_safe_conversion_async\([\s\S]*separated_vocals,[\s\S]*converted_vocals/u);
-  assert.match(service, /vocal_profile = await asyncio\.to_thread\(normalize_audio, stems\.vocals, separated_vocals\)/u);
+  assert.match(service, /vocal_profile = await asyncio\.to_thread\(normalize_audio, stems\.vocals, separated_vocals, singing=True\)/u);
   assert.match(service, /input_profile = await asyncio\.to_thread\(normalize_audio, input_raw, input_wav\)/u);
   assert.match(service, /remix_song,/u);
   assert.match(separation, /model_bs_roformer_ep_368_sdr_12\.9628\.ckpt/u);
@@ -67,7 +67,8 @@ test("long audio uses a separate resilient contract without changing short conve
   assert.match(client, /MAX_AUDIO_SECONDS = 600/u);
   assert.match(client, /DURABLE_CLOUD_JOB_SECONDS = 40/u);
   assert.match(client, /if \(Number\(durationSeconds\) >= DURABLE_CLOUD_JOB_SECONDS\) return "mp3"/u);
-  assert.match(client, /structuredCode[\s\S]*longJob && TRANSIENT_CLOUD_OUTPUT_CODES\.has/u);
+  assert.match(client, /function isTransientCloudOutputError[\s\S]*TRANSIENT_CLOUD_OUTPUT_CODES\.has\(code\)/u);
+  assert.match(client, /isTransientCloudOutputError\(error\)/u);
   assert.match(client, /maxTransientFailures = longJob \? 30 : 4/u);
   assert.match(client, /结果下载中断，正在从已完成任务重新拉取/u);
   assert.match(service, /MAX_AUDIO_SECONDS = 600/u);
