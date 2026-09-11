@@ -14,14 +14,16 @@ function readFunction(name) {
   }
   throw new Error(`Unterminated ${name}`);
 }
-const limit = Function(`const LOCAL_MAX_AUDIO_SECONDS=20, DEVICE_FALLBACK_MAX_AUDIO_SECONDS=1200, MAX_AUDIO_SECONDS=600; return (${readFunction("audioDurationLimit")});`)();
+const limit = Function(`const LOCAL_MAX_AUDIO_SECONDS=20, DEVICE_FALLBACK_MAX_AUDIO_SECONDS=1200, MAX_AUDIO_SECONDS=900; return (${readFunction("audioDurationLimit")});`)();
 const timeout = Function(`return (${readFunction("localInferenceTimeoutMs")});`)();
 
 test("20-minute local input does not expand cloud or unverified imported-model limits", () => {
   assert.equal(limit("local", "hoshino"), 1200);
   assert.equal(1200 <= limit("local", "hoshino"), true);
   assert.equal(1200.01 <= limit("local", "hoshino"), false);
-  assert.equal(limit("official", "hoshino"), 600);
+  assert.equal(limit("official", "hoshino"), 900);
+  assert.equal(900 <= limit("official", "maki"), true);
+  assert.equal(900.01 <= limit("official", "maki"), false);
   assert.equal(limit("local", "own:custom"), 20);
   assert.match(client, /decoded\.duration > audioDurationLimit\(state\.inferenceMode, state\.selectedModelId\)/u);
   assert.match(client, /safeFallbackDuration > audioDurationLimit\(state\.inferenceMode, state\.selectedModelId\)/u);

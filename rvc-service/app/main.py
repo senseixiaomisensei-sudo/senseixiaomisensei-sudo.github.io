@@ -53,7 +53,7 @@ MAX_AUDIO_BYTES = 25 * 1024 * 1024
 TTS_MAX_TEXT_CHARS = 800
 TTS_DEFAULT_VOICE = os.getenv("RVC_TTS_VOICE", "zh-CN-XiaoxiaoNeural")
 MIN_AUDIO_SECONDS = 1
-MAX_AUDIO_SECONDS = 600
+MAX_AUDIO_SECONDS = 900
 LONG_AUDIO_THRESHOLD_SECONDS = 20
 LONG_CHUNK_SECONDS = 20
 LONG_CHUNK_CROSSFADE_SECONDS = 0.5
@@ -1059,6 +1059,7 @@ async def healthz(request: Request) -> dict[str, object]:
     separator = await asyncio.to_thread(separation_status)
     return {
         "ready": True,
+        "maxAudioSeconds": MAX_AUDIO_SECONDS,
         "engine": "RVC-Project/Retrieval-based-Voice-Conversion-WebUI",
         "tag": OFFICIAL_TAG,
         "commit": OFFICIAL_COMMIT,

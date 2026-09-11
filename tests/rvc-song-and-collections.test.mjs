@@ -64,14 +64,14 @@ test("long audio uses a separate resilient contract without changing short conve
   assert.match(client, /LONG_AUDIO_THRESHOLD_SECONDS = 45/u);
   assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 1200/u);
   assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
-  assert.match(client, /MAX_AUDIO_SECONDS = 600/u);
+  assert.match(client, /MAX_AUDIO_SECONDS = 900/u);
   assert.match(client, /DURABLE_CLOUD_JOB_SECONDS = 40/u);
   assert.match(client, /if \(Number\(durationSeconds\) >= DURABLE_CLOUD_JOB_SECONDS\) return "mp3"/u);
   assert.match(client, /function isTransientCloudOutputError[\s\S]*TRANSIENT_CLOUD_OUTPUT_CODES\.has\(code\)/u);
   assert.match(client, /isTransientCloudOutputError\(error\)/u);
   assert.match(client, /maxTransientFailures = longJob \? 30 : 4/u);
   assert.match(client, /结果下载中断，正在从已完成任务重新拉取/u);
-  assert.match(service, /MAX_AUDIO_SECONDS = 600/u);
+  assert.match(service, /MAX_AUDIO_SECONDS = 900/u);
   assert.match(service, /OUTPUT_RETENTION_SECONDS = max\(900,[\s\S]*"7200"/u);
   assert.match(service, /record\.state not in \{"queued", "processing"\}/u);
   assert.match(service, /record\.stage = "encoding"/u);
@@ -86,5 +86,5 @@ test("long audio uses a separate resilient contract without changing short conve
   assert.match(service, /if duration_seconds > LONG_AUDIO_THRESHOLD_SECONDS:[\s\S]*release_cached_models/u);
   assert.match(service, /acrossfade=d=\{LONG_CHUNK_CROSSFADE_SECONDS\}/u);
   assert.match(gateway, /id: "rvc-output"[\s\S]*skipRateLimit: true/u);
-  assert.match(page, /最长 10 分钟/u);
+  assert.match(page, /最长 15 分钟/u);
 });

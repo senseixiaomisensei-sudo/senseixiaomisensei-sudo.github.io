@@ -177,7 +177,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260910-recovery-quality/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260911-local-maki/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false \} = \{\}\)/u);
   assert.match(client, /function runWebRvcInference\(\{ allowLong = false, fallback = false \} = \{\}\)/u);
@@ -194,7 +194,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
   assert.match(client, /runWebRvcInference\(\{ allowLong: true, fallback: true \}\)/u);
   assert.match(client, /const LOCAL_MAX_AUDIO_SECONDS = 20/u);
-  assert.match(client, /const MAX_AUDIO_SECONDS = 600/u);
+  assert.match(client, /const MAX_AUDIO_SECONDS = 900/u);
   assert.match(client, /const LONG_AUDIO_THRESHOLD_SECONDS = 45/u);
   assert.match(client, /state\.audio\.duration > DEVICE_FALLBACK_MAX_AUDIO_SECONDS/u);
   assert.match(client, /localTimeoutMs/u);
@@ -259,7 +259,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /async def process_conversion_job\(/u);
   assert.match(service, /record\.state = "processing"/u);
   assert.match(service, /status_code=202/u);
-  assert.match(service, /MAX_AUDIO_SECONDS = 600/u);
+  assert.match(service, /MAX_AUDIO_SECONDS = 900/u);
   assert.match(service, /record\.state not in \{"queued", "processing"\}/u);
   assert.match(service, /record\.expires_at = job_expiry\(\)/u);
   assert.match(service, /SHOUT_HARSHNESS_GUARD_MODELS = frozenset\(\{"midori", "mika", "shiroko", "toki", "yuzu"\}\)/u);

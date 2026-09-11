@@ -4,7 +4,7 @@
   const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
   const MIN_AUDIO_SECONDS = 0.5;
   const WARN_AUDIO_SECONDS = 2;
-  const MAX_AUDIO_SECONDS = 600;
+  const MAX_AUDIO_SECONDS = 900;
   const LONG_AUDIO_THRESHOLD_SECONDS = 45;
   const DURABLE_CLOUD_JOB_SECONDS = 40;
   // The browser compatibility path keeps several large ONNX sessions in RAM.
@@ -137,7 +137,8 @@
       modelInstalled: "已就绪",
       modelPick: "已选择",
       stepAudio: "2. 上传或录制你的声音",
-      stepAudioHint: "本地公开角色支持最长 20 分钟纯人声；云端模式最长 10 分钟。文件需在 25 MB 内；长音频优先使用 MP3/M4A，本地请保持页面前台并预留内存。",
+      localDirectConvert: "转为本地直接变声（不分离伴奏）",
+      stepAudioHint: "本地公开角色支持最长 20 分钟纯人声；云端翻唱最长 15 分钟。文件需在 25 MB 内；长音频优先使用 MP3/M4A，本地请保持页面前台并预留内存。",
       sourceUpload: "上传音频",
       sourceUploadHint: "选择电脑或手机里已有的录音文件。",
       sourceRecord: "录制声音",
@@ -189,7 +190,7 @@
       fileTooLarge: "文件超过大小限制 (25 MB)。",
       audioTooShort: "音频太短（不足 0.5 秒），请换一段更长的录音。",
       audioShortWarn: "音频不足 2 秒，建议使用稍长的句子获得更自然效果。",
-      audioTooLong: "超过当前模式上限：本地公开角色 20 分钟，云端 10 分钟，导入模型 20 秒。请切换模式或裁剪。",
+      audioTooLong: "超过当前模式上限：本地公开角色 20 分钟，云端 15 分钟，导入模型 20 秒。请切换模式或裁剪。",
       decodeFailed: "无法解码此音频文件。请换成标准 WAV 或 MP3 重试。",
       missingModel: "请先选择一个角色声音。",
       missingAudio: "请先上传或录制一段你的声音。",
@@ -252,7 +253,8 @@
       modelInstalled: "Ready",
       modelPick: "Selected",
       stepAudio: "2. Upload or record your voice",
-      stepAudioHint: "Published on-device voices accept 20 minutes of dry vocals; cloud mode accepts 10 minutes. Files must be under 25 MB. Prefer MP3/M4A; keep the local page in the foreground with enough memory.",
+      localDirectConvert: "Convert on-device (no backing-track separation)",
+      stepAudioHint: "Published on-device voices accept 20 minutes of dry vocals; cloud covers accept 15 minutes. Files must be under 25 MB. Prefer MP3/M4A; keep the local page in the foreground with enough memory.",
       sourceUpload: "Upload audio",
       sourceUploadHint: "Choose an existing audio file from your device.",
       sourceRecord: "Record voice",
@@ -304,7 +306,7 @@
       fileTooLarge: "File exceeds 25 MB limit.",
       audioTooShort: "Audio is too short (under 0.5s).",
       audioShortWarn: "Audio under 2s may sound robotic. Longer speech is recommended.",
-      audioTooLong: "Current limits: 20 minutes for published on-device voices, 10 minutes for cloud, 20 seconds for imported models. Switch modes or trim the audio.",
+      audioTooLong: "Current limits: 20 minutes for published on-device voices, 15 minutes for cloud, 20 seconds for imported models. Switch modes or trim the audio.",
       decodeFailed: "Could not decode audio. Try converting to standard MP3 or WAV.",
       missingModel: "Pick a character voice first.",
       missingAudio: "Upload or record your voice first.",
@@ -320,6 +322,11 @@
   };
 
   const EMBEDDED_BASE_MODELS = {
+    hubertV1: {
+      name: "hubert-v1.onnx",
+      manifestKey: "hubert-v1.onnx",
+      chunks: Array.from({ length: 14 }, (_, i) => `models/characters/hubert-v1/chunk_${i}.bin`)
+    },
     hubert: {
       name: "hubert.onnx",
       manifestKey: "hubert.onnx",
@@ -1232,11 +1239,11 @@
     "source": "https://www.101soundboards.com/tts/1034740-konuri-maki-blue-archive-sq-tts-text-to-speech/download_model",
     "sampleRate": 40000,
     "rvcVersion": "v1",
-    "supportsDevice": false,
+    "supportsDevice": true,
     "checkpointSha256": "170a9e6e3f7c79c0eb82f3aa0d8dfad5325e593582386bcac07a46cbc4e51f70",
     "indexSha256": "9576619fa1375174ad1d239769c2ea4049c46ecd295b046a28a21ac2e2a939ed",
     "avatarText": "真纪",
-    "description": "千年科学学园 · 仅服务端转换 · 日语社区 RVC 声线",
+    "description": "千年科学学园 · 本地与云端转换 · 日语社区 RVC V1 声线",
     "tags": [
       "女声",
       "蔚蓝档案",
@@ -1635,14 +1642,26 @@
     return { buffer: winningBuffer, fromCache: false };
   }
 
+  async function readableCachedModel(name) {
+    const cached = await getCachedItem(name);
+    if (!(cached instanceof Blob) || cached.size <= 1024 * 1024) return null;
+    try {
+      const bytes = await cached.arrayBuffer();
+      return { name, size: bytes.byteLength, arrayBuffer: async () => bytes };
+    } catch {
+      await removeCachedItem(name);
+      return null;
+    }
+  }
+
   // Fetch Chunked Model with Concurrency Pool & Real-Time Granular Progress
   async function fetchChunkedModel(chunkUrls, name, displayName, mimeType, onProgress) {
-    const cached = await getCachedItem(name);
-    if (cached instanceof Blob && cached.size > 1024 * 1024) {
+    const cached = await readableCachedModel(name);
+    if (cached) {
       if (typeof onProgress === "function") {
         onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true, `⚡ ${displayName} 已从本地闪存极速就绪`);
       }
-      return new File([cached], name, { type: mimeType });
+      return cached;
     }
 
     const urls = Array.isArray(chunkUrls) ? chunkUrls : [chunkUrls];
@@ -1693,16 +1712,29 @@
     } catch (e) {
       console.warn("Could not save to IndexedDB cache:", e);
     }
-    return new File([fullBlob], name, { type: mimeType });
+    // Keep downloaded bytes readable even when Chromium cannot spill a large
+    // Blob to its temporary storage. The worker only requires arrayBuffer().
+    return {
+      name, size: fullBlob.size, type: mimeType,
+      async arrayBuffer() {
+        const bytes = new Uint8Array(blobParts.reduce((size, part) => size + part.byteLength, 0));
+        let offset = 0;
+        for (const part of blobParts) {
+          bytes.set(new Uint8Array(part), offset);
+          offset += part.byteLength;
+        }
+        return bytes.buffer;
+      },
+    };
   }
 
   async function loadModelAuto(modelConfig, name, displayName, mimeType, onProgress) {
-    const cached = await getCachedItem(name);
-    if (cached instanceof Blob && cached.size > 1024 * 1024) {
+    const cached = await readableCachedModel(name);
+    if (cached) {
       if (typeof onProgress === "function") {
         onProgress(cached.size, cached.size, 1, 1, true, `⚡ ${displayName} 已从本地闪存秒级就绪`);
       }
-      return new File([cached], name, { type: mimeType });
+      return cached;
     }
 
     let chunks = modelConfig?.chunks;
@@ -2759,9 +2791,12 @@
     if (progressWrap) progressWrap.classList.remove("hidden");
 
     try {
-      const hubertCfg = state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert;
-      const rmvpeCfg = state.baseModels?.rmvpe || EMBEDDED_BASE_MODELS.rmvpe;
       const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
+      const useV1 = selectedModel?.rvcVersion === "v1";
+      const hubertCfg = useV1
+        ? (state.baseModels?.hubertV1 || EMBEDDED_BASE_MODELS.hubertV1)
+        : (state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert);
+      const rmvpeCfg = state.baseModels?.rmvpe || EMBEDDED_BASE_MODELS.rmvpe;
 
       let hubertLoaded = 0;
       let hubertTotal = (hubertCfg.chunks?.length || 19) * 20 * 1024 * 1024;
@@ -2780,7 +2815,7 @@
       };
 
       const tasks = [
-        loadModelAuto(hubertCfg, "hubert.onnx", "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
+        loadModelAuto(hubertCfg, useV1 ? "hubert-v1.onnx" : "hubert.onnx", "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
           hubertLoaded = loaded;
           if (total) hubertTotal = total;
           updatePreloadUI(msg || `⏳ 正在缓存 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
@@ -4065,7 +4100,10 @@
         },
       });
 
-      const hubertCfg = state.baseModels?.hubert || { chunks: [] };
+      const useV1 = selectedModel.rvcVersion === "v1";
+      const hubertCfg = useV1
+        ? (state.baseModels?.hubertV1 || EMBEDDED_BASE_MODELS.hubertV1)
+        : (state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert);
       const rmvpeCfg = state.baseModels?.rmvpe || { chunks: [] };
 
       // Multi-Model Sequential Loading with Live Milestone Progress Tracking
@@ -4075,7 +4113,7 @@
       updateStatusDisplay("⏳ [1/4] 正在加载基础语义模型 (HuBERT)...");
       const hubertFile = await loadModelAuto(
         hubertCfg,
-        "hubert.onnx",
+        useV1 ? "hubert-v1.onnx" : "hubert.onnx",
         "HuBERT 语义特征模型",
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
@@ -4548,20 +4586,13 @@
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
-      if (allowDeviceFallback && state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
+      if (allowDeviceFallback && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
+        if (state.audioMode === "song") {
+          setAudioMode("voice");
+          showToast("云端失败，自动转为本地直接变声；不分离伴奏，伴奏也会一起变声。");
+        }
         updateStatusDisplay("⚠️ 云端 RVC 当前不可达，准备切换到用户设备端推理…");
         return { fallback: true, error };
-      }
-      if (allowDeviceFallback && state.audioMode === "song" && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
-        const localButton = document.getElementById("rvc-song-local-fallback");
-        if (localButton) {
-          localButton.hidden = false;
-          localButton.textContent = state.lang === "en" ? "Continue on-device without backing-track separation" : "转为本地直接变声（不分离伴奏）";
-        }
-        updateStatusDisplay(state.lang === "en"
-          ? "Cloud song conversion is unavailable. Your audio is retained. Retry cloud, or choose on-device conversion below; it cannot separate the backing track. Use dry vocals for best results."
-          : "云端歌曲翻唱暂不可用，原音频已保留。可重试云端，或点下方按钮接续本地变声；本地不能分离伴奏，混音会一起变声，建议改用纯人声。");
-        return false;
       }
       const failureMessage = cloudRvcFailureMessage(error);
       const diagnostic = error?.requestId ? ` · 诊断号 ${error.requestId}` : "";
@@ -4583,7 +4614,7 @@
 
   async function runRvcInference() {
     const localButton = document.getElementById("rvc-song-local-fallback");
-    if (localButton) localButton.hidden = true;
+    if (localButton) localButton.hidden = false;
     const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
     if (selectedModel && String(selectedModel.id).startsWith(OWN_MODEL_PREFIX)) {
       return runWebRvcInference();
@@ -4595,11 +4626,13 @@
       const cloudReady = await refreshOfficialService();
       if (cloudReady === false) {
         updateStatusDisplay("📱 检测到电脑端云引擎离线，正在使用当前用户设备处理纯人声…");
+        setInferenceMode("local");
         return runWebRvcInference({ allowLong: true, fallback: true });
       }
     }
     const cloudResult = await runOfficialRvcInference({ allowDeviceFallback: true });
     if (cloudResult?.fallback) {
+      setInferenceMode("local");
       return runWebRvcInference({ allowLong: true, fallback: true });
     }
     return cloudResult;
@@ -4607,6 +4640,12 @@
 
   document.getElementById("rvc-song-local-fallback")?.addEventListener("click", () => {
     if (state.busy) return;
+    const model = state.catalog.find((model) => model.id === state.selectedModelId);
+    if (!hasDeviceFallbackModel(model)) {
+      showToast("请先选择支持设备端的角色。");
+      return;
+    }
+    if (state.audioMode === "song") showToast("本地直接变声不分离伴奏，伴奏也会一起变声。");
     setAudioMode("voice");
     setInferenceMode("local");
     runRvcInference();

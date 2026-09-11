@@ -41,6 +41,7 @@ function cloudHarness(mode) {
     prepareCloudUploadAudio: audio => ({ file: audio.file }),
     persistCloudSubmissionTimestamp() {}, showProgressBar() {}, updateProgressBar() {},
     updateStatusDisplay: text => statuses.push(text), showToast() {},
+    setAudioMode: mode => { state.audioMode = mode; },
     officialRoutes: () => ({ convertUrl: "/test" }), getOfficialEndpoint: () => "",
     cloudRequestTimeoutMs: () => 1000, cloudJobTimeoutMs: () => 1000,
     preferredCloudOutputFormat: () => "mp3", createCloudRequestId: () => "same-retry-id",
@@ -62,12 +63,10 @@ test("303-second voice retries once then offers automatic fallback with intact a
   assert.equal(h.state.busy, false);
 });
 
-test("song outage exposes explicit local continuation without silently converting accompaniment", async () => {
+test("song outage automatically continues locally and retains the upload", async () => {
   const h = cloudHarness("song");
-  assert.equal(await h.run({ allowDeviceFallback: true }), false);
-  assert.equal(h.button.hidden, false);
-  assert.match(h.statuses.at(-1), /不能分离伴奏/);
-  assert.equal(h.state.audioMode, "song");
+  assert.equal((await h.run({ allowDeviceFallback: true })).fallback, true);
+  assert.equal(h.state.audioMode, "voice");
   assert.equal(h.state.audio, h.audio);
   assert.equal(h.state.busy, false);
 });
@@ -75,10 +74,12 @@ test("song outage exposes explicit local continuation without silently convertin
 test("hybrid dispatcher actually starts local inference after cloud failure", async () => {
   const calls = [];
   const state = { catalog: [{ id: "momoi" }], selectedModelId: "momoi", audioMode: "voice", engineReady: true };
-  const run = Function("state", "document", "OWN_MODEL_PREFIX", "hasDeviceFallbackModel", "runOfficialRvcInference", "runWebRvcInference", `return (${source("runRvcInference")});`)(
+  const run = Function("state", "document", "OWN_MODEL_PREFIX", "hasDeviceFallbackModel", "runOfficialRvcInference", "runWebRvcInference", "setInferenceMode", `return (${source("runRvcInference")});`)(
     state, { getElementById: () => null }, "own:", () => true,
     async () => ({ fallback: true }), async options => { calls.push(options); return true; },
+    mode => { state.inferenceMode = mode; },
   );
   assert.equal(await run(), true);
+  assert.equal(state.inferenceMode, "local");
   assert.deepEqual(calls, [{ allowLong: true, fallback: true }]);
 });

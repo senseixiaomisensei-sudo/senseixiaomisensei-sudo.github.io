@@ -228,7 +228,7 @@ test("local engine and rvc client cache versions are bumped for the voice fix", 
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
   assert.match(runtimeSource, /inference\.worker\.js\?v=20260905-v44/u);
   assert.match(clientSource, /rvc-web-runtime\.js\?v=20260905-v44/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20260910-recovery-quality/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20260911-local-maki/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {

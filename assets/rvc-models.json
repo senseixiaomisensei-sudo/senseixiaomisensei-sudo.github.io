@@ -1,8 +1,28 @@
 {
-  "version": 16,
-  "updatedAt": "2026-09-05",
-  "_readme": "新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。真纪 V1 仅支持服务端转换。",
+  "version": 17,
+  "updatedAt": "2026-09-11",
+  "_readme": "新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。真纪 V1 使用独立的本地 HuBERT V1 特征模型。",
   "baseModels": {
+    "hubertV1": {
+      "name": "hubert-v1.onnx",
+      "manifestKey": "hubert-v1.onnx",
+      "chunks": [
+        "models/characters/hubert-v1/chunk_0.bin",
+        "models/characters/hubert-v1/chunk_1.bin",
+        "models/characters/hubert-v1/chunk_2.bin",
+        "models/characters/hubert-v1/chunk_3.bin",
+        "models/characters/hubert-v1/chunk_4.bin",
+        "models/characters/hubert-v1/chunk_5.bin",
+        "models/characters/hubert-v1/chunk_6.bin",
+        "models/characters/hubert-v1/chunk_7.bin",
+        "models/characters/hubert-v1/chunk_8.bin",
+        "models/characters/hubert-v1/chunk_9.bin",
+        "models/characters/hubert-v1/chunk_10.bin",
+        "models/characters/hubert-v1/chunk_11.bin",
+        "models/characters/hubert-v1/chunk_12.bin",
+        "models/characters/hubert-v1/chunk_13.bin"
+      ]
+    },
     "hubert": {
       "name": "hubert.onnx",
       "manifestKey": "hubert.onnx",
@@ -953,11 +973,11 @@
       "source": "https://www.101soundboards.com/tts/1034740-konuri-maki-blue-archive-sq-tts-text-to-speech/download_model",
       "sampleRate": 40000,
       "rvcVersion": "v1",
-      "supportsDevice": false,
+      "supportsDevice": true,
       "checkpointSha256": "170a9e6e3f7c79c0eb82f3aa0d8dfad5325e593582386bcac07a46cbc4e51f70",
       "indexSha256": "9576619fa1375174ad1d239769c2ea4049c46ecd295b046a28a21ac2e2a939ed",
       "avatarText": "真纪",
-      "description": "千年科学学园 · 仅服务端转换 · 日语社区 RVC 声线",
+      "description": "千年科学学园 · 本地与云端转换 · 日语社区 RVC V1 声线",
       "tags": [
         "女声",
         "蔚蓝档案",

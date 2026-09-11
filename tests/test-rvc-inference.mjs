@@ -75,6 +75,9 @@ server.listen(PORT, "127.0.0.1", async () => {
   page.on("pageerror", (err) => console.log("[Browser Error]", String(err)));
 
   try {
+    if (process.env.POSTPREP_RVC_TEST_NO_CACHE === "1") {
+      await page.addInitScript(() => Object.defineProperty(window, "indexedDB", { value: undefined }));
+    }
     if (process.env.POSTPREP_RVC_TEST_OUTAGE === "1") {
       await page.route("**/rvc-api**", async route => {
         if (route.request().method() !== "POST") return route.continue();
@@ -147,12 +150,8 @@ server.listen(PORT, "127.0.0.1", async () => {
       let finished = false;
       const start = Date.now();
       while (Date.now() - start < inferenceTimeoutMs) {
-        if (process.env.POSTPREP_RVC_TEST_OUTAGE === "1" && process.env.POSTPREP_RVC_TEST_SONG === "1"
-            && await page.locator("#rvc-song-local-fallback").isVisible()) {
-          await page.locator("#rvc-song-local-fallback").click();
-          console.log("Confirmed explicit song-to-local continuation");
-        }
         const currentStatus = await page.locator("#rvc-service-status").textContent();
+        if (currentStatus.startsWith("❌")) throw new Error(currentStatus);
         console.log(`[${Math.round((Date.now() - start)/1000)}s] Status:`, currentStatus);
 
         const resultVisible = await page.locator("#rvc-result").isVisible();
@@ -160,6 +159,12 @@ server.listen(PORT, "127.0.0.1", async () => {
           console.log("🎉 Result section is VISIBLE!");
           const resultMeta = await page.locator("#rvc-result-meta").textContent();
           console.log("Result Meta:", resultMeta);
+          if (process.env.POSTPREP_RVC_TEST_OUTAGE === "1" && !resultMeta.includes("用户设备端")) {
+            throw new Error("Outage test did not finish on-device");
+          }
+          if (process.env.POSTPREP_RVC_REQUIRE_CLOUD === "1" && resultMeta.includes("用户设备端")) {
+            throw new Error("Cloud acceptance unexpectedly fell back to the device");
+          }
           finished = true;
           break;
         }

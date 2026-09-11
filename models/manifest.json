@@ -405,5 +405,25 @@
       "models/characters/maki/chunk_4.bin",
       "models/characters/maki/chunk_5.bin"
     ]
+  },
+  "hubert-v1.onnx": {
+    "totalSize": 293421166,
+    "sha256": "8f320084df3fa23ee3ddf1cef48248764ed3ad16fbefb25762c9cfd3d4a685b3",
+    "chunks": [
+      "models/characters/hubert-v1/chunk_0.bin",
+      "models/characters/hubert-v1/chunk_1.bin",
+      "models/characters/hubert-v1/chunk_2.bin",
+      "models/characters/hubert-v1/chunk_3.bin",
+      "models/characters/hubert-v1/chunk_4.bin",
+      "models/characters/hubert-v1/chunk_5.bin",
+      "models/characters/hubert-v1/chunk_6.bin",
+      "models/characters/hubert-v1/chunk_7.bin",
+      "models/characters/hubert-v1/chunk_8.bin",
+      "models/characters/hubert-v1/chunk_9.bin",
+      "models/characters/hubert-v1/chunk_10.bin",
+      "models/characters/hubert-v1/chunk_11.bin",
+      "models/characters/hubert-v1/chunk_12.bin",
+      "models/characters/hubert-v1/chunk_13.bin"
+    ]
   }
 }
