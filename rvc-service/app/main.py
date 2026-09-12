@@ -1059,7 +1059,6 @@ async def healthz(request: Request) -> dict[str, object]:
     separator = await asyncio.to_thread(separation_status)
     return {
         "ready": True,
-        "maxAudioSeconds": MAX_AUDIO_SECONDS,
         "engine": "RVC-Project/Retrieval-based-Voice-Conversion-WebUI",
         "tag": OFFICIAL_TAG,
         "commit": OFFICIAL_COMMIT,

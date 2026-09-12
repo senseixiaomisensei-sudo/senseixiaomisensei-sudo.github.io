@@ -3319,6 +3319,32 @@
   const RVC_MODE_STORAGE_KEY = "postprep_rvc_inference_mode_v32";
   const RVC_ENDPOINT_STORAGE_KEY = "postprep_rvc_api_endpoint";
 
+  // 代理关闭时 Cloudflare 域名可能不可达: 转换出现网络类失败时按候选入口
+  // 依次转移 (配置入口 → 当前源 → 已知 Pages 域名), 全部失败时给出明确指引,
+  // 不再只报笼统的网络错误。
+  function buildRvcEndpointCandidates() {
+    const candidates = [];
+    const push = (value) => {
+      const clean = String(value || "").trim().replace(/\/+$/u, "");
+      if (clean && !candidates.includes(clean)) candidates.push(clean);
+    };
+    push(getOfficialEndpoint());
+    try {
+      const origin = String(globalThis.location?.origin || "");
+      if (origin.startsWith("http")) push(origin.replace(/\/+$/u, "") + "/rvc-api");
+    } catch (e) {}
+    push("https://postprep-ae6.pages.dev/rvc-api");
+    return candidates;
+  }
+
+  function isEndpointNetworkError(error) {
+    const code = String(error?.code || "");
+    if (["RVC_NETWORK_INTERRUPTED", "RVC_BACKEND_TIMEOUT", "RVC_BACKEND_UNAVAILABLE", "RVC_RELAY_UNAVAILABLE", "RVC_ROUTE_UNAVAILABLE", "UPSTREAM_UNAVAILABLE"].includes(code)) return true;
+    const status = Number(error?.httpStatus) || 0;
+    if (status === 0 || status === 408 || status === 425 || status >= 500) return true;
+    return !status && /网络|连接|超时|无法访问|fetch/i.test(String(error?.message || ""));
+  }
+
   function getOfficialEndpoint() {
     if (globalThis.POSTPREP_RVC_API_ENDPOINT) {
       // Public releases previously allowed an old workers.dev/local address
@@ -4086,7 +4112,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260905-v44", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260911-env-v45", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -4311,7 +4337,7 @@
     return !status && /网络|连接|超时|查询|下载|请求|network|fetch|timeout|connection/i.test(String(error?.message || ""));
   }
 
-  async function runOfficialRvcInference({ allowDeviceFallback = false } = {}) {
+  async function runOfficialRvcInference({ allowDeviceFallback = false, endpointCandidates } = {}) {
     if (state.busy || !state.audio?.file || !state.selectedModelId) return;
     if (state.audio.duration > MAX_AUDIO_SECONDS) {
       updateStatusDisplay(t("audioTooLong"));
@@ -4351,7 +4377,9 @@
       return;
     }
 
-    const cooldownRemainingMs = RVC_SUBMISSION_COOLDOWN_MS - (Date.now() - state.lastCloudSubmissionAt);
+    const cooldownRemainingMs = endpointCandidates
+      ? 0
+      : RVC_SUBMISSION_COOLDOWN_MS - (Date.now() - state.lastCloudSubmissionAt);
     if (cooldownRemainingMs > 0) {
       const seconds = Math.ceil(cooldownRemainingMs / 1000);
       showToast(state.lang === "en" ? `Wait ${seconds}s before the next cloud audio` : `请等待 ${seconds} 秒后再提交下一条云端音频`);
@@ -4371,7 +4399,11 @@
     const startedAt = Date.now();
 
     try {
-      const routes = officialRoutes(getOfficialEndpoint());
+      // 候选云端入口: 首选配置入口; 网络类失败时依次转移到当前源与已知域名。
+    const activeBases = Array.isArray(endpointCandidates) && endpointCandidates.length
+      ? endpointCandidates
+      : buildRvcEndpointCandidates();
+    const routes = officialRoutes(activeBases[0]);
       const convertUrl = routes.convertUrl;
       const requestTimeoutMs = cloudRequestTimeoutMs(uploadFile.size, state.audio.duration, state.audioMode);
       const jobTimeoutMs = cloudJobTimeoutMs(state.audio.duration, state.audioMode);
@@ -4586,6 +4618,13 @@
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
+      if (isEndpointNetworkError(error) && Array.isArray(endpointCandidates) && endpointCandidates.length > 1) {
+        updateStatusDisplay("🔄 当前云端入口不可达（代理关闭时 Cloudflare 域名可能无法访问），正在尝试备用入口…");
+        return runOfficialRvcInference({ allowDeviceFallback, endpointCandidates: endpointCandidates.slice(1) });
+      }
+      if (isEndpointNetworkError(error)) {
+        error.message = `${error.message || "网络错误"} —— 代理关闭时 Cloudflare 域名可能无法访问：请开启代理后重试，或改用「仅设备端模式」离线变声。`;
+      }
       if (allowDeviceFallback && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
         if (state.audioMode === "song") {
           setAudioMode("voice");

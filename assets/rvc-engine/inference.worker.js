@@ -13707,6 +13707,114 @@ const PIPELINE_STAGES = [
   "voice_synthesis",
   "post_processing"
 ];
+// Environment and breath passthrough mask: a frame is "environment" when its
+// spectrum is dominated by low-rumble or broadband noise (wind, fans, hiss,
+// breaths, coughs) instead of harmonic voice. Same 300 Hz band-share criterion
+// as the voicing gate but evaluated without F0, so breathy non-voiced content
+// is covered too. Returns a per-10ms-frame gain in [0,1] (1 = passthrough).
+function computeEnvironmentMask16k(audio, sampleRate = 16000) {
+  const hop = 160;
+  const frameCount = Math.floor(audio.length / hop);
+  const gains = new Float32Array(frameCount);
+  if (frameCount < 3) return gains;
+  const highpassed = new Float32Array(audio.length);
+  highpassed.set(audio);
+  applyBiquadFilterInPlace(highpassed, createBiquadHighpass(300, 0.7071067811865476, sampleRate));
+  const VOICE_BAND_RATIO = 0.18;
+  const ratios = new Float32Array(frameCount).fill(1);
+  for (let frame = 0; frame < frameCount; frame++) {
+    const start = frame * hop;
+    const end = Math.min(audio.length, start + hop * 3);
+    let sumAll = 0;
+    let sumBand = 0;
+    for (let i = start; i < end; i++) {
+      sumAll += audio[i] * audio[i];
+      sumBand += highpassed[i] * highpassed[i];
+    }
+    const count = Math.max(1, end - start);
+    const rmsAll = Math.sqrt(sumAll / count);
+    if (rmsAll < 1e-5) continue; // near-silence: passthrough keeps it silent
+    ratios[frame] = Math.sqrt(sumBand / count) / rmsAll;
+  }
+  const binary = new Float32Array(frameCount);
+  for (let frame = 0; frame < frameCount; frame++) {
+    const window = [];
+    for (let offset = -2; offset <= 2; offset++) {
+      const index = Math.min(frameCount - 1, Math.max(0, frame + offset));
+      window.push(ratios[index]);
+    }
+    window.sort((left, right) => left - right);
+    if (window[Math.floor(window.length / 2)] < VOICE_BAND_RATIO) binary[frame] = 1;
+  }
+  // Two 70 ms box passes turn the binary decision into soft ramps, so the
+  // passthrough crossfades never zipper against the converted voice.
+  for (let pass = 0; pass < 2; pass++) {
+    const radius = 3;
+    const smoothed = new Float32Array(frameCount);
+    for (let frame = 0; frame < frameCount; frame++) {
+      let sum = 0;
+      let count = 0;
+      for (let offset = -radius; offset <= radius; offset++) {
+        const index = frame + offset;
+        if (index < 0 || index >= frameCount) continue;
+        sum += binary[index];
+        count += 1;
+      }
+      smoothed[frame] = sum / Math.max(1, count);
+    }
+    binary.set(smoothed);
+  }
+  gains.set(binary);
+  return gains;
+}
+
+function resampleLinear(samples, fromRate, toRate) {
+  if (fromRate === toRate || !samples || samples.length === 0) return samples;
+  const outLength = Math.floor(samples.length * toRate / fromRate);
+  const out = new Float32Array(outLength);
+  const step = fromRate / toRate;
+  for (let i = 0; i < outLength; i++) {
+    const position = i * step;
+    const left = Math.floor(position);
+    const frac = position - left;
+    const a = samples[Math.min(left, samples.length - 1)];
+    const b = samples[Math.min(left + 1, samples.length - 1)];
+    out[i] = a + (b - a) * frac;
+  }
+  return out;
+}
+
+// Re-inject the original recording inside environment regions (wind, breaths,
+// coughs, hiss) so the character voice never sings them. Sung regions keep the
+// converted voice untouched; the mask is pre-smoothed, and the passthrough
+// curve is additionally box-smoothed at the output rate.
+function blendEnvironmentPassthrough(synthAudio, input16k, outputRate) {
+  if (!synthAudio || !input16k || synthAudio.length === 0 || input16k.length === 0) return synthAudio;
+  const hop = 160;
+  const frameCount = Math.floor(input16k.length / hop);
+  if (frameCount < 3) return synthAudio;
+  const mask = computeEnvironmentMask16k(input16k, 16000);
+  let anyPassthrough = false;
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (mask[frame] > 0) { anyPassthrough = true; break; }
+  }
+  if (!anyPassthrough) return synthAudio;
+  const originalUp = resampleLinear(input16k, 16000, outputRate);
+  const outLength = Math.min(synthAudio.length, originalUp.length);
+  const output = new Float32Array(synthAudio.length);
+  const smoothSamples = Math.max(1, Math.round(outputRate * 0.015));
+  let blend = 0;
+  for (let i = 0; i < outLength; i++) {
+    const frame = Math.min(frameCount - 1, Math.floor(i * hop / outputRate));
+    const target = mask[frame];
+    const coefficient = target > blend ? 0.0018 : 0.004;
+    blend += coefficient * (target - blend);
+    output[i] = synthAudio[i] * (1 - blend) + originalUp[i] * blend;
+  }
+  for (let i = outLength; i < synthAudio.length; i++) output[i] = synthAudio[i];
+  return output;
+}
+
 async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio) {
   const ctx = { state: "idle" };
   const emitStage = (state) => {
@@ -13857,7 +13965,13 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     // 2. Repair only detected millisecond harsh bursts; normal audio is
     // returned unchanged by this guard.
     finalAudio = suppressDetectedHarshBursts(finalAudio, finalSr);
-    // 3. Apply only a transparent global safety gain. The former always-on
+    // 3. Environment and breath passthrough: wind, fans, breaths and coughs
+    // are re-injected from the original recording instead of being sung by
+    // the character voice. Sung regions return untouched.
+    if (options.environmentPassthrough !== false) {
+      finalAudio = blendEnvironmentPassthrough(finalAudio, audio, finalSr);
+    }
+    // 4. Apply only a transparent global safety gain. The former always-on
     // multi-band "anti-metallic" master introduced shared colour/modulation.
     finalAudio = normalizeOutputPeak(finalAudio);
 

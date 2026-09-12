@@ -23,6 +23,7 @@ function cloudHarness(mode) {
   const model = { id: "momoi", chunks: ["model.bin"] };
   const state = { busy: false, audio, selectedModelId: model.id, catalog: [model], audioMode: mode, lang: "zh", lastCloudSubmissionAt: 0 };
   const button = { hidden: true };
+  const toasts = [];
   const statuses = [];
   let uploads = 0;
   class XHR {
@@ -38,10 +39,10 @@ function cloudHarness(mode) {
     RVC_SUBMISSION_COOLDOWN_MS: 20000, DURABLE_CLOUD_JOB_SECONDS: 180,
     document: { getElementById: id => id === "rvc-song-local-fallback" ? button : null },
     fixUploadContainer: async file => file,
+    setAudioMode: mode => { state.audioMode = mode; },
     prepareCloudUploadAudio: audio => ({ file: audio.file }),
     persistCloudSubmissionTimestamp() {}, showProgressBar() {}, updateProgressBar() {},
-    updateStatusDisplay: text => statuses.push(text), showToast() {},
-    setAudioMode: mode => { state.audioMode = mode; },
+    updateStatusDisplay: text => statuses.push(text), showToast: text => toasts.push(text),
     officialRoutes: () => ({ convertUrl: "/test" }), getOfficialEndpoint: () => "",
     cloudRequestTimeoutMs: () => 1000, cloudJobTimeoutMs: () => 1000,
     preferredCloudOutputFormat: () => "mp3", createCloudRequestId: () => "same-retry-id",
@@ -49,9 +50,11 @@ function cloudHarness(mode) {
     console: { warn() {} }, setTimeout() {}, clearInterval() {},
     hasDeviceFallbackModel: m => m.chunks.length > 0,
     isDeviceFallbackEligible: eligible,
+    buildRvcEndpointCandidates: () => [],
+    isEndpointNetworkError: () => false,
   };
   const run = Function(...Object.keys(dependencies), `return (${source("runOfficialRvcInference")});`)(...Object.values(dependencies));
-  return { run, state, audio, button, statuses, uploads: () => uploads };
+  return { run, state, audio, button, statuses, toasts, uploads: () => uploads };
 }
 
 test("303-second voice retries once then offers automatic fallback with intact audio and unlocked UI", async () => {
@@ -63,23 +66,23 @@ test("303-second voice retries once then offers automatic fallback with intact a
   assert.equal(h.state.busy, false);
 });
 
-test("song outage automatically continues locally and retains the upload", async () => {
+test("song outage auto-switches to on-device voice conversion with an explicit notice", async () => {
   const h = cloudHarness("song");
-  assert.equal((await h.run({ allowDeviceFallback: true })).fallback, true);
+  const result = await h.run({ allowDeviceFallback: true });
+  assert.equal(result.fallback, true);
   assert.equal(h.state.audioMode, "voice");
-  assert.equal(h.state.audio, h.audio);
+  assert.match(h.toasts.join("\n"), /不分离伴奏|一起变声/u);
   assert.equal(h.state.busy, false);
+  assert.equal(h.state.audio, h.audio);
 });
 
 test("hybrid dispatcher actually starts local inference after cloud failure", async () => {
   const calls = [];
   const state = { catalog: [{ id: "momoi" }], selectedModelId: "momoi", audioMode: "voice", engineReady: true };
-  const run = Function("state", "document", "OWN_MODEL_PREFIX", "hasDeviceFallbackModel", "runOfficialRvcInference", "runWebRvcInference", "setInferenceMode", `return (${source("runRvcInference")});`)(
-    state, { getElementById: () => null }, "own:", () => true,
+  const run = Function("state", "document", "OWN_MODEL_PREFIX", "hasDeviceFallbackModel", "setInferenceMode", "runOfficialRvcInference", "runWebRvcInference", `return (${source("runRvcInference")});`)(
+    state, { getElementById: () => null }, "own:", () => true, () => {},
     async () => ({ fallback: true }), async options => { calls.push(options); return true; },
-    mode => { state.inferenceMode = mode; },
   );
   assert.equal(await run(), true);
-  assert.equal(state.inferenceMode, "local");
   assert.deepEqual(calls, [{ allowLong: true, fallback: true }]);
 });
