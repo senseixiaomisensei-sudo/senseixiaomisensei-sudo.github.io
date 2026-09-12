@@ -185,6 +185,7 @@ class OfficialRvcModel:
         resample_rate: int,
         rms_mix_rate: float,
         protect: float,
+        filter_radius: int = 3,
     ) -> None:
         import random
 
@@ -210,6 +211,10 @@ class OfficialRvcModel:
         except TypeError:
             torch.use_deterministic_algorithms(True)
 
+        # Upstream dropped the post-F0 median filter; the pinned pitch adapter
+        # restores it. The old slider applied a single 3-tap median when the
+        # radius was nonzero - keep exactly that gentle behaviour.
+        self._vc.pipeline.pitch_median_radius = 1 if int(filter_radius) > 0 else 0
         status, result = self._vc.vc_single(
             0,
             str(input_path),

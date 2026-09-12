@@ -104,6 +104,32 @@ def repair_waveform_octave_drops(values, audio, sample_rate, hop):
     return result
 
 
+def median_smooth_pitch(f0, radius=1):
+    """Restore the post-F0 median filter that upstream 2.3.260718 removed.
+
+    Tracker flutter (single-frame pitch spikes between voiced frames) reads as
+    hoarseness/metallic roughness after synthesis. A 3-tap median over voiced
+    frames removes exactly that, while vibrato and glissandi - which span many
+    frames - pass untouched. Windows touching an unvoiced frame keep their
+    original value, so silence, breaths and voiced boundaries never drift.
+    """
+    values = np.asarray(f0, dtype=np.float64)
+    if values.size < 3 or radius <= 0:
+        return values
+    result = values.copy()
+    for _ in range(min(int(radius), 3)):
+        voiced = result > 0
+        interior = voiced & np.roll(voiced, 1) & np.roll(voiced, -1)
+        interior[0] = False
+        interior[-1] = False
+        if not np.any(interior):
+            break
+        stacked = np.vstack((np.roll(result, 1), result, np.roll(result, -1)))
+        smoothed = np.median(stacked, axis=0)
+        result = np.where(interior, smoothed, result)
+    return result
+
+
 def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
     if f0_method == "pm":
         import parselmouth
@@ -138,5 +164,6 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
     f0 = repair_octave_glitches(np.asarray(f0).reshape(-1))
     f0 = np.pad(f0[:p_len], (0, max(0, p_len - len(f0))))
     f0 = repair_waveform_octave_drops(f0, x, pipeline.sr, pipeline.window)
+    f0 = median_smooth_pitch(f0, int(getattr(pipeline, "pitch_median_radius", 1) or 0))
     f0 *= 2 ** (f0_up_key / 12)
     return quantize_pitch(f0), f0
