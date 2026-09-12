@@ -13309,6 +13309,11 @@ function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSa
     }
     currentGain = nextGain;
   }
+  // Carry the last gain through the final analysis-window tail; otherwise
+  // the last 30 ms jump abruptly back to unity at every conversion boundary.
+  for (let i = numFrames * hopSynth; i < output.length; i++) {
+    output[i] *= currentGain;
+  }
   return output;
 }
 function createBiquadLowShelf(f0, gainDb, sr) {

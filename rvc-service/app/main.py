@@ -33,6 +33,7 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
+from app.audio_dynamics import apply_dynamics
 from app.separation_runtime import (
     SeparationRuntimeError,
     remix_song,
@@ -728,8 +729,10 @@ def render_conversion(
                 index_rate=min(index_rate, 0.22) if profile.high_energy else min(index_rate, 0.26) if profile.high_pitch or profile.complex_pitch else index_rate,
                 protect=min(protect, 0.18) if profile.high_energy or profile.high_pitch or profile.complex_pitch else protect,
                 resample_rate=resample_rate,
-                rms_mix_rate=min(rms_mix_rate, 0.90) if profile.high_energy or profile.high_pitch or profile.complex_pitch else rms_mix_rate,
-                filter_radius=max(1, int(filter_radius)),
+                # Apply the requested envelope once at 40 ms resolution after
+                # joining, instead of also applying upstream's 1-second window.
+                rms_mix_rate=1.0,
+                filter_radius=int(filter_radius),
             )
             if output_wav.is_file() and output_wav.stat().st_size > 44:
                 used_method = method
@@ -755,6 +758,11 @@ def render_conversion(
         output_filter = SHOUT_HARSHNESS_FILTER
     else:
         output_filter = OUTPUT_SAFETY_FILTER
+    # The vocoder may round each chunk down by one or two F0 frames. Restore
+    # that small tail before overlap-joining, otherwise long files accumulate
+    # time drift (and source/output envelope alignment eventually fails).
+    source_duration = probe_duration(inference_input)
+    output_filter += f",apad,atrim=end={source_duration:.6f}"
     postprocess_timeout = max(120, min(600, int(probe_duration(output_wav) * 1.5) + 60))
     result = subprocess.run(
         [
@@ -1441,167 +1449,20 @@ async def cancel_training(request: Request, job_id: str, token: str) -> dict[str
 
 
 
-def _load_mono_f32(path: Path) -> tuple[np.ndarray, int]:
-    """Decode any audio file to mono float32 via ffmpeg, returning samples + rate."""
-    raw = path.with_name(path.stem + "-f32le.tmp")
-    result = subprocess.run(
-        [
-            "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(path),
-            "-vn", "-ac", "1", "-f", "f32le", "-c:a", "pcm_f32le", str(raw),
-        ],
-        check=False, capture_output=True,
-        timeout=max(120, min(600, int(probe_duration(path) * 1.5) + 60)),
-    )
-    try:
-        if result.returncode != 0 or not raw.is_file() or raw.stat().st_size < 4:
-            raise RvcServiceError(502, "RVC_DECODE_FAILED")
-        samples = np.frombuffer(raw.read_bytes(), dtype="<f4").astype(np.float32)
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "a:0",
-             "-show_entries", "stream=sample_rate", "-of", "csv=p=0", str(path)],
-            check=True, capture_output=True, text=True,
-        )
-        rate = int((probe.stdout.strip().splitlines() or ["0"])[0] or 0)
-        return samples, (rate or 16000)
-    finally:
-        raw.unlink(missing_ok=True)
-
-
-def detect_expressive_mask(vocal: np.ndarray, sample_rate: int) -> np.ndarray:
-    """Mark non-pitched expressive frames (laughter, cries, breaths, moans).
-
-    Praat pitch tracking gives per-10 ms F0 and pulse strength. Expressive
-    content shows up as unvoiced-but-loud frames (breaths), weakly periodic
-    frames (laughter/crying), or erratic semitone jumps (emotional delivery).
-    Returns a per-frame gain in [0, 1] (1 = passthrough the original voice).
-    """
-    import parselmouth
-
-    frame_count = max(1, int(round(len(vocal) / (sample_rate * 0.01))))
-    hop = len(vocal) / frame_count
-    rms = np.zeros(frame_count)
-    for frame in range(frame_count):
-        start = int(frame * hop)
-        end = min(len(vocal), start + int(hop) + 1)
-        segment = vocal[start:max(end, start + 1)]
-        rms[frame] = math.sqrt(float(np.mean(segment.astype(np.float64) ** 2)) + 1e-12)
-    try:
-        sound = parselmouth.Sound(vocal, sampling_frequency=sample_rate)
-        pitch = sound.to_pitch_ac(time_step=0.01, pitch_floor=50.0,
-                                  pitch_ceiling=min(1100.0, sample_rate / 2 - 100))
-        f0 = np.zeros(frame_count)
-        strength = np.zeros(frame_count)
-        selected = pitch.selected_array
-        values = np.asarray(selected["frequency"], dtype=np.float64)
-        powers = np.asarray(selected["strength"], dtype=np.float64)
-        usable = min(frame_count, len(values))
-        f0[:usable] = values[:usable]
-        strength[:usable] = powers[:usable]
-    except Exception:
-        f0 = np.zeros(frame_count)
-        strength = np.zeros(frame_count)
-
-    energy_floor = max(0.004, float(np.median(rms)) * 0.25)
-    expressive = np.zeros(frame_count)
-    for frame in range(frame_count):
-        if rms[frame] < energy_floor:
-            continue
-        if f0[frame] <= 0:
-            expressive[frame] = 1.0  # unvoiced but audible: breath / noise
-        elif strength[frame] > 0 and strength[frame] < 0.45:
-            expressive[frame] = 1.0  # weak periodicity: laughter / crying
-    # Erratic semitone jumps inside voiced runs: emotional delivery.
-    jumps = np.zeros(frame_count)
-    for frame in range(1, frame_count):
-        if f0[frame] > 0 and f0[frame - 1] > 0:
-            semitones = abs(12.0 * math.log2(f0[frame] / f0[frame - 1]))
-            if semitones >= 1.0:
-                jumps[frame] = 1.0
-    for frame in range(2, frame_count - 2):
-        if f0[frame] > 0 and np.mean(jumps[frame - 2:frame + 3]) >= 0.5:
-            expressive[frame] = 1.0
-    # Two smoothing passes so passthrough regions never zipper.
-    smooth = expressive.copy()
-    for _ in range(2):
-        padded = np.concatenate(([smooth[0]], smooth, [smooth[-1]]))
-        smooth = np.convolve(padded, np.ones(3) / 3.0, mode="valid")
-    return np.clip(smooth, 0.0, 1.0)
-
-
-def apply_expressive_passthrough(converted_wav: Path, original_vocal_wav: Path) -> bool:
-    """Blend the original voice back into converted output at expressive frames.
-
-    Returns True when the file was rewritten. Singing regions are untouched;
-    laughter stays laughter, cries stay cries, breaths stay breaths.
-    """
-    converted, converted_rate = _load_mono_f32(converted_wav)
-    original, original_rate = _load_mono_f32(original_vocal_wav)
-    if len(converted) < 64 or len(original) < 64:
-        return False
-    mask = detect_expressive_mask(original, original_rate)
-    try:
-        from pathlib import Path as _P
-        (Path(r"C:/PostPrep-debug") / "expressive-debug.log").open("a", encoding="utf-8").write(
-            "mask expressive frames: " + str(int(np.count_nonzero(mask))) + "/" + str(len(mask)) + "\n")
-    except Exception:
-        pass
-    if not np.any(mask > 0):
-        return False
-    positions = np.linspace(0.0, 1.0, len(converted))
-    mask_up = np.interp(positions, np.linspace(0.0, 1.0, len(mask)), mask)
-    original_up = np.interp(positions, np.linspace(0.0, 1.0, len(original)), original)
-    # Level-match the passthrough to the converted voice inside the masked
-    # regions so laughter does not jump out of the mix.
-    masked_converted = converted * mask_up
-    converted_energy = math.sqrt(float(np.mean(masked_converted.astype(np.float64) ** 2)) + 1e-12)
-    original_energy = math.sqrt(float(np.mean((original_up * mask_up).astype(np.float64) ** 2)) + 1e-12)
-    gain = max(0.25, min(2.0, converted_energy / max(original_energy, 1e-6)))
-    blended = converted * (1.0 - mask_up) + original_up * mask_up * gain
-    blended_path = converted_wav.with_name(converted_wav.stem + "-expressive.wav")
-    raw = blended_path.with_name(blended_path.stem + "-f32le.tmp")
-    raw.write_bytes(blended.astype("<f4").tobytes())
-    result = subprocess.run(
-        [
-            "ffmpeg", "-nostdin", "-v", "error", "-y", "-f", "f32le", "-ar",
-            str(converted_rate), "-ac", "1", "-i", str(raw),
-            "-af", "alimiter=limit=0.971:level=false",
-            "-c:a", "pcm_s16le", str(blended_path),
-        ],
-        check=False, capture_output=True,
-        timeout=max(120, min(600, int(len(blended) / converted_rate * 1.5) + 60)),
-    )
-    raw.unlink(missing_ok=True)
-    if result.returncode != 0 or not blended_path.is_file() or blended_path.stat().st_size < 44:
-        blended_path.unlink(missing_ok=True)
-        return False
-    blended_path.replace(converted_wav)
-    try:
-        from pathlib import Path as _P
-        (Path(r"C:/PostPrep-debug") / "expressive-debug.log").open("a", encoding="utf-8").write(
-            "passthrough REWROTE the output\n")
-    except Exception:
-        pass
-    return True
 
 
 
 def finalize_true_peak_safe(output_wav: Path, ceiling_dbfs: float = -1.0) -> bool:
-    """True-peak limiter for EVERY conversion output.
+    """Four-times oversampled peak guard; preserve rate, channels and timing."""
+    import soundfile as sf
 
-    Sample-peak limiters cannot see intersample peaks: loud masters whose
-    samples peak at -0.9 dBFS can overshoot 0 dBFS between samples and clip
-    on playback (the reported distortion). Oversampling 4x turns those
-    intersample peaks into ordinary sample peaks, a fast limiter caps them at
-    the ceiling, and the audio returns to its native rate. Works for every
-    mode and every kind of source audio; only engages on actual overshoot.
-    """
     target_linear = 10 ** (ceiling_dbfs / 20.0)
-    oversampled = 176400
-    native = 44100
+    native = sf.info(output_wav).samplerate
+    oversampled = native * 4
     scaled = output_wav.with_name(output_wav.stem + "-tpsafe" + output_wav.suffix)
     graph = (
         f"aresample={oversampled}:resampler=swr,"
-        f"alimiter=limit={target_linear:.4f}:attack=0.5:release=40:level=0,"
+        f"alimiter=limit={target_linear:.4f}:attack=0.5:release=40:level=0:latency=1,"
         f"aresample={native}:resampler=swr"
     )
     result = subprocess.run(
@@ -1616,13 +1477,7 @@ def finalize_true_peak_safe(output_wav: Path, ceiling_dbfs: float = -1.0) -> boo
         scaled.replace(output_wav)
         return True
     scaled.unlink(missing_ok=True)
-    try:
-        (output_wav.parent / "tpsafe-debug.log").write_text(
-            "tpsafe failed: " + result.stderr.decode("utf-8", "replace")[:400],
-            encoding="utf-8")
-    except Exception:
-        pass
-    return False
+    raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
 
 
 async def process_conversion_job(
@@ -1681,20 +1536,8 @@ async def process_conversion_job(
                 f0_method,
                 vocal_profile,
             )
-            # Expressive passthrough: laughter, cries, breaths and moans in the
-            # separated vocal stem are re-injected from the original voice so
-            # they stay natural instead of turning mechanical.
-            try:
-                await asyncio.to_thread(
-                    apply_expressive_passthrough, converted_vocals, separated_vocals,
-                )
-            except Exception as passthrough_error:
-                try:
-                    (_job_root / "expressive-debug.log").write_text(
-                        repr(passthrough_error), encoding="utf-8")
-                except Exception:
-                    pass
-                logger.exception("expressive passthrough failed; keeping plain conversion")
+            # Preserve the source's short-time dynamics, not its speaker identity.
+            await asyncio.to_thread(apply_dynamics, converted_vocals, separated_vocals, 1.0 - rms_mix_rate)
             async with outputs_lock:
                 record = outputs.get(job_id)
                 if record:
@@ -1728,19 +1571,7 @@ async def process_conversion_job(
                 f0_method,
                 input_profile,
             )
-            # Dry-vocal mode gets the same expressive passthrough: the caller's
-            # own laughs, cries and breaths survive the conversion naturally.
-            try:
-                await asyncio.to_thread(
-                    apply_expressive_passthrough, output_wav, input_wav,
-                )
-            except Exception as passthrough_error:
-                try:
-                    (_job_root / "expressive-debug.log").write_text(
-                        repr(passthrough_error), encoding="utf-8")
-                except Exception:
-                    pass
-                logger.exception("expressive passthrough failed; keeping plain conversion")
+            await asyncio.to_thread(apply_dynamics, output_wav, input_wav, 1.0 - rms_mix_rate)
         async with outputs_lock:
             record = outputs.get(job_id)
             if record:
