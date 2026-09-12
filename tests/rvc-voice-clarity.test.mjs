@@ -9,6 +9,45 @@ const workerSource = await readFile(
 );
 const clientSource = await readFile(new URL("assets/rvc.js", root), "utf8");
 
+test("cloud entry fallback stays bounded and stops after an accepted job", async () => {
+  const classify = evaluateFunction("isEndpointNetworkError", [], [], clientSource);
+  const upload = Function("officialRoutes", "isEndpointNetworkError",
+    `return (async ${extractFunction("uploadWithRouteFallback", clientSource)});`)(
+    (base) => ({ convertUrl: base }), classify,
+  );
+  const calls = [];
+  const accepted = { jobId: "existing-job" };
+  const result = await upload(["first", "second", "unused"], async (routes, attempt) => {
+    calls.push([routes.convertUrl, attempt]);
+    if (routes.convertUrl === "first") throw Object.assign(new Error("network"), {
+      code: "RVC_NETWORK_INTERRUPTED", retryable: attempt === 1,
+    });
+    return accepted;
+  }, async () => {});
+  assert.deepEqual(calls, [["first", 1], ["first", 2], ["second", 1]]);
+  assert.equal(result.payload, accepted);
+  assert.equal(result.routes.convertUrl, "second");
+  for (const error of [new Error("bad response"), { httpStatus: 422 }, { httpStatus: 429 }]) {
+    let count = 0;
+    await assert.rejects(upload(["first", "second"], async () => {
+      count++;
+      throw error;
+    }, async () => {}));
+    assert.equal(count, 1);
+  }
+});
+
+test("original-speaker passthrough is opt-in and its mask uses audio time", () => {
+  assert.match(workerSource, /options\.environmentPassthrough === true/u);
+  const resample = evaluateFunction("resampleLinear");
+  const blend = evaluateFunction("blendEnvironmentPassthrough",
+    ["computeEnvironmentMask16k", "resampleLinear"],
+    [() => Float32Array.from({ length: 200 }, (_, i) => i >= 100 ? 1 : 0), resample]);
+  const output = blend(new Float32Array(80000).fill(1), new Float32Array(32000), 40000);
+  assert.equal(output[32000], 1); // 0.8s precedes the 1s mask transition.
+  assert.ok(output[60000] < .001);
+});
+
 function extractFunction(name, sourceText = workerSource) {
   const marker = `function ${name}`;
   const start = sourceText.indexOf(marker);
@@ -226,9 +265,9 @@ test("cloud voice path conditions uploads and polishes voice-mode output", async
 test("local engine and rvc client cache versions are bumped for the voice fix", async () => {
   const runtimeSource = await readFile(new URL("assets/rvc-engine/rvc-web-runtime.js", root), "utf8");
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
-  assert.match(runtimeSource, /inference\.worker\.js\?v=20260912-dynamics/u);
-  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260912-dynamics/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20260912-dynamics/u);
+  assert.match(runtimeSource, /inference\.worker\.js\?v=20260912-merged/u);
+  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260912-merged/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20260912-merged/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {

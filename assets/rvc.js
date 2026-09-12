@@ -2658,8 +2658,8 @@
         const magnitude = Math.abs(polished[i]);
         if (magnitude > peak) peak = magnitude;
       }
-      if (peak > 0.9 && Number.isFinite(peak)) {
-        const scale = 0.9 / peak;
+      if (peak > 0.80 && Number.isFinite(peak)) {
+        const scale = 0.80 / peak;
         for (let i = 0; i < polished.length; i += 1) polished[i] *= scale;
       }
       return new Blob([encodeWav16AtRate(polished, decoded.sampleRate)], { type: "audio/wav" });
@@ -3318,6 +3318,53 @@
   // local ONNX task on mobile.
   const RVC_MODE_STORAGE_KEY = "postprep_rvc_inference_mode_v32";
   const RVC_ENDPOINT_STORAGE_KEY = "postprep_rvc_api_endpoint";
+
+  // 代理关闭时 Cloudflare 域名可能不可达: 转换出现网络类失败时按候选入口
+  // 依次转移 (配置入口 → 当前源 → 已知 Pages 域名), 全部失败时给出明确指引,
+  // 不再只报笼统的网络错误。
+  function buildRvcEndpointCandidates() {
+    const candidates = [];
+    const push = (value) => {
+      const clean = String(value || "").trim().replace(/\/+$/u, "");
+      if (clean && !candidates.includes(clean)) candidates.push(clean);
+    };
+    push(getOfficialEndpoint());
+    try {
+      const origin = String(globalThis.location?.origin || "");
+      if (origin.startsWith("http")) push(origin.replace(/\/+$/u, "") + "/rvc-api");
+    } catch (e) {}
+    push("https://postprep-ae6.pages.dev/rvc-api");
+    return candidates;
+  }
+
+  function isEndpointNetworkError(error) {
+    const code = String(error?.code || "");
+    if (["RVC_NETWORK_INTERRUPTED", "RVC_BACKEND_TIMEOUT", "RVC_BACKEND_UNAVAILABLE", "RVC_RELAY_UNAVAILABLE", "RVC_ROUTE_UNAVAILABLE", "UPSTREAM_UNAVAILABLE"].includes(code)) return true;
+    const status = Number(error?.httpStatus) || 0;
+    if (error?.httpStatus === 0 || status === 408 || status === 425 || status >= 500) return true;
+    return !status && /网络|连接|超时|无法访问|fetch/i.test(String(error?.message || ""));
+  }
+
+  async function uploadWithRouteFallback(bases, upload, onRetry) {
+    for (let index = 0; index < bases.length; index += 1) {
+      const routes = officialRoutes(bases[index]);
+      try {
+        let payload;
+        try {
+          payload = await upload(routes, 1);
+        } catch (error) {
+          if (!error?.retryable) throw error;
+          await onRetry(false);
+          payload = await upload(routes, 2);
+        }
+        return { payload, routes };
+      } catch (error) {
+        if (!isEndpointNetworkError(error) || index + 1 === bases.length) throw error;
+        await onRetry(true);
+      }
+    }
+    throw new Error("No cloud endpoint configured");
+  }
 
   function getOfficialEndpoint() {
     if (globalThis.POSTPREP_RVC_API_ENDPOINT) {
@@ -4086,7 +4133,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260912-dynamics", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260912-merged", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -4311,7 +4358,7 @@
     return !status && /网络|连接|超时|查询|下载|请求|network|fetch|timeout|connection/i.test(String(error?.message || ""));
   }
 
-  async function runOfficialRvcInference({ allowDeviceFallback = false } = {}) {
+  async function runOfficialRvcInference({ allowDeviceFallback = false, endpointCandidates } = {}) {
     if (state.busy || !state.audio?.file || !state.selectedModelId) return;
     if (state.audio.duration > MAX_AUDIO_SECONDS) {
       updateStatusDisplay(t("audioTooLong"));
@@ -4371,8 +4418,10 @@
     const startedAt = Date.now();
 
     try {
-      const routes = officialRoutes(getOfficialEndpoint());
-      const convertUrl = routes.convertUrl;
+      // 候选云端入口: 首选配置入口; 网络类失败时依次转移到当前源与已知域名。
+      const activeBases = Array.isArray(endpointCandidates) && endpointCandidates.length
+        ? endpointCandidates
+        : buildRvcEndpointCandidates();
       const requestTimeoutMs = cloudRequestTimeoutMs(uploadFile.size, state.audio.duration, state.audioMode);
       const jobTimeoutMs = cloudJobTimeoutMs(state.audio.duration, state.audioMode);
       const longJob = state.audio.duration >= DURABLE_CLOUD_JOB_SECONDS;
@@ -4414,10 +4463,10 @@
       // only for a connection-level drop or a transient gateway response;
       // after that, the caller explicitly handles on-device fallback.
       let ticker = null;
-      const uploadAndInfer = (attempt) => new Promise((resolve, reject) => {
+      const uploadAndInfer = (routes, attempt) => new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         const uploadStartedAt = Date.now();
-        xhr.open("POST", convertUrl, true);
+        xhr.open("POST", routes.convertUrl, true);
         xhr.timeout = requestTimeoutMs;
 
         xhr.upload.onprogress = (evt) => {
@@ -4501,16 +4550,15 @@
         xhr.send(body);
       });
 
-      let payload;
-      try {
-        payload = await uploadAndInfer(1);
-      } catch (firstError) {
-        if (!firstError?.retryable) throw firstError;
+      // Reuse this FormData/request ID across entry retries. Once accepted,
+      // polling and downloading stay on that job and never resubmit the audio.
+      const { payload, routes } = await uploadWithRouteFallback(activeBases, uploadAndInfer, async (nextEntry) => {
         updateProgressBar(8);
-        updateStatusDisplay("🔄 云端连接短暂中断，正在重新连接同一入口并自动重试一次…");
+        updateStatusDisplay(nextEntry
+          ? "🔄 当前云端入口不可达，正在尝试备用入口…"
+          : "🔄 云端连接短暂中断，正在重新连接同一入口并自动重试一次…");
         await waitFor(1200);
-        payload = await uploadAndInfer(2);
-      }
+      });
       if (!payload || !payload.jobId || !payload.downloadToken) {
         throw new Error(payload?.message || payload?.code || "未获取到任务标识");
       }
