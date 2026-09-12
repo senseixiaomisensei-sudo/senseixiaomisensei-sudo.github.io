@@ -2658,8 +2658,8 @@
         const magnitude = Math.abs(polished[i]);
         if (magnitude > peak) peak = magnitude;
       }
-      if (peak > 0.9 && Number.isFinite(peak)) {
-        const scale = 0.9 / peak;
+      if (peak > 0.80 && Number.isFinite(peak)) {
+        const scale = 0.80 / peak;
         for (let i = 0; i < polished.length; i += 1) polished[i] *= scale;
       }
       return new Blob([encodeWav16AtRate(polished, decoded.sampleRate)], { type: "audio/wav" });
@@ -4112,7 +4112,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260911-env-v45", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260912-tpsafe-v46", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);

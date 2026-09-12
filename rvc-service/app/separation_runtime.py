@@ -122,7 +122,7 @@ def remix_song(
         f"[1:a]aresample={rate}:async=1:first_pts=0,"
         f"pan=stereo|c0=c0|c1=c0,apad,atrim=end={duration:.6f}[voice];"
         "[music][voice]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,"
-        "alimiter=limit=0.95:attack=5:release=100:level=0[out]"
+        "alimiter=limit=0.89:attack=5:release=100:level=0[out]"
     )
     result = subprocess.run(
         [

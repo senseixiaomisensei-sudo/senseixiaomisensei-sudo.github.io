@@ -13646,7 +13646,7 @@ function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
 // Transparent final safety gain. This intentionally performs no EQ, dynamic
 // resonance suppression, saturation, or per-band modulation: those custom
 // effects colour every character and can themselves sound metallic.
-function normalizeOutputPeak(audio, targetPeak = 0.90) {
+function normalizeOutputPeak(audio, targetPeak = 0.80) {
   if (!audio || audio.length === 0) return audio;
   let peak = 0;
   for (let i = 0; i < audio.length; i++) {

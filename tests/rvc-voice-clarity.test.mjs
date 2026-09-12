@@ -226,9 +226,9 @@ test("cloud voice path conditions uploads and polishes voice-mode output", async
 test("local engine and rvc client cache versions are bumped for the voice fix", async () => {
   const runtimeSource = await readFile(new URL("assets/rvc-engine/rvc-web-runtime.js", root), "utf8");
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
-  assert.match(runtimeSource, /inference\.worker\.js\?v=20260911-env-v45/u);
-  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260911-env-v45/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20260911-voice-clarity/u);
+  assert.match(runtimeSource, /inference\.worker\.js\?v=20260912-tpsafe-v46/u);
+  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260912-tpsafe-v46/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20260912-tpsafe-v46/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {
