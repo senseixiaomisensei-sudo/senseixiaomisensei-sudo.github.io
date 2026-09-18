@@ -11,6 +11,7 @@ import argparse
 import io
 import os
 import sys
+import typing
 from pathlib import Path
 
 import torch
@@ -128,9 +129,12 @@ def read_checkpoint(path: Path) -> dict:
         # Community checkpoints are untrusted pickle containers.  Explicitly
         # keep PyTorch's safe weights-only loader enabled; model code is never
         # deserialized from a checkpoint.
-        return torch.load(
-            io.BytesIO(checkpoint_file.read()), map_location="cpu", weights_only=True
-        )
+        # Match the service loader for legacy RVC metadata; allow only this
+        # inert mapping alias, never disable the weights-only unpickler.
+        with torch.serialization.safe_globals([typing.OrderedDict]):
+            return torch.load(
+                io.BytesIO(checkpoint_file.read()), map_location="cpu", weights_only=True
+            )
 
 
 def parse_sample_rate(value: object, config: list[object]) -> int:

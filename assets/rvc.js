@@ -1406,7 +1406,7 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
-  const CHARACTER_MODEL_ASSET_VERSION = "20260830-v35";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260918-v36";
 
   function characterModelCacheKey(model) {
     const id = String(model?.id || "character");

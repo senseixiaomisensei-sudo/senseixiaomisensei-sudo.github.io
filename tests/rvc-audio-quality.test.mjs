@@ -186,7 +186,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260912-merged/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260918-v36/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -242,7 +242,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.asyncify\.wasm/u);
-  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260830-v35"/u);
+  assert.match(client, /CHARACTER_MODEL_ASSET_VERSION = "20260918-v36"/u);
   assert.match(client, /function officialMediaUrl\(jobId, token\)/u);
   assert.match(client, /await attachResultAudio\(resultAudio, mediaUrl \|\| state\.resultUrl, Boolean\(mediaUrl\)\)/u);
   assert.match(page, /media-src[^;"]*https:\/\/postprep-ae6\.pages\.dev/u);

@@ -1,6 +1,6 @@
 {
-  "version": 17,
-  "updatedAt": "2026-09-11",
+  "version": 18,
+  "updatedAt": "2026-09-18",
   "_readme": "新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。真纪 V1 使用独立的本地 HuBERT V1 特征模型。",
   "baseModels": {
     "hubertV1": {
@@ -168,7 +168,7 @@
       "id": "hoshino",
       "name": "小鸟游星野 (Hoshino)",
       "avatarText": "星野",
-      "description": "阿拜多斯对策委员会 · 慵懒柔和少女声线 · 公开社区 RVC v2",
+      "description": "阿拜多斯对策委员会 · 慵懒柔和声线 · momofu RVC v2",
       "tags": [
         "女声",
         "蔚蓝档案",
@@ -179,11 +179,11 @@
       "sampleRate": 40000,
       "noiseScale": 0.35,
       "defaultIndexRate": 0.35,
-      "marketplace": "https://voice-models.com/model/1nHTeq4owIB",
-      "source": "https://huggingface.co/ryzusaku/rvc_v2_models/resolve/main/TakanashiHoshino.zip",
+      "marketplace": "",
+      "source": "https://huggingface.co/momofu/Hoshino_RVCv2/tree/3dc4401ffa1802d8d5cf86bc74c631600031cdea",
       "license": "Community model; repository terms vary; character/performer authorization unverified",
-      "checkpointSha256": "56cc39ce5a4042ec0954fe1a47f8d30b1900f6fb185ba28a161397762aa52230",
-      "indexSha256": "d287b69451c5d2725ccf4e51942d032a6aff252ddcb4b46ad68f96dc515be544",
+      "checkpointSha256": "4e17a69cb37a7e26e84445ebeedae539eff2a3aac896a451675906c5703b9145",
+      "indexSha256": "d1d9a80ef06864297302693239b6966783724997a265fa9521b2e65144a0b4b4",
       "retrieval": "models/characters/hoshino/retrieval.bin",
       "chunks": [
         "models/characters/hoshino/chunk_0.bin",

@@ -10,6 +10,15 @@ from app.pitch_safety import repair_octave_glitches, quantize_pitch, safe_get_f0
 
 
 class PitchSafetyTests(unittest.TestCase):
+    def test_crossing_embedding_ceiling_preserves_melody_and_transposition(self):
+        frames = np.r_[np.linspace(950, 1200, 40), 0, np.linspace(1200, 950, 40)]
+        pipeline = SimpleNamespace(sr=16000, window=160, pitch_median_radius=0,
+            model_rmvpe=SimpleNamespace(infer_from_audio=lambda *a, **k: frames))
+        for shift in (0, 12):
+            coarse, continuous = safe_get_f0(pipeline, np.zeros(16000), len(frames), shift, "rmvpe")
+            np.testing.assert_allclose(continuous, frames * 2 ** (shift / 12))
+            self.assertTrue(np.all((coarse >= 1) & (coarse <= 255)))
+
     def test_breaths_and_invalid_frames_remain_unvoiced(self):
         frames = np.array([220, 220, 0, 0, 440, np.nan, np.inf, -5, 2500])
         pipeline = SimpleNamespace(sr=16000, window=160, model_rmvpe=SimpleNamespace(infer_from_audio=lambda *a, **k: frames))

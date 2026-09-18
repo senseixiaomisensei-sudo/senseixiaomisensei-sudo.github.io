@@ -166,4 +166,7 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
     f0 = repair_waveform_octave_drops(f0, x, pipeline.sr, pipeline.window)
     f0 = median_smooth_pitch(f0, int(getattr(pipeline, "pitch_median_radius", 1) or 0))
     f0 *= 2 ** (f0_up_key / 12)
+    # The embedding ceiling is not a pitch ceiling. Folding frames above it
+    # changes the melody and creates artificial octave/glide transitions.
+    # Preserve continuous NSF pitch, including the requested transposition.
     return quantize_pitch(f0), f0

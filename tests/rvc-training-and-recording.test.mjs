@@ -24,8 +24,10 @@ test("extreme-input protection is conditional and leaves the normal path intact"
   assert.match(service, /HIGH_ENERGY_OUTPUT_FILTER/u);
   assert.match(service, /PITCH_COMPLEX_OUTPUT_FILTER/u);
   assert.match(service, /profile\.high_pitch or profile\.complex_pitch/u);
-  assert.match(service, /index_rate=min\(index_rate, 0\.22\) if profile\.high_energy else min\(index_rate, 0\.26\) if profile\.high_pitch or profile\.complex_pitch else index_rate/u);
-  assert.match(service, /protect=min\(protect, 0\.18\) if profile\.high_energy or profile\.high_pitch or profile\.complex_pitch else protect/u);
+  // Safety belongs to the waveform guards; do not require a particular
+  // hidden override of the user's timbre/protection sliders.
+  assert.match(service, /output_filter\s*=/u);
+  assert.match(service, /finalize_true_peak_safe, output_wav, -1\.0/u);
   assert.match(service, /rms_mix_rate=1\.0/u);
   assert.match(service, /apply_dynamics, converted_vocals, separated_vocals, 1\.0 - rms_mix_rate/u);
   assert.match(service, /apply_dynamics, output_wav, input_wav, 1\.0 - rms_mix_rate/u);

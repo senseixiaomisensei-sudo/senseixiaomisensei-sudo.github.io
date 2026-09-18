@@ -84,7 +84,7 @@
   },
   "hoshino.onnx": {
     "totalSize": 110813613,
-    "sha256": "f3e72012e4e116c59f2a8cae8daf241f13f46ee060612d09faae50c0f4b914e5",
+    "sha256": "c583c52b964c636a5bcf07499972c055406813977c8b9aec0ee9a19f492aa961",
     "chunks": [
       "models/characters/hoshino/chunk_0.bin",
       "models/characters/hoshino/chunk_1.bin",
