@@ -15,6 +15,17 @@ filters = {node.targets[0].id: ast.literal_eval(node.value) for node in tree.bod
 
 
 class VoiceInputQualityTests(unittest.TestCase):
+    def test_clean_transients_keep_timing_and_tail(self):
+        from scipy.signal import correlate
+        audio = np.zeros(16000, dtype=np.float32)
+        audio[1600:14400] = np.random.default_rng(9).normal(0, .04, 12800)
+        for name, config in filters.items():
+            with self.subTest(filter=name):
+                output = self.filter(audio, config)
+                lag = np.argmax(correlate(output, audio, method='fft')) - (len(audio)-1)
+                self.assertLessEqual(abs(lag), 2, 'no FFT/limiter processing delay')
+                self.assertEqual(len(output), len(audio))
+
     def filter(self, audio, config):
         with tempfile.TemporaryDirectory() as directory:
             source, output = Path(directory) / "in.wav", Path(directory) / "out.wav"

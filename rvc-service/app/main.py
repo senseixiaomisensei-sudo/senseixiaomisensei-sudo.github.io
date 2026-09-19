@@ -104,13 +104,10 @@ ALLOWED_AUDIO_MODES = {"voice", "song"}
 INPUT_SAFETY_FILTER = (
     "highpass=f=45:p=2,"
     "lowpass=f=7600:p=1,"
-    # Gentle tracked FFT denoising improves low-SNR and reverberant uploads
-    # without a gate, so quiet consonants and sustained singing notes remain.
-    # Smooth adjacent FFT gains to reduce musical/granular denoising artifacts.
-    # Do not amplify quiet half-cycles: that lifts room noise and alters breaths.
-    "afftdn=nr=6:nf=-55:tn=1:ad=0.8:gs=8,"
+    # Do not run adaptive FFT denoising on every voice: it reshapes harmonics
+    # and adds 25 ms delay before extraction, including on clean recordings.
     "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
-    "alimiter=limit=0.90:attack=5:release=100:level=0"
+    "alimiter=limit=0.90:attack=5:release=100:level=0:latency=1"
 )
 # Separated singing is already denoised. Speech half-cycle normalization and
 # a second adaptive denoiser can reshape synthetic vowels and sustained notes.
@@ -129,36 +126,35 @@ OUTPUT_SAFETY_FILTER = (
     "adeclick=threshold=2.5:burst=2,"
     "deesser=i=0.15:m=0.3:f=0.55,"
     "lowpass=f=12000:p=1,"
-    "alimiter=limit=0.90:attack=5:release=100:level=0"
+    "alimiter=limit=0.90:attack=5:release=100:level=0:latency=1"
 )
 SHOUT_HARSHNESS_GUARD_MODELS = frozenset({"midori", "mika", "shiroko", "toki", "yuzu"})
 SHOUT_HARSHNESS_FILTER = (
     "adeclick=threshold=2:burst=2,"
     "deesser=i=0.25:m=0.35:f=0.52,"
     "lowpass=f=10000:p=2,"
-    "alimiter=limit=0.90:attack=5:release=100:level=0"
+    "alimiter=limit=0.90:attack=5:release=100:level=0:latency=1"
 )
 HIGH_ENERGY_INPUT_FILTER = (
     # This branch is selected from the unsmoothed upload/stem, before the
     # standard limiter can hide clipping evidence from the profile detector.
     "highpass=f=45:p=2,"
     "lowpass=f=7600:p=1,"
-    "afftdn=nr=6:nf=-55:tn=1:ad=0.8:gs=8,"
     "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
-    "alimiter=limit=0.86:attack=2:release=100:level=0"
+    "alimiter=limit=0.86:attack=2:release=100:level=0:latency=1"
 )
 HIGH_ENERGY_OUTPUT_FILTER = (
     "adeclick=threshold=1.8:burst=2,"
     "deesser=i=0.24:m=0.32:f=0.53,"
     "lowpass=f=11500:p=2,"
     "acompressor=threshold=0.72:ratio=1.6:attack=1:release=80:knee=2:makeup=1,"
-    "alimiter=limit=0.88:attack=3:release=90:level=0"
+    "alimiter=limit=0.88:attack=3:release=90:level=0:latency=1"
 )
 PITCH_COMPLEX_OUTPUT_FILTER = (
     "adeclick=threshold=2:burst=2,"
     "deesser=i=0.20:m=0.30:f=0.54,"
     "lowpass=f=13000:p=1,"
-    "alimiter=limit=0.89:attack=3:release=90:level=0"
+    "alimiter=limit=0.89:attack=3:release=90:level=0:latency=1"
 )
 
 
@@ -767,7 +763,7 @@ def render_conversion(
     result = subprocess.run(
         [
             "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(output_wav),
-            "-af", output_filter, "-c:a", "pcm_s16le", str(limited_output),
+            "-af", output_filter, "-c:a", "pcm_f32le", str(limited_output),
         ],
         check=False,
         stdout=subprocess.DEVNULL,
@@ -777,9 +773,9 @@ def render_conversion(
     if result.returncode == 0 and limited_output.is_file() and limited_output.stat().st_size > 44:
         limited_output.replace(output_wav)
     else:
-        # Keep a valid RVC result even when a host ffmpeg build lacks the
-        # optional limiter filter.
+        # Never publish an unguarded result when the safety stage fails.
         limited_output.unlink(missing_ok=True)
+        raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
     return used_method
 
 

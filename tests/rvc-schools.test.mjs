@@ -7,7 +7,7 @@ const context = { window: {} };
 vm.runInNewContext(fs.readFileSync(new URL("../assets/rvc-schools.js", import.meta.url), "utf8"), context);
 const directory = context.window.PostPrepSchools;
 test("school directory does not invent installed voices", () => {
-  assert.equal(directory.schools.length, 7);
+  assert.equal(directory.schools.length, 8);
   assert.equal(directory.schoolFor({ id: "ayane" }), "abydos");
   assert.equal(directory.schoolFor({ id: "hikari" }), "highlander");
   assert.equal(directory.schoolFor({ id: "eri" }), "wildhunt");
@@ -25,6 +25,16 @@ test("every installed Blue Archive voice belongs to a visible directory", () => 
     assert.ok(school.students.some(student => student[0] === model.id), model.id);
   }
   assert.equal(directory.schoolFor({ tags: ["圣三一"] }), "trinity");
+});
+
+test("Odyssey retains its roster after syncing without claiming installed voices", () => {
+  directory.syncCatalog([]);
+  const school = directory.schools.find(item => item.id === "odyssey");
+  assert.equal(school.students.length, 2);
+  assert.equal(directory.schoolFor({ id: "toumi-kokoro" }), "odyssey");
+  assert.equal(directory.schoolFor({ tags: ["奥德修斯"] }), "odyssey");
+  const catalog = JSON.parse(fs.readFileSync(new URL("../assets/rvc-models.json", import.meta.url), "utf8"));
+  assert.equal(catalog.models.filter(m => directory.schoolFor(m) === "odyssey").length, 0);
 });
 test("all five Abydos voices have real browser assets", () => {
   const catalog = JSON.parse(fs.readFileSync(new URL("../assets/rvc-models.json", import.meta.url), "utf8"));

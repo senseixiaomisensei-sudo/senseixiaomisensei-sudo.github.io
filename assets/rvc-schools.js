@@ -18,6 +18,12 @@
         ["aoba", "内海青叶", "内海アオバ", "Aoba"],
         ["suou", "朝雾苏芳", "朝霧スオウ", "Suou"],
       ] },
+    { id: "odyssey", name: "奥德赛（奥德修斯）海洋学院", en: "Odyssey Maritime School", tag: "奥德赛", alias: "奥德修斯",
+      source: "https://gamewith.jp/gamedb/6253/articles/62411",
+      students: [
+        ["toumi-kokoro", "渡海心", "渡海ココロ", "Toumi Kokoro"],
+        ["fuchigami-kotone", "渊上琴音", "淵上コトネ", "Fuchigami Kotone"],
+      ] },
     { id: "wildhunt", name: "狂猎艺术学院", en: "Wild Hunt Academy of Arts", tag: "狂猎",
       source: "https://game8.jp/blue-archive/711367",
       students: [

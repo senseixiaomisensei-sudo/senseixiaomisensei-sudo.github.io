@@ -1406,7 +1406,7 @@
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
-  const CHARACTER_MODEL_ASSET_VERSION = "20260918-v36";
+  const CHARACTER_MODEL_ASSET_VERSION = "20260919-v37";
 
   function characterModelCacheKey(model) {
     const id = String(model?.id || "character");
@@ -2157,6 +2157,12 @@
         ["aoba", "内海青叶", "内海アオバ", "Aoba"],
         ["suou", "朝雾苏芳", "朝霧スオウ", "Suou"],
       ] },
+    { id: "odyssey", name: "奥德赛（奥德修斯）海洋学院", en: "Odyssey Maritime School", tag: "奥德赛", alias: "奥德修斯",
+      source: "https://gamewith.jp/gamedb/6253/articles/62411",
+      students: [
+        ["toumi-kokoro", "渡海心", "渡海ココロ", "Toumi Kokoro"],
+        ["fuchigami-kotone", "渊上琴音", "淵上コトネ", "Fuchigami Kotone"],
+      ] },
     { id: "wildhunt", name: "狂猎艺术学院", en: "Wild Hunt Academy of Arts", tag: "狂猎",
       source: "https://game8.jp/blue-archive/711367",
       students: [
@@ -2190,7 +2196,7 @@
         syncCatalog(models) {
           if (!Array.isArray(models)) return;
           for (const school of INTERNAL_SCHOOLS) {
-            if (school.id === "abydos" || school.id === "highlander" || school.id === "wildhunt") continue;
+            if (school.id === "abydos" || school.id === "highlander" || school.id === "wildhunt" || school.id === "odyssey") continue;
             school.students = models.filter(m => m && (m.tags || []).some(t => t === school.tag || t === school.alias))
               .map(m => [m.id, m.name, "", m.id]);
           }
