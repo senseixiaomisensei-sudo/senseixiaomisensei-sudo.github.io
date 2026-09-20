@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css?v=20260815-rvc">
   <link rel="stylesheet" href="assets/rvc.css?v=20260815-rvc">
+  <link rel="stylesheet" href="assets/liquid-ui.css?v=20260920-1">
+  <script src="assets/liquid-ui.js?v=20260920-1"></script>
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="rvc">
   <div id="site-header"></div>
@@ -146,7 +148,7 @@
           <div id="rvc-trained-models-section" class="mt-5 hidden rounded-xl border border-violet-200 bg-violet-50/50 p-4">
             <div class="flex flex-wrap items-end justify-between gap-2">
               <div>
-                <p id="rvc-trained-models-title" class="text-sm font-black text-ink" data-rvc-i18n="trainedTitle">🎓 训练完成的模型</p>
+                <p id="rvc-trained-models-title" class="text-sm font-black text-ink" data-rvc-i18n="trainedTitle"> 训练完成的模型</p>
                 <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="trainedHint">这些模型由下方训练功能生成，可在训练前填写自己的区域名称；点击后继续使用原有云端 RVC 变声流程。</p>
               </div>
               <span id="rvc-trained-models-count" class="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-violet-700"></span>
@@ -158,7 +160,7 @@
           <div class="mt-4 rounded-xl border border-dashed border-brand/40 bg-teal-50/50 p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
-                <p class="text-sm font-black text-ink" data-rvc-i18n="ownModelTitle">🎓 导入我自己的模型</p>
+                <p class="text-sm font-black text-ink" data-rvc-i18n="ownModelTitle"> 导入我自己的模型</p>
                 <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="ownModelHint">上传你本地训练/转换好的 <span class="font-bold text-brand">.onnx</span> 角色模型（参考 <code class="rounded bg-zinc-100 px-1 text-[11px]">tools/</code> 转换脚本）。仅供你本机使用，不发布给他人，也不会上传。</p>
                 <p id="rvc-own-model-status" class="mt-1.5 hidden text-xs font-bold text-emerald-700" role="status" aria-live="polite"></p>
               </div>
@@ -170,7 +172,7 @@
           </div>
 
           <details id="rvc-training-panel" class="mt-4 rounded-xl border border-violet-200 bg-violet-50/40 p-4">
-            <summary class="cursor-pointer text-sm font-black text-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2">🧪 上传纯人声并训练新的 RVC v2 模型</summary>
+            <summary class="cursor-pointer text-sm font-black text-violet-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"> 上传纯人声并训练新的 RVC v2 模型</summary>
             <div class="mt-4 space-y-4">
               <p class="rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs leading-5 text-muted">选择 2–12 段你有权使用的纯净单人人声。系统按固定官方 RVC v2 路线执行数据切分、RMVPE 音高、HuBERT 特征、预训练权重微调和 FAISS 索引。训练由本机 GPU 后台执行，旧角色与普通变声代码不被替换。</p>
               <div class="grid gap-3 sm:grid-cols-2">
@@ -417,8 +419,8 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
-  <script src="assets/postprep.js?v=20260826-adsense-language"></script>
+  <script src="assets/postprep.js?v=20260920-ui"></script>
   <script src="assets/rvc-schools.js?v=20260919-odyssey"></script>
-  <script src="assets/rvc.js?v=20260919-v37"></script>
+  <script src="assets/rvc.js?v=20260920-ui"></script>
 </body>
 </html>

@@ -114,9 +114,9 @@
       collectionPlaceholder: "例如：我的动漫角色",
       saveCollection: "保存分区",
       cancel: "取消",
-      trainedTitle: "🎓 训练完成的模型",
+      trainedTitle: " 训练完成的模型",
       trainedHint: "这些模型由下方训练功能生成，可在训练前填写自己的区域名称；点击后继续使用原有云端 RVC 变声流程。",
-      ownModelTitle: "🎓 导入我自己的模型",
+      ownModelTitle: " 导入我自己的模型",
       chooseOnnx: "选择 .onnx 文件",
       sourceTts: "文本朗读",
       sourceTtsHint: "输入一段文字，使用可用的 TTS 服务生成朗读，再转换为当前角色。",
@@ -170,7 +170,7 @@
       resampleLabel: "输出采样率",
       resampleKeep: "40 kHz / 48 kHz (标准)",
       checkingService: "正在连接云端 RVC 引擎；此检查不会上传音频…",
-      serviceReady: "🟢 云端 RVC 引擎已就绪",
+      serviceReady: " 云端 RVC 引擎已就绪",
       serviceOffline: "云端 RVC 引擎连接暂缓；纯人声会在云端不可达时自动切换到设备端推理。",
       serviceLoading: "正在从本地缓存或 CDN 加载模型权重...",
       convert: "开始变声",
@@ -230,9 +230,9 @@
       collectionPlaceholder: "For example: My anime voices",
       saveCollection: "Save collection",
       cancel: "Cancel",
-      trainedTitle: "🎓 Trained models",
+      trainedTitle: " Trained models",
       trainedHint: "Models created by the training tool appear here. You can name their collection before training, then select them for the existing cloud RVC workflow.",
-      ownModelTitle: "🎓 Import my own model",
+      ownModelTitle: " Import my own model",
       chooseOnnx: "Choose .onnx file",
       sourceTts: "Text to speech",
       sourceTtsHint: "Generate speech with an available TTS service, then convert it to the selected character.",
@@ -286,7 +286,7 @@
       resampleLabel: "Output sample rate",
       resampleKeep: "40 kHz / 48 kHz (Standard)",
       checkingService: "Connecting to the cloud RVC engine; no audio is uploaded…",
-      serviceReady: "🟢 Cloud RVC engine is ready",
+      serviceReady: " Cloud RVC engine is ready",
       serviceOffline: "The cloud RVC engine is reconnecting. Voice clips automatically fall back to on-device processing when the cloud is unavailable.",
       serviceLoading: "Loading model weights...",
       convert: "Convert now",
@@ -1659,7 +1659,7 @@
     const cached = await readableCachedModel(name);
     if (cached) {
       if (typeof onProgress === "function") {
-        onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true, `⚡ ${displayName} 已从本地闪存极速就绪`);
+        onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true, ` ${displayName} 已从本地闪存极速就绪`);
       }
       return cached;
     }
@@ -1675,7 +1675,7 @@
       let totalLoaded = 0;
       for (let i = 0; i < totalCount; i++) totalLoaded += chunkBytesLoaded[i];
       if (typeof onProgress === "function") {
-        const msg = `⏳ [1/4] 正在下载 ${displayName}: 分片 ${completedCount}/${totalCount} (${(totalLoaded/1024/1024).toFixed(1)}MB / ${(estimatedTotalBytes/1024/1024).toFixed(1)}MB) · ${activeModelDownloadConcurrency} 线程断点极速加速中`;
+        const msg = ` [1/4] 正在下载 ${displayName}: 分片 ${completedCount}/${totalCount} (${(totalLoaded/1024/1024).toFixed(1)}MB / ${(estimatedTotalBytes/1024/1024).toFixed(1)}MB) · ${activeModelDownloadConcurrency} 线程断点极速加速中`;
         onProgress(totalLoaded, estimatedTotalBytes, completedCount, totalCount, false, msg);
       }
     };
@@ -1732,7 +1732,7 @@
     const cached = await readableCachedModel(name);
     if (cached) {
       if (typeof onProgress === "function") {
-        onProgress(cached.size, cached.size, 1, 1, true, `⚡ ${displayName} 已从本地闪存秒级就绪`);
+        onProgress(cached.size, cached.size, 1, 1, true, ` ${displayName} 已从本地闪存秒级就绪`);
       }
       return cached;
     }
@@ -2328,7 +2328,7 @@
     renderModelCards(trainedContainer, trainedModels, true);
     container.classList.toggle("hidden", regularModels.length === 0);
     if (trainedSection) trainedSection.classList.toggle("hidden", trainedModels.length === 0);
-    if (trainedTitle) trainedTitle.textContent = `🎓 ${localizedCollectionName(activeCollection) || t("trainedTitle").replace(/^🎓\s*/u, "")}`;
+    if (trainedTitle) trainedTitle.textContent = ` ${localizedCollectionName(activeCollection) || t("trainedTitle").replace(/^\s*/u, "")}`;
     if (trainedCount) trainedCount.textContent = state.lang === "en" ? `${trainedModels.length} model(s)` : `${trainedModels.length} 个模型`;
   }
 
@@ -2366,7 +2366,7 @@
     if (!lengthComputable) {
       return {
         barPercent: 8,
-        status: `⏳ [1/3] 正在发送音频… 已发送 ${formatTransferredBytes(loaded)} · ${speed}`,
+        status: ` [1/3] 正在发送音频… 已发送 ${formatTransferredBytes(loaded)} · ${speed}`,
       };
     }
 
@@ -2375,12 +2375,12 @@
     if (rawPercent >= 100) {
       return {
         barPercent: 44,
-        status: `⏳ [1/3] 音频已从浏览器发出（${transferred} · ${speed}），正在等待云端接收确认…`,
+        status: ` [1/3] 音频已从浏览器发出（${transferred} · ${speed}），正在等待云端接收确认…`,
       };
     }
     return {
       barPercent: Math.min(43, Math.max(6, Math.round(rawPercent * 0.43))),
-      status: `⏳ [1/3] 正在发送音频… ${rawPercent}%（${transferred} · ${speed}）`,
+      status: ` [1/3] 正在发送音频… ${rawPercent}%（${transferred} · ${speed}）`,
     };
   }
 
@@ -2758,7 +2758,7 @@
             ((hubertCached?.size || 0) + (rmvpeCached?.size || 0)) / (1024 * 1024)
           ).toFixed(0);
           const charInfo = selectedModel && isCharReady ? `、${charName}` : "";
-          cacheStatusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 font-bold text-emerald-700"><i class="fa-solid fa-circle-check text-emerald-500"></i>⚡ 基础模型${charInfo}已在本地闪存就绪 (${totalMb}MB+) · 变声免下载</span>`;
+          cacheStatusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 font-bold text-emerald-700"><i class="fa-solid fa-circle-check text-emerald-500"></i> 基础模型${charInfo}已在本地闪存就绪 (${totalMb}MB+) · 变声免下载</span>`;
         }
         if (preloadBtn) preloadBtn.classList.add("hidden");
         if (clearBtn) clearBtn.classList.remove("hidden");
@@ -2824,12 +2824,12 @@
         loadModelAuto(hubertCfg, useV1 ? "hubert-v1.onnx" : "hubert.onnx", "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
           hubertLoaded = loaded;
           if (total) hubertTotal = total;
-          updatePreloadUI(msg || `⏳ 正在缓存 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+          updatePreloadUI(msg || ` 正在缓存 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
         }),
         loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE 音高模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
           rmvpeLoaded = loaded;
           if (total) rmvpeTotal = total;
-          updatePreloadUI(msg || `⏳ 正在缓存 RMVPE 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+          updatePreloadUI(msg || ` 正在缓存 RMVPE 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
         }),
       ];
 
@@ -2838,7 +2838,7 @@
           loadModelAuto(selectedModel, characterModelCacheKey(selectedModel), selectedModel.name, "application/onnx", (loaded, total, c, t, cached, msg) => {
             charLoaded = loaded;
             if (total) charTotal = total;
-            updatePreloadUI(msg || `⏳ 正在缓存 ${selectedModel.name} 角色模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+            updatePreloadUI(msg || ` 正在缓存 ${selectedModel.name} 角色模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
           })
         );
       }
@@ -2848,17 +2848,17 @@
       if (progressBar) progressBar.style.width = `100%`;
       if (percentText) percentText.textContent = `100%`;
       const charMsg = selectedModel ? `、${selectedModel.name}` : "";
-      if (statusText) statusText.textContent = `🎉 基础模型${charMsg}预热完成！已存入浏览器闪存。`;
+      if (statusText) statusText.textContent = ` 基础模型${charMsg}预热完成！已存入浏览器闪存。`;
 
-      showToast(`🎉 预热完成！下次变声将直接从闪存秒级启动。`);
+      showToast(` 预热完成！下次变声将直接从闪存秒级启动。`);
       await checkCacheStatus();
       setTimeout(() => {
         if (progressWrap) progressWrap.classList.add("hidden");
       }, 3000);
     } catch (err) {
       console.error("Prewarm failed:", err);
-      showToast("❌ 预热失败，请重试");
-      if (statusText) statusText.textContent = `❌ 预热失败: ${err.message || err}`;
+      showToast(" 预热失败，请重试");
+      if (statusText) statusText.textContent = ` 预热失败: ${err.message || err}`;
       if (preloadBtn) {
         preloadBtn.disabled = false;
         preloadBtn.innerHTML = `<i class="fa-solid fa-rotate-right mr-1"></i><span>重新预热</span>`;
@@ -2883,7 +2883,7 @@
           await removeCachedItem(`chunk:${versionCharacterChunkPath(chunkPath)}`);
         }
       }
-      showToast("🗑️ 本地模型缓存已清理");
+      showToast(" 本地模型缓存已清理");
       await checkCacheStatus();
     } catch (e) {
       console.warn("Failed to clear cache:", e);
@@ -3011,10 +3011,10 @@
             encoding: "正在编码最终音频",
           }[longStage] || "正在后台处理长音频";
           updateStatusDisplay(longJob
-            ? `🧠 [2/3] ${longStageLabel}；任务已保存在服务端，网络波动后会继续查询…`
+            ? ` [2/3] ${longStageLabel}；任务已保存在服务端，网络波动后会继续查询…`
             : state.audioMode === "song"
-              ? "🧠 [2/3] 云端正在分离人声、角色变声并回混原伴奏；网络短暂切换不会丢失任务…"
-              : "🧠 [2/3] 云端 GPU 正在后台处理；页面会自动查询结果，网络短暂切换不会丢失任务…");
+              ? " [2/3] 云端正在分离人声、角色变声并回混原伴奏；网络短暂切换不会丢失任务…"
+              : " [2/3] 云端 GPU 正在后台处理；页面会自动查询结果，网络短暂切换不会丢失任务…");
           await waitFor(retryAfterSeconds * 1000);
           continue;
         }
@@ -3040,7 +3040,7 @@
         if (error?.requestId) lastRequestId = error.requestId;
         const retryableError = isTransientCloudOutputError(error);
         if (!retryableError || transientFailures >= maxTransientFailures || Date.now() >= deadline) throw error;
-        updateStatusDisplay(`🔄 [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`);
+        updateStatusDisplay(` [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`);
         await waitFor(Math.min(longJob ? 15000 : 8000, 1800 * transientFailures));
       } finally {
         clearTimeout(timer);
@@ -3066,7 +3066,7 @@
       } catch (error) {
         lastError = error;
         if (attempt >= maxAttempts || Date.now() >= deadline) break;
-        updateStatusDisplay(`🔄 [3/3] 结果下载中断，正在从已完成任务重新拉取（${attempt}/${maxAttempts - 1}）…`);
+        updateStatusDisplay(` [3/3] 结果下载中断，正在从已完成任务重新拉取（${attempt}/${maxAttempts - 1}）…`);
         await waitFor(Math.min(12000, attempt * 2000));
         response = null;
       }
@@ -3298,15 +3298,15 @@
     }
 
     if (statusEl) {
-      let engineLabel = state.lang === "en" ? "🟢 Voice engine is ready" : "🟢 变声引擎已就绪";
+      let engineLabel = state.lang === "en" ? " Voice engine is ready" : " 变声引擎已就绪";
       if (isOwnModel) {
-        engineLabel = state.lang === "en" ? "🎓 Imported model is ready" : "🎓 专属导入模型已就绪";
+        engineLabel = state.lang === "en" ? " Imported model is ready" : " 专属导入模型已就绪";
       } else if (state.inferenceMode === "official" && state.engineReady === true) {
-        engineLabel = state.lang === "en" ? "🟢 Cloud RVC engine is ready" : "🟢 云端 RVC 高保真引擎已就绪";
+        engineLabel = state.lang === "en" ? " Cloud RVC engine is ready" : " 云端 RVC 高保真引擎已就绪";
       } else if (state.inferenceMode === "official") {
-        engineLabel = state.lang === "en" ? "🟡 Cloud RVC is connecting; this request will retry" : "🟡 云端 RVC 引擎正在连接；本次会直接重试";
+        engineLabel = state.lang === "en" ? " Cloud RVC is connecting; this request will retry" : " 云端 RVC 引擎正在连接；本次会直接重试";
       } else {
-        engineLabel = state.lang === "en" ? "⚡ On-device engine is ready" : "⚡ 极速免上传引擎已就绪";
+        engineLabel = state.lang === "en" ? " On-device engine is ready" : " 极速免上传引擎已就绪";
       }
       statusEl.textContent = state.lang === "en"
         ? `${engineLabel} · Voice: ${selectedModel.name} · Audio: ${state.audio.name} (${formatTime(state.audio.duration)})`
@@ -3613,8 +3613,8 @@
     if (statusText) {
       const displayUrl = targetBase.replace(/^https?:\/\//u, "");
       statusText.textContent = ok
-        ? `🟢 云端 RVC 引擎已就绪 (${displayUrl}) · PyTorch RVC`
-        : `⚠️ 云端 RVC 引擎暂未响应 (${displayUrl}) · 可稍后重试，页面不会自动改用本地模式`;
+        ? ` 云端 RVC 引擎已就绪 (${displayUrl}) · PyTorch RVC`
+        : ` 云端 RVC 引擎暂未响应 (${displayUrl}) · 可稍后重试，页面不会自动改用本地模式`;
     }
     updateStatusDisplay();
     return ok;
@@ -3692,12 +3692,12 @@
 
       const statusEl = document.getElementById("rvc-own-model-status");
       if (statusEl) {
-        statusEl.textContent = `✅ 已导入「${id}」并设为当前角色（仅本机，可立即变声）。`;
+        statusEl.textContent = ` 已导入「${id}」并设为当前角色（仅本机，可立即变声）。`;
         statusEl.classList.remove("hidden");
       }
-      showToast(`🎓 导入成功：${id}`);
+      showToast(` 导入成功：${id}`);
     } catch (err) {
-      showToast(`❌ 导入失败：${err.message}`);
+      showToast(` 导入失败：${err.message}`);
     }
   }
 
@@ -4138,7 +4138,7 @@
     const startTime = Date.now();
     try {
       // 1. Dynamic import of rvc-web-runtime
-      updateStatusDisplay("⏳ 正在初始化本地推理引擎...");
+      updateStatusDisplay(" 正在初始化本地推理引擎...");
       const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260912-merged", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
@@ -4163,7 +4163,7 @@
       updateProgressBar(5);
       showProgressBar(true);
 
-      updateStatusDisplay("⏳ [1/4] 正在加载基础语义模型 (HuBERT)...");
+      updateStatusDisplay(" [1/4] 正在加载基础语义模型 (HuBERT)...");
       const hubertFile = await loadModelAuto(
         hubertCfg,
         useV1 ? "hubert-v1.onnx" : "hubert.onnx",
@@ -4171,12 +4171,12 @@
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
           updateProgressBar(Math.min(33, Math.round((cur / tot) * 33)));
-          updateStatusDisplay(msg || `⏳ [1/4] 正在加载 HuBERT 语义模型: 分片 ${cur}/${tot}`);
+          updateStatusDisplay(msg || ` [1/4] 正在加载 HuBERT 语义模型: 分片 ${cur}/${tot}`);
         }
       );
       updateProgressBar(33);
 
-      updateStatusDisplay("⏳ [1/4] 正在加载基础音高模型 (RMVPE)...");
+      updateStatusDisplay(" [1/4] 正在加载基础音高模型 (RMVPE)...");
       const rmvpeFile = await loadModelAuto(
         rmvpeCfg,
         "rmvpe.onnx",
@@ -4184,12 +4184,12 @@
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
           updateProgressBar(33 + Math.min(33, Math.round((cur / tot) * 33)));
-          updateStatusDisplay(msg || `⏳ [1/4] 正在加载 RMVPE 音高模型: 分片 ${cur}/${tot}`);
+          updateStatusDisplay(msg || ` [1/4] 正在加载 RMVPE 音高模型: 分片 ${cur}/${tot}`);
         }
       );
       updateProgressBar(66);
 
-      updateStatusDisplay(`⏳ [1/4] 正在加载角色声音模型 (${selectedModel.name})...`);
+      updateStatusDisplay(` [1/4] 正在加载角色声音模型 (${selectedModel.name})...`);
       const modelFile = await loadModelAuto(
         selectedModel,
         characterModelCacheKey(selectedModel),
@@ -4197,14 +4197,14 @@
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
           updateProgressBar(66 + Math.min(34, Math.round((cur / tot) * 34)));
-          updateStatusDisplay(msg || `⏳ [1/4] 正在加载 ${selectedModel.name} 角色模型: 分片 ${cur}/${tot}`);
+          updateStatusDisplay(msg || ` [1/4] 正在加载 ${selectedModel.name} 角色模型: 分片 ${cur}/${tot}`);
         }
       );
 
       let retrievalFile;
       if (selectedModel.retrieval && indexRateVal > 0) {
         try {
-          updateStatusDisplay(`⏳ [1/4] 正在加载 ${selectedModel.name} 轻量音色检索码本...`);
+          updateStatusDisplay(` [1/4] 正在加载 ${selectedModel.name} 轻量音色检索码本...`);
           const retrievalPath = versionCharacterChunkPath(selectedModel.retrieval);
           retrievalFile = await fetchWithCache(
             getChunkMirrorUrls(retrievalPath),
@@ -4238,8 +4238,8 @@
       // a three-minute phone conversion is not killed by the old 120s cap.
       const localTimeoutMs = localInferenceTimeoutMs(state.audio.duration, allowLong);
       updateStatusDisplay(fallback
-        ? "📱 云端暂时不可达，正在切换到用户设备端分段推理；请保持页面在前台…"
-        : "🚀 [2/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
+        ? " 云端暂时不可达，正在切换到用户设备端分段推理；请保持页面在前台…"
+        : " [2/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
       const result = await runPipelineInWorker(
         rvc,
         {
@@ -4262,7 +4262,7 @@
                 post_processing: "正在进行透明峰值与音量包络校准...",
                 success: "变声完成，准备输出...",
               };
-              updateStatusDisplay(`✨ [3/4] ${stageMap[e.stage] || e.stage}`);
+              updateStatusDisplay(` [3/4] ${stageMap[e.stage] || e.stage}`);
             } else if (e.type === "chunk_step") {
               const stepMap = {
                 feature: `[4/4] 提取人声语义 (${e.current}/${e.total})`,
@@ -4270,9 +4270,9 @@
                 synth: `[4/4] 神经网络声线变换中 (${e.current}/${e.total})...`,
                 done: `[4/4] 分段已完成 (${e.current}/${e.total})`,
               };
-              updateStatusDisplay(`✨ ${stepMap[e.step] || e.step}`);
+              updateStatusDisplay(` ${stepMap[e.step] || e.step}`);
             } else if (e.type === "chunk") {
-              updateStatusDisplay(`✨ [4/4] 正在合成音频分段: ${e.current} / ${e.total}`);
+              updateStatusDisplay(` [4/4] 正在合成音频分段: ${e.current} / ${e.total}`);
             }
           },
         },
@@ -4318,8 +4318,8 @@
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
 
-      updateStatusDisplay(`🎉 设备端变声成功！用时 ${elapsedSec} 秒，结果已生成在下方。`);
-      showToast("🎉 设备端变声完成！可在下方试听或下载");
+      updateStatusDisplay(` 设备端变声成功！用时 ${elapsedSec} 秒，结果已生成在下方。`);
+      showToast(" 设备端变声完成！可在下方试听或下载");
       return true;
     } catch (err) {
       console.error("RVC Inference Error:", err);
@@ -4330,7 +4330,7 @@
           ? "设备端长音频分段推理失败，请保持页面前台并换一段纯人声重试。"
           : "本机变声处理失败，请重新选择一段较短的纯人声音频后重试。";
       showToast(message);
-      updateStatusDisplay(`❌ ${message}`);
+      updateStatusDisplay(` ${message}`);
       return false;
     } finally {
       state.busy = false;
@@ -4433,12 +4433,12 @@
       const longJob = state.audio.duration >= DURABLE_CLOUD_JOB_SECONDS;
       if (preparedUpload.optimized) {
         updateStatusDisplay(
-          `⚡ [1/3] 已把上传体积从 ${formatTransferredBytes(preparedUpload.originalBytes)} 压到 ${formatTransferredBytes(uploadFile.size)}（16kHz 单声道），正在连接云端…`,
+          ` [1/3] 已把上传体积从 ${formatTransferredBytes(preparedUpload.originalBytes)} 压到 ${formatTransferredBytes(uploadFile.size)}（16kHz 单声道），正在连接云端…`,
         );
       } else {
         updateStatusDisplay(state.audioMode === "song"
-          ? "⏳ [1/3] 正在上传原始混音；云端将分离人声、转换音色并回混原伴奏…"
-          : "⏳ [1/3] 正在准备上传音频到云端 RVC 引擎…");
+          ? " [1/3] 正在上传原始混音；云端将分离人声、转换音色并回混原伴奏…"
+          : " [1/3] 正在准备上传音频到云端 RVC 引擎…");
       }
 
       const body = new FormData();
@@ -4483,13 +4483,13 @@
 
         xhr.upload.onload = () => {
           updateProgressBar(46);
-          updateStatusDisplay("⏳ [1/3] 音频传输已结束，正在等待云端确认并启动推理…");
+          updateStatusDisplay(" [1/3] 音频传输已结束，正在等待云端确认并启动推理…");
           if (ticker) clearInterval(ticker);
           ticker = setInterval(() => {
             const sec = Math.round((Date.now() - startedAt) / 1000);
             updateStatusDisplay(state.audioMode === "song"
-              ? `🧠 [2/3] 云端正在分离人声 → RVC 变声 → 原伴奏回混… 已用时 ${sec}s（等待真实结果）`
-              : `🧠 [2/3] 云端已接收请求，RVC 神经声线重构中… 已用时 ${sec}s（等待服务端完成响应，不虚报百分比）`);
+              ? ` [2/3] 云端正在分离人声 → RVC 变声 → 原伴奏回混… 已用时 ${sec}s（等待真实结果）`
+              : ` [2/3] 云端已接收请求，RVC 神经声线重构中… 已用时 ${sec}s（等待服务端完成响应，不虚报百分比）`);
           }, 1000);
         };
 
@@ -4561,8 +4561,8 @@
       const { payload, routes } = await uploadWithRouteFallback(activeBases, uploadAndInfer, async (nextEntry) => {
         updateProgressBar(8);
         updateStatusDisplay(nextEntry
-          ? "🔄 当前云端入口不可达，正在尝试备用入口…"
-          : "🔄 云端连接短暂中断，正在重新连接同一入口并自动重试一次…");
+          ? " 当前云端入口不可达，正在尝试备用入口…"
+          : " 云端连接短暂中断，正在重新连接同一入口并自动重试一次…");
         await waitFor(1200);
       });
       if (!payload || !payload.jobId || !payload.downloadToken) {
@@ -4572,11 +4572,11 @@
       const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
       updateProgressBar(52);
       updateStatusDisplay(state.audioMode === "song"
-        ? "🧠 [2/3] 混音已接收，云端正在分离人声、变声并回混伴奏…"
-        : "🧠 [2/3] 音频已接收，云端 GPU 已转入后台推理…");
+        ? " [2/3] 混音已接收，云端正在分离人声、变声并回混伴奏…"
+        : " [2/3] 音频已接收，云端 GPU 已转入后台推理…");
       const outputResponse = await pollCloudOutput(outputUrl, jobTimeoutMs, longJob);
       updateProgressBar(82);
-      updateStatusDisplay("📥 [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
+      updateStatusDisplay(" [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
       const rawOutputBlob = longJob
         ? await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs)
         : await normalizeCloudAudioBlob(await outputResponse.blob(), outputFormat);
@@ -4635,8 +4635,8 @@
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       updateProgressBar(100);
-      updateStatusDisplay(`🎉 云端 RVC 变声完成！用时 ${elapsed} 秒。${longJob ? "长音频稳定链路已完成可恢复处理与下载。" : ""}可在下方试听或下载。`);
-      showToast("🎉 云端 RVC 变声完成！可在下方试听或下载");
+      updateStatusDisplay(` 云端 RVC 变声完成！用时 ${elapsed} 秒。${longJob ? "长音频稳定链路已完成可恢复处理与下载。" : ""}可在下方试听或下载。`);
+      showToast(" 云端 RVC 变声完成！可在下方试听或下载");
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
@@ -4645,15 +4645,15 @@
           setAudioMode("voice");
           showToast("云端失败，自动转为本地直接变声；不分离伴奏，伴奏也会一起变声。");
         }
-        updateStatusDisplay("⚠️ 云端 RVC 当前不可达，准备切换到用户设备端推理…");
+        updateStatusDisplay(" 云端 RVC 当前不可达，准备切换到用户设备端推理…");
         return { fallback: true, error };
       }
       const failureMessage = cloudRvcFailureMessage(error);
       const diagnostic = error?.requestId ? ` · 诊断号 ${error.requestId}` : "";
       const deviceHint = !hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)
         ? (state.lang === "en" ? " · This voice is cloud-only; choose an on-device voice to continue locally." : " · 该角色仅支持云端；如需本地接续，请更换支持设备端的角色。") : "";
-      updateStatusDisplay(`❌ ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}${deviceHint}`);
-      showToast(`❌ ${failureMessage}`);
+      updateStatusDisplay(` ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}${deviceHint}`);
+      showToast(` ${failureMessage}`);
       return false;
     } finally {
       state.busy = false;
@@ -4679,7 +4679,7 @@
     if (state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && state.engineReady === false) {
       const cloudReady = await refreshOfficialService();
       if (cloudReady === false) {
-        updateStatusDisplay("📱 检测到电脑端云引擎离线，正在使用当前用户设备处理纯人声…");
+        updateStatusDisplay(" 检测到电脑端云引擎离线，正在使用当前用户设备处理纯人声…");
         setInferenceMode("local");
         return runWebRvcInference({ allowLong: true, fallback: true });
       }
@@ -4816,20 +4816,20 @@
         saveJob(job);
         const label = payload?.message || payload?.stage || "训练任务运行中";
         if (payload?.state === "completed") {
-          setTrainingUi(100, `✅ ${label}`, false);
+          setTrainingUi(100, ` ${label}`, false);
           clearStoredJob();
           if (cancelButton) cancelButton.classList.add("hidden");
           await refreshTrainedModel(payload.modelId);
-          showToast("🎓 新模型训练完成，已加入独立训练模型区");
+          showToast(" 新模型训练完成，已加入独立训练模型区");
           return;
         }
         if (payload?.state === "failed" || payload?.state === "cancelled") {
-          setTrainingUi(job.progress, `❌ ${label}${payload.errorCode ? `（${payload.errorCode}）` : ""}`, false);
+          setTrainingUi(job.progress, ` ${label}${payload.errorCode ? `（${payload.errorCode}）` : ""}`, false);
           clearStoredJob();
           if (cancelButton) cancelButton.classList.add("hidden");
           return;
         }
-        setTrainingUi(job.progress, `⏳ ${label}`);
+        setTrainingUi(job.progress, ` ${label}`);
         await waitFor(8000);
       }
     };
@@ -4900,7 +4900,7 @@
         pollTraining(job);
       } catch (error) {
         console.error("RVC training start failed:", error);
-        setTrainingUi(0, `❌ 训练任务启动失败：${error.message}`, false);
+        setTrainingUi(0, ` 训练任务启动失败：${error.message}`, false);
         clearStoredJob();
         if (cancelButton) cancelButton.classList.add("hidden");
       }
@@ -5012,7 +5012,7 @@
           try {
             window.localStorage.setItem(RVC_ENDPOINT_STORAGE_KEY, val);
           } catch (e) {}
-          showToast(`💾 已保存云端 RVC 服务地址：${val}`);
+          showToast(` 已保存云端 RVC 服务地址：${val}`);
           await probeOfficialService(val);
         }
       });
@@ -5124,7 +5124,7 @@
           pitch,
           model
             ? `已为「${model.name}」设置跨音域建议值 ${fmt(pitch)} 半音。若出现电音或过尖，请向 0 逐步回调。`
-            : `✨ 当前已设为 ${fmt(pitch)} 半音：男声变女角色推荐音高。`,
+            : ` 当前已设为 ${fmt(pitch)} 半音：男声变女角色推荐音高。`,
           btnPresetMaleFemale
         );
       });
@@ -5138,7 +5138,7 @@
 
     if (btnPresetFemaleMale) {
       btnPresetFemaleMale.addEventListener("click", () => {
-        setPitchMode(-12, "✨ 当前已设为 -12 半音：女声变男角色降低 1 个八度，沉稳低厚自然。", btnPresetFemaleMale);
+        setPitchMode(-12, " 当前已设为 -12 半音：女声变男角色降低 1 个八度，沉稳低厚自然。", btnPresetFemaleMale);
       });
     }
 
@@ -5157,7 +5157,7 @@
           if (val === 12) pitchTip.textContent = "当前为 +12 半音：仅适合明显跨音域输入；若有金属感，请向 0 回调。";
           else if (val === 0) pitchTip.textContent = "当前为 0 半音：保留自然原调。";
           else if (val === -12) pitchTip.textContent = "当前为 -12 半音：仅适合明显跨音域输入；若低沉失真，请向 0 回调。";
-          else pitchTip.textContent = `🎛️ 自定义音高偏移: ${(val > 0 ? "+" : "")}${val} 半音。`;
+          else pitchTip.textContent = ` 自定义音高偏移: ${(val > 0 ? "+" : "")}${val} 半音。`;
         }
       });
     }
@@ -5360,7 +5360,7 @@
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
       setTtsReady(true);
-      setTtsStatus(`✅ 已连接 TTS 服务：${base}（已保存到本浏览器，立即生效）。也已下载配置文件备用。`, "ok");
+      setTtsStatus(` 已连接 TTS 服务：${base}（已保存到本浏览器，立即生效）。也已下载配置文件备用。`, "ok");
     };
     if (adaptBtn) {
       adaptBtn.addEventListener("click", async () => {
@@ -5393,7 +5393,7 @@
           }
           if (found) { applyFoundBase(found); return; }
           setTtsStatus(
-            "⚠️ 未检测到可用的 TTS 服务。请在下方“手动填写服务地址”输入你部署的 TTS 地址（如 http://192.168.1.3:8080），再点一次「一键适配」。", "err"
+            " 未检测到可用的 TTS 服务。请在下方“手动填写服务地址”输入你部署的 TTS 地址（如 http://192.168.1.3:8080），再点一次「一键适配」。", "err"
           );
           setTtsReady(false);
         } catch (err) {
