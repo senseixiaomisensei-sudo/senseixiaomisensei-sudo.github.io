@@ -32,6 +32,9 @@
       labelToggle();
     }
     mountToggle();
+    const measureHeader = () => root.style.setProperty("--site-header-height", `${header?.getBoundingClientRect().height || 72}px`);
+    if (header && typeof ResizeObserver !== "undefined") new ResizeObserver(measureHeader).observe(header);
+    measureHeader();
     if (header) new MutationObserver(mountToggle).observe(header, { childList: true, subtree: true });
     toggle.addEventListener("click", () => {
       root.dataset.ui = root.dataset.ui === "glass" ? "classic" : "glass";
@@ -48,10 +51,12 @@
     new MutationObserver(labelToggle).observe(root, { attributes: true, attributeFilter: ["lang"] });
     document.addEventListener("pointermove", (event) => {
       if (root.dataset.ui !== "glass" || event.pointerType === "touch" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const surface = event.target.closest(".style-toggle, .studio-monitor, .studio-dock");
+      const surface = event.target.closest(".style-toggle, .studio-monitor, .studio-dock, [data-model-id], #rvc-upload-wrap, #rvc-result-section, .studio-shortcuts button");
       if (!surface) return;
       const rect = surface.getBoundingClientRect();
       surface.style.setProperty("--glass-angle", `${100 + (event.clientX - rect.left) / rect.width * 70}deg`);
+      surface.style.setProperty("--light-x", `${(event.clientX - rect.left) / rect.width * 100}%`);
+      surface.style.setProperty("--light-y", `${(event.clientY - rect.top) / rect.height * 100}%`);
     }, { passive: true });
     if (document.body.dataset.page === "rvc") initStudio(text);
   }
@@ -105,6 +110,23 @@
       dock.append(button);
     });
     document.querySelector('[aria-labelledby="rvc-workflow-heading"]').prepend(dock);
+    let scrollFrame = 0;
+    function syncDock() {
+      scrollFrame = 0;
+      const threshold = (document.getElementById("site-header")?.getBoundingClientRect().height || 72) + 140;
+      let active = 0;
+      steps.forEach(([id], index) => {
+        if (document.getElementById(id)?.getBoundingClientRect().top <= threshold) active = index;
+      });
+      dock.style.setProperty("--step", String(active));
+      dock.querySelectorAll("button").forEach((button, index) => {
+        if (index === active) button.setAttribute("aria-current", "step");
+        else button.removeAttribute("aria-current");
+      });
+    }
+    window.addEventListener("scroll", () => {
+      if (!scrollFrame) scrollFrame = requestAnimationFrame(syncDock);
+    }, { passive: true });
     const canvas = panel.querySelector("canvas");
     const ctx = canvas.getContext("2d");
     const audio = panel.querySelector("audio");
@@ -141,6 +163,17 @@
           ctx.fillRect(i * w / peaks.length, (h - height) / 2, Math.max(2, w / peaks.length - 2), height);
         });
       } else {
+        // Particle contours echo the reference's sculptural motion. They are
+        // decoration; loaded audio always keeps the real waveform above.
+        for (let i = 0; i < 420; i++) {
+          const angle = i * 2.399963;
+          const radius = Math.sqrt(i / 420);
+          const twist = Math.sin(angle * 3 + pointer * 2) * 12;
+          const x = w / 2 + Math.cos(angle + pointer * .12) * radius * (w * .43 + twist);
+          const y = h / 2 + Math.sin(angle) * radius * (h * .42 + twist);
+          ctx.fillStyle = i % 5 === 0 ? "#bd8263aa" : "#21796370";
+          ctx.beginPath(); ctx.arc(x, y, i % 7 === 0 ? 1.5 : .8, 0, Math.PI * 2); ctx.fill();
+        }
         // A decorative folded ribbon, not an invented audio measurement.
         for (let strand = 0; strand < 28; strand++) {
           const offset = strand / 27;

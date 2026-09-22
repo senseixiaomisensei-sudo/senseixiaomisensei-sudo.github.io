@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "file:///E:/大肥鱼/rvc-local/convert/node_modules/playwright/index.mjs";
 
-const PORT = 8126;
+const PORT = Number(process.env.POSTPREP_RVC_TEST_PORT) || 8126;
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 
 const MIME_MAP = {

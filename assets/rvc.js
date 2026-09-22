@@ -3052,6 +3052,34 @@
     throw timeout;
   }
 
+  async function readCloudAudioBody(response, timeoutMs = 60000) {
+    if (!response.body?.getReader) return response.blob();
+    const reader = response.body.getReader();
+    const chunks = [];
+    let timer;
+    try {
+      return await Promise.race([
+        (async () => {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+          }
+          return new Blob(chunks, { type: response.headers.get("Content-Type") || "audio/wav" });
+        })(),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => {
+            reject(new Error("音频数据传输超时，将重新读取已完成任务"));
+            void reader.cancel().catch(() => {});
+          }, timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+      reader.releaseLock();
+    }
+  }
+
   async function downloadLongCloudOutput(url, firstResponse, format, timeoutMs) {
     const deadline = Date.now() + timeoutMs;
     let response = firstResponse;
@@ -3062,7 +3090,7 @@
         if (!response || response.status !== 200) {
           response = await pollCloudOutput(url, Math.max(60000, deadline - Date.now()), true);
         }
-        return await normalizeCloudAudioBlob(await response.blob(), format);
+        return await normalizeCloudAudioBlob(await readCloudAudioBody(response, Math.min(60000, Math.max(1, deadline - Date.now()))), format);
       } catch (error) {
         lastError = error;
         if (attempt >= maxAttempts || Date.now() >= deadline) break;
@@ -3337,7 +3365,9 @@
     push(getOfficialEndpoint());
     try {
       const origin = String(globalThis.location?.origin || "");
-      if (origin.startsWith("http")) push(origin.replace(/\/+$/u, "") + "/rvc-api");
+      // GitHub Pages serves static files; POSTing there can only return 405.
+      const host = new URL(origin).hostname;
+      if (origin.startsWith("http") && !host.endsWith(".github.io")) push(origin.replace(/\/+$/u, "") + "/rvc-api");
     } catch (e) {}
     push("https://postprep-ae6.pages.dev/rvc-api");
     return candidates;
@@ -4139,17 +4169,16 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay(" 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260912-merged", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260922-runtime", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
       const rvc = createRVC({
         assetBaseUrl: new URL("assets/rvc-engine/", window.location.href).href,
-        // Use the sub-25 MiB asyncify build explicitly. It is compatible with
-        // mobile WASM and can be served by both GitHub Pages and Cloudflare Pages.
+        // Match the portable CPU backend with the smaller standard WASM build.
         wasmBaseUrl: {
-          mjs: new URL("ort-wasm-simd-threaded.asyncify.mjs", wasmAssetBase).href,
-          wasm: new URL("ort-wasm-simd-threaded.asyncify.wasm", wasmAssetBase).href,
+          mjs: new URL("ort-wasm-simd-threaded.mjs", wasmAssetBase).href,
+          wasm: new URL("ort-wasm-simd-threaded.wasm", wasmAssetBase).href,
         },
       });
 
@@ -4256,6 +4285,8 @@
               const stageMap = {
                 input_preparation: "正在预处理输入音频...",
                 model_parsing: "正在解析神经生成器模型...",
+                feature_model_loading: "正在载入语义引擎（2/3），请保持页面前台...",
+                pitch_model_loading: "正在载入音高引擎（3/3），请保持页面前台...",
                 feature_extraction: "正在提取人声语义特征 (HuBERT)...",
                 pitch_estimation: "正在分析音高音调与共鸣 (RMVPE)...",
                 voice_synthesis: "正在合成目标角色音色...",
@@ -4577,9 +4608,7 @@
       const outputResponse = await pollCloudOutput(outputUrl, jobTimeoutMs, longJob);
       updateProgressBar(82);
       updateStatusDisplay(" [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
-      const rawOutputBlob = longJob
-        ? await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs)
-        : await normalizeCloudAudioBlob(await outputResponse.blob(), outputFormat);
+      const rawOutputBlob = await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs);
       // 纯人声模式: 客户端透明抛光 (仅检测到的毫秒级毛刺做局部低通 + 热峰
       // 值回落), 与本地管线的输出守卫一致; 歌曲模式保留云端原混音不动。
       // 抛光失败时回退云端原始文件, 不影响成片返回。
