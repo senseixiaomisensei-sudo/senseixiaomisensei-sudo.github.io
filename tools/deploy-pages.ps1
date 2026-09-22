@@ -34,8 +34,17 @@ try {
   }
   Push-Location $StagingParent
   try {
-    npx --yes wrangler@4 pages deploy . --project-name $ProjectName --branch $Branch
-    if ($LASTEXITCODE -ne 0) { throw "wrangler pages deploy failed" }
+    $cleanDnsCjs = Join-Path $RepoRoot "rvc-service\clean-cf-dns.cjs"
+    $oldNodeOptions = $env:NODE_OPTIONS
+    if (Test-Path $cleanDnsCjs) {
+      $env:NODE_OPTIONS = "-r `"$cleanDnsCjs`""
+    }
+    try {
+      npx --yes wrangler@4 pages deploy . --project-name $ProjectName --branch $Branch
+      if ($LASTEXITCODE -ne 0) { throw "wrangler pages deploy failed" }
+    } finally {
+      $env:NODE_OPTIONS = $oldNodeOptions
+    }
   } finally {
     Pop-Location
   }

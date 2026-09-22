@@ -41,7 +41,10 @@ $Token = (Get-Content $TokenFile -Raw).Trim()
 
 Step "2/5 启动本地 RVC 服务（GPU）"
 $healthy = $false
-try { $r = Invoke-RestMethod -Uri "http://127.0.0.1:$LocalPort/healthz" -Headers @{ Authorization = "Bearer $Token" } -TimeoutSec 5; $healthy = ($r.ready -eq $true) } catch {}
+try {
+  $r = curl.exe -s --max-time 5 --noproxy "*" "http://127.0.0.1:$LocalPort/healthz" -H "Authorization: Bearer $Token"
+  $healthy = ($r -match '"ready":\s*true')
+} catch {}
 # 端口已被占用（典型：上一实例冷启动加载权重中，healthz 尚未 ready）时绝不再起第二个
 # uvicorn，否则两个进程同时绑定同一端口，请求随机落到新旧进程，行为时好时坏。
 # 冷启动到绑定端口需要十几秒，所以先给端口一小段出现窗口再决定是否另起实例。
@@ -53,7 +56,10 @@ if (-not $healthy) {
     if ($portListening) {
       for ($j = 0; $j -lt 40 -and -not $healthy; $j++) {
         Start-Sleep -Seconds 3
-        try { $r = Invoke-RestMethod -Uri "http://127.0.0.1:$LocalPort/healthz" -Headers @{ Authorization = "Bearer $Token" } -TimeoutSec 5; $healthy = ($r.ready -eq $true) } catch {}
+        try {
+          $r = curl.exe -s --max-time 5 --noproxy "*" "http://127.0.0.1:$LocalPort/healthz" -H "Authorization: Bearer $Token"
+          $healthy = ($r -match '"ready":\s*true')
+        } catch {}
       }
       if ($healthy) { Write-Host "本地服务已在启动中，等待就绪 OK" }
       break
@@ -79,7 +85,10 @@ if (-not $healthy) {
   # 官方运行时冷启动要把 HuBERT/RMVPE 权重载入显存，实测远超 8 秒；轮询到 120 秒再判失败。
   for ($i = 0; $i -lt 40 -and -not $healthy; $i++) {
     Start-Sleep -Seconds 3
-    try { $r = Invoke-RestMethod -Uri "http://127.0.0.1:$LocalPort/healthz" -Headers @{ Authorization = "Bearer $Token" } -TimeoutSec 5; $healthy = ($r.ready -eq $true) } catch {}
+    try {
+      $r = curl.exe -s --max-time 5 --noproxy "*" "http://127.0.0.1:$LocalPort/healthz" -H "Authorization: Bearer $Token"
+      $healthy = ($r -match '"ready":\s*true')
+    } catch {}
   }
 }
 if (-not $healthy) { throw "本地 RVC 服务启动失败，请查看日志。" }
@@ -112,29 +121,42 @@ function Find-TunnelUrl([string]$logPath) {
 $TunnelUrl = Find-TunnelUrl $TunnelLog
 $tunnelAlive = $false
 if ($TunnelUrl) {
-  try { $probe = Invoke-WebRequest -Uri "$TunnelUrl/healthz" -Headers @{ Authorization = "Bearer $Token" } -TimeoutSec 8 -UseBasicParsing -SkipHttpErrorCheck; $tunnelAlive = ($probe.StatusCode -eq 200) } catch { $tunnelAlive = $false }
+  $tHost = ([Uri]$TunnelUrl).Host
+  $tRes = curl.exe -s --max-time 6 --noproxy "*" --resolve "${tHost}:443:172.66.47.151" "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
+  if ($tRes -notmatch '"ready":\s*true') {
+    $tRes = curl.exe -s --max-time 6 "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
+  }
+  $tunnelAlive = ($tRes -match '"ready":\s*true')
 }
 if (-not $tunnelAlive) {
   Get-Process cloudflared -ErrorAction SilentlyContinue |
     Where-Object { -not $_.Path -or $_.Path -eq $CfBin } |
     Stop-Process -Force
   Remove-Item $TunnelLog, "$TunnelLog.err" -ErrorAction SilentlyContinue
-  # Use the operator's enabled Windows proxy for quick-tunnel registration.
-  $proxySettings = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'
-  if ($proxySettings.ProxyEnable -eq 1 -and $proxySettings.ProxyServer -match '^127\.0\.0\.1:\d+$') {
+  # Use the operator's enabled Windows proxy for quick-tunnel registration if active.
+  $proxySettings = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -ErrorAction SilentlyContinue
+  $systemProxyPort = if ($proxySettings -and $proxySettings.ProxyServer -match ':(\d+)$') { [int]$Matches[1] } else { 0 }
+  $proxyActive = $false
+  if ($systemProxyPort -gt 0) {
+    $proxyActive = [bool](Get-NetTCPConnection -State Listen -LocalPort $systemProxyPort -ErrorAction SilentlyContinue)
+  }
+  if ($proxySettings -and $proxySettings.ProxyEnable -eq 1 -and $proxyActive) {
     $env:HTTPS_PROXY = "http://$($proxySettings.ProxyServer)"
     $env:HTTP_PROXY = $env:HTTPS_PROXY
+    $env:ALL_PROXY = "socks5://$($proxySettings.ProxyServer)"
+  } else {
+    $env:HTTPS_PROXY = ""
+    $env:HTTP_PROXY = ""
+    $env:ALL_PROXY = ""
   }
   $env:NO_PROXY = '127.0.0.1,localhost' 
   $quickArgs = @()
-  if ($env:HTTPS_PROXY) {
-    if (-not (Get-NetTCPConnection -State Listen -LocalPort 8091 -ErrorAction SilentlyContinue)) {
-      Start-Process -FilePath $OfficialVenvPython -ArgumentList (Join-Path $SiteDir 'rvc-service\quick_tunnel_registration.py') -WindowStyle Hidden
-      Start-Sleep -Seconds 2
-    }
-    $quickArgs = @('--quick-service', 'http://127.0.0.1:8091')
+  if (-not (Get-NetTCPConnection -State Listen -LocalPort 8091 -ErrorAction SilentlyContinue)) {
+    Start-Process -FilePath $OfficialVenvPython -ArgumentList (Join-Path $SiteDir 'rvc-service\quick_tunnel_registration.py') -WindowStyle Hidden
+    Start-Sleep -Seconds 2
   }
-  # Allow QUIC to fall back to HTTP/2 when the network blocks UDP.
+  $quickArgs = @('--quick-service', 'http://127.0.0.1:8091')
+  # Start cloudflared with quick registration bridge
   Start-Process -FilePath $CfBin -ArgumentList (@("tunnel","--url","http://127.0.0.1:$ProxyPort","--no-autoupdate","--protocol","auto") + $quickArgs) -RedirectStandardOutput $TunnelLog -RedirectStandardError "$TunnelLog.err" -WindowStyle Hidden
   $TunnelUrl = ""
   for ($i = 0; $i -lt 40 -and -not $TunnelUrl; $i++) {
@@ -144,8 +166,19 @@ if (-not $tunnelAlive) {
   if (-not $TunnelUrl) { throw "隧道启动失败，请查看 $TunnelLog" }
 }
 $verifiedTunnel = $false
-for ($probeAttempt = 0; $probeAttempt -lt 8 -and -not $verifiedTunnel; $probeAttempt++) {
-  try { $health = Invoke-RestMethod "$TunnelUrl/healthz" -Headers @{ Authorization = "Bearer $Token" } -TimeoutSec 8; $verifiedTunnel = ($health.ready -eq $true) } catch {}
+$tHost = ([Uri]$TunnelUrl).Host
+for ($probeAttempt = 0; $probeAttempt -lt 30 -and -not $verifiedTunnel; $probeAttempt++) {
+  try {
+    # 1. Clean IP Anycast probe (direct, bypasses domestic DNS poisoning and proxy errors)
+    $h = curl.exe -s --max-time 6 --noproxy "*" --resolve "${tHost}:443:172.66.47.151" "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
+    if ($h -match '"ready":\s*true') { $verifiedTunnel = $true; break }
+    # 2. Probe through system proxy if active
+    $hProxy = curl.exe -s --max-time 6 "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
+    if ($hProxy -match '"ready":\s*true') { $verifiedTunnel = $true; break }
+    # 3. Direct probe
+    $hDirect = curl.exe -s --max-time 6 --noproxy "*" "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
+    if ($hDirect -match '"ready":\s*true') { $verifiedTunnel = $true; break }
+  } catch {}
   if (-not $verifiedTunnel) { Start-Sleep -Seconds 2 }
 }
 if (-not $verifiedTunnel) { throw "隧道健康检查未通过，不覆盖线上入口" }
@@ -160,7 +193,18 @@ try {
     POSTPREP_RVC_DIRECT_BASE_URL = $TunnelUrl
     POSTPREP_RVC_INFERENCE_TOKEN = $Token
   } | ConvertTo-Json | Set-Content -LiteralPath $SecretFile -Encoding UTF8
-  node "D:\DevCaches\npm-cache\_npx\32026684e21afda6\node_modules\wrangler\bin\wrangler.js" secret bulk $SecretFile --config (Join-Path $SiteDir "worker\wrangler.toml")
+  $cleanDnsCjs = Join-Path $PSScriptRoot "clean-cf-dns.cjs"
+  $nodeArgs = @()
+  if (Test-Path $cleanDnsCjs) {
+    $nodeArgs += @("-r", $cleanDnsCjs)
+  }
+  $wranglerJs = "D:\DevCaches\npm-cache\_npx\32026684e21afda6\node_modules\wrangler\bin\wrangler.js"
+  if (-not (Test-Path $wranglerJs)) {
+    $found = Get-ChildItem "D:\DevCaches\npm-cache\_npx\*\node_modules\wrangler\bin\wrangler.js" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { $wranglerJs = $found.FullName }
+  }
+  $nodeArgs += @($wranglerJs, "secret", "bulk", $SecretFile, "--config", (Join-Path $SiteDir "worker\wrangler.toml"))
+  & node @nodeArgs
   if ($LASTEXITCODE -ne 0) { throw "Worker 隧道密钥同步失败" }
 } finally {
   Remove-Item -LiteralPath $SecretFile -Force -ErrorAction SilentlyContinue
@@ -169,8 +213,11 @@ try {
 Step "5/5 线上自检"
 Start-Sleep -Seconds 5
 $status = curl.exe -s "https://postprep-ae6.pages.dev/rvc-api/status" -H "Origin: https://senseixiaomisensei-sudo.github.io" --max-time 30
+if ($status -notmatch '"ready":\s*true') {
+  $status = curl.exe -s --noproxy "*" "https://postprep-ae6.pages.dev/rvc-api/status" -H "Origin: https://senseixiaomisensei-sudo.github.io" --max-time 30
+}
 Write-Host "Pages relay /rvc-api/status: $status"
-if ($status -match '"ready":true') {
+if ($status -match '"ready":\s*true') {
   Write-Host ""
   Write-Host "全部就绪！打开 https://senseixiaomisensei-sudo.github.io/rvc.html 即可在线变声。" -ForegroundColor Green
 } else {

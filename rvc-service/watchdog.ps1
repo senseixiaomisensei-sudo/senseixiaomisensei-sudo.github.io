@@ -4,6 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
+$env:NO_PROXY = '127.0.0.1,localhost'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $MachineRoot = Join-Path (Split-Path -Parent $RepoRoot) "rvc-local"
 $StartScript = Join-Path $MachineRoot "start-all.ps1"
@@ -53,8 +54,13 @@ try {
       $local = Invoke-RestMethod -Uri "http://127.0.0.1:8088/healthz" -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 5
       if ($local.ready -eq $true) {
         $localHealthy = $true
-        $public = Invoke-RestMethod -Uri $PublicStatus -Headers @{ Origin = $Origin } -TimeoutSec 15
-        $healthy = ($public.ready -eq $true)
+        $publicOut = curl.exe -s --max-time 10 $PublicStatus -H "Origin: $Origin"
+        if ($publicOut -match '"ready":\s*true') {
+          $healthy = $true
+        } else {
+          $publicOutDirect = curl.exe -s --max-time 10 --noproxy "*" $PublicStatus -H "Origin: $Origin"
+          $healthy = ($publicOutDirect -match '"ready":\s*true')
+        }
       }
     } catch {
       $healthy = $false

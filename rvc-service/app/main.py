@@ -19,6 +19,8 @@ import json
 import logging
 import math
 import os
+
+import numpy as np
 import secrets
 import shutil
 import subprocess
@@ -128,6 +130,12 @@ OUTPUT_SAFETY_FILTER = (
     "lowpass=f=12000:p=1,"
     "alimiter=limit=0.90:attack=5:release=100:level=0:latency=1"
 )
+# WebUI-route output: click repair plus a peak guard only - no de-esser,
+# low-pass or compressor shaping, matching a local RVC WebUI conversion.
+WEBUI_ROUTE_OUTPUT_FILTER = (
+    "adeclick=threshold=2.5:burst=2,"
+    "alimiter=limit=0.95:attack=5:release=100:level=0"
+)
 SHOUT_HARSHNESS_GUARD_MODELS = frozenset({"midori", "mika", "shiroko", "toki", "yuzu"})
 SHOUT_HARSHNESS_FILTER = (
     "adeclick=threshold=2:burst=2,"
@@ -151,8 +159,7 @@ HIGH_ENERGY_OUTPUT_FILTER = (
     "alimiter=limit=0.88:attack=3:release=90:level=0:latency=1"
 )
 PITCH_COMPLEX_OUTPUT_FILTER = (
-    "adeclick=threshold=2:burst=2,"
-    "deesser=i=0.20:m=0.30:f=0.54,"
+    "adeclick=threshold=2:burst=2,"    "deesser=i=0.20:m=0.30:f=0.54,"
     "lowpass=f=13000:p=1,"
     "alimiter=limit=0.89:attack=3:release=90:level=0:latency=1"
 )
@@ -451,6 +458,64 @@ async def cleanup_loop() -> None:
         await cleanup_expired_training_jobs()
 
 
+def persist_output_records() -> None:
+    """Atomically snapshot job records so a restart keeps completed outputs
+    downloadable instead of vanishing from the poll endpoint."""
+    try:
+        snapshot = {}
+        now = utcnow()
+        for job_id, record in outputs.items():
+            if record.expires_at <= now:
+                continue
+            snapshot[job_id] = {
+                "token": record.token,
+                "file": record.path.name,
+                "state": record.state,
+                "format": record.format,
+                "request_id": record.request_id,
+                "audio_mode": record.audio_mode,
+                "expires_at": record.expires_at.isoformat(),
+            }
+        temporary = OUTPUT_ROOT / "records.json.tmp"
+        temporary.write_text(json.dumps(snapshot), encoding="utf-8")
+        temporary.replace(OUTPUT_ROOT / "records.json")
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def load_output_records() -> None:
+    """Rebuild job records after a restart. Completed outputs stay
+    downloadable; jobs that were queued/processing when the process died
+    become failed with an explicit code instead of being polled forever."""
+    try:
+        snapshot = json.loads((OUTPUT_ROOT / "records.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    now = utcnow()
+    for job_id, entry in snapshot.items():
+        try:
+            expires_at = datetime.fromisoformat(str(entry["expires_at"]))
+        except (KeyError, ValueError, TypeError):
+            continue
+        if expires_at <= now:
+            continue
+        path = OUTPUT_ROOT / str(entry.get("file", ""))
+        state = "completed" if path.is_file() else "failed"
+        outputs[job_id] = OutputRecord(
+            path=path,
+            token=str(entry.get("token", "")),
+            expires_at=expires_at,
+            format=str(entry.get("format", "wav")),
+            state=state,
+            error_code="" if state == "completed" else "RVC_SERVICE_RESTARTED",
+            request_id=str(entry.get("request_id", "")),
+            audio_mode=str(entry.get("audio_mode", "voice")),
+            stage="completed" if state == "completed" else "failed",
+        )
+        if entry.get("request_id"):
+            request_jobs[str(entry["request_id"])] = job_id
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
@@ -458,6 +523,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     TRAIN_ROOT.mkdir(parents=True, exist_ok=True)
     require_config()
     load_training_records()
+    load_output_records()
     cleanup_task = asyncio.create_task(cleanup_loop())
     try:
         yield
@@ -719,11 +785,10 @@ def render_conversion(
                 output_wav,
                 pitch=pitch,
                 f0_method=method,
-                # Reduce retrieval grain and preserve transients only for an
-                # objectively high-energy input.  Ordinary/mid-range audio
-                # retains the caller's exact established settings.
-                index_rate=min(index_rate, 0.22) if profile.high_energy else min(index_rate, 0.26) if profile.high_pitch or profile.complex_pitch else index_rate,
-                protect=min(protect, 0.18) if profile.high_energy or profile.high_pitch or profile.complex_pitch else protect,
+                # WebUI-route parity: the caller's exact slider values reach
+                # the official pipeline unmodified, matching a local run.
+                index_rate=index_rate,
+                protect=protect,
                 resample_rate=resample_rate,
                 # Apply the requested envelope once at 40 ms resolution after
                 # joining, instead of also applying upstream's 1-second window.
@@ -1040,7 +1105,7 @@ def transcode(source: Path, destination: Path, target_format: str) -> None:
     timeout = max(120, min(600, int(probe_duration(source) * 1.5) + 60))
     if target_format == "mp3":
         result = subprocess.run(
-            ["ffmpeg", "-nostdin", "-v", "error", "-i", str(source), "-codec:a", "libmp3lame", "-b:a", "192k", str(destination)],
+            ["ffmpeg", "-nostdin", "-v", "error", "-i", str(source), "-codec:a", "libmp3lame", "-b:a", "320k", str(destination)],
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -1448,6 +1513,232 @@ async def cancel_training(request: Request, job_id: str, token: str) -> dict[str
 
 
 
+def _load_mono_f32(path: Path) -> tuple[np.ndarray, int]:
+    """Decode any audio file to mono float32 via ffmpeg, returning samples + rate."""
+    raw = path.with_name(path.stem + "-f32le.tmp")
+    result = subprocess.run(
+        [
+            "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(path),
+            "-vn", "-ac", "1", "-f", "f32le", "-c:a", "pcm_f32le", str(raw),
+        ],
+        check=False, capture_output=True,
+        timeout=max(120, min(600, int(probe_duration(path) * 1.5) + 60)),
+    )
+    try:
+        if result.returncode != 0 or not raw.is_file() or raw.stat().st_size < 4:
+            raise RvcServiceError(502, "RVC_DECODE_FAILED")
+        samples = np.frombuffer(raw.read_bytes(), dtype="<f4").astype(np.float32)
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+             "-show_entries", "stream=sample_rate", "-of", "csv=p=0", str(path)],
+            check=True, capture_output=True, text=True,
+        )
+        rate = int((probe.stdout.strip().splitlines() or ["0"])[0] or 0)
+        return samples, (rate or 16000)
+    finally:
+        raw.unlink(missing_ok=True)
+
+
+def detect_expressive_mask(vocal: np.ndarray, sample_rate: int) -> np.ndarray:
+    """Mark non-pitched expressive frames (laughter, cries, breaths, moans).
+
+    Praat pitch tracking gives per-10 ms F0 and pulse strength. Expressive
+    content shows up as unvoiced-but-loud frames (breaths), weakly periodic
+    frames (laughter/crying), or erratic semitone jumps (emotional delivery).
+    Returns a per-frame gain in [0, 1] (1 = passthrough the original voice).
+    """
+    import parselmouth
+
+    frame_count = max(1, int(round(len(vocal) / (sample_rate * 0.01))))
+    hop = len(vocal) / frame_count
+    rms = np.zeros(frame_count)
+    for frame in range(frame_count):
+        start = int(frame * hop)
+        end = min(len(vocal), start + int(hop) + 1)
+        segment = vocal[start:max(end, start + 1)]
+        rms[frame] = math.sqrt(float(np.mean(segment.astype(np.float64) ** 2)) + 1e-12)
+    try:
+        sound = parselmouth.Sound(vocal, sampling_frequency=sample_rate)
+        pitch = sound.to_pitch_ac(time_step=0.01, pitch_floor=50.0,
+                                  pitch_ceiling=min(1100.0, sample_rate / 2 - 100))
+        f0 = np.zeros(frame_count)
+        strength = np.zeros(frame_count)
+        selected = pitch.selected_array
+        values = np.asarray(selected["frequency"], dtype=np.float64)
+        powers = np.asarray(selected["strength"], dtype=np.float64)
+        usable = min(frame_count, len(values))
+        f0[:usable] = values[:usable]
+        strength[:usable] = powers[:usable]
+    except Exception:
+        f0 = np.zeros(frame_count)
+        strength = np.zeros(frame_count)
+
+    energy_floor = max(0.004, float(np.median(rms)) * 0.25)
+    expressive = np.zeros(frame_count)
+    for frame in range(frame_count):
+        if rms[frame] < energy_floor:
+            continue
+        if f0[frame] <= 0:
+            expressive[frame] = 1.0  # unvoiced but audible: breath / noise
+        elif strength[frame] > 0 and strength[frame] < 0.45:
+            expressive[frame] = 1.0  # weak periodicity: laughter / crying
+    # Erratic semitone jumps inside voiced runs: emotional delivery.
+    jumps = np.zeros(frame_count)
+    for frame in range(1, frame_count):
+        if f0[frame] > 0 and f0[frame - 1] > 0:
+            semitones = abs(12.0 * math.log2(f0[frame] / f0[frame - 1]))
+            if semitones >= 1.0:
+                jumps[frame] = 1.0
+    for frame in range(2, frame_count - 2):
+        if f0[frame] > 0 and np.mean(jumps[frame - 2:frame + 3]) >= 0.5:
+            expressive[frame] = 1.0
+    # Two smoothing passes so passthrough regions never zipper.
+    smooth = expressive.copy()
+    for _ in range(2):
+        padded = np.concatenate(([smooth[0]], smooth, [smooth[-1]]))
+        smooth = np.convolve(padded, np.ones(3) / 3.0, mode="valid")
+    return np.clip(smooth, 0.0, 1.0)
+
+
+def apply_expressive_passthrough(converted_wav: Path, original_vocal_wav: Path) -> bool:
+    """Blend the original voice back into converted output at expressive frames.
+
+    Returns True when the file was rewritten. Singing regions are untouched;
+    laughter stays laughter, cries stay cries, breaths stay breaths.
+    """
+    converted, converted_rate = _load_mono_f32(converted_wav)
+    original, original_rate = _load_mono_f32(original_vocal_wav)
+    if len(converted) < 64 or len(original) < 64:
+        return False
+    mask = detect_expressive_mask(original, original_rate)
+    if not np.any(mask > 0):
+        return False
+    positions = np.linspace(0.0, 1.0, len(converted))
+    mask_up = np.interp(positions, np.linspace(0.0, 1.0, len(mask)), mask)
+    original_up = np.interp(positions, np.linspace(0.0, 1.0, len(original)), original)
+    # Level-match the passthrough to the converted voice inside the masked
+    # regions so laughter does not jump out of the mix.
+    masked_converted = converted * mask_up
+    converted_energy = math.sqrt(float(np.mean(masked_converted.astype(np.float64) ** 2)) + 1e-12)
+    original_energy = math.sqrt(float(np.mean((original_up * mask_up).astype(np.float64) ** 2)) + 1e-12)
+    gain = max(0.25, min(2.0, converted_energy / max(original_energy, 1e-6)))
+    blended = converted * (1.0 - mask_up) + original_up * mask_up * gain
+    blended_path = converted_wav.with_name(converted_wav.stem + "-expressive.wav")
+    raw = blended_path.with_name(blended_path.stem + "-f32le.tmp")
+    raw.write_bytes(blended.astype("<f4").tobytes())
+    result = subprocess.run(
+        [
+            "ffmpeg", "-nostdin", "-v", "error", "-y", "-f", "f32le", "-ar",
+            str(converted_rate), "-ac", "1", "-i", str(raw),
+            "-af", "alimiter=limit=0.971:level=false",
+            "-c:a", "pcm_s16le", str(blended_path),
+        ],
+        check=False, capture_output=True,
+        timeout=max(120, min(600, int(len(blended) / converted_rate * 1.5) + 60)),
+    )
+    raw.unlink(missing_ok=True)
+    if result.returncode != 0 or not blended_path.is_file() or blended_path.stat().st_size < 44:
+        blended_path.unlink(missing_ok=True)
+        return False
+    blended_path.replace(converted_wav)
+    return True
+
+
+def detect_breath_mask(vocal: np.ndarray, sample_rate: int) -> np.ndarray:
+    """Mark sustained unvoiced energy (breaths/gasps) between sung phrases.
+
+    Only runs of >=150 ms loud unvoiced frames qualify, and every run is
+    trimmed by 80 ms per side before smoothing, so the mask can never reach a
+    sung note. Consonants are far shorter than 150 ms and stay converted.
+    Returns per-10 ms gains in [0, 1].
+    """
+    import parselmouth
+
+    frame_count = max(1, int(round(len(vocal) / (sample_rate * 0.01))))
+    hop = len(vocal) / frame_count
+    squared = np.concatenate(([0.0], np.cumsum(vocal.astype(np.float64) ** 2)))
+    centers = np.arange(frame_count)
+    left = np.maximum(0, (centers * hop).astype(int))
+    right = np.minimum(len(vocal), ((centers + 1) * hop).astype(int) + 1)
+    rms = np.sqrt(np.maximum(0.0, (squared[right] - squared[left]) / np.maximum(1, right - left)))
+    try:
+        sound = parselmouth.Sound(
+            np.ascontiguousarray(vocal, dtype=np.float64), sampling_frequency=float(sample_rate)
+        )
+        pitch = sound.to_pitch_ac(
+            time_step=0.01, pitch_floor=50.0,
+            pitch_ceiling=min(1100.0, sample_rate / 2 - 100),
+        )
+        values = np.asarray(pitch.selected_array["frequency"], dtype=np.float64)
+        f0 = np.zeros(frame_count)
+        usable = min(frame_count, len(values))
+        f0[:usable] = values[:usable]
+    except Exception:
+        return np.zeros(frame_count)
+
+    floor = max(0.004, float(np.median(rms)) * 0.3)
+    loud_unvoiced = (f0 <= 0) & (rms > floor)
+    mask = np.zeros(frame_count)
+    padded = np.concatenate(([False], loud_unvoiced, [False]))
+    starts = np.flatnonzero(~padded[:-1] & padded[1:])
+    ends = np.flatnonzero(padded[:-1] & ~padded[1:])
+    for start, end in zip(starts, ends):
+        if end - start < 15:  # 150 ms minimum: a real breath, not a consonant
+            continue
+        inner_start = start + 8  # 80 ms guard: never touch sung audio
+        inner_end = end - 8
+        if inner_end <= inner_start:
+            continue
+        mask[inner_start:inner_end] = 1.0
+    smooth = mask.copy()
+    for _ in range(2):
+        padded_mask = np.concatenate(([smooth[0]], smooth, [smooth[-1]]))
+        smooth = np.convolve(padded_mask, np.ones(3) / 3.0, mode="valid")
+    return np.clip(smooth, 0.0, 1.0)
+
+
+def apply_breath_passthrough(converted_wav: Path, original_vocal_wav: Path) -> bool:
+    """Re-inject real breaths into converted output; singing stays untouched.
+
+    Returns True when the file was rewritten. The mask only covers sustained
+    unvoiced runs far from any sung note, so the character voice keeps every
+    melodic frame and overlaps are structurally impossible.
+    """
+    converted, converted_rate = _load_mono_f32(converted_wav)
+    original, original_rate = _load_mono_f32(original_vocal_wav)
+    if len(converted) < 64 or len(original) < 64:
+        return False
+    mask = detect_breath_mask(original, original_rate)
+    if not np.any(mask > 0) or float(np.mean(mask > 0.5)) > 0.25:
+        return False
+    positions = np.linspace(0.0, 1.0, len(converted))
+    mask_up = np.interp(positions, np.linspace(0.0, 1.0, len(mask)), mask)
+    original_up = np.interp(positions, np.linspace(0.0, 1.0, len(original)), original)
+    masked_converted = converted * mask_up
+    converted_energy = math.sqrt(float(np.mean(masked_converted.astype(np.float64) ** 2)) + 1e-12)
+    original_energy = math.sqrt(float(np.mean((original_up * mask_up).astype(np.float64) ** 2)) + 1e-12)
+    gain = max(0.25, min(2.0, converted_energy / max(original_energy, 1e-6)))
+    blended = converted * (1.0 - mask_up) + original_up * mask_up * gain
+    blended_path = converted_wav.with_name(converted_wav.stem + "-breath.wav")
+    raw = blended_path.with_name(blended_path.stem + "-f32le.tmp")
+    raw.write_bytes(blended.astype("<f4").tobytes())
+    result = subprocess.run(
+        [
+            "ffmpeg", "-nostdin", "-v", "error", "-y", "-f", "f32le", "-ar",
+            str(converted_rate), "-ac", "1", "-i", str(raw),
+            "-c:a", "pcm_f32le", str(blended_path),
+        ],
+        check=False, capture_output=True,
+        timeout=max(120, min(600, int(len(blended) / converted_rate * 1.5) + 60)),
+    )
+    raw.unlink(missing_ok=True)
+    if result.returncode != 0 or not blended_path.is_file() or blended_path.stat().st_size < 44:
+        blended_path.unlink(missing_ok=True)
+        return False
+    blended_path.replace(converted_wav)
+    return True
+
+
 def finalize_true_peak_safe(output_wav: Path, ceiling_dbfs: float = -1.0) -> bool:
     """Four-times oversampled peak guard; preserve rate, channels and timing."""
     import soundfile as sf
@@ -1587,6 +1878,7 @@ async def process_conversion_job(
                 record.stage = "completed"
                 record.f0_method = used_f0_method
                 record.expires_at = job_expiry()
+        persist_output_records()
         logger.info(
             "conversion completed request_id=%s job_id=%s model=%s mode=%s f0=%s seconds=%.2f",
             request_id,
@@ -1717,6 +2009,16 @@ async def create_job(
             logger.info("idempotent retry request_id=%s job_id=%s", trace_id, existing_job_id)
             return output_payload(existing_job_id, existing_record)
 
+    # Bound the invisible queue: at most two jobs may be queued/processing,
+    # otherwise retries pile up behind the GPU and every poll looks stuck.
+    async with outputs_lock:
+        active_jobs = sum(
+            1 for record in outputs.values() if record.state in {"queued", "processing"}
+        )
+    if active_jobs >= 2:
+        await audio.close()
+        raise RvcServiceError(429, "RVC_QUEUE_BUSY")
+
     extension = safe_extension(audio)
     job_id = str(uuid.uuid4())
     job_root = Path(tempfile.mkdtemp(prefix=f"{job_id}-", dir=WORK_ROOT))
@@ -1748,6 +2050,7 @@ async def create_job(
             )
             if client_request_id:
                 request_jobs[client_request_id] = job_id
+        persist_output_records()
         task = asyncio.create_task(process_conversion_job(
             job_id=job_id,
             job_root=job_root,
