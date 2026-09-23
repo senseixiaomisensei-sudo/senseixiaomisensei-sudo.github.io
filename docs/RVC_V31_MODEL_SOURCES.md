@@ -6,7 +6,7 @@ All entries are public community RVC v2 models. SHA-256 and technical loading ch
 
 - Every checkpoint was opened with PyTorch `weights_only=True`, checked as RVC v2/768-dimensional, exported to the browser graph, and loaded with its pinned FAISS retrieval index.
 - Every role then completed an end-to-end official RVC conversion of the same 11.444-second fixture containing normal-level speech and a 2.5x floating-point over-range stress segment.
-- The service applies input high-pass/compression/limiting, official HuBERT + RMVPE + FAISS inference, output impulse repair, restrained de-essing/low-pass filtering and a final 0.90 limiter. Five empirically harsher checkpoints use the documented 10 kHz stress profile instead of the 12 kHz default.
+- The shared service path applies input peak protection, official HuBERT + F0 + FAISS inference, then content-adaptive vocal repair for every checkpoint. The 2026-09-23 output path repairs detected flat clips and isolated clicks, cuts only excessive 2.6–9 kHz bands by a bounded amount, and uses a single four-times-oversampled true-peak trim. The earlier fixed model-name filters and repeated output limiters are no longer active.
 - The machine-readable signal results are in [`rvc-v31-signal-audit.json`](rvc-v31-signal-audit.json). Passing means no non-finite samples, no full-scale clipping, a bounded peak/DC/adjacent-sample jump and a non-silent normal and stress segment. It is not a listening test and does not prove identity fidelity or the absence of every perceptual artefact on arbitrary source audio.
 
 | ID | Role | Rate | Marketplace | Source | Checkpoint SHA-256 | Index SHA-256 |

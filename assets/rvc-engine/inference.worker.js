@@ -13819,6 +13819,139 @@ function blendEnvironmentPassthrough(synthAudio, input16k, outputRate) {
   return output;
 }
 
+function repairIsolatedVocalTransients(audio) {
+  if (!audio || audio.length < 35) return audio;
+  const output = new Float32Array(audio);
+  // Rebuild only short, genuinely flat-topped clipping. A legitimate loud
+  // crest is left alone unless at least two samples form the same plateau.
+  for (let start = 2; start < audio.length - 26; start++) {
+    if (Math.abs(audio[start]) < 0.995) continue;
+    let stop = start + 1;
+    while (stop < audio.length && Math.abs(audio[stop]) >= 0.995 && stop - start <= 24) stop++;
+    const width = stop - start;
+    if (width >= 2 && width <= 24 && stop + 1 < audio.length
+        && Math.abs(audio[start - 1]) < 0.995 && Math.abs(audio[stop]) < 0.995) {
+      let flat = true;
+      for (let i = start; i < stop; i++) {
+        if (Math.sign(audio[i]) !== Math.sign(audio[start]) || Math.abs(audio[i] - audio[start]) > 0.008) {
+          flat = false;
+          break;
+        }
+      }
+      if (flat) {
+        const left = audio[start - 1];
+        const right = audio[stop];
+        const leftSlope = Math.max(-0.2, Math.min(0.2, left - audio[start - 2]));
+        const rightSlope = Math.max(-0.2, Math.min(0.2, audio[stop + 1] - right));
+        for (let i = start; i < stop; i++) {
+          const t = (i - start + 1) / (width + 1);
+          output[i] = (2 * t ** 3 - 3 * t ** 2 + 1) * left
+            + (t ** 3 - 2 * t ** 2 + t) * (width + 1) * leftSlope
+            + (-2 * t ** 3 + 3 * t ** 2) * right
+            + (t ** 3 - t ** 2) * (width + 1) * rightSlope;
+        }
+      }
+    }
+    start = stop - 1;
+  }
+  const residual = new Float32Array(audio.length);
+  const prefix = new Float64Array(audio.length + 1);
+  for (let i = 1; i < audio.length - 1; i++) {
+    residual[i] = Math.abs(audio[i] - (audio[i - 1] + audio[i + 1]) * 0.5);
+    prefix[i + 1] = prefix[i] + residual[i];
+  }
+  let lastRepair = -10;
+  for (let i = 16; i < audio.length - 16; i++) {
+    const local = (prefix[i + 16] - prefix[i - 15]) / 31;
+    if (i - lastRepair > 2 && residual[i] > Math.max(0.18, 8 * local)
+        && Math.abs(audio[i - 1] - audio[i + 1]) < Math.max(0.06, 0.35 * residual[i])) {
+      output[i] = (audio[i - 1] + audio[i + 1]) * 0.5;
+      lastRepair = i;
+    }
+  }
+  return output;
+}
+
+function adaptiveRvcBandRepair(audio, sampleRate = 40000) {
+  if (!audio || audio.length < sampleRate / 4 || sampleRate < 16000) return audio;
+  const block = Math.max(1, Math.round(sampleRate * 0.01));
+  const count = Math.ceil(audio.length / block);
+  const rmsBlocks = (samples) => {
+    const levels = new Float32Array(count);
+    for (let frame = 0; frame < count; frame++) {
+      const start = frame * block;
+      const end = Math.min(samples.length, start + block);
+      let energy = 0;
+      for (let i = start; i < end; i++) energy += samples[i] * samples[i];
+      levels[frame] = Math.sqrt(energy / Math.max(1, end - start));
+    }
+    return levels;
+  };
+  const percentile = (values, quantile) => {
+    if (!values.length) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    const offset = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * quantile)));
+    return sorted[offset];
+  };
+  const body = new Float32Array(audio);
+  applyBiquadFilterInPlace(body, createBiquadBandpass(1350, 0.7, sampleRate));
+  const bodyRms = rmsBlocks(body);
+  const activeLevel = Math.max(0.008, percentile(bodyRms, 0.60) * 0.3);
+  const active = bodyRms.map((level) => level > activeLevel ? 1 : 0);
+  if (active.reduce((total, value) => total + value, 0) < 10) return audio;
+  const output = new Float32Array(audio);
+  for (const [center, q, floor, ceiling, maximumCut] of [
+    [3350, 2.1, 0.50, 1.10, 2.5],
+    [5000, 2.4, 0.35, 0.90, 2.3],
+    [7500, 2.7, 0.25, 0.70, 1.2],
+  ]) {
+    if (center >= sampleRate * 0.44) continue;
+    const band = new Float32Array(audio);
+    applyBiquadFilterInPlace(band, createBiquadBandpass(center, q, sampleRate));
+    const bandRms = rmsBlocks(band);
+    const ratios = new Float32Array(count);
+    const activeRatios = [];
+    for (let frame = 0; frame < count; frame++) {
+      ratios[frame] = bandRms[frame] / (bodyRms[frame] + 0.01);
+      if (active[frame]) activeRatios.push(ratios[frame]);
+    }
+    const threshold = Math.max(floor, Math.min(ceiling, percentile(activeRatios, 0.75) * 1.25));
+    let reduction = 0;
+    for (let frame = 0; frame < count; frame++) {
+      const ratio = ratios[frame] / threshold;
+      const excess = active[frame] ? Math.min(1, Math.max(0, Math.log2(Math.max(1e-8, ratio)))) : 0;
+      const desired = 1 - Math.pow(10, -(maximumCut * excess) / 20);
+      const previous = reduction;
+      reduction += (desired - reduction) * (desired > reduction ? 0.45 : 0.18);
+      const start = frame * block;
+      const end = Math.min(audio.length, start + block);
+      for (let i = start; i < end; i++) {
+        const blend = previous + (reduction - previous) * ((i - start + 1) / (end - start));
+        output[i] -= band[i] * blend;
+      }
+    }
+  }
+  const levels = rmsBlocks(output);
+  const voicedLevels = [];
+  for (const level of levels) if (level > 0.008) voicedLevels.push(level);
+  const threshold = Math.max(0.25, percentile(voicedLevels, 0.80) * 1.8);
+  let compression = 1;
+  for (let frame = 0; frame < count; frame++) {
+    const level = levels[frame];
+    const target = level > threshold
+      ? Math.max(Math.pow(10, -1.2 / 20), (threshold + (level - threshold) / 1.3) / level)
+      : 1;
+    const previous = compression;
+    compression += (target - compression) * (target < compression ? 0.45 : 0.18);
+    const start = frame * block;
+    const end = Math.min(output.length, start + block);
+    for (let i = start; i < end; i++) {
+      output[i] *= previous + (compression - previous) * ((i - start + 1) / (end - start));
+    }
+  }
+  return output;
+}
+
 async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio) {
   const ctx = { state: "idle" };
   const emitStage = (state) => {
@@ -13970,8 +14103,9 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     let finalAudio = outputAudio;
     // 1. Blend RMS envelope using official RVC semantics (1 = unchanged).
     finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 1.0, finalSr);
-    // 2. Repair only detected millisecond harsh bursts; normal audio is
-    // returned unchanged by this guard.
+    // 2. Repair true flat clips and isolated crackles before suppressing
+    // millisecond harsh bursts; clean crests remain unchanged.
+    finalAudio = repairIsolatedVocalTransients(finalAudio);
     finalAudio = suppressDetectedHarshBursts(finalAudio, finalSr);
     // 3. Environment and breath passthrough: wind, fans, breaths and coughs
     // are re-injected from the original recording instead of being sung by
@@ -13980,8 +14114,9 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     if (options.environmentPassthrough === true) {
       finalAudio = blendEnvironmentPassthrough(finalAudio, audio, finalSr);
     }
-    // 4. Apply only a transparent global safety gain. The former always-on
-    // multi-band "anti-metallic" master introduced shared colour/modulation.
+    // 4. Reduce only locally excessive bands, then reserve output headroom.
+    // No fixed character EQ, high-frequency synthesis or pitch quantization.
+    finalAudio = adaptiveRvcBandRepair(finalAudio, finalSr);
     finalAudio = normalizeOutputPeak(finalAudio);
 
     ctx.outputAudio = finalAudio;

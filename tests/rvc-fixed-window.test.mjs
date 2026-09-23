@@ -40,6 +40,40 @@ const suppressHarshBursts = Function(`
   return (${extractFunction("suppressDetectedHarshBursts")});
 `)();
 
+const repairIsolatedTransients = Function(`"use strict"; return (${extractFunction("repairIsolatedVocalTransients")});`)();
+const adaptiveBandRepair = Function(`
+  "use strict";
+  ${extractFunction("createBiquadBandpass")}
+  ${extractFunction("applyBiquadFilterInPlace")}
+  return (${extractFunction("adaptiveRvcBandRepair")});
+`)();
+
+test("local vocal repair removes an isolated click without flattening a clean note", () => {
+  const rate = 40_000;
+  const clean = Float32Array.from({ length: rate }, (_, i) => 0.14 * Math.sin(2 * Math.PI * 220 * i / rate));
+  const damaged = new Float32Array(clean);
+  damaged[20_000] += 0.7;
+  const repaired = repairIsolatedTransients(damaged);
+  assert.ok(Math.abs(repaired[20_000] - clean[20_000]) < 0.1);
+  assert.ok(Math.abs(repaired[10_000] - clean[10_000]) < 1e-6);
+});
+
+test("local adaptive bands tame a metallic burst and leave the earlier vowel clear", () => {
+  const rate = 40_000;
+  const clean = Float32Array.from({ length: rate * 2 }, (_, i) =>
+    0.15 * Math.sin(2 * Math.PI * 220 * i / rate) + 0.04 * Math.sin(2 * Math.PI * 660 * i / rate));
+  const damaged = new Float32Array(clean);
+  for (let i = rate; i < rate + rate / 3; i++) damaged[i] += 0.2 * Math.sin(2 * Math.PI * 3900 * i / rate);
+  const repaired = adaptiveBandRepair(damaged, rate);
+  const rmsError = (start, end, audio) => {
+    let sum = 0;
+    for (let i = start; i < end; i++) sum += (audio[i] - clean[i]) ** 2;
+    return Math.sqrt(sum / (end - start));
+  };
+  assert.ok(rmsError(rate, rate + rate / 3, repaired) < rmsError(rate, rate + rate / 3, damaged) * 0.96);
+  assert.ok(rmsError(rate / 8, rate / 3, repaired) < 0.005);
+});
+
 test("fixed browser RVC windows overlap and crossfade without changing duration", async () => {
   const audio = new Float32Array(40_000); // 2.5 seconds at 16 kHz
   const windows = [];

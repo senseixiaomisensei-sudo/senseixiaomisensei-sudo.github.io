@@ -4169,7 +4169,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay(" 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260922-runtime", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260923-audio", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);

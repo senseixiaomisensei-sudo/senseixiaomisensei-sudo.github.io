@@ -119,30 +119,6 @@ SINGING_INPUT_FILTER = (
     "lowpass=f=7600:p=1,"
     "alimiter=limit=0.90:attack=5:release=100:level=0:latency=1"
 )
-# RVC generators can emit isolated full-band impulses or an over-bright upper
-# spectrum on high-energy input.  Repair clicks first, then apply a restrained
-# de-esser/anti-alias low-pass before the final true-peak guard.  Four public
-# checkpoints need a narrower band because the same shout-stress fixture
-# produced >0.85 adjacent-sample jumps with the 12 kHz profile.
-OUTPUT_SAFETY_FILTER = (
-    "adeclick=threshold=2.5:burst=2,"
-    "deesser=i=0.15:m=0.3:f=0.55,"
-    "lowpass=f=12000:p=1,"
-    "alimiter=limit=0.90:attack=5:release=100:level=0:latency=1"
-)
-# WebUI-route output: click repair plus a peak guard only - no de-esser,
-# low-pass or compressor shaping, matching a local RVC WebUI conversion.
-WEBUI_ROUTE_OUTPUT_FILTER = (
-    "adeclick=threshold=2.5:burst=2,"
-    "alimiter=limit=0.95:attack=5:release=100:level=0"
-)
-SHOUT_HARSHNESS_GUARD_MODELS = frozenset({"midori", "mika", "shiroko", "toki", "yuzu"})
-SHOUT_HARSHNESS_FILTER = (
-    "adeclick=threshold=2:burst=2,"
-    "deesser=i=0.25:m=0.35:f=0.52,"
-    "lowpass=f=10000:p=2,"
-    "alimiter=limit=0.90:attack=5:release=100:level=0:latency=1"
-)
 HIGH_ENERGY_INPUT_FILTER = (
     # This branch is selected from the unsmoothed upload/stem, before the
     # standard limiter can hide clipping evidence from the profile detector.
@@ -150,18 +126,6 @@ HIGH_ENERGY_INPUT_FILTER = (
     "lowpass=f=7600:p=1,"
     "acompressor=threshold=0.58:ratio=4:attack=2:release=120:knee=3.5:makeup=1,"
     "alimiter=limit=0.86:attack=2:release=100:level=0:latency=1"
-)
-HIGH_ENERGY_OUTPUT_FILTER = (
-    "adeclick=threshold=1.8:burst=2,"
-    "deesser=i=0.24:m=0.32:f=0.53,"
-    "lowpass=f=11500:p=2,"
-    "acompressor=threshold=0.72:ratio=1.6:attack=1:release=80:knee=2:makeup=1,"
-    "alimiter=limit=0.88:attack=3:release=90:level=0:latency=1"
-)
-PITCH_COMPLEX_OUTPUT_FILTER = (
-    "adeclick=threshold=2:burst=2,"    "deesser=i=0.20:m=0.30:f=0.54,"
-    "lowpass=f=13000:p=1,"
-    "alimiter=limit=0.89:attack=3:release=90:level=0:latency=1"
 )
 
 
@@ -807,39 +771,32 @@ def render_conversion(
         raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
     if not output_wav.is_file() or output_wav.stat().st_size < 1:
         raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
-    # The upstream generator writes PCM; a final transparent limiter prevents
-    # a very loud synthesized peak from clipping in the browser/player.
-    limited_output = output_wav.with_name(f"{output_wav.stem}-limited{output_wav.suffix}")
-    model_id = model_path.parent.name if model_path.parent != MODELS_DIR else model_path.stem
-    if profile.high_energy:
-        output_filter = HIGH_ENERGY_OUTPUT_FILTER
-    elif profile.high_pitch or profile.complex_pitch:
-        output_filter = PITCH_COMPLEX_OUTPUT_FILTER
-    elif model_id in SHOUT_HARSHNESS_GUARD_MODELS:
-        output_filter = SHOUT_HARSHNESS_FILTER
-    else:
-        output_filter = OUTPUT_SAFETY_FILTER
+    # Detect artifacts from the synthesized vocal itself. A fixed filter by
+    # model name dulled natural consonants and left other voices untreated.
+    from app.audio_repair import repair_vocal_file
+
+    repair_vocal_file(output_wav)
+    aligned_output = output_wav.with_name(f"{output_wav.stem}-aligned{output_wav.suffix}")
     # The vocoder may round each chunk down by one or two F0 frames. Restore
     # that small tail before overlap-joining, otherwise long files accumulate
     # time drift (and source/output envelope alignment eventually fails).
     source_duration = probe_duration(inference_input)
-    output_filter += f",apad,atrim=end={source_duration:.6f}"
+    output_filter = f"apad,atrim=end={source_duration:.6f}"
     postprocess_timeout = max(120, min(600, int(probe_duration(output_wav) * 1.5) + 60))
     result = subprocess.run(
         [
             "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(output_wav),
-            "-af", output_filter, "-c:a", "pcm_f32le", str(limited_output),
+            "-af", output_filter, "-c:a", "pcm_f32le", str(aligned_output),
         ],
         check=False,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         timeout=postprocess_timeout,
     )
-    if result.returncode == 0 and limited_output.is_file() and limited_output.stat().st_size > 44:
-        limited_output.replace(output_wav)
+    if result.returncode == 0 and aligned_output.is_file() and aligned_output.stat().st_size > 44:
+        aligned_output.replace(output_wav)
     else:
-        # Never publish an unguarded result when the safety stage fails.
-        limited_output.unlink(missing_ok=True)
+        aligned_output.unlink(missing_ok=True)
         raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
     return used_method
 
@@ -915,17 +872,14 @@ def join_long_audio(chunks: list[Path], destination: Path, duration_seconds: flo
             f"{previous}[{index}:a]acrossfade=d={LONG_CHUNK_CROSSFADE_SECONDS}:c1=tri:c2=tri{output}"
         )
         previous = output
-    filters.append(
-        f"{previous}atrim=end={duration_seconds:.6f},"
-        "alimiter=limit=0.90:attack=5:release=100:level=0[out]"
-    )
+    filters.append(f"{previous}atrim=end={duration_seconds:.6f}[out]")
     command.extend([
         "-filter_complex",
         ";".join(filters),
         "-map",
         "[out]",
         "-c:a",
-        "pcm_s16le",
+        "pcm_f32le",
         str(destination),
     ])
     result = subprocess.run(
@@ -1740,31 +1694,14 @@ def apply_breath_passthrough(converted_wav: Path, original_vocal_wav: Path) -> b
 
 
 def finalize_true_peak_safe(output_wav: Path, ceiling_dbfs: float = -1.0) -> bool:
-    """Four-times oversampled peak guard; preserve rate, channels and timing."""
-    import soundfile as sf
+    """Protect inter-sample peaks with one gain, preserving dynamics."""
+    from app.audio_repair import protect_true_peak
 
-    target_linear = 10 ** (ceiling_dbfs / 20.0)
-    native = sf.info(output_wav).samplerate
-    oversampled = native * 4
-    scaled = output_wav.with_name(output_wav.stem + "-tpsafe" + output_wav.suffix)
-    graph = (
-        f"aresample={oversampled}:resampler=swr,"
-        f"alimiter=limit={target_linear:.4f}:attack=0.5:release=40:level=0:latency=1,"
-        f"aresample={native}:resampler=swr"
-    )
-    result = subprocess.run(
-        [
-            "ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(output_wav),
-            "-af", graph, "-c:a", "pcm_s16le", str(scaled),
-        ],
-        check=False, capture_output=True,
-        timeout=max(120, min(600, int(probe_duration(output_wav) * 1.5) + 60)),
-    )
-    if result.returncode == 0 and scaled.is_file() and scaled.stat().st_size > 44:
-        scaled.replace(output_wav)
-        return True
-    scaled.unlink(missing_ok=True)
-    raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
+    try:
+        protect_true_peak(output_wav, ceiling_dbfs)
+    except (OSError, RuntimeError, ValueError) as error:
+        raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED") from error
+    return True
 
 
 async def process_conversion_job(
@@ -1864,7 +1801,8 @@ async def process_conversion_job(
             if record:
                 record.stage = "encoding"
         # True-peak safety for every conversion output (song and voice).
-        await asyncio.to_thread(finalize_true_peak_safe, output_wav, -1.0)
+        # MP3 encoding can add inter-sample overshoot, so reserve 0.5 dB.
+        await asyncio.to_thread(finalize_true_peak_safe, output_wav, -1.5 if output_format == "mp3" else -1.0)
         if output_format == "mp3":
             await asyncio.to_thread(transcode, output_wav, output_path, "mp3")
         else:

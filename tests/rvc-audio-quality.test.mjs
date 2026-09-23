@@ -186,7 +186,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260922-recovery/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260923-audio/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -231,14 +231,14 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260922-runtime/u);
+  assert.match(client, /v=20260923-audio/u);
   assert.match(client, /function preferredCloudOutputFormat\(durationSeconds = 0\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
   assert.match(client, /body\.set\("f0Method", "auto"\)/u);
   assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /readCloudAudioBody\(response,/u);
-  assert.match(runtime, /v=20260922-runtime/u);
+  assert.match(runtime, /v=20260923-audio/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.wasm/u);
@@ -252,7 +252,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(page, /<div hidden>[\s\S]{0,240}?id="rvc-index-rate"/u);
   assert.match(client, /deriveStableNoiseSeed\(freshAudioInput, selectedModel\.id\)/u);
   assert.match(client, /indexRate: indexRateVal/u);
-  assert.match(service, /adeclick=threshold=2\.5:burst=2/u);
+  assert.match(service, /repair_vocal_file\(output_wav\)/u);
   assert.doesNotMatch(service, /afftdn=/u, "clean voices must not be unconditionally FFT-denoised");
   assert.doesNotMatch(service, /speechnorm=p=/u, "quiet breath/noise must not receive half-cycle expansion");
   assert.match(service, /profile = analyze_audio_profile\(source\)/u);
@@ -261,7 +261,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /complex_pitch: bool = False/u);
   assert.match(service, /profile_hint: AudioProfile \| None = None/u);
   assert.match(service, /profile\.high_pitch or profile\.complex_pitch/u);
-  assert.match(service, /PITCH_COMPLEX_OUTPUT_FILTER/u);
+  assert.match(service, /from app\.audio_repair import repair_vocal_file/u);
   assert.match(service, /def select_f0_method\(/u);
   assert.match(service, /methods\.append\("fcpe" if selected_method == "rmvpe" else "rmvpe"\)/u);
   assert.match(service, /return used_method/u);
@@ -271,8 +271,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /MAX_AUDIO_SECONDS = 900/u);
   assert.match(service, /record\.state not in \{"queued", "processing"\}/u);
   assert.match(service, /record\.expires_at = job_expiry\(\)/u);
-  assert.match(service, /SHOUT_HARSHNESS_GUARD_MODELS = frozenset\(\{"midori", "mika", "shiroko", "toki", "yuzu"\}\)/u);
-  assert.match(service, /lowpass=f=10000:p=2/u);
+  assert.doesNotMatch(service, /SHOUT_HARSHNESS_GUARD_MODELS/u);
+  assert.match(service, /protect_true_peak/u);
 });
 
 test("all deployed character models expose caller-controlled noise without hidden random operators", async () => {
