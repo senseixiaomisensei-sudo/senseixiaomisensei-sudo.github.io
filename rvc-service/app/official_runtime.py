@@ -170,8 +170,10 @@ class OfficialRvcModel:
         self.noise_scale = model_noise_scale(model_path)
         self._noise_hook = configure_synthesis_noise(self._vc.net_g, self.noise_scale)
         from types import MethodType
+        from app.adaptive_inference import adaptive_vc
         from app.pitch_safety import safe_get_f0
         self._vc.pipeline.get_f0 = MethodType(safe_get_f0, self._vc.pipeline)
+        self._vc.pipeline.vc = MethodType(adaptive_vc, self._vc.pipeline)
         self._index_path = str(staged_index) if staged_index else ""
 
     def infer(

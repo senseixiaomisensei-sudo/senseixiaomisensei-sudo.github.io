@@ -16,6 +16,25 @@ from app.separation_runtime import remix_song
 
 
 class OutputRepairTests(unittest.TestCase):
+    def test_breath_fricative_and_high_sustained_note_are_retained(self):
+        rate = 40000
+        rng = np.random.default_rng(19)
+        breath = rng.normal(0, .015, rate // 2)
+        fricative = np.diff(rng.normal(0, .035, rate // 4 + 1))
+        t = np.arange(rate) / rate
+        high_note = .16 * np.sin(2 * np.pi * 710 * t) + .04 * np.sin(2 * np.pi * 1420 * t)
+        signal = np.r_[breath, fricative, high_note].astype(np.float32)
+        repaired = repair_vocal(signal, rate)
+        self.assertEqual(len(repaired), len(signal))
+        self.assertTrue(np.isfinite(repaired).all())
+        for start, end in ((0, len(breath)), (len(breath), len(breath) + len(fricative)),
+                           (len(breath) + len(fricative), len(signal))):
+            before = np.sqrt(np.mean(signal[start:end] ** 2))
+            after = np.sqrt(np.mean(repaired[start:end] ** 2))
+            self.assertGreater(after / before, .68)
+            self.assertLess(after / before, 1.15)
+        self.assertGreater(np.corrcoef(signal[-rate:], repaired[-rate:])[0, 1], .99)
+
     def test_clean_voice_keeps_timing_pitch_and_character_harmonics(self):
         rate = 40000
         t = np.arange(rate * 2) / rate

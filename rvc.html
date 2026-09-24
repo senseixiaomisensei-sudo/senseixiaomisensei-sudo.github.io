@@ -13,26 +13,23 @@
   <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260815-rvc">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css?v=20260815-rvc">
-  <link rel="stylesheet" href="assets/rvc.css?v=20260815-rvc">
-  <link rel="stylesheet" href="assets/liquid-ui.css?v=20260922-2">
-  <script src="assets/liquid-ui.js?v=20260922-2"></script>
+  <link rel="stylesheet" href="assets/liquid-ui.css?v=20260924-workspace">
+  <link rel="stylesheet" href="assets/rvc.css?v=20260924-workspace">
+  <script src="assets/liquid-ui.js?v=20260924-workspace"></script>
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="rvc">
   <div id="site-header"></div>
 
-  <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-    <header class="max-w-4xl">
-      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-rvc-i18n="eyebrow">RVC VOICE CHANGER</p>
+  <main class="rvc-shell mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+    <header class="rvc-page-heading max-w-4xl">
+      <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-rvc-i18n="eyebrow">POSTPREP / VOICE STUDIO</p>
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl" data-rvc-i18n="title">AI 变声器</h1>
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 shadow-xs">
-              <i class="fa-solid fa-circle-check text-emerald-600"></i><span data-rvc-i18n="versionLabel">版本 V1（分区导航 + 伴奏翻唱）</span>
-        </span>
       </div>
-      <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选一个角色声音，上传或录制一段你自己的声音，一键变成角色的音色。全程三步：选角色 → 给声音 → 点变声。文件只用于本次转换，生成后自动删除。</p>
+      <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选择声线，载入音频，调整音高并转换。</p>
     </header>
 
-    <section class="mt-8 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950 shadow-sm sm:p-5" aria-labelledby="rvc-note-title">
+    <section class="rvc-notice mt-8 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950 shadow-sm sm:p-5" aria-labelledby="rvc-note-title">
       <div class="flex items-start gap-3">
         <i class="fa-solid fa-circle-info mt-1 shrink-0 text-sky-700" aria-hidden="true"></i>
         <div class="min-w-0">
@@ -42,25 +39,25 @@
       </div>
     </section>
 
-    <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.74fr)]">
-      <section class="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-7" aria-labelledby="rvc-workflow-heading">
+    <div class="rvc-workspace mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.74fr)]">
+      <section class="rvc-workflow rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-7" aria-labelledby="rvc-workflow-heading">
         <div class="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">
           <div>
-            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-rvc-i18n="workflowEyebrow">VOICE WORKFLOW</p>
-            <h2 id="rvc-workflow-heading" class="mt-2 text-xl font-black" data-rvc-i18n="workflowTitle">三步完成变声</h2>
+            <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-rvc-i18n="workflowEyebrow">WORKSPACE / 01</p>
+            <h2 id="rvc-workflow-heading" class="mt-2 text-xl font-black" data-rvc-i18n="workflowTitle">声音工作台</h2>
           </div>
           <span class="inline-flex items-center gap-2 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-brand"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-rvc-i18n="privacyBadge">用完即删</span></span>
         </div>
 
         <!-- 双模式：云端 RVC 引擎与浏览器本地兼容推理 -->
-        <div class="mt-6 rounded-xl border border-line bg-zinc-50/60 p-4 sm:p-5">
+        <div class="rvc-mode-panel mt-6 rounded-xl border border-line bg-zinc-50/60 p-4 sm:p-5">
           <div class="flex items-center justify-between gap-2">
             <div>
               <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">INFERENCE MODE</p>
-              <h3 class="mt-1 text-base font-black text-ink" data-rvc-i18n="modeTitle">选择变声模式</h3>
+              <h3 class="mt-1 text-base font-black text-ink" data-rvc-i18n="modeTitle">处理模式</h3>
             </div>
             <span id="rvc-mode-badge" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-              <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i><span id="rvc-mode-badge-text">智能混合（云端优先）</span>
+              <i class="fa-solid fa-circle text-emerald-600"></i><span id="rvc-mode-badge-text">云端</span>
             </span>
           </div>
 
@@ -69,33 +66,33 @@
             <button id="rvc-mode-official" type="button" class="flex flex-col items-start rounded-xl border-2 border-brand bg-teal-50/80 p-4 text-left shadow-sm transition hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="true" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
-                  <i class="fa-solid fa-fire text-amber-500"></i><span data-rvc-i18n="modeOfficialTitle">智能混合模式</span> <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800" data-rvc-i18n="modeRecommended">推荐</span>
+                  <i class="fa-solid fa-server text-amber-500"></i><span data-rvc-i18n="modeOfficialTitle">云端优先</span>
                 </span>
                 <i id="rvc-mode-official-check" class="fa-solid fa-circle-check text-brand text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted" data-rvc-i18n="modeOfficialHint">电脑在线时优先使用高质量 PyTorch RVC；电脑离线或隧道中断时，纯人声自动改由当前用户设备分段处理。带伴奏翻唱仍使用云端 GPU。</p>
+              <p class="mt-2 text-xs leading-5 text-muted" data-rvc-i18n="modeOfficialHint">使用 GPU 转换；不可达时，纯人声转到设备端。翻唱需要云端。</p>
             </button>
 
             <!-- 模式 2: 极速免上传模式 -->
             <button id="rvc-mode-local" type="button" class="flex flex-col items-start rounded-xl border-2 border-transparent bg-white p-4 text-left shadow-xs transition hover:border-brand/40 hover:shadow focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-checked="false" role="radio">
               <div class="flex w-full items-center justify-between">
                 <span class="flex items-center gap-2 font-black text-ink text-sm">
-                  <i class="fa-solid fa-bolt text-teal-600"></i><span data-rvc-i18n="modeLocalTitle">仅设备端模式</span> <span class="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-bold text-teal-800" data-rvc-i18n="modeNoUpload">免上传</span>
+                  <i class="fa-solid fa-laptop text-teal-600"></i><span data-rvc-i18n="modeLocalTitle">设备端</span>
                 </span>
                 <i id="rvc-mode-local-check" class="fa-regular fa-circle text-zinc-300 text-base"></i>
               </div>
-              <p class="mt-2 text-xs leading-5 text-muted" data-rvc-i18n="modeLocalHint">纯浏览器 WebAssembly 推理，音频不上传。云端不可达时，纯人声会自动切换到用户设备端分段处理；请保持页面在前台。带伴奏翻唱仍需要云端 GPU。</p>
+              <p class="mt-2 text-xs leading-5 text-muted" data-rvc-i18n="modeLocalHint">在浏览器处理纯人声，音频不上传。翻唱仍需要云端。</p>
             </button>
           </div>
 
           <!-- 本地闪存预热与高级设置（免配置，进阶可折叠） -->
           <div id="rvc-local-prewarm-wrap" class="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3 text-xs text-muted">
             <span id="rvc-cache-status" class="flex items-center gap-1.5 font-medium">
-                <i class="fa-solid fa-circle-info text-sky-500"></i><span data-rvc-i18n="cacheDefault">设备端使用浏览器缓存；智能混合模式优先使用受保护的 GPU 服务</span>
+                <i class="fa-solid fa-circle-info text-sky-500"></i><span data-rvc-i18n="cacheDefault">设备端模型保存在浏览器缓存中</span>
             </span>
             <div class="flex items-center gap-2">
               <button id="rvc-preload-btn" type="button" class="inline-flex items-center gap-1 rounded bg-teal-50 px-2 py-0.5 font-bold text-brand hover:bg-teal-100">
-                <i class="fa-solid fa-cloud-arrow-down"></i><span data-rvc-i18n="preload">一键预热闪存</span>
+                <i class="fa-solid fa-cloud-arrow-down"></i><span data-rvc-i18n="preload">缓存模型</span>
               </button>
               <button id="rvc-clear-cache-btn" type="button" class="hidden inline-flex items-center gap-1 rounded bg-zinc-100 px-2 py-0.5 text-zinc-600 hover:bg-zinc-200">
                 <i class="fa-solid fa-trash-can"></i><span data-rvc-i18n="clearCache">清理缓存</span>
@@ -114,11 +111,11 @@
         </div>
 
         <!-- Step 1: 选择角色 -->
-        <div class="mt-7">
+        <div class="rvc-step rvc-step-model mt-7">
           <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end sm:gap-3">
             <div class="min-w-0">
               <p class="text-sm font-bold" id="rvc-step-model-label" data-rvc-i18n="stepModel">1. 选择角色声音</p>
-              <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepModelHint">先切换角色分区，再点角色卡片。搜索只查当前分区。</p>
+              <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepModelHint">选择分区与声线。</p>
             </div>
             <input id="rvc-model-search" type="search" autocomplete="off" spellcheck="false" class="min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand sm:w-56" data-rvc-i18n-placeholder="searchPlaceholder" placeholder="搜索角色…">
           </div>
@@ -149,7 +146,7 @@
             <div class="flex flex-wrap items-end justify-between gap-2">
               <div>
                 <p id="rvc-trained-models-title" class="text-sm font-black text-ink" data-rvc-i18n="trainedTitle"> 训练完成的模型</p>
-                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="trainedHint">这些模型由下方训练功能生成，可在训练前填写自己的区域名称；点击后继续使用原有云端 RVC 变声流程。</p>
+                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="trainedHint">选择已训练声线进行云端转换。</p>
               </div>
               <span id="rvc-trained-models-count" class="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold text-violet-700"></span>
             </div>
@@ -161,7 +158,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="text-sm font-black text-ink" data-rvc-i18n="ownModelTitle"> 导入我自己的模型</p>
-                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="ownModelHint">上传你本地训练/转换好的 <span class="font-bold text-brand">.onnx</span> 角色模型（参考 <code class="rounded bg-zinc-100 px-1 text-[11px]">tools/</code> 转换脚本）。仅供你本机使用，不发布给他人，也不会上传。</p>
+                <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="ownModelHint">选择本机 .onnx 模型；不会上传或公开。</p>
                 <p id="rvc-own-model-status" class="mt-1.5 hidden text-xs font-bold text-emerald-700" role="status" aria-live="polite"></p>
               </div>
               <label class="inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-brand bg-white px-3.5 py-2 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-100 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
@@ -211,21 +208,21 @@
         </div>
 
         <!-- Step 2: 你的声音（三个并列输入源：上传 / 录制 / 文本朗读→角色） -->
-        <div class="mt-7 border-t border-line pt-6">
+        <div class="rvc-step rvc-step-input mt-7 border-t border-line pt-6">
           <p class="text-sm font-bold" id="rvc-step-audio-label" data-rvc-i18n="stepAudio">2. 提供你的声音（任选其一）</p>
-          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepAudioHint">本地公开角色支持最长 20 分钟纯人声；云端翻唱支持最长 15 分钟。文件需在 25 MB 内；长音频优先使用 MP3/M4A，本地请保持页面前台并预留内存。</p>
+          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepAudioHint">纯人声最长 20 分钟，云端翻唱最长 15 分钟；文件限 25 MB。</p>
           <div class="mt-3 grid gap-3 sm:grid-cols-3" role="group" aria-labelledby="rvc-step-audio-label">
             <button id="rvc-source-upload" type="button" class="min-h-24 rounded-lg border border-brand bg-teal-50 p-4 text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="true">
               <span class="flex items-center gap-3"><i class="fa-solid fa-upload text-brand" aria-hidden="true"></i><span class="font-black" data-rvc-i18n="sourceUpload">上传音频</span></span>
-              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceUploadHint">选择电脑或手机里已有的录音文件。</span>
+              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceUploadHint">从设备选择文件。</span>
             </button>
             <button id="rvc-source-record" type="button" class="min-h-24 rounded-lg border border-line bg-white p-4 text-left transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="false">
               <span class="flex items-center gap-3"><i class="fa-solid fa-microphone text-violet-700" aria-hidden="true"></i><span class="font-black" data-rvc-i18n="sourceRecord">录制声音</span></span>
-              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceRecordHint">直接用麦克风录一段，录完自动可用。</span>
+              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceRecordHint">使用麦克风采集。</span>
             </button>
             <button id="rvc-source-tts" type="button" class="min-h-24 rounded-lg border border-line bg-white p-4 text-left transition hover:border-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="false">
               <span class="flex items-center gap-3"><i class="fa-solid fa-language text-fuchsia-700" aria-hidden="true"></i><span class="font-black" data-rvc-i18n="sourceTts">文本朗读</span></span>
-              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceTtsHint">输入一段文字，自动使用可用的 TTS 服务生成朗读，再转换为当前角色。</span>
+              <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceTtsHint">生成朗读后转换声线。</span>
             </button>
           </div>
           <div class="mt-4 rounded-xl border border-line bg-zinc-50/70 p-3">
@@ -256,7 +253,7 @@
               </span>
               <!-- 一键适配：自动探测本机 rvc-service，写入本地并下载配置文件，免手动改 IP -->
               <button id="rvc-tts-adapt" type="button" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-brand bg-white px-3 py-1.5 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
-                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>一键适配（自动配置）</span>
+                <i class="fa-solid fa-link" aria-hidden="true"></i><span>自动连接</span>
               </button>
             </div>
             <div class="mt-2 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
@@ -269,7 +266,7 @@
             <textarea id="rvc-tts-text" rows="3" maxlength="800" data-rvc-i18n-placeholder="ttsTextPlaceholder" placeholder="在这里输入你想让角色朗读的文字…（最多 800 字）" class="mt-3 w-full resize-y rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand"></textarea>
             <div class="mt-3 flex flex-wrap items-center gap-3">
               <button id="rvc-tts-synth" type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand bg-white px-5 py-2.5 text-sm font-bold text-brand shadow-sm transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span data-rvc-i18n="ttsSynth">合成朗读（中性）</span>
+                <i class="fa-solid fa-volume-high" aria-hidden="true"></i><span data-rvc-i18n="ttsSynth">合成朗读（中性）</span>
               </button>
               <button id="rvc-tts-convert" type="button" class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
                 <i class="fa-solid fa-radio" aria-hidden="true"></i><span data-rvc-i18n="ttsConvert">用当前角色朗读</span>
@@ -294,9 +291,9 @@
         </div>
 
         <!-- Step 3: 简单设置 -->
-        <div class="mt-7 border-t border-line pt-6">
+        <div class="rvc-step rvc-step-tune mt-7 border-t border-line pt-6">
           <p class="text-sm font-bold" data-rvc-i18n="stepSettings">3. 调节声音与音调匹配</p>
-          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepSettingsHint">默认保持原调（0）。只有输入与角色音域明显不同时再逐步调节；过大的升调会放大金属感和电音。</p>
+          <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepSettingsHint">默认保持原调；跨音域时逐步调节。</p>
 
           <!-- 一键声音模式预设 -->
           <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="输入人声预设">
@@ -326,7 +323,7 @@
           </div>
 
           <details class="mt-6 rounded-lg border border-line bg-canvas px-4 py-3" id="rvc-advanced">
-            <summary class="cursor-pointer text-sm font-bold text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-rvc-i18n="advancedToggle">高级设置（进阶用户）</summary>
+            <summary class="cursor-pointer text-sm font-bold text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-rvc-i18n="advancedToggle">高级参数</summary>
             <div class="mt-5 space-y-6">
                   <p class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-900">有 `.index` 的角色会使用 RVC 的 FAISS Top-8 检索。默认 0.30 在角色还原与自然度之间取保守平衡；模型没有索引时系统会自动设为 0。</p>
               <div>
@@ -383,7 +380,7 @@
         </div>
       </section>
 
-      <aside class="space-y-6">
+      <aside class="rvc-inspector space-y-6">
         <section class="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-6" aria-labelledby="rvc-howto-title">
           <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">HOW IT WORKS</p>
           <h2 id="rvc-howto-title" class="mt-2 text-xl font-black" data-rvc-i18n="howtoTitle">三步上手</h2>
@@ -405,7 +402,7 @@
         </section>
 
         <section id="rvc-result" class="rounded-xl border border-teal-100 bg-teal-50/70 p-4 shadow-sm sm:p-6" hidden aria-labelledby="rvc-result-title">
-          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">AI GENERATED AUDIO</p>
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">OUTPUT / AUDIO</p>
           <h2 id="rvc-result-title" class="mt-2 text-xl font-black" data-rvc-i18n="resultTitle">变声结果</h2>
           <p id="rvc-result-meta" class="mt-2 break-words text-sm leading-6 text-muted"></p>
           <audio id="rvc-result-audio" class="mt-5 w-full" controls preload="metadata"></audio>
@@ -419,8 +416,8 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
-  <script src="assets/postprep.js?v=20260920-ui"></script>
+  <script src="assets/postprep.js?v=20260924-workspace"></script>
   <script src="assets/rvc-schools.js?v=20260919-odyssey"></script>
-  <script src="assets/rvc.js?v=20260923-audio"></script>
+  <script src="assets/rvc.js?v=20260924-workspace"></script>
 </body>
 </html>

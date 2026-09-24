@@ -49,14 +49,19 @@
       }
     });
     new MutationObserver(labelToggle).observe(root, { attributes: true, attributeFilter: ["lang"] });
+    let highlightFrame = 0;
     document.addEventListener("pointermove", (event) => {
       if (root.dataset.ui !== "glass" || event.pointerType === "touch" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      const surface = event.target.closest(".style-toggle, .studio-monitor, .studio-dock, [data-model-id], #rvc-upload-wrap, #rvc-result-section, .studio-shortcuts button");
-      if (!surface) return;
-      const rect = surface.getBoundingClientRect();
-      surface.style.setProperty("--glass-angle", `${100 + (event.clientX - rect.left) / rect.width * 70}deg`);
-      surface.style.setProperty("--light-x", `${(event.clientX - rect.left) / rect.width * 100}%`);
-      surface.style.setProperty("--light-y", `${(event.clientY - rect.top) / rect.height * 100}%`);
+      const surface = event.target.closest(".style-toggle, .studio-monitor, .studio-dock, [data-model-id], #rvc-upload-wrap, #rvc-result, .studio-shortcuts button");
+      if (!surface || highlightFrame) return;
+      const x = event.clientX, y = event.clientY;
+      highlightFrame = requestAnimationFrame(() => {
+        highlightFrame = 0;
+        const rect = surface.getBoundingClientRect();
+        surface.style.setProperty("--glass-angle", `${100 + (x - rect.left) / rect.width * 70}deg`);
+        surface.style.setProperty("--light-x", `${(x - rect.left) / rect.width * 100}%`);
+        surface.style.setProperty("--light-y", `${(y - rect.top) / rect.height * 100}%`);
+      });
     }, { passive: true });
     if (document.body.dataset.page === "rvc") initStudio(text);
   }
@@ -75,7 +80,7 @@
       <p class="studio-file" id="studio-file" role="status"></p>
       <audio class="studio-audio" id="studio-input-audio" controls preload="metadata" hidden></audio>
       <input class="studio-playhead" id="studio-seek" type="range" min="0" max="1000" value="0" hidden>
-      <dl class="studio-readouts"><div><dt id="studio-pitch-label"></dt><dd id="studio-pitch"></dd></div><div><dt id="studio-duration-label"></dt><dd id="studio-duration">--:--</dd></div></dl>
+      <dl class="studio-readouts"><div><dt id="studio-pitch-label"></dt><dd id="studio-pitch"></dd></div><div><dt id="studio-duration-label"></dt><dd id="studio-duration">--:--</dd></div><div><dt id="studio-rate-label"></dt><dd id="studio-rate">--</dd></div></dl>
       <div class="studio-shortcuts">
         <button type="button" data-studio-target="rvc-model-search"><i class="fa-solid fa-user-group" aria-hidden="true"></i></button>
         <button type="button" data-studio-target="rvc-step-audio-label"><i class="fa-solid fa-microphone" aria-hidden="true"></i></button>
@@ -139,8 +144,6 @@
     let decodeContext = null;
     let fileState = "empty";
     let fileName = "";
-    let pointer = 0.5;
-    let drawingFrame = 0;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     function draw() {
       if (!ctx) return;
@@ -163,45 +166,12 @@
           ctx.fillRect(i * w / peaks.length, (h - height) / 2, Math.max(2, w / peaks.length - 2), height);
         });
       } else {
-        // Particle contours echo the reference's sculptural motion. They are
-        // decoration; loaded audio always keeps the real waveform above.
-        for (let i = 0; i < 420; i++) {
-          const angle = i * 2.399963;
-          const radius = Math.sqrt(i / 420);
-          const twist = Math.sin(angle * 3 + pointer * 2) * 12;
-          const x = w / 2 + Math.cos(angle + pointer * .12) * radius * (w * .43 + twist);
-          const y = h / 2 + Math.sin(angle) * radius * (h * .42 + twist);
-          ctx.fillStyle = i % 5 === 0 ? "#bd8263aa" : "#21796370";
-          ctx.beginPath(); ctx.arc(x, y, i % 7 === 0 ? 1.5 : .8, 0, Math.PI * 2); ctx.fill();
-        }
-        // A decorative folded ribbon, not an invented audio measurement.
-        for (let strand = 0; strand < 28; strand++) {
-          const offset = strand / 27;
-          const ink = ctx.createLinearGradient(0, 0, w, h);
-          ink.addColorStop(0, "#b2c6bd");
-          ink.addColorStop(.24, "#007f6b");
-          ink.addColorStop(.48, "#dbf8ec");
-          ink.addColorStop(.66, "#176b5c");
-          ink.addColorStop(.88, "#c58d7d");
-          ink.addColorStop(1, "#efdbd3");
-          ctx.strokeStyle = ink;
-          ctx.lineWidth = 2.6;
-          ctx.beginPath();
-          for (let x = 0; x <= w; x += 3) {
-            const u = x / w;
-            const envelope = Math.sin(u * Math.PI);
-            const y = h / 2 + Math.sin(u * Math.PI * 2 + offset * 2.8 + pointer) * envelope * 78 + (offset - .5) * 70;
-            if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-          }
-          ctx.stroke();
-        }
+        ctx.strokeStyle = "#6f988680";
+        ctx.setLineDash([5, 6]);
+        ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
+        ctx.setLineDash([]);
       }
     }
-    canvas.addEventListener("pointermove", (event) => {
-      if (peaks || reduced.matches || event.pointerType === "touch") return;
-      pointer = (event.clientX - canvas.getBoundingClientRect().left) / canvas.clientWidth * 2;
-      if (!drawingFrame) drawingFrame = requestAnimationFrame(() => { drawingFrame = 0; draw(); });
-    });
     function localize() {
       dock.setAttribute("aria-label", text("变声流程", "Voice workflow"));
       dock.querySelectorAll("button span").forEach((span, index) => {
@@ -210,6 +180,7 @@
       panel.querySelector("#studio-caption").textContent = text("当前角色 / 原声试听", "Selected voice / Source preview");
       panel.querySelector("#studio-pitch-label").textContent = text("音高 · 半音", "Pitch · semitones");
       panel.querySelector("#studio-duration-label").textContent = text("原声时长", "Source duration");
+      panel.querySelector("#studio-rate-label").textContent = text("采样率", "Sample rate");
       seek.setAttribute("aria-label", text("原声播放位置", "Source playback position"));
       const labels = [text("选择角色", "Choose voice"), text("提供声音", "Audio source"), text("调整音高", "Adjust pitch"), text("前往变声", "Go to conversion")];
       panel.querySelectorAll("[data-studio-target]").forEach((button, i) => {
@@ -262,17 +233,7 @@
         input.dispatchEvent(new Event("change", { bubbles: true }));
       });
     }
-    if (gallery) {
-      new MutationObserver(syncSelection).observe(gallery, { subtree: true, childList: true, attributes: true, attributeFilter: ["aria-selected"] });
-      gallery.addEventListener("pointermove", (event) => {
-        if (reduced.matches || root.dataset.ui !== "glass" || event.pointerType === "touch") return;
-        const card = event.target.closest("[data-model-id]");
-        if (!card) return;
-        const rect = card.getBoundingClientRect();
-        card.style.setProperty("--light-x", `${event.clientX - rect.left}px`);
-        card.style.setProperty("--light-y", `${event.clientY - rect.top}px`);
-      });
-    }
+    if (gallery) new MutationObserver(syncSelection).observe(gallery, { subtree: true, childList: true, attributes: true, attributeFilter: ["aria-selected"] });
     document.addEventListener("input", syncSelection);
     document.addEventListener("click", () => queueMicrotask(syncSelection));
     new MutationObserver(() => { localize(); syncSelection(); }).observe(root, { attributes: true, attributeFilter: ["lang"] });
@@ -298,8 +259,6 @@
       const current = ++revision;
       audio.pause();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
-      cancelAnimationFrame(drawingFrame);
-      drawingFrame = 0;
       if (decodeContext) { void decodeContext.close().catch(() => {}); decodeContext = null; }
       peaks = null;
       seek.value = "0";
@@ -311,6 +270,7 @@
       localize();
       draw();
       panel.querySelector("#studio-duration").textContent = "--:--";
+      panel.querySelector("#studio-rate").textContent = "--";
       if (!file) { audio.removeAttribute("src"); audio.load(); return; }
       objectUrl = URL.createObjectURL(file);
       audio.src = objectUrl;
@@ -323,12 +283,16 @@
         decodeContext = context;
         const buffer = await context.decodeAudioData(await file.arrayBuffer());
         if (current !== revision) return;
+        panel.querySelector("#studio-rate").textContent = `${(buffer.sampleRate / 1000).toFixed(1)}k`;
         const samples = buffer.getChannelData(0);
+        const secondChannel = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : null;
         peaks = Array.from({ length: 100 }, (_, i) => {
           const start = Math.floor(i * samples.length / 100);
           const end = Math.floor((i + 1) * samples.length / 100);
           let peak = 0;
-          for (let j = start; j < end; j += Math.max(1, Math.floor((end - start) / 500))) peak = Math.max(peak, Math.abs(samples[j]));
+          for (let j = start; j < end; j += Math.max(1, Math.floor((end - start) / 500))) {
+            peak = Math.max(peak, Math.abs(samples[j]), secondChannel ? Math.abs(secondChannel[j]) : 0);
+          }
           return peak;
         });
         fileState = "ready";
@@ -343,8 +307,6 @@
     });
     window.addEventListener("pagehide", () => {
       audio.pause();
-      cancelAnimationFrame(drawingFrame);
-      drawingFrame = 0;
     });
     localize();
     syncSelection();

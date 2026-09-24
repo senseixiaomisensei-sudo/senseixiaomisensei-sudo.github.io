@@ -56,37 +56,6 @@ test("RVC keeps ordinary input level and applies the shout guard before peak pro
   assert.ok(sustainedPeak < 0.86, "sustained shouted audio should be gently contained");
 });
 
-test("shout F0 repair only removes isolated octave errors", () => {
-  const hasShoutDynamics = evaluateFunction("hasShoutDynamics");
-  const repairIsolatedShoutF0Errors = evaluateFunction("repairIsolatedShoutF0Errors");
-  assert.equal(hasShoutDynamics(sine(16000, 0.1)), false);
-  assert.equal(hasShoutDynamics(sine(16000, 0.8)), true);
-  const contour = Float32Array.from([220, 222, 440, 224, 226, 300, 380, 480]);
-  const repaired = repairIsolatedShoutF0Errors(contour);
-  assert.ok(repaired[2] > 220 && repaired[2] < 230, "isolated octave hop should be repaired");
-  assert.equal(repaired[5], 300, "sustained pitch motion must remain untouched");
-  assert.equal(repaired[6], 380, "sustained pitch motion must remain untouched");
-
-  const shortRun = Float32Array.from([220, 222, 440, 444, 442, 224, 226]);
-  const repairedRun = repairIsolatedShoutF0Errors(shortRun);
-  assert.ok(repairedRun[2] > 220 && repairedRun[2] < 225, "short octave run should be interpolated");
-  assert.ok(repairedRun[4] > 222 && repairedRun[4] < 225, "short octave run should rejoin its neighbours");
-
-  const sustainedOctave = Float32Array.from([220, 222, 440, 442, 444, 446, 448, 450]);
-  assert.deepEqual(
-    repairIsolatedShoutF0Errors(sustainedOctave),
-    sustainedOctave,
-    "a sustained high note must not be flattened",
-  );
-});
-
-test("high and complex contours opt into isolated F0 repair", () => {
-  const hasHighOrComplexPitch = evaluateFunction("hasHighOrComplexPitch");
-  assert.equal(hasHighOrComplexPitch(Float32Array.from([220, 222, 224, 226, 225, 223, 221, 220])), false);
-  assert.equal(hasHighOrComplexPitch(Float32Array.from([520, 525, 530, 535, 530, 525, 520, 515])), true);
-  assert.equal(hasHighOrComplexPitch(Float32Array.from([110, 112, 220, 114, 116, 440, 118, 120, 122])), true);
-});
-
 test("cloud submission cooldown survives reloads without trusting corrupt timestamps", async () => {
   const clientSource = await readFile(new URL("assets/rvc.js", root), "utf8");
   const dependencies = ["RVC_SUBMISSION_STORAGE_KEY", "RVC_SUBMISSION_COOLDOWN_MS"];
@@ -182,11 +151,11 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(page, /value="crepe"|value="fcpe"|value="harvest"/u);
   assert.doesNotMatch(client, /pitchInput\.value = String\(model\.defaultPitch\)/u);
   assert.doesNotMatch(workerSource, /filteredF0 = stabilizeShoutingPitchF0/u);
-  assert.match(workerSource, /hasShoutDynamics\(audio\) \|\| hasHighOrComplexPitch\(f0\)/u);
+  assert.match(workerSource, /stabilizeF0ByWaveform\(f0, audio, confidence\)/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260923-audio/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260924-workspace/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -231,14 +200,14 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260923-audio/u);
+  assert.match(client, /v=20260924-workspace/u);
   assert.match(client, /function preferredCloudOutputFormat\(durationSeconds = 0\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
   assert.match(client, /body\.set\("f0Method", "auto"\)/u);
   assert.match(client, /body\.set\("f0_method", "auto"\)/u);
   assert.match(client, /readCloudAudioBody\(response,/u);
-  assert.match(runtime, /v=20260923-audio/u);
+  assert.match(runtime, /v=20260924-workspace/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.wasm/u);
@@ -405,10 +374,27 @@ test("retrieval codebook blends voiced frames and protects unvoiced consonants",
   const voiced = applyRetrievalCodebook(features, Float32Array.from([200, 200]), codebook, 0.5, 0.33);
   const unvoiced = applyRetrievalCodebook(features, Float32Array.from([0, 0]), codebook, 0.5, 0.33);
   const protectionDisabled = applyRetrievalCodebook(features, Float32Array.from([0, 0]), codebook, 0.5, 0.5);
-  assert.deepEqual([...voiced.hiddenStates], [1, 2, 1, 2]);
-  assert.ok(Math.abs(unvoiced.hiddenStates[0] - 0.33) < 1e-6);
-  assert.ok(Math.abs(unvoiced.hiddenStates[1] - 0.66) < 1e-6);
-  assert.deepEqual([...protectionDisabled.hiddenStates], [1, 2, 1, 2]);
+  assert.ok(voiced.hiddenStates[0] > protectionDisabled.hiddenStates[0]);
+  assert.ok(protectionDisabled.hiddenStates[0] > unvoiced.hiddenStates[0]);
+  assert.ok([...unvoiced.hiddenStates].every(Number.isFinite));
+});
+
+test("waveform-supported F0 repair preserves vibrato and genuine octave passages", () => {
+  const frameWaveformEvidence = evaluateFunction("frameWaveformEvidence");
+  const stabilize = evaluateFunction("stabilizeF0ByWaveform", ["frameWaveformEvidence"], [frameWaveformEvidence]);
+  const rate = 16000;
+  const audio = Float32Array.from({ length: rate }, (_, i) => .2 * Math.sin(2 * Math.PI * 220 * i / rate));
+  const contour = new Float32Array(100).fill(220);
+  contour[50] = 440;
+  const repaired = stabilize(contour, audio);
+  assert.ok(Math.abs(repaired[50] - 220) < 1);
+  const vibrato = Float32Array.from({ length: 100 }, (_, i) => 220 * Math.pow(2, .3 * Math.sin(i / 4) / 12));
+  assert.deepEqual(stabilize(vibrato, audio), vibrato);
+  const octave = new Float32Array(100).fill(220);
+  octave.fill(440, 45, 60);
+  assert.deepEqual(stabilize(octave, audio), octave);
+  contour[50] = 0;
+  assert.equal(stabilize(contour, audio)[50], 0);
 });
 
 test("browser retrieval uses the official Top-8 neighbour count", () => {

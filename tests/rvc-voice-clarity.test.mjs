@@ -76,7 +76,6 @@ const applyVoicingSanityGate = evaluateFunction(
   ["applyBiquadFilterInPlace", "createBiquadHighpass"],
   [applyBiquadFilterInPlace, createBiquadHighpass],
 );
-const repairIsolatedShoutF0Errors = evaluateFunction("repairIsolatedShoutF0Errors");
 
 function windLikeNoise(length, sampleRate = 16000) {
   // 模拟麦克风上的风声: 白噪声先经过漏积分(布朗化, -6dB/oct), 再两级
@@ -197,30 +196,10 @@ test("voicing gate is a no-op without voiced frames", () => {
   for (let index = 0; index < gated.length; index += 1) assert.equal(gated[index], 0);
 });
 
-test("octave repair: long runs only inside shout/complex chunks, default stays short", () => {
-  const base = 440;
-  const contour = Float32Array.from({ length: 40 }, (_, index) =>
-    index >= 10 && index < 20 ? base / 2 : base,
-  );
-  const longRepaired = repairIsolatedShoutF0Errors(contour, 10);
-  let fixed = 0;
-  for (let index = 10; index < 20; index += 1) {
-    if (Math.abs(longRepaired[index] - base) < 1) fixed += 1;
-  }
-  assert.ok(fixed >= 9, `long octave run should be relocked in complex chunks (fixed=${fixed}/10)`);
-
-  const defaultRepaired = repairIsolatedShoutF0Errors(contour);
-  let untouched = 0;
-  for (let index = 10; index < 20; index += 1) {
-    if (Math.abs(defaultRepaired[index] - base / 2) < 1) untouched += 1;
-  }
-  assert.equal(untouched, 10, "default short-run repair must keep its previous behaviour");
-});
-
-test("worker wires the gate and the complex-chunk repair window", () => {
+test("worker wires the voicing gate and waveform-backed pitch repair", () => {
   assert.match(workerSource, /applyVoicingSanityGate\(filteredF0, audio\)/u);
-  assert.match(workerSource, /shoutLikeChunk \? 10 : 3/u);
-  assert.match(workerSource, /Math\.min\(12, Math\.floor\(maxRunLength\)/u);
+  assert.match(workerSource, /stabilizeF0ByWaveform\(f0, audio, confidence\)/u);
+  assert.doesNotMatch(workerSource, /shoutLikeChunk \? 10 : 3/u);
   assert.match(workerSource, /const VOICE_BAND_RATIO = 0\.18;/u);
 });
 
@@ -262,12 +241,12 @@ test("cloud voice path conditions uploads and polishes voice-mode output", async
   assert.ok(burstPeakAfter < 0.6, `harsh burst should be smoothed (peak=${burstPeakAfter.toFixed(3)})`);
 });
 
-test("local engine and rvc client cache versions are bumped for the voice fix", async () => {
+test("local engine and rvc client cache versions are bumped for the workspace release", async () => {
   const runtimeSource = await readFile(new URL("assets/rvc-engine/rvc-web-runtime.js", root), "utf8");
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
-  assert.match(runtimeSource, /inference\.worker\.js\?v=20260923-audio/u);
-  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260923-audio/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20260923-audio/u);
+  assert.match(runtimeSource, /inference\.worker\.js\?v=20260924-workspace/u);
+  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260924-workspace/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20260924-workspace/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {

@@ -9,7 +9,7 @@ test("V1 collection navigation filters one collection and persists custom traini
     readFile(new URL("rvc.html", root), "utf8"),
     readFile(new URL("assets/rvc.js", root), "utf8"),
   ]);
-  assert.match(page, /版本 V1（分区导航 \+ 伴奏翻唱）/u);
+  assert.match(page, /id="rvc-workflow-heading"[^>]*data-rvc-i18n="workflowTitle"/u);
   assert.match(page, /id="rvc-collection-nav"[^>]*role="tablist"/u);
   assert.match(page, /id="rvc-create-collection-form"/u);
   assert.match(page, /id="rvc-create-collection-name"[^>]*maxlength="30"/u);

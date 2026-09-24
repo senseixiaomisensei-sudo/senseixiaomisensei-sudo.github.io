@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import soundfile as sf
-from scipy.ndimage import gaussian_filter1d, median_filter
+from scipy.ndimage import gaussian_filter1d, median_filter, uniform_filter1d
 from scipy.signal import butter, resample_poly, sosfiltfilt
 
 
@@ -64,7 +64,7 @@ def _block_rms(audio: np.ndarray, block: int, count: int) -> np.ndarray:
 
 
 def _adaptive_bands(audio: np.ndarray, sample_rate: int) -> np.ndarray:
-    """Cut only locally excessive upper-mid energy, by at most 2.5 dB/band."""
+    """Control abnormal voiced upper harmonics against local and global voice."""
     if len(audio) < sample_rate // 4 or sample_rate < 16000:
         return audio
     block = max(1, round(sample_rate * 0.01))
@@ -74,11 +74,30 @@ def _adaptive_bands(audio: np.ndarray, sample_rate: int) -> np.ndarray:
     active = body_rms > max(0.008, float(np.percentile(body_rms, 60)) * 0.3)
     if np.count_nonzero(active) < 10:
         return audio
+    # Natural fricatives and breaths are noise-like.  Narrow synthetic vowel
+    # harmonics have a lower flatness and appear inside a stable voiced run.
+    flatness = np.ones(count)
+    zcr = np.ones(count)
+    radius = max(block, round(sample_rate * 0.02))
+    taper = np.hanning(radius * 2)
+    for frame in range(count):
+        center = frame * block
+        segment = audio[max(0, center - radius):min(len(audio), center + radius)]
+        if len(segment) < radius:
+            continue
+        segment = np.pad(segment, (0, max(0, len(taper) - len(segment))))[:len(taper)]
+        zcr[frame] = np.mean(np.signbit(segment[1:]) != np.signbit(segment[:-1]))
+        spectrum = np.abs(np.fft.rfft(segment * taper))[2:] + 1e-9
+        flatness[frame] = np.exp(np.mean(np.log(spectrum))) / np.mean(spectrum)
+    voiced = active & (flatness < 0.38) & (zcr < 0.24)
+    sustained = uniform_filter1d(voiced.astype(np.float64), size=13, mode="nearest") > 0.75
+    if np.count_nonzero(sustained) < 8:
+        return audio
     result = audio.copy()
-    for low, high, floor, ceiling, max_cut_db in (
-        (2600, 4200, 0.50, 1.10, 2.5),
-        (4200, 6200, 0.35, 0.90, 2.3),
-        (6200, 9000, 0.25, 0.70, 1.2),
+    for low, high, floor, max_cut_db in (
+        (2600, 4200, 0.50, 2.5),
+        (4200, 6500, 0.35, 2.3),
+        (6500, 9000, 0.25, 1.2),
     ):
         high = min(high, sample_rate * 0.45)
         if high <= low + 100:
@@ -86,10 +105,12 @@ def _adaptive_bands(audio: np.ndarray, sample_rate: int) -> np.ndarray:
         band = sosfiltfilt(butter(2, [low, high], btype="bandpass", fs=sample_rate, output="sos"), audio)
         band_rms = _block_rms(band, block, count)
         ratio = band_rms / (body_rms + 0.01)
-        threshold = float(np.clip(np.percentile(ratio[active], 75) * 1.25, floor, ceiling))
+        global_baseline = max(floor, float(np.percentile(ratio[sustained], 60)) * 1.18)
+        local_baseline = median_filter(ratio, size=101, mode="nearest") * 1.20
+        threshold = np.maximum(global_baseline, local_baseline)
         excess = np.maximum(0, np.log2(np.maximum(ratio, 1e-8) / threshold))
-        cut_db = max_cut_db * np.minimum(excess, 1.0) * active
-        cut_db = gaussian_filter1d(cut_db, sigma=2.0, mode="nearest")
+        cut_db = max_cut_db * np.minimum(excess, 1.0) * sustained
+        cut_db = gaussian_filter1d(cut_db, sigma=4.0, mode="nearest")
         frame_gain = 1 - np.power(10.0, -cut_db / 20.0)
         sample_gain = np.interp(np.arange(len(audio)), np.arange(count) * block, frame_gain)
         result -= band * sample_gain

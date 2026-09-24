@@ -88,38 +88,35 @@
 
   const translations = {
     zh: {
-      eyebrow: "RVC VOICE CHANGER · WEB EDITION",
+      eyebrow: "POSTPREP / VOICE STUDIO",
       title: "AI 变声器",
-      intro: "选一个你有权使用的声音模型，上传或录制一段你自己的声音，使用 RVC 变声引擎完成转换。默认走本网站托管的受保护 GPU 服务；输入和结果仅在处理期间发送，并会自动删除。",
+      intro: "选择声线，载入音频，调整音高并转换。",
       noteTitle: "使用提示",
-      noteBody: "默认使用固定版本的 RVC-Project HuBERT、RMVPE、FAISS 索引与生成器推理。RVC 是开源变声引擎名称，不是要上传的文件。请仅处理你有权使用的声音，并清晰标注为 AI 变声；公开可下载不等于拥有再分发或冒充许可。",
-      workflowEyebrow: "VOICE WORKFLOW",
-      workflowTitle: "三步完成变声",
-      privacyBadge: "受保护 GPU 推理 · 用完即删",
+      noteBody: "请仅处理有权使用的声音，并清晰标注生成内容；公开可下载不代表拥有再分发或冒充许可。",
+      workflowEyebrow: "WORKSPACE / 01",
+      workflowTitle: "声音工作台",
+      privacyBadge: "输入用后删除",
       ownModelHint: "上传你本地训练或转换好的 .onnx 角色模型。仅供当前设备使用，不发布，也不会上传。",
       checkingServiceAction: "正在检查服务…",
       rmsLabel: "音量跟随",
-      versionLabel: "版本 V1（分区导航 + 伴奏翻唱）",
-      modeTitle: "选择变声模式",
-      modeOfficialTitle: "智能混合模式",
-      modeRecommended: "推荐",
-      modeOfficialHint: "电脑在线时优先使用高质量 PyTorch RVC；电脑离线或隧道中断时，纯人声自动改由当前设备分段处理。带伴奏翻唱仍使用云端 GPU。",
-      modeLocalTitle: "仅设备端模式",
-      modeNoUpload: "免上传",
-      modeLocalHint: "纯浏览器 WebAssembly 推理，音频不上传。云端不可达时，纯人声会自动切换到当前设备分段处理；请保持页面在前台。带伴奏翻唱仍需要云端 GPU。",
-      cacheDefault: "设备端使用浏览器缓存；智能混合模式优先使用受保护的 GPU 服务",
-      preload: "一键预热闪存",
+      modeTitle: "处理模式",
+      modeOfficialTitle: "云端优先",
+      modeOfficialHint: "使用 PyTorch GPU；不可达时，纯人声转到设备端。翻唱需要云端。",
+      modeLocalTitle: "设备端",
+      modeLocalHint: "在当前浏览器处理纯人声；音频不上传。翻唱仍需要云端。",
+      cacheDefault: "设备端模型保存在浏览器缓存中",
+      preload: "预载模型",
       clearCache: "清理缓存",
       createCollection: "创建分区",
       collectionPlaceholder: "例如：我的动漫角色",
       saveCollection: "保存分区",
       cancel: "取消",
       trainedTitle: " 训练完成的模型",
-      trainedHint: "这些模型由下方训练功能生成，可在训练前填写自己的区域名称；点击后继续使用原有云端 RVC 变声流程。",
+      trainedHint: "选择已训练声线进行云端转换。",
       ownModelTitle: " 导入我自己的模型",
       chooseOnnx: "选择 .onnx 文件",
       sourceTts: "文本朗读",
-      sourceTtsHint: "输入一段文字，使用可用的 TTS 服务生成朗读，再转换为当前角色。",
+      sourceTtsHint: "生成朗读后转换声线。",
       audioContent: "音频内容",
       voiceOnly: "纯人声（默认）",
       voiceOnlyHint: "沿用原有稳定链路，上传更省流量。",
@@ -130,7 +127,7 @@
       ttsConvert: "用当前角色朗读",
       ttsIdle: "选角色 → 输文字 → 角色朗读。",
       stepModel: "1. 选择角色声音",
-      stepModelHint: "先切换角色分区，再点角色卡片。搜索只查当前分区。",
+      stepModelHint: "选择分区与声线。",
       searchPlaceholder: "搜索角色…",
       modelEmpty: "没有找到匹配的角色。换个关键词试试。",
       modelCatalogTitle: "角色声音库",
@@ -138,11 +135,11 @@
       modelPick: "已选择",
       stepAudio: "2. 上传或录制你的声音",
       localDirectConvert: "转为本地直接变声（不分离伴奏）",
-      stepAudioHint: "本地公开角色支持最长 20 分钟纯人声；云端翻唱最长 15 分钟。文件需在 25 MB 内；长音频优先使用 MP3/M4A，本地请保持页面前台并预留内存。",
+      stepAudioHint: "纯人声最长 20 分钟，云端翻唱最长 15 分钟；文件限 25 MB。",
       sourceUpload: "上传音频",
-      sourceUploadHint: "选择电脑或手机里已有的录音文件。",
+      sourceUploadHint: "从设备选择文件。",
       sourceRecord: "录制声音",
-      sourceRecordHint: "直接用麦克风录一段，录完自动可用。",
+      sourceRecordHint: "使用麦克风采集。",
       fileEmpty: "尚未选择音频文件。",
       recordStart: "开始录音",
       recordStop: "停止录音",
@@ -152,25 +149,25 @@
       recordInsecure: "录音需要 HTTPS 环境。当前页面不是安全上下文，请改用上传音频。",
       recordError: "录音启动失败，请改用上传音频。",
       stepSettings: "3. 调节声音（可选）",
-      stepSettingsHint: "默认保持原调（0）。只有输入与角色音域明显不同时再逐步调节；过大的升调会放大金属感和电音。",
+      stepSettingsHint: "默认保持原调；跨音域时逐步调节。",
       pitchLabel: "音高调整 (变调)",
       pitchLow: "男声化 (-12)",
       pitchDefault: "原调 (0)",
       pitchHigh: "女声化 (+12)",
-      advancedToggle: "高级设置（进阶选项）",
+      advancedToggle: "高级参数",
       indexRateLabel: "音色相似度",
       indexRateHint: "越高音色越贴近角色，但会增加颗粒风险。建议 0.20–0.40。",
       protectLabel: "辅音与呼吸保护",
       protectHint: "数值越低，清辅音与呼吸保护越强；0.5 会关闭保护。高动态输入建议 0.20–0.30。",
       f0Label: "音高算法",
-      f0Rmvpe: "RMVPE（超高精度 · 推荐）",
+      f0Rmvpe: "RMVPE",
       f0Harvest: "Harvest（传统稳健）",
       formatLabel: "输出格式",
       formatWav: "智能格式（手机 MP3 · 电脑 WAV）",
       resampleLabel: "输出采样率",
       resampleKeep: "40 kHz / 48 kHz (标准)",
       checkingService: "正在连接云端 RVC 引擎；此检查不会上传音频…",
-      serviceReady: " 云端 RVC 引擎已就绪",
+      serviceReady: "云端可用",
       serviceOffline: "云端 RVC 引擎连接暂缓；纯人声会在云端不可达时自动切换到设备端推理。",
       serviceLoading: "正在从本地缓存或 CDN 加载模型权重...",
       convert: "开始变声",
@@ -204,26 +201,23 @@
       ],
     },
     en: {
-      eyebrow: "RVC VOICE CHANGER · WEB EDITION",
+      eyebrow: "POSTPREP / VOICE STUDIO",
       title: "AI Voice Changer",
-      intro: "Pick a voice model you are authorized to use, upload or record audio you are allowed to use, and convert it with the hosted RVC inference engine.",
+      intro: "Choose a voice, load audio, set pitch, and convert.",
       noteTitle: "Notice",
       noteBody: "The default path uses the pinned RVC-Project HuBERT, RMVPE, real FAISS index, and generator pipeline on a protected GPU service. Public availability is not a redistribution or impersonation license.",
-      workflowEyebrow: "VOICE WORKFLOW",
-      workflowTitle: "Three steps to a new voice",
-      privacyBadge: "Protected GPU · Ephemeral files",
+      workflowEyebrow: "WORKSPACE / 01",
+      workflowTitle: "Voice workspace",
+      privacyBadge: "Input deleted after use",
       ownModelHint: "Import a locally trained or converted .onnx voice model. It stays on this device and is never uploaded or published.",
       checkingServiceAction: "Checking service…",
       rmsLabel: "Volume envelope",
-      versionLabel: "Version V1 (collections + song conversion)",
-      modeTitle: "Choose an inference mode",
-      modeOfficialTitle: "Smart hybrid",
-      modeRecommended: "Recommended",
-      modeOfficialHint: "Uses high-quality PyTorch RVC while the host computer is online. If it is offline or the tunnel drops, dry vocals fall back to chunked on-device processing. Song conversion still requires the cloud GPU.",
-      modeLocalTitle: "On-device only",
-      modeNoUpload: "No upload",
-      modeLocalHint: "Runs WebAssembly in your browser without uploading audio. Keep the page in the foreground. Song conversion still requires the cloud GPU.",
-      cacheDefault: "On-device models use browser cache; Smart hybrid prefers the protected GPU service",
+      modeTitle: "Processing mode",
+      modeOfficialTitle: "Cloud first",
+      modeOfficialHint: "PyTorch GPU inference. Dry vocals fall back to your device if the service is unavailable; covers require cloud.",
+      modeLocalTitle: "On device",
+      modeLocalHint: "Process dry vocals in this browser without uploading audio. Covers still require cloud.",
+      cacheDefault: "On-device models are stored in browser cache",
       preload: "Preload models",
       clearCache: "Clear cache",
       createCollection: "Create collection",
@@ -279,14 +273,14 @@
       protectLabel: "Consonant protection",
       protectHint: "Lower values protect unvoiced consonants and breaths more strongly; 0.5 disables protection. Use 0.20–0.30 for high-dynamic input.",
       f0Label: "Pitch extraction",
-      f0Rmvpe: "RMVPE (High Precision)",
+      f0Rmvpe: "RMVPE",
       f0Harvest: "Harvest (Classic)",
       formatLabel: "Output format",
       formatWav: "Smart format (MP3 mobile · WAV desktop)",
       resampleLabel: "Output sample rate",
       resampleKeep: "40 kHz / 48 kHz (Standard)",
       checkingService: "Connecting to the cloud RVC engine; no audio is uploaded…",
-      serviceReady: " Cloud RVC engine is ready",
+      serviceReady: "Cloud available",
       serviceOffline: "The cloud RVC engine is reconnecting. Voice clips automatically fall back to on-device processing when the cloud is unavailable.",
       serviceLoading: "Loading model weights...",
       convert: "Convert now",
@@ -3550,8 +3544,8 @@
 
     if (badgeText) {
       badgeText.textContent = state.lang === "en"
-        ? isOfficial ? "Smart hybrid (cloud first)" : "On-device only"
-        : isOfficial ? "智能混合（云端优先）" : "仅设备端模式";
+        ? isOfficial ? "Cloud first" : "On device"
+        : isOfficial ? "云端优先" : "设备端";
     }
     if (badge) {
       badge.className = isOfficial
@@ -4169,7 +4163,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay(" 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260923-audio", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260924-workspace", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -5452,6 +5446,7 @@
     state.lang = resolveRvcLanguage();
     loadCustomCollections();
     setupEventListeners();
+    applyRvcLanguage();
     await initCatalog();
     applyRvcLanguage();
   });

@@ -47,6 +47,27 @@ try {
       }
     }
   }
+  for (const width of [360, 375, 412, 1024, 1280, 1920]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(`${base}/rvc.html`, { waitUntil: "load" });
+    await page.locator("[data-model-id]").first().waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `RVC workspace overflows at ${width}px`);
+    assert.equal(await page.locator('#site-header a[aria-current="page"]:visible').count(), width < 1400 ? 0 : 1, `RVC navigation has the correct active item at ${width}px`);
+    assert.ok(await page.locator("#rvc-convert").evaluate(button => button.getBoundingClientRect().width >= 44), `Convert action stays tappable at ${width}px`);
+    if (width < 1400) {
+      assert.equal(await page.locator("[data-menu-toggle]").isVisible(), true, `Mobile navigation is reachable at ${width}px`);
+      await page.locator("[data-menu-toggle]").click();
+      assert.equal(await page.locator("#mobile-navigation").isVisible(), true);
+      assert.equal(await page.locator('#mobile-navigation a[aria-current="page"]:visible').count(), 1);
+      await page.keyboard.press("Escape");
+      assert.equal(await page.locator("#mobile-navigation").isVisible(), false);
+    } else {
+      assert.equal(await page.locator('nav[aria-label="Primary navigation"]').isVisible(), true);
+    }
+    if ([360, 1280, 1920].includes(width)) {
+      await page.screenshot({ path: path.join(output, `rvc-workspace-${width}.png`), fullPage: true, animations: "disabled" });
+    }
+  }
   await page.goto(`${base}/rvc.html`);
   await page.locator("[data-model-id]").first().waitFor();
   await page.locator("[data-model-id]").first().click();
