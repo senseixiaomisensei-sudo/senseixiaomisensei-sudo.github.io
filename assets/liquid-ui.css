@@ -5,9 +5,9 @@
 .style-toggle::after { content: attr(data-tooltip); position: absolute; top: calc(100% + 10px); right: 0; width: max-content; max-width: 210px; padding: 8px 12px; border-radius: 6px; background: #192824; color: #fff; font-size: 12px; opacity: 0; pointer-events: none; z-index: 60; }
 .style-toggle:hover::after, .style-toggle:focus-visible::after { opacity: 1; }
 html[data-ui="glass"] { --glass-line: #aabeb95c; --glass-ink: #18372f; --glass-accent: #007b67; --z-content: 1; --z-sticky: 20; --z-header: 40; --z-bottom-nav: 70; --z-popover: 80; --z-modal: 90; --z-toast: 100; scroll-padding-top: 100px; }
-html[data-ui="glass"] body[data-page="rvc"] { --bottom-nav-height: 64px; --z-header: 80; padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 42px); }
+html[data-ui="glass"] body[data-page="rvc"] { --bottom-nav-height: 64px; --z-header: 80; padding-bottom: var(--bottom-nav-reserve, 124px); }
 html[data-ui="glass"] body[data-page="rvc"].dock-keyboard-hidden { padding-bottom: 24px; }
-html[data-ui="glass"]:has(body[data-page="rvc"]) { scroll-padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 24px); }
+html[data-ui="glass"]:has(body[data-page="rvc"]) { scroll-padding-bottom: var(--bottom-nav-reserve, 124px); }
 html[data-ui="glass"] body { background: #e8eeed; color: var(--glass-ink); }
 html[data-ui="glass"] body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1; background: linear-gradient(125deg, #d3e8df 0%, #edf0f0 35%, #f5e2df 70%, #dbe6e8 100%); }
 html[data-ui="glass"] * { letter-spacing: 0 !important; }
@@ -156,7 +156,7 @@ html[data-ui="glass"] :is(.studio-dock, #site-header > header) { -webkit-backdro
   html[data-ui="glass"] :is(#rvc-pitch, #rvc-step-model-label, #rvc-step-audio-label) { scroll-margin-block: 110px; }
 }
 @media (max-width: 640px) {
-  html[data-ui="glass"] body[data-page="rvc"] { padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 24px); }
+  html[data-ui="glass"] body[data-page="rvc"] { padding-bottom: var(--bottom-nav-reserve, 100px); }
   html[data-ui="glass"] .studio-dock { left: 0; right: 0; bottom: 0; transform: none; width: 100%; height: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)); padding: 7px 7px calc(7px + env(safe-area-inset-bottom, 0px)); border-radius: 21px 21px 0 0; background: linear-gradient(145deg, #f6fffbed, #e7f4eee6 55%, #fff7f4e9); border-bottom: 0; }
 }
 @media (max-height: 480px) and (orientation: landscape) {

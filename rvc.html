@@ -12,10 +12,10 @@
   <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
   <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260815-rvc">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260925-stable">
-  <link rel="stylesheet" href="assets/liquid-ui.css?v=20260925-stable">
-  <link rel="stylesheet" href="assets/rvc.css?v=20260925-stable">
-  <script src="assets/liquid-ui.js?v=20260925-stable"></script>
+  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260925-rvcfix">
+  <link rel="stylesheet" href="assets/liquid-ui.css?v=20260925-rvcfix">
+  <link rel="stylesheet" href="assets/rvc.css?v=20260925-rvcfix">
+  <script src="assets/liquid-ui.js?v=20260925-rvcfix"></script>
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="rvc">
   <div id="site-header"></div>
@@ -345,7 +345,12 @@
               <div class="grid gap-5 sm:grid-cols-2">
                 <div>
                   <p class="text-sm font-bold" data-rvc-i18n="f0Label">音高提取算法</p>
-                  <p class="mt-2 min-h-11 rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm" data-rvc-i18n="f0Rmvpe">RMVPE（官方推荐）</p>
+                  <select id="rvc-f0-method" class="mt-2 min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm" aria-describedby="rvc-f0-hint">
+                    <option value="rmvpe" data-rvc-i18n="f0Rmvpe">RMVPE（默认）</option>
+                    <option value="fcpe" data-rvc-i18n="f0Fcpe">FCPE（长音可试）</option>
+                    <option value="auto" data-rvc-i18n="f0Auto">自动（显示实际算法）</option>
+                  </select>
+                  <p id="rvc-f0-hint" class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="f0Hint">云端可选；设备端固定使用 RMVPE。自动模式会在结果中显示实际算法。</p>
                 </div>
                 <div>
                   <p class="text-sm font-bold" data-rvc-i18n="formatLabel">输出格式</p>
@@ -360,7 +365,8 @@
                     <label for="rvc-rms-mix" class="text-sm font-bold" data-rvc-i18n="rmsLabel">音量跟随</label>
                     <span id="rvc-rms-mix-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0.5</span>
                   </div>
-                  <input id="rvc-rms-mix" type="range" min="0" max="1" step="0.05" value="0.5" class="rvc-range mt-3 w-full">
+                  <input id="rvc-rms-mix" type="range" min="0" max="1" step="0.05" value="0.5" class="rvc-range mt-3 w-full" aria-describedby="rvc-rms-mix-value rvc-rms-mix-hint">
+                  <p id="rvc-rms-mix-hint" class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="rmsHint">0 更贴近原唱音量，1 保留模型原始动态；云端与设备端含义一致。</p>
                 </div>
                 <input id="rvc-filter-radius" type="hidden" value="0">
               </div>
@@ -418,6 +424,6 @@
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
   <script src="assets/postprep.js?v=20260924-workspace"></script>
   <script src="assets/rvc-schools.js?v=20260919-odyssey"></script>
-  <script src="assets/rvc.js?v=20260925-stable"></script>
+  <script src="assets/rvc.js?v=20260925-rvcfix"></script>
 </body>
 </html>

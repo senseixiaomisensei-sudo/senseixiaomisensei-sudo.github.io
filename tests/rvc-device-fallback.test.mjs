@@ -41,6 +41,7 @@ function cloudHarness(mode) {
     fixUploadContainer: async file => file,
     setAudioMode: mode => { state.audioMode = mode; },
     prepareCloudUploadAudio: audio => ({ file: audio.file }),
+    selectedRmsMixRate: () => .5,
     persistCloudSubmissionTimestamp() {}, showProgressBar() {}, updateProgressBar() {},
     updateStatusDisplay: text => statuses.push(text), showToast: text => toasts.push(text),
     officialRoutes: () => ({ convertUrl: "/test" }), getOfficialEndpoint: () => "",
@@ -50,6 +51,7 @@ function cloudHarness(mode) {
     console: { warn() {} }, setTimeout() {}, clearInterval() {},
     hasDeviceFallbackModel: m => m.chunks.length > 0,
     isDeviceFallbackEligible: eligible,
+    cloudRvcFailureMessage: () => "云端暂不可用",
     buildRvcEndpointCandidates: () => ["/test"],
     isEndpointNetworkError: () => false,
   };
@@ -68,12 +70,12 @@ test("303-second voice retries once then offers automatic fallback with intact a
   assert.equal(h.state.busy, false);
 });
 
-test("song outage auto-switches to on-device voice conversion with an explicit notice", async () => {
+test("song outage keeps song mode and offers an explicit local direct conversion", async () => {
   const h = cloudHarness("song");
   const result = await h.run({ allowDeviceFallback: true });
-  assert.equal(result.fallback, true);
-  assert.equal(h.state.audioMode, "voice");
-  assert.match(h.toasts.join("\n"), /不分离伴奏|一起变声/u);
+  assert.equal(result, false);
+  assert.equal(h.state.audioMode, "song");
+  assert.match(h.statuses.join("\n"), /伴奏也被处理/u);
   assert.equal(h.state.busy, false);
   assert.equal(h.state.audio, h.audio);
 });

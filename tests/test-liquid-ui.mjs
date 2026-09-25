@@ -126,12 +126,18 @@ try {
   assert.ok(landscapeDock.bottom <= 391 && landscapeDock.height <= 64, "Landscape dock stays compact at viewport bottom");
   await page.goto(`${base}/rvc.html`);
   await page.locator("[data-model-id]").first().waitFor();
+  await page.locator('.studio-dock button[data-step="3"]').click();
+  assert.equal(await page.evaluate(() => document.activeElement?.disabled === true), false, "Empty result does not focus a disabled action");
+  assert.match(await page.locator("#rvc-service-status").innerText(), /先载入音频|Load audio/u);
   await page.locator("[data-model-id]").first().click();
   assert.equal(await page.locator("#studio-model").innerText(), await page.locator('[data-model-id][aria-selected="true"] p').first().innerText());
   await page.locator('.studio-dock button[data-step="2"]').click();
   assert.equal(await page.locator('.studio-dock button[data-step="2"]').getAttribute("aria-current"), "step");
   await page.locator("#rvc-pitch").fill("4");
   assert.equal(await page.locator("#studio-pitch").innerText(), "+4");
+  await page.locator("#rvc-advanced").evaluate(details => { details.open = true; });
+  await page.locator("#rvc-rms-mix").fill("0.8");
+  assert.equal(await page.locator("#rvc-rms-mix-value").innerText(), "0.80");
   await page.locator('[data-studio-target="rvc-pitch"]').click();
   await page.waitForFunction(() => document.activeElement.id === "rvc-pitch");
   const wave = Buffer.alloc(44 + 16000 * 2);

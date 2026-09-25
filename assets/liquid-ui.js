@@ -105,26 +105,52 @@
       button.dataset.step = String(index);
       if (!index) button.setAttribute("aria-current", "step");
       button.addEventListener("click", () => {
-        const target = document.getElementById(id === "rvc-result" && document.getElementById(id)?.hidden ? "rvc-convert" : id);
-        dock.style.setProperty("--step", String(index));
+        const emptyResult = id === "rvc-result" && document.getElementById(id)?.hidden;
+        const target = document.getElementById(emptyResult ? "rvc-step-audio-label" : id);
+        const activeStep = emptyResult ? 1 : index;
+        if (!target) return;
+        if (emptyResult) {
+          const status = document.getElementById("rvc-service-status");
+          if (status) status.textContent = text("先载入音频并完成变声，结果才会显示在这里。", "Load audio and convert it before opening results.");
+        }
+        dock.style.setProperty("--step", String(activeStep));
         dock.querySelectorAll("button").forEach(item => item.removeAttribute("aria-current"));
-        button.setAttribute("aria-current", "step");
+        dock.querySelector(`button[data-step="${activeStep}"]`)?.setAttribute("aria-current", "step");
         target.scrollIntoView({ behavior: reduced.matches ? "instant" : "smooth", block: "center" });
         if (!target.matches("input")) target.tabIndex = -1;
         target.focus({ preventScroll: true });
       });
       dock.append(button);
     });
+    dock.addEventListener("keydown", event => {
+      const buttons = [...dock.querySelectorAll("button")];
+      const current = buttons.indexOf(document.activeElement);
+      if (current < 0 || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === "Home" ? 0 : event.key === "End" ? buttons.length - 1
+        : (current + (event.key === "ArrowRight" ? 1 : -1) + buttons.length) % buttons.length;
+      buttons[next].click();
+      buttons[next].focus({ preventScroll: true });
+    });
     // A fixed dock must not inherit any transformed or filtered workspace
     // containing block. Keep the navigation at the document's top layer.
     document.body.append(dock);
     const viewport = window.visualViewport;
+    function syncDockSpace() {
+      const box = dock.getBoundingClientRect();
+      const reserve = dock.classList.contains("is-keyboard-hidden") ? 24
+        : Math.ceil(box.height + Math.max(0, window.innerHeight - box.bottom) + 24);
+      document.documentElement.style.setProperty("--bottom-nav-reserve", `${reserve}px`);
+    }
+    if (window.ResizeObserver) new ResizeObserver(syncDockSpace).observe(dock);
+    window.addEventListener("resize", syncDockSpace);
     function syncKeyboard() {
       const focus = document.activeElement;
       const typing = focus?.matches?.('input:not([type="range"]):not([type="checkbox"]):not([type="file"]), textarea, [contenteditable="true"]');
       const keyboard = !!typing && !!viewport && viewport.height < window.innerHeight * 0.76;
       dock.classList.toggle("is-keyboard-hidden", keyboard);
       document.body.classList.toggle("dock-keyboard-hidden", keyboard);
+      syncDockSpace();
     }
     viewport?.addEventListener("resize", syncKeyboard);
     document.addEventListener("focusin", syncKeyboard);
@@ -135,7 +161,8 @@
       const threshold = (document.getElementById("site-header")?.getBoundingClientRect().height || 72) + 140;
       let active = 0;
       steps.forEach(([id], index) => {
-        const target = document.getElementById(id === "rvc-result" && document.getElementById(id)?.hidden ? "rvc-convert" : id);
+        if (id === "rvc-result" && document.getElementById(id)?.hidden) return;
+        const target = document.getElementById(id);
         if (target?.getBoundingClientRect().top <= threshold) active = index;
       });
       dock.style.setProperty("--step", String(active));
@@ -148,6 +175,7 @@
       if (!scrollFrame) scrollFrame = requestAnimationFrame(syncDock);
     }, { passive: true });
     syncDock();
+    syncDockSpace();
     const canvas = panel.querySelector("canvas");
     const ctx = canvas.getContext("2d");
     const audio = panel.querySelector("audio");

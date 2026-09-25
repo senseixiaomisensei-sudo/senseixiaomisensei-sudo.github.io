@@ -238,7 +238,7 @@ html[data-ui="glass"] body[data-page="rvc"] .studio-monitor.glass-only { border-
 html[data-ui="glass"] body[data-page="rvc"] #rvc-result { display: block; padding: 20px; border: 1px solid var(--glass-border); border-radius: 23px; background: var(--glass-bg-heavy); box-shadow: inset 0 1px #fff, 0 10px 25px rgba(30,78,58,.08); }
 html[data-ui="glass"] body[data-page="rvc"] #rvc-result[hidden] { display: none; }
 html[data-ui="glass"] body[data-page="rvc"] #rvc-result-audio { border-radius: 12px; }
-html[data-ui="glass"] body[data-page="rvc"] #toast { z-index: var(--z-toast); bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom,0px) + 32px); background: rgba(29,57,49,.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.2); border-radius: 14px; }
+html[data-ui="glass"] body[data-page="rvc"] #toast { z-index: var(--z-toast); bottom: var(--bottom-nav-reserve, 124px); background: rgba(29,57,49,.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.2); border-radius: 14px; }
 @media (max-width: 1399px) {
   html[data-ui="glass"] body[data-page="rvc"] #site-header nav[aria-label="Primary navigation"] { display: none; }
   html[data-ui="glass"] body[data-page="rvc"] [data-menu-toggle] { display: inline-flex; }

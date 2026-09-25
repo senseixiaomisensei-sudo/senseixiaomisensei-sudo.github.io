@@ -99,6 +99,7 @@
       ownModelHint: "上传你本地训练或转换好的 .onnx 角色模型。仅供当前设备使用，不发布，也不会上传。",
       checkingServiceAction: "正在检查服务…",
       rmsLabel: "音量跟随",
+      rmsHint: "0 更贴近原唱音量，1 保留模型原始动态；云端与设备端含义一致。",
       modeTitle: "处理模式",
       modeOfficialTitle: "云端优先",
       modeOfficialHint: "使用 PyTorch GPU；不可达时，纯人声转到设备端。翻唱需要云端。",
@@ -161,7 +162,10 @@
       protectLabel: "辅音与呼吸保护",
       protectHint: "数值越低，清辅音与呼吸保护越强；0.5 会关闭保护。高动态输入建议 0.20–0.30。",
       f0Label: "音高算法",
-      f0Rmvpe: "RMVPE",
+      f0Rmvpe: "RMVPE（默认）",
+      f0Fcpe: "FCPE（长音可试）",
+      f0Auto: "自动（显示实际算法）",
+      f0Hint: "云端可选；设备端固定使用 RMVPE。自动模式会在结果中显示实际算法。",
       f0Harvest: "Harvest（传统稳健）",
       formatLabel: "输出格式",
       formatWav: "智能格式（手机 MP3 · 电脑 WAV）",
@@ -213,6 +217,7 @@
       ownModelHint: "Import a locally trained or converted .onnx voice model. It stays on this device and is never uploaded or published.",
       checkingServiceAction: "Checking service…",
       rmsLabel: "Volume envelope",
+      rmsHint: "0 follows the source level; 1 keeps the model dynamics. Cloud and device use the same meaning.",
       modeTitle: "Processing mode",
       modeOfficialTitle: "Cloud first",
       modeOfficialHint: "PyTorch GPU inference. Dry vocals fall back to your device if the service is unavailable; covers require cloud.",
@@ -275,7 +280,10 @@
       protectLabel: "Consonant protection",
       protectHint: "Lower values protect unvoiced consonants and breaths more strongly; 0.5 disables protection. Use 0.20–0.30 for high-dynamic input.",
       f0Label: "Pitch extraction",
-      f0Rmvpe: "RMVPE",
+      f0Rmvpe: "RMVPE (default)",
+      f0Fcpe: "FCPE (try for sustained notes)",
+      f0Auto: "Auto (show actual method)",
+      f0Hint: "Cloud offers a choice; device always uses RMVPE. Auto reports the method used in the result.",
       f0Harvest: "Harvest (Classic)",
       formatLabel: "Output format",
       formatWav: "Smart format (MP3 mobile · WAV desktop)",
@@ -1956,6 +1964,11 @@
     return state.catalog.find((m) => m.id === state.selectedModelId);
   }
 
+  function selectedRmsMixRate() {
+    const value = Number(document.getElementById("rvc-rms-mix")?.value);
+    return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : .5;
+  }
+
   // Character models retain a suggested cross-range pitch, but selecting a
   // character must never change the user's current pitch. Official RVC starts
   // at 0 semitones; forcing +8..+12 on every model is a shared source of
@@ -3077,7 +3090,7 @@
       ...remote,
       id: remote.id,
       name: remote.name && remote.name !== remote.id ? remote.name : (local?.name || remote.id),
-      avatarText: remote.emoji || local?.avatarText || "RVC",
+      avatarText: local?.avatarText || remote.emoji || "RVC",
       description: remote.description || local?.description || "管理员挂载的云端 RVC 推理模型",
       tags: license === "unverified" ? [...remoteTags, "许可未核验"] : remoteTags,
       remote: true,
@@ -3096,7 +3109,9 @@
     if (state.cloudProbe) return state.cloudProbe;
     state.cloudProbe = (async () => {
       try {
-        const status = await fetchJsonWithRetry(OFFICIAL_RVC_STATUS_ENDPOINT, CLOUD_STATUS_TIMEOUT_MS);
+        const statusUrl = new URL(OFFICIAL_RVC_STATUS_ENDPOINT, window.location.href);
+        if (state.selectedModelId) statusUrl.searchParams.set("modelId", state.selectedModelId);
+        const status = await fetchJsonWithRetry(statusUrl.href, CLOUD_STATUS_TIMEOUT_MS);
         state.engineReady = status?.ready === true;
         state.engineInfo = state.engineReady ? status : null;
         if (!state.engineReady) return false;
@@ -3174,6 +3189,15 @@
       if (convertLabel) convertLabel.textContent = state.lang === "en"
         ? "Use a shorter clip"
         : "请裁剪音频";
+      return;
+    }
+    if (!usesBrowserInference && state.audioMode === "song"
+        && state.engineReady === true && state.engineInfo?.capabilities?.song === false) {
+      if (statusEl) statusEl.textContent = state.lang === "en"
+        ? "The cloud voice engine is online, but the song separator is not ready. Try again after it is available."
+        : "云端变声引擎已连接，但伴奏分离模型尚未就绪；请稍后再试。";
+      if (convertBtn) convertBtn.disabled = true;
+      if (convertLabel) convertLabel.textContent = state.lang === "en" ? "Song separator unavailable" : "等待伴奏分离模型";
       return;
     }
 
@@ -4007,7 +4031,7 @@
     const resultMeta = document.getElementById("rvc-result-meta");
     const pitchVal = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
     const filterRadiusVal = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
-    const rmsMixVal = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1.0");
+    const rmsMixVal = selectedRmsMixRate();
     const indexRateVal = parseFloat(document.getElementById("rvc-index-rate")?.value || String(selectedModel.defaultIndexRate ?? 0.3));
     const protectVal = parseFloat(document.getElementById("rvc-protect")?.value || "0.25");
 
@@ -4021,7 +4045,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay(" 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260925-stable", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260925-rvcfix", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -4272,7 +4296,8 @@
     const pitch = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
     const indexRate = parseFloat(document.getElementById("rvc-index-rate")?.value || "0.3");
     const protect = parseFloat(document.getElementById("rvc-protect")?.value || "0.25");
-    const rmsMixRate = parseFloat(document.getElementById("rvc-rms-mix")?.value || "1");
+    const rmsMixRate = selectedRmsMixRate();
+    const f0Method = document.getElementById("rvc-f0-method")?.value || "rmvpe";
     const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
     // 纠正错误标称的音频容器 (mp4-in-mp3 等), 避免中继放行后 GPU 服务拒收。
     state.audio.file = await fixUploadContainer(state.audio.file);
@@ -4335,8 +4360,8 @@
       body.set("indexRate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("index_rate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("protect", String(protect));
-      body.set("f0Method", "auto");
-      body.set("f0_method", "auto");
+      body.set("f0Method", f0Method);
+      body.set("f0_method", f0Method);
       const outputFormat = preferredCloudOutputFormat(state.audio.duration);
       body.set("format", outputFormat);
       body.set("resample", "0");
@@ -4463,6 +4488,7 @@
         ? " [2/3] 混音已接收，云端正在分离人声、变声并回混伴奏…"
         : " [2/3] 音频已接收，云端 GPU 已转入后台推理…");
       const outputResponse = await pollCloudOutput(outputUrl, jobTimeoutMs, longJob);
+      const actualF0Method = outputResponse.headers.get("X-RVC-F0-Method") || "";
       updateProgressBar(82);
       updateStatusDisplay(" [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
       const rawOutputBlob = await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs);
@@ -4497,7 +4523,7 @@
           model: selectedModel.name,
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        }) + ` · 云端 PyTorch RVC${state.audioMode === "song" ? " · PyMSS 人声分离/原伴奏回混" : ""} · ${outputFormat.toUpperCase()}`;
+        }) + ` · 云端 PyTorch RVC · F0 ${actualF0Method || (f0Method === "auto" ? "自动（实际算法未返回）" : f0Method.toUpperCase())}${state.audioMode === "song" ? " · PyMSS 人声分离/原伴奏回混" : ""} · ${outputFormat.toUpperCase()}`;
       }
       if (resultSection) {
         resultSection.hidden = false;
@@ -4509,19 +4535,18 @@
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
-      if (allowDeviceFallback && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
-        if (state.audioMode === "song") {
-          setAudioMode("voice");
-          showToast("云端失败，自动转为本地直接变声；不分离伴奏，伴奏也会一起变声。");
-        }
+      if (allowDeviceFallback && state.audioMode === "voice"
+          && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
         updateStatusDisplay(" 云端 RVC 当前不可达，准备切换到用户设备端推理…");
         return { fallback: true, error };
       }
       const failureMessage = cloudRvcFailureMessage(error);
+      const songFallbackHint = state.audioMode === "song" && hasDeviceFallbackModel(selectedModel)
+        ? " · 如接受伴奏也被处理，可自行点击「转为本地直接变声」。" : "";
       const diagnostic = error?.requestId ? ` · 诊断号 ${error.requestId}` : "";
       const deviceHint = !hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)
         ? (state.lang === "en" ? " · This voice is cloud-only; choose an on-device voice to continue locally." : " · 该角色仅支持云端；如需本地接续，请更换支持设备端的角色。") : "";
-      updateStatusDisplay(` ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}${deviceHint}`);
+      updateStatusDisplay(` ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}${deviceHint}${songFallbackHint}`);
       showToast(` ${failureMessage}`);
       return false;
     } finally {
@@ -5053,6 +5078,15 @@
         protectVal.textContent = parseFloat(e.target.value).toFixed(2);
       });
     }
+
+    const rmsMixInput = document.getElementById("rvc-rms-mix");
+    const rmsMixValue = document.getElementById("rvc-rms-mix-value");
+    const syncRmsMix = () => {
+      if (rmsMixValue) rmsMixValue.textContent = selectedRmsMixRate().toFixed(2);
+    };
+    rmsMixInput?.addEventListener("input", syncRmsMix);
+    rmsMixInput?.addEventListener("change", syncRmsMix);
+    syncRmsMix();
 
     // Convert Button
     const convertBtn = document.getElementById("rvc-convert");

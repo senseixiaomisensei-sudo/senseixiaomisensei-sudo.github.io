@@ -58,7 +58,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /error\.retryable = attempt < 2/u);
   assert.match(client, /body\.set\("model_id", selectedModel\.id\)/u);
   assert.match(client, /body\.set\("index_rate"/u);
-  assert.match(client, /body\.set\("f0_method", "auto"\)/u);
+  assert.match(client, /body\.set\("f0_method", f0Method\)/u);
   assert.match(client, /body\.set\("rms_mix_rate"/u);
   assert.match(client, /body\.set\("filter_radius"/u);
   assert.match(client, /body\.set\("audio_mode", state\.audioMode\)/u);

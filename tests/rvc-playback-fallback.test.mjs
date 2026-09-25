@@ -7,12 +7,14 @@ test("complete browser client parses without duplicate declarations", () => {
 });
 
 test("cloud output retains the server format and raw bytes", () => {
-  assert.match(source, /state\.resultUrl = URL\.createObjectURL\(rawOutputBlob\)/);
+  assert.match(source, /const nextResultUrl = URL\.createObjectURL\(rawOutputBlob\)/);
+  assert.match(source, /state\.resultUrl = nextResultUrl/);
+  assert.match(source, /if \(previousResultUrl\) URL\.revokeObjectURL\(previousResultUrl\)/);
   assert.match(source, /Date\.now\(\)\}\.\$\{outputFormat\}/);
   assert.doesNotMatch(source, /await polishCloudVoiceAudio\(rawOutputBlob\)/);
 });
 
 test("protected media playback falls back to the downloaded blob", () => {
-  assert.match(source, /await attachResultAudio\(resultAudio, mediaUrl \|\| state\.resultUrl, Boolean\(mediaUrl\)\)/);
-  assert.match(source, /await attachResultAudio\(resultAudio, state\.resultUrl, false\)/);
+  assert.match(source, /await attachResultAudio\(resultAudio, mediaUrl \|\| nextResultUrl, Boolean\(mediaUrl\)\)/);
+  assert.match(source, /await attachResultAudio\(resultAudio, nextResultUrl, false\)/);
 });
