@@ -164,7 +164,7 @@ test("rvc endpoint surfaces structured upstream error codes instead of masking t
   try {
     const response = await rvcRequest(context());
     const body = await response.json();
-    assert.equal(response.status, 502);
+    assert.equal(response.status, 404);
     assert.equal(body.code, "RVC_MODEL_NOT_FOUND");
     assert.ok(String(body.message).includes("未挂载"));
     assert.equal(body.details.upstreamStatus, 404);
@@ -270,6 +270,21 @@ test("rvc output requires an internal gateway and a constrained job token", asyn
   const body = await response.json();
   assert.equal(response.status, 403);
   assert.equal(body.code, "GATEWAY_NOT_ALLOWED");
+});
+
+test("rvc gateway preserves queue busy and Retry-After", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => Response.json({ code: "RVC_QUEUE_BUSY" }, {
+    status: 429, headers: { "Retry-After": "8" },
+  });
+  try {
+    const response = await rvcRequest(context());
+    assert.equal(response.status, 429);
+    assert.equal(response.headers.get("Retry-After"), "8");
+    assert.equal((await response.json()).code, "RVC_QUEUE_BUSY");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("rvc endpoint forwards song mode only as the constrained server field", async () => {

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import gc
+import hashlib
 import json
 import logging
 import math
@@ -162,6 +163,7 @@ class OutputRecord:
     audio_mode: str = "voice"
     stage: str = "queued"
     vocal_gain: float = 1.0
+    fingerprint: str = ""
 
 
 @dataclass
@@ -442,6 +444,7 @@ def persist_output_records() -> None:
                 "request_id": record.request_id,
                 "audio_mode": record.audio_mode,
                 "vocal_gain": record.vocal_gain,
+                "fingerprint": record.fingerprint,
                 "expires_at": record.expires_at.isoformat(),
             }
         temporary = OUTPUT_ROOT / "records.json.tmp"
@@ -479,6 +482,7 @@ def load_output_records() -> None:
             request_id=str(entry.get("request_id", "")),
             audio_mode=str(entry.get("audio_mode", "voice")),
             vocal_gain=float(entry.get("vocal_gain", 1.0)),
+            fingerprint=str(entry.get("fingerprint", "")),
             stage="completed" if state == "completed" else "failed",
         )
         if entry.get("request_id"):
@@ -516,7 +520,10 @@ app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
 
 @app.exception_handler(RvcServiceError)
 async def rvc_error_handler(_: Request, error: RvcServiceError) -> JSONResponse:
-    return JSONResponse({"code": error.code}, status_code=error.status_code, headers={"Cache-Control": "no-store"})
+    headers = {"Cache-Control": "no-store"}
+    if error.status_code == 429:
+        headers["Retry-After"] = "6"
+    return JSONResponse({"code": error.code}, status_code=error.status_code, headers=headers)
 
 
 def authorized(request: Request) -> bool:
@@ -1207,6 +1214,43 @@ def output_payload(job_id: str, record: OutputRecord) -> dict[str, str]:
     if record.audio_mode == "song" and record.state == "completed":
         payload["vocalGain"] = round(record.vocal_gain, 4)
     return payload
+
+
+async def reserve_conversion_job(request_id: str, fingerprint: str,
+                                 output_format: str, audio_mode: str) -> tuple[str, OutputRecord, bool]:
+    """Reserve a slot and an idempotency key together, before slow upload I/O."""
+    async with outputs_lock:
+        existing_id = request_jobs.get(request_id) if request_id else None
+        existing = outputs.get(existing_id or "")
+        if existing and existing.fingerprint != fingerprint:
+            raise RvcServiceError(409, "RVC_REQUEST_CONFLICT")
+        if existing and existing.state != "failed":
+            return existing_id, existing, False
+        if existing_id and (not existing or existing.state == "failed"):
+            request_jobs.pop(request_id, None)
+        active = sum(record.state in {"uploading", "preparing", "queued", "processing"}
+                     for record in outputs.values())
+        if active >= 2:
+            raise RvcServiceError(429, "RVC_QUEUE_BUSY")
+        job_id = str(uuid.uuid4())
+        record = OutputRecord(
+            path=OUTPUT_ROOT / f"{job_id}.{output_format}",
+            token=secrets.token_urlsafe(32), expires_at=job_expiry(),
+            format=output_format, state="uploading", stage="uploading",
+            request_id=request_id, audio_mode=audio_mode, fingerprint=fingerprint,
+        )
+        outputs[job_id] = record
+        if request_id:
+            request_jobs[request_id] = job_id
+        return job_id, record, True
+
+
+async def release_preparing_job(job_id: str, request_id: str) -> None:
+    async with outputs_lock:
+        outputs.pop(job_id, None)
+        if request_id and request_jobs.get(request_id) == job_id:
+            request_jobs.pop(request_id, None)
+    persist_output_records()
 
 
 def valid_training_token(value: str) -> bool:
@@ -1998,35 +2042,42 @@ async def create_job(
     if client_request_id and not valid_request_id(client_request_id):
         raise RvcServiceError(400, "RVC_INVALID_REQUEST_ID")
 
-    if client_request_id:
-        async with outputs_lock:
-            existing_job_id = request_jobs.get(client_request_id)
-            existing_record = outputs.get(existing_job_id or "")
-        if existing_job_id and existing_record:
-            await audio.close()
-            logger.info("idempotent retry request_id=%s job_id=%s", trace_id, existing_job_id)
-            return output_payload(existing_job_id, existing_record)
-
-    # Bound the invisible queue: at most two jobs may be queued/processing,
-    # otherwise retries pile up behind the GPU and every poll looks stuck.
-    async with outputs_lock:
-        active_jobs = sum(
-            1 for record in outputs.values() if record.state in {"queued", "processing"}
-        )
-    if active_jobs >= 2:
-        await audio.close()
-        raise RvcServiceError(429, "RVC_QUEUE_BUSY")
-
     extension = safe_extension(audio)
-    job_id = str(uuid.uuid4())
-    job_root = Path(tempfile.mkdtemp(prefix=f"{job_id}-", dir=WORK_ROOT))
-    output_path = OUTPUT_ROOT / f"{job_id}.{format}"
     try:
         model_path = find_model_path(model_id)
+    except RvcServiceError:
+        await audio.close()
+        raise
+    fingerprint = hashlib.sha256(json.dumps({
+        "model": model_id, "pitch": pitch_value, "indexRate": index_rate_value,
+        "protect": protect_value, "rmsMixRate": rms_mix_value,
+        "filterRadius": filter_radius_value, "resample": resample_value,
+        "f0Method": f0_method, "format": format, "audioMode": audio_mode,
+        "filename": audio.filename, "contentType": audio.content_type,
+    }, sort_keys=True).encode("utf-8")).hexdigest()
+    await cleanup_expired_outputs()
+    try:
+        job_id, record, created = await reserve_conversion_job(
+            client_request_id, fingerprint, format, audio_mode)
+    except RvcServiceError:
+        await audio.close()
+        raise
+    if not created:
+        await audio.close()
+        logger.info("idempotent retry request_id=%s job_id=%s", trace_id, job_id)
+        return output_payload(job_id, record)
+    persist_output_records()
+    job_root = None
+    output_path = record.path
+    try:
+        job_root = Path(tempfile.mkdtemp(prefix=f"{job_id}-", dir=WORK_ROOT))
         input_raw = job_root / f"input.{extension}"
         input_wav = job_root / "input.wav"
         output_wav = job_root / "output.wav"
         await write_upload(audio, input_raw)
+        async with outputs_lock:
+            record.state = "preparing"
+            record.stage = "preparing"
         duration_seconds = await asyncio.to_thread(probe_duration, input_raw)
         if duration_seconds < MIN_AUDIO_SECONDS:
             raise RvcServiceError(400, "RVC_AUDIO_TOO_SHORT")
@@ -2035,19 +2086,9 @@ async def create_job(
         input_profile = AudioProfile()
         if audio_mode == "voice":
             input_profile = await asyncio.to_thread(normalize_audio, input_raw, input_wav)
-        expires_at = job_expiry()
-        download_token = secrets.token_urlsafe(32)
         async with outputs_lock:
-            outputs[job_id] = OutputRecord(
-                path=output_path,
-                token=download_token,
-                expires_at=expires_at,
-                format=format,
-                request_id=client_request_id,
-                audio_mode=audio_mode,
-            )
-            if client_request_id:
-                request_jobs[client_request_id] = job_id
+            record.state = "queued"
+            record.stage = "queued"
         persist_output_records()
         task = asyncio.create_task(process_conversion_job(
             job_id=job_id,
@@ -2082,10 +2123,12 @@ async def create_job(
             audio_mode,
             asyncio.get_running_loop().time() - started_at,
         )
-        return output_payload(job_id, outputs[job_id])
-    except RvcServiceError:
+        return output_payload(job_id, record)
+    except (RvcServiceError, asyncio.CancelledError):
+        await release_preparing_job(job_id, client_request_id)
         output_path.unlink(missing_ok=True)
-        shutil.rmtree(job_root, ignore_errors=True)
+        if job_root is not None:
+            shutil.rmtree(job_root, ignore_errors=True)
         raise
     except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
         logger.exception(
@@ -2094,9 +2137,13 @@ async def create_job(
             model_id,
             asyncio.get_running_loop().time() - started_at,
         )
+        await release_preparing_job(job_id, client_request_id)
         output_path.unlink(missing_ok=True)
-        shutil.rmtree(job_root, ignore_errors=True)
+        if job_root is not None:
+            shutil.rmtree(job_root, ignore_errors=True)
         raise RvcServiceError(502, "RVC_INFERENCE_FAILED") from None
+    finally:
+        await audio.close()
 
 
 @app.get("/v1/output/{job_id}")
@@ -2109,7 +2156,7 @@ async def get_output(request: Request, job_id: str, token: str):
         record = outputs.get(job_id)
     if record is None or not secrets.compare_digest(token, record.token):
         raise HTTPException(status_code=404, detail="Not found")
-    if record.state in {"queued", "processing"}:
+    if record.state in {"uploading", "preparing", "queued", "processing"}:
         return JSONResponse(
             output_payload(job_id, record),
             status_code=202,

@@ -25,8 +25,8 @@ class RvcError extends Error {
     Object.setPrototypeOf(this, RvcError.prototype);
   }
 }
-async function createWorkerUrl(workerScriptUrl) {
-  const response = await fetch(workerScriptUrl);
+async function createWorkerUrl(workerScriptUrl, signal) {
+  const response = await fetch(workerScriptUrl, { signal });
   if (!response.ok) {
     throw new RvcError(
       "WORKER_FETCH_FAILED",
@@ -38,40 +38,64 @@ async function createWorkerUrl(workerScriptUrl) {
   return URL.createObjectURL(blob);
 }
 async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callbacks = {}, options = {}) {
-  const { timeout = 3e5, ...pipelineOptions } = options;
-  const [modelBuf, contentVecBuf, rmvpeBuf, indexBuf, workerUrl] = await Promise.all([
+  const { timeout = 3e5, signal, ...pipelineOptions } = options;
+  const [modelBuf, contentVecBuf, rmvpeBuf, indexBuf] = await Promise.all([
     files.model.arrayBuffer(),
     files.contentVec.arrayBuffer(),
     files.rmvpe.arrayBuffer(),
-    files.index?.arrayBuffer(),
-    createWorkerUrl(ctx.workerUrl)
+    files.index?.arrayBuffer()
   ]);
+  if (signal?.aborted) throw new RvcError("WORKER_CANCELLED", "Pipeline was cancelled");
+  const workerUrl = await createWorkerUrl(ctx.workerUrl, signal);
   return new Promise((resolve, reject) => {
-    const worker = new Worker(workerUrl, {
-      type: "module"
-    });
-    const timeoutId = setTimeout(() => {
-      worker.terminate();
-      reject(new RvcError("WORKER_TIMEOUT", `Pipeline timed out after ${timeout}ms`));
+    let worker;
+    let timeoutId;
+    let settled = false;
+    const onAbort = () => finish(new RvcError("WORKER_CANCELLED", "Pipeline was cancelled"));
+    const finish = (error, result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", onAbort);
+      if (worker) {
+        worker.onmessage = null;
+        worker.onerror = null;
+        worker.onmessageerror = null;
+        worker.terminate();
+      }
+      URL.revokeObjectURL(workerUrl);
+      if (error) reject(error);
+      else resolve(result);
+    };
+    if (signal?.aborted) {
+      onAbort();
+      return;
+    }
+    try {
+      worker = new Worker(workerUrl, { type: "module" });
+    } catch (error) {
+      finish(new RvcError("WORKER_START_FAILED", "Could not start the inference worker", error));
+      return;
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
+    timeoutId = setTimeout(() => {
+      finish(new RvcError("WORKER_TIMEOUT", `Pipeline timed out after ${timeout}ms`));
     }, timeout);
     worker.onmessage = (event) => {
-      const { type } = event.data;
-      switch (type) {
+      try {
+        const { type } = event.data;
+        switch (type) {
         case "EVENT": {
           callbacks.onEvent?.(event.data.event);
           break;
         }
         case "COMPLETE": {
-          clearTimeout(timeoutId);
-          worker.terminate();
-          resolve(event.data.result);
+          finish(null, event.data.result);
           break;
         }
         case "ERROR": {
-          clearTimeout(timeoutId);
-          worker.terminate();
           const { code, error } = event.data;
-          reject(new RvcError(code, error));
+          finish(new RvcError(code, error));
           break;
         }
         case "LOG": {
@@ -79,8 +103,16 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
           console[level](message);
           break;
         }
+        }
+      } catch (error) {
+        finish(error);
       }
     };
+    worker.onerror = (event) => {
+      event.preventDefault?.();
+      finish(new RvcError("WORKER_RUNTIME_ERROR", event.message || "Inference worker failed"));
+    };
+    worker.onmessageerror = () => finish(new RvcError("WORKER_MESSAGE_ERROR", "Inference worker returned unreadable data"));
 
     // Clone audio buffer for transfer to ensure caller's audio buffer is NEVER detached
     let audioPayload = audioData;
@@ -104,7 +136,8 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
       audioBuf
     ].filter(b => b instanceof ArrayBuffer && b.byteLength > 0);
 
-    worker.postMessage(
+    try {
+      worker.postMessage(
       {
         type: "RUN_PIPELINE",
         wasmBaseUrl: ctx.wasmBaseUrl,
@@ -127,7 +160,10 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
         options: pipelineOptions
       },
       transferables
-    );
+      );
+    } catch (error) {
+      finish(new RvcError("WORKER_POST_FAILED", "Could not send audio to the inference worker", error));
+    }
   });
 }
 function isWorkerSupported() {

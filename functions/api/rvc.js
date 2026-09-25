@@ -120,6 +120,14 @@ function validInferencePayload(payload) {
 
 const UPSTREAM_CODE_PATTERN = /^[A-Z][A-Z0-9_]{2,63}$/u;
 const UPSTREAM_ERROR_MESSAGES = Object.freeze({
+  RVC_QUEUE_BUSY: Object.freeze({
+    zh: "当前 GPU 队列已满，请稍后重试",
+    en: "The GPU queue is full; please retry shortly",
+  }),
+  RVC_REQUEST_CONFLICT: Object.freeze({
+    zh: "相同任务编号对应了不同参数，请重新发起任务",
+    en: "This request id was already used with different settings",
+  }),
   RVC_MODEL_NOT_FOUND: Object.freeze({
     zh: "所选角色模型未挂载到推理服务，请刷新角色列表后重试",
     en: "The selected voice model is not mounted on the inference service",
@@ -162,7 +170,7 @@ const UPSTREAM_ERROR_MESSAGES = Object.freeze({
   }),
 });
 
-function backendFailure(request, env, payload, requestedLanguage, upstreamStatus) {
+function backendFailure(request, env, payload, requestedLanguage, upstreamStatus, retryAfter) {
   const upstreamCode = payload && typeof payload.code === "string" && UPSTREAM_CODE_PATTERN.test(payload.code)
     ? payload.code
     : "RVC_BACKEND_UNAVAILABLE";
@@ -170,7 +178,22 @@ function backendFailure(request, env, payload, requestedLanguage, upstreamStatus
   const message = localized
     ? (localized[requestedLanguage] || localized.zh)
     : "Voice conversion is temporarily unavailable";
-  return failure(request, env, 502, upstreamCode, message, { upstreamStatus });
+  const status = {
+    RVC_QUEUE_BUSY: 429,
+    RVC_REQUEST_CONFLICT: 409,
+    RVC_INVALID_PARAMETER: 400,
+    RVC_INVALID_MODEL: 400,
+    RVC_MODEL_NOT_FOUND: 404,
+    RVC_INVALID_AUDIO: 400,
+    RVC_AUDIO_TOO_SHORT: 400,
+    RVC_AUDIO_TOO_LONG: 400,
+    RVC_AUDIO_TOO_LARGE: 413,
+    RVC_SEPARATOR_UNAVAILABLE: 503,
+    RVC_TRAINING_ACTIVE: 503,
+  }[upstreamCode] || 502;
+  const response = failure(request, env, status, upstreamCode, message, { upstreamStatus });
+  if (status === 429) response.headers.set("Retry-After", /^\d{1,2}$/u.test(retryAfter || "") ? retryAfter : "6");
+  return response;
 }
 
 export async function onRequest(context) {
@@ -272,7 +295,7 @@ export async function onRequest(context) {
   } catch {
     payload = null;
   }
-  if (!upstream.ok) return backendFailure(request, env, payload, requestedLanguage, upstream.status);
+  if (!upstream.ok) return backendFailure(request, env, payload, requestedLanguage, upstream.status, upstream.headers.get("Retry-After"));
   const result = validInferencePayload(payload);
   if (!result) return failure(request, env, 502, "RVC_INVALID_OUTPUT", "Voice conversion returned an invalid response");
   return json(request, env, { ok: true, ...result });

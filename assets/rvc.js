@@ -3242,13 +3242,13 @@
           payload = await upload(routes, 1);
         } catch (error) {
           if (!error?.retryable) throw error;
-          await onRetry(false);
+          await onRetry(false, error);
           payload = await upload(routes, 2);
         }
         return { payload, routes };
       } catch (error) {
         if (!isEndpointNetworkError(error) || index + 1 === bases.length) throw error;
-        await onRetry(true);
+        await onRetry(true, error);
       }
     }
     throw new Error("No cloud endpoint configured");
@@ -4182,6 +4182,7 @@
 
       // 4. Attach generated audio to UI
       const outputUrl = URL.createObjectURL(result.outputWav);
+      const previousResultUrl = state.resultUrl;
       if (resultAudio) {
         resultAudio.src = outputUrl;
         resultAudio.load();
@@ -4190,6 +4191,8 @@
         resultDownload.href = outputUrl;
         resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.wav`;
       }
+      state.resultUrl = outputUrl;
+      if (previousResultUrl) URL.revokeObjectURL(previousResultUrl);
       if (resultMeta) {
         const localBackendLabel = result.backend === "webgpu" ? "ONNX/WebGPU" : "ONNX/WebAssembly";
         resultMeta.textContent = state.lang === "en"
@@ -4408,6 +4411,8 @@
             error.requestId = String(xhr.getResponseHeader("X-PostPrep-Request-Id") || "").slice(0, 96);
             error.retryAfterSeconds = Math.max(0, parseInt(xhr.getResponseHeader("Retry-After") || "0", 10) || 0);
             error.retryable = attempt < 2 && (
+              errCode === "RVC_QUEUE_BUSY"
+              ||
               ["UPSTREAM_UNAVAILABLE", "RVC_BACKEND_UNAVAILABLE", "RATE_LIMITER_UNAVAILABLE", "RVC_NETWORK_INTERRUPTED"].includes(errCode)
               || (!errCode && [502, 503, 520, 521, 522, 523, 524].includes(xhr.status))
             );
@@ -4441,12 +4446,12 @@
 
       // Reuse this FormData/request ID across entry retries. Once accepted,
       // polling and downloading stay on that job and never resubmit the audio.
-      const { payload, routes } = await uploadWithRouteFallback(activeBases, uploadAndInfer, async (nextEntry) => {
+      const { payload, routes } = await uploadWithRouteFallback(activeBases, uploadAndInfer, async (nextEntry, error) => {
         updateProgressBar(8);
         updateStatusDisplay(nextEntry
           ? " 当前云端入口不可达，正在尝试备用入口…"
           : " 云端连接短暂中断，正在重新连接同一入口并自动重试一次…");
-        await waitFor(1200);
+        await waitFor(Math.min(15000, Math.max(1200, (error?.retryAfterSeconds || 0) * 1000)));
       });
       if (!payload || !payload.jobId || !payload.downloadToken) {
         throw new Error(payload?.message || payload?.code || "未获取到任务标识");
@@ -4461,23 +4466,31 @@
       updateProgressBar(82);
       updateStatusDisplay(" [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
       const rawOutputBlob = await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs);
-      if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
-      state.resultUrl = URL.createObjectURL(rawOutputBlob);
+      const nextResultUrl = URL.createObjectURL(rawOutputBlob);
+      const previousResultUrl = state.resultUrl;
       if (resultDownload) {
-        resultDownload.href = state.resultUrl;
+        resultDownload.href = nextResultUrl;
         resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.${outputFormat}`;
       }
       if (resultAudio) {
         const mediaUrl = officialMediaUrl(payload.jobId, payload.downloadToken);
         try {
-          await attachResultAudio(resultAudio, mediaUrl || state.resultUrl, Boolean(mediaUrl));
+          await attachResultAudio(resultAudio, mediaUrl || nextResultUrl, Boolean(mediaUrl));
         } catch (mediaError) {
-          if (!mediaUrl) throw mediaError;
-          console.warn("Protected media route failed; using the already downloaded result blob", mediaError);
-          await attachResultAudio(resultAudio, state.resultUrl, false);
+          try {
+            if (!mediaUrl) throw mediaError;
+            console.warn("Protected media route failed; using the already downloaded result blob", mediaError);
+            await attachResultAudio(resultAudio, nextResultUrl, false);
+          } catch (error) {
+            URL.revokeObjectURL(nextResultUrl);
+            if (resultDownload) resultDownload.href = previousResultUrl || "#";
+            throw error;
+          }
         }
         resultAudio.hidden = false;
       }
+      state.resultUrl = nextResultUrl;
+      if (previousResultUrl) URL.revokeObjectURL(previousResultUrl);
       const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
       if (resultMeta) {
         resultMeta.textContent = t("resultMeta", {
@@ -4559,6 +4572,11 @@
     setAudioMode("voice");
     setInferenceMode("local");
     runRvcInference();
+  });
+
+  window.addEventListener("pagehide", () => {
+    if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
+    state.resultUrl = "";
   });
 
   function setupModelTraining() {
