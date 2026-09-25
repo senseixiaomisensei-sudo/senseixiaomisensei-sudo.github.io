@@ -122,6 +122,8 @@ function requestRoute(request) {
   if (path === "/rvc/status") {
     return {
       id: "rvc-status",
+      modelId: /^[A-Za-z0-9_-]{1,64}$/u.test(url.searchParams.get("modelId") || "")
+        ? url.searchParams.get("modelId") : "",
       upstreamBinding: "POSTPREP_RVC_STATUS_UPSTREAM_URL",
       method: "GET",
       rateBinding: TEXT_RATE_LIMITER_BINDING,
@@ -277,6 +279,9 @@ function resolvedDirectRvcUrl(route, env) {
     if (route.id === "rvc-output" || route.id.startsWith("rvc-train-") && route.token) {
       url.searchParams.set("token", route.token);
     }
+    if (route.id === "rvc-status" && route.modelId) {
+      url.searchParams.set("model_id", route.modelId);
+    }
     return url.toString();
   } catch {
     return "";
@@ -294,6 +299,9 @@ function resolvedUpstreamUrl(route, env) {
     if (route.id === "rvc-output") {
       url.searchParams.set("job", route.jobId);
       url.searchParams.set("token", route.token);
+    }
+    if (route.id === "rvc-status" && route.modelId) {
+      url.searchParams.set("modelId", route.modelId);
     }
     return url.toString();
   } catch {
@@ -371,7 +379,7 @@ export default {
       upstreamHeaders.set("X-Content-Type-Options", "nosniff");
       upstreamHeaders.set("Vary", "Origin");
       upstreamHeaders.set("Access-Control-Allow-Origin", origin);
-      upstreamHeaders.set("Access-Control-Expose-Headers", "Retry-After, X-PostPrep-Request-Id");
+      upstreamHeaders.set("Access-Control-Expose-Headers", "Retry-After, X-PostPrep-Request-Id, X-RVC-F0-Method");
       upstreamHeaders.set("X-PostPrep-Request-Id", requestId);
       return new Response(upstream.body, { status: upstream.status, headers: upstreamHeaders });
     } catch {

@@ -183,6 +183,37 @@ test("rvc routes use the authenticated narrow tunnel when direct credentials are
   }
 });
 
+test("rvc status forwards only a valid model id and exposes the selected F0 header", async () => {
+  const originalFetch = globalThis.fetch;
+  let upstreamUrl = "";
+  globalThis.fetch = async (url) => {
+    upstreamUrl = String(url);
+    return new Response(JSON.stringify({ ready: true }), {
+      headers: { "Content-Type": "application/json", "X-RVC-F0-Method": "rmvpe" },
+    });
+  };
+  try {
+    const env = {
+      ...BASE_ENV,
+      POSTPREP_RVC_DIRECT_BASE_URL: "https://voice-relay-example.trycloudflare.com",
+      POSTPREP_RVC_INFERENCE_TOKEN: "rvc-direct-token-with-at-least-32-characters",
+    };
+    const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc/status?modelId=hoshino", {
+      headers: { Origin: PAGES_ORIGIN },
+    });
+    const response = await gateway.fetch(request, env);
+    assert.equal(upstreamUrl, "https://voice-relay-example.trycloudflare.com/healthz?model_id=hoshino");
+    assert.match(response.headers.get("Access-Control-Expose-Headers"), /X-RVC-F0-Method/u);
+    const invalid = new Request("https://postprep-text-gateway.example.workers.dev/rvc/status?modelId=..evil", {
+      headers: { Origin: PAGES_ORIGIN },
+    });
+    await gateway.fetch(invalid, env);
+    assert.equal(upstreamUrl, "https://voice-relay-example.trycloudflare.com/healthz");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("TTS uses the authenticated narrow tunnel with JSON and the text limiter", async () => {
   const originalFetch = globalThis.fetch;
   let forwarded;
