@@ -10,6 +10,21 @@ from app.pitch_safety import repair_octave_glitches, quantize_pitch, safe_get_f0
 
 
 class PitchSafetyTests(unittest.TestCase):
+    def test_real_low_octave_note_with_strong_second_harmonic_is_not_raised(self):
+        # The upper partial of a real 220 Hz note can be louder than its
+        # fundamental. Half-period correlation alone must not erase the note.
+        track = np.full(100, 440.0)
+        track[40:60] = 220.0
+        sample_f0 = np.repeat(track, 160)
+        phase = 2 * np.pi * np.cumsum(sample_f0) / 16000
+        audio = 0.07 * np.sin(phase) + np.sin(2 * phase)
+        pipeline = SimpleNamespace(
+            sr=16000, window=160, pitch_median_radius=0,
+            model_rmvpe=SimpleNamespace(infer_from_audio=lambda *a, **k: track),
+        )
+        _, continuous = safe_get_f0(pipeline, audio, 100, 0, "rmvpe")
+        np.testing.assert_allclose(continuous[40:60], 220)
+
     def test_crossing_embedding_ceiling_preserves_melody_and_transposition(self):
         frames = np.r_[np.linspace(950, 1200, 40), 0, np.linspace(1200, 950, 40)]
         pipeline = SimpleNamespace(sr=16000, window=160, pitch_median_radius=0,

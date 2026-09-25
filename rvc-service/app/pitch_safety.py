@@ -163,7 +163,11 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
         raise ValueError(f"Unsupported F0 method: {f0_method}")
     f0 = repair_octave_glitches(np.asarray(f0).reshape(-1))
     f0 = np.pad(f0[:p_len], (0, max(0, p_len - len(f0))))
-    f0 = repair_waveform_octave_drops(f0, x, pipeline.sr, pipeline.window)
+    # Half-period correlation cannot distinguish an octave error from a real
+    # lower note with a stronger second harmonic. Leave this experimental
+    # repair off unless a caller explicitly supplies independent evidence.
+    if getattr(pipeline, "enable_waveform_octave_repair", False):
+        f0 = repair_waveform_octave_drops(f0, x, pipeline.sr, pipeline.window)
     f0 = median_smooth_pitch(f0, int(getattr(pipeline, "pitch_median_radius", 1) or 0))
     f0 *= 2 ** (f0_up_key / 12)
     # The embedding ceiling is not a pitch ceiling. Folding frames above it
