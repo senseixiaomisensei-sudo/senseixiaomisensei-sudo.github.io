@@ -12603,7 +12603,6 @@ async function runRmvpeInference(session, audio) {
     const outputName = session.outputNames[0] ?? "hidden";
     const outputTensor = results[outputName];
     let f0;
-    let confidence = null;
     if (outputTensor.dims.length === 2) {
       const outputFrames = outputTensor.dims[1];
       const data = outputTensor.data;
@@ -12618,24 +12617,16 @@ async function runRmvpeInference(session, audio) {
       const outputFrames = isLastDimClass ? outputTensor.dims[1] : outputTensor.dims[2];
       const f0All = decodeSalienceToF0(salienceData, outputFrames, threshold, !isLastDimClass);
       f0 = new Float32Array(numFrames);
-      confidence = new Float32Array(numFrames);
       for (let i = 0; i < numFrames; i++) {
         const hz = i < f0All.length ? f0All[i] : 0;
         f0[i] = Number.isFinite(hz) && hz >= 40 && hz <= 2000 ? hz : 0;
-        if (i < outputFrames) {
-          let peak = 0;
-          for (let bin = 0; bin < RMVPE_PARAMS.nClass; bin++) {
-            peak = Math.max(peak, salienceData[isLastDimClass ? i * RMVPE_PARAMS.nClass + bin : bin * outputFrames + i]);
-          }
-          confidence[i] = peak;
-        }
       }
     } else {
       throw new Error(
         `Unexpected RMVPE output shape: [${outputTensor.dims.join(", ")}], expected [batch, frames] or [batch, ${RMVPE_PARAMS.nClass}, frames]`
       );
     }
-    return { f0, confidence, frameCount: numFrames };
+    return { f0, frameCount: numFrames };
   } catch (cause) {
     throw new RvcError(ErrorCodes.PITCH_INFERENCE_FAILED, "RMVPE inference failed.", cause);
   }
@@ -12762,83 +12753,95 @@ function aggressiveMedianFilterF0(f0, windowSize = 5) {
   }
   return result;
 }
-function frameWaveformEvidence(audio, frame, hz, sampleRate = 16000) {
-  const radius = Math.round(sampleRate * 0.025);
-  const center = frame * Math.round(sampleRate / 100);
-  const start = Math.max(0, center - radius);
-  const end = Math.min(audio.length, center + radius);
-  const lag = Math.max(1, Math.round(sampleRate / hz));
-  if (end - start < Math.max(radius, 3 * lag)) return 0;
-  let mean = 0;
-  for (let i = start; i < end; i++) mean += audio[i];
-  mean /= end - start;
-  let dot = 0, left = 0, right = 0;
-  for (let i = start; i + lag < end; i++) {
-    const a = audio[i] - mean, b = audio[i + lag] - mean;
-    dot += a * b;
-    left += a * a;
-    right += b * b;
+function repairIsolatedShoutF0Errors(f0, maxRunLength = 3) {
+  const len = f0.length;
+  if (len < 3) return f0;
+  const out = new Float32Array(f0);
+  const boundedRunLength = Math.max(1, Math.min(12, Math.floor(maxRunLength) || 3));
+  const isOctaveBandOutlier = (value, reference) => value / reference > 1.50 || value / reference < 0.66;
+  let start = 1;
+  while (start < len - 1) {
+    const left = out[start - 1];
+    if (!(left > 0) || !(out[start] > 0) || !isOctaveBandOutlier(out[start], left)) {
+      start++;
+      continue;
+    }
+    let end = start;
+    while (
+      end < len - 1 &&
+      end - start < boundedRunLength &&
+      out[end] > 0 &&
+      isOctaveBandOutlier(out[end], left)
+    ) {
+      end++;
+    }
+    const right = out[end];
+    const runLength = end - start;
+    const neighborsAgree = right > 0 && Math.abs(right / left - 1.0) < 0.35;
+    const sameOutlierSide = neighborsAgree && Array.from(out.subarray(start, end)).every((value) => (
+      (value / left > 1.50 && value / right > 1.50) ||
+      (value / left < 0.66 && value / right < 0.66)
+    ));
+    if (runLength > 0 && runLength <= boundedRunLength && sameOutlierSide) {
+      for (let offset = 0; offset < runLength; offset++) {
+        out[start + offset] = left + (right - left) * ((offset + 1) / (runLength + 1));
+      }
+      start = end;
+      continue;
+    }
+    start++;
   }
-  return left > 1e-6 && right > 1e-6 ? dot / Math.sqrt(left * right) : 0;
+  return out;
 }
-
-function stabilizeF0ByWaveform(f0, audio, confidence = null) {
-  const output = new Float32Array(f0);
-  for (let start = 1; start < f0.length - 1; start++) {
-    const left = f0[start - 1];
-    if (!(left > 0) || !(f0[start] > 0)) continue;
-    for (let width = 1; width <= 2; width++) {
-      const end = start + width;
-      if (end >= f0.length || !(f0[end] > 0)) break;
-      const right = f0[end];
-      if (Math.abs(1200 * Math.log2(right / left)) > 170) continue;
-      let supported = true;
-      for (let offset = 0; offset < width; offset++) {
-        const frame = start + offset;
-        const expectedHz = left * Math.pow(right / left, (offset + 1) / (width + 1));
-        const measuredHz = f0[frame];
-        if (!(measuredHz > 0) || Math.abs(1200 * Math.log2(measuredHz / expectedHz)) < 520) {
-          supported = false;
-          break;
-        }
-        const expected = frameWaveformEvidence(audio, frame, expectedHz);
-        const measured = frameWaveformEvidence(audio, frame, measuredHz);
-        if (expected < 0.72 || (measured > expected - 0.08 && !(confidence && confidence[frame] < 0.3))) {
-          supported = false;
-          break;
-        }
-      }
-      if (supported) {
-        for (let offset = 0; offset < width; offset++) {
-          output[start + offset] = left * Math.pow(right / left, (offset + 1) / (width + 1));
-        }
-        break;
-      }
+function hasShoutDynamics(audio) {
+  if (!audio || audio.length === 0) return false;
+  let sumSquares = 0;
+  let loudSamples = 0;
+  for (let i = 0; i < audio.length; i++) {
+    const magnitude = Math.abs(audio[i]);
+    sumSquares += audio[i] * audio[i];
+    if (magnitude >= 0.55) loudSamples++;
+  }
+  const rms = Math.sqrt(sumSquares / audio.length);
+  return rms >= 0.18 && loudSamples / audio.length >= 0.01;
+}
+function hasHighOrComplexPitch(f0) {
+  const voiced = [];
+  let largeAdjacentJumps = 0;
+  let adjacentVoiced = 0;
+  for (let i = 0; i < f0.length; i++) {
+    const value = f0[i];
+    if (value > 0 && isFinite(value)) voiced.push(value);
+    if (i > 0 && value > 0 && f0[i - 1] > 0) {
+      adjacentVoiced++;
+      if (Math.abs(12 * Math.log2(value / f0[i - 1])) >= 3) largeAdjacentJumps++;
     }
   }
-  return output;
+  if (voiced.length < 8) return false;
+  voiced.sort((left, right) => left - right);
+  const percentile = (ratio) => voiced[Math.min(voiced.length - 1, Math.floor((voiced.length - 1) * ratio))];
+  const p10 = percentile(0.10);
+  const p90 = percentile(0.90);
+  const pitchRange = p10 > 0 ? 12 * Math.log2(p90 / p10) : 0;
+  return p90 >= 440 || pitchRange >= 18 || (adjacentVoiced >= 8 && largeAdjacentJumps / adjacentVoiced >= 0.08);
 }
-
 async function estimatePitch(audio, options) {
   const session = options.rmvpe instanceof File ? await loadRmvpeModel(options.rmvpe) : options.rmvpe;
-  const { f0, confidence, frameCount } = await runRmvpeInference(session, audio);
+  const { f0, frameCount } = await runRmvpeInference(session, audio);
   // Official RMVPE inference returns its contour directly. Filtering remains
   // opt-in for genuinely broken pitch tracks; enabling it by default creates
   // stepped notes and a robotic/electronic delivery.
   const medianFilterEnabled = options.medianFilter === true;
   const aggressiveMode = options.aggressiveMedianFilter === true;
   const windowSize = options.medianFilterWindow ?? (aggressiveMode ? 5 : 3);
-  // A shout or complex phrase may cause a 10–30 ms octave excursion that
-  // sounds like a bubble or electronic chirp. Repair only a short run that is
-  // bracketed by agreeing voiced neighbours; sustained notes and vibrato stay
-  // untouched. Only brief pitch islands contradicted by the waveform are
-  // corrected; long notes and deliberate register changes remain intact.
-  let filteredF0 = stabilizeF0ByWaveform(f0, audio, confidence);
+  // The browser default retains RMVPE's raw melody. The former automatic
+  // 100 ms octave repair mistook high singing and ornaments for pitch errors.
+  let filteredF0 = f0;
   if (medianFilterEnabled) {
     if (aggressiveMode) {
-      filteredF0 = aggressiveMedianFilterF0(filteredF0, windowSize);
+      filteredF0 = aggressiveMedianFilterF0(f0, windowSize);
     } else {
-      filteredF0 = medianFilterF0(filteredF0, windowSize);
+      filteredF0 = medianFilterF0(f0, windowSize);
     }
   }
   // Reject voiced F0 on frames whose energy is dominated by low-frequency
@@ -12847,7 +12850,6 @@ async function estimatePitch(audio, options) {
   filteredF0 = applyVoicingSanityGate(filteredF0, audio);
   return {
     f0: filteredF0,
-    confidence,
     frameCount,
     hopSize: 160
   };
@@ -13040,7 +13042,7 @@ function parseRetrievalCodebook(input) {
   }
   return { count, dimension, centers: new Float32Array(buffer, 16, count * dimension) };
 }
-function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect = 0.33, sourceAudio = null, confidence = null) {
+function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect = 0.33) {
   const rate = Math.max(0, Math.min(1, Number(indexRate)));
   const consonantRetention = Math.max(0, Math.min(0.5, Number(protect)));
   if (!codebook || rate <= 0 || codebook.dimension !== features.featureSize) return features;
@@ -13052,11 +13054,9 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
   // more target-speaker detail than the former Top-4 shortcut without adding
   // another neural inference pass.
   const neighborCount = Math.min(8, codebook.count);
-  const matches = [];
-  const nearestDistances = [];
+  const distances = new Float64Array(neighborCount);
+  const nearest = new Int32Array(neighborCount);
   for (let frame = 0; frame < frameCount; frame += 2) {
-    const distances = new Float64Array(neighborCount);
-    const nearest = new Int32Array(neighborCount);
     distances.fill(Infinity);
     nearest.fill(-1);
     const featureOffset = frame * dimension;
@@ -13077,8 +13077,8 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
       distances[position] = distance;
       nearest[position] = center;
     }
-    const weights = new Float64Array(neighborCount);
     let weightTotal = 0;
+    const weights = new Float64Array(neighborCount);
     if (distances[0] <= 1e-12) {
       weights[0] = 1;
       weightTotal = 1;
@@ -13089,44 +13089,10 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
         weightTotal += inverseSquared;
       }
     }
-    matches.push({ nearest, weights, weightTotal });
-    if (Number.isFinite(distances[0])) nearestDistances.push(distances[0]);
-  }
-  nearestDistances.sort((a, b) => a - b);
-  const typicalDistance = nearestDistances[Math.floor(nearestDistances.length / 2)] ?? 0;
-  let smoothRate = null;
-  for (let frame = 0; frame < frameCount; frame += 2) {
-    const match = matches[Math.floor(frame / 2)];
-    if (!match || !match.weightTotal) continue;
-    const { nearest, weights, weightTotal } = match;
-    const nearestDistance = nearestDistances.length ? (() => {
-      let distance = 0;
-      const offset = frame * dimension;
-      const centerOffset = nearest[0] * dimension;
-      for (let dim = 0; dim < dimension; dim++) {
-        const delta = features.hiddenStates[offset + dim] - codebook.centers[centerOffset + dim];
-        distance += delta * delta;
-      }
-      return distance;
-    })() : 0;
-    const distanceTrust = typicalDistance > 0
-      ? Math.max(0.45, Math.min(1, typicalDistance / Math.max(1e-9, nearestDistance))) : 1;
-    const hz = f0[Math.min(frame, f0.length - 1)] ?? 0;
-    let factor = hz > 0 ? 1.06 : 0.55;
-    let sourceFraction = hz > 0 ? 1 : consonantRetention;
-    if (sourceAudio && hz > 0) {
-      const periodicity = frameWaveformEvidence(sourceAudio, frame, hz);
-      const uncertain = periodicity < 0.35 || (confidence && confidence[frame] < 0.3);
-      if (uncertain) {
-        factor = 0.68;
-        if (consonantRetention < 0.5) sourceFraction = 0.78;
-      }
-    }
-    if (hz > 900 || (hz > 0 && hz < 75)) factor = Math.min(factor, 0.68);
-    // The user setting remains the center; no retrieval is created when it is
-    // zero.  Slow release prevents a syllable-to-syllable zipper effect.
-    const desired = Math.min(Math.max(rate, 0.45), rate * factor * distanceTrust * sourceFraction);
-    smoothRate = smoothRate === null ? desired : smoothRate + (desired - smoothRate) * (desired < smoothRate ? 0.35 : 0.18);
+    const voiced = (f0[Math.min(frame, f0.length - 1)] ?? 0) > 0;
+    // Match upstream RVC: protect=0.5 disables protection, while lower values
+    // retain progressively more of the original unvoiced HuBERT features.
+    const effectiveRate = rate * (voiced || consonantRetention >= 0.5 ? 1 : consonantRetention);
     for (let paired = frame; paired < Math.min(frame + 2, frameCount); paired++) {
       const pairedOffset = paired * dimension;
       for (let dim = 0; dim < dimension; dim++) {
@@ -13136,7 +13102,7 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
         }
         retrieved /= weightTotal;
         const original = features.hiddenStates[pairedOffset + dim];
-        output[pairedOffset + dim] = original + (retrieved - original) * smoothRate;
+        output[pairedOffset + dim] = original + (retrieved - original) * effectiveRate;
       }
     }
   }
@@ -13555,7 +13521,129 @@ function suppressDetectedHarshBursts(audio, sampleRate = 40000) {
   return output;
 }
 
-// Final gain is uniform across the clip, preserving the converted timbre.
+// Dynamic anti-metallic mastering: tames the HiFiGAN "low-end boom + 3-5kHz
+// resonance + over-bright high" signature without dulling the source.
+function applyHarmonicAirAndWarmth(audio, sampleRate = 40000) {
+  if (!audio || audio.length === 0) return audio;
+  const processed = new Float32Array(audio);
+  // NaN hygiene: a single NaN sample would propagate through every biquad
+  // and poison the whole buffer; flush them to silence up front.
+  for (let i = 0; i < processed.length; i++) {
+    if (isNaN(processed[i])) processed[i] = 0;
+  }
+
+  // 1. Tame low-end boom: -3.5dB @ 180Hz low-shelf (was +3dB @ 350Hz which added mud)
+  const lowShelf = createBiquadLowShelf(180, -3.5, sampleRate);
+  applyBiquadFilterInPlace(processed, lowShelf);
+
+  // 2. Restore vocal body: +2.5dB @ 1200Hz peaking (Q=0.8)
+  const bodyBoost = createBiquadPeaking(1200, 2.5, 0.8, sampleRate);
+  applyBiquadFilterInPlace(processed, bodyBoost);
+
+  // 3. Dynamic suppression of the 3.0-3.5kHz metallic band, gated by the 1.15k
+  //    vocal-body energy so we only cut when harshness is actually present.
+  // 3b. Same gating for the 4-5kHz "pinched/shrill" band: large upward pitch
+  //     shifts (+10..+12) stack dense harmonics exactly there, which is heard
+  //     as 声音过尖/不自然. Cutting dynamically (instead of a static EQ dip)
+  //     keeps natural /s/ sibilance intact while taming sustained shrillness.
+  const bMetal = createBiquadBandpass(3200, 1.0, sampleRate);
+  const bBody = createBiquadBandpass(1150, 0.6, sampleRate);
+  const bSharp = createBiquadBandpass(4600, 1.2, sampleRate);
+  const metalSig = new Float32Array(processed);
+  const bodySig = new Float32Array(processed);
+  const sharpSig = new Float32Array(processed);
+  applyBiquadFilterInPlace(metalSig, bMetal);
+  applyBiquadFilterInPlace(bodySig, bBody);
+  applyBiquadFilterInPlace(sharpSig, bSharp);
+
+  const blockSize = Math.max(1, Math.round(sampleRate * 0.005));
+  const numBlocks = Math.floor(processed.length / blockSize);
+  const gainEnv = new Float32Array(processed.length);
+  const sharpEnv = new Float32Array(processed.length);
+  let currentGain = 1.0;
+  let currentSharpGain = 1.0;
+
+  for (let blk = 0; blk < numBlocks; blk++) {
+    const st = blk * blockSize;
+    const en = Math.min(st + blockSize, processed.length);
+    let sMetal = 0, sBody = 0, sSharp = 0;
+    for (let i = st; i < en; i++) {
+      sMetal += metalSig[i] * metalSig[i];
+      sBody += bodySig[i] * bodySig[i];
+      sSharp += sharpSig[i] * sharpSig[i];
+    }
+    const rmsMetal = Math.sqrt(sMetal / (en - st) + 1e-6);
+    const rmsBody = Math.sqrt(sBody / (en - st) + 1e-6);
+    const rmsSharp = Math.sqrt(sSharp / (en - st) + 1e-6);
+    const ratio = rmsMetal / (rmsBody + 1e-4);
+    let targetGain = 1.0;
+    if (ratio > 0.30) {
+      const redDb = Math.min(8.0, (ratio - 0.30) * 16.0);
+      targetGain = Math.pow(10.0, -redDb / 20.0);
+    } else if (rmsMetal > 0.10) {
+      const redDb = Math.min(6.0, (rmsMetal - 0.10) * 20.0);
+      targetGain = Math.pow(10.0, -redDb / 20.0);
+    }
+    // Shrillness gate: only engage when 4.6k energy dominates the vocal body
+    // by a clear margin, and cap the cut gentler than the metallic band so
+    // brief sibilants stay crisp.
+    const sharpRatio = rmsSharp / (rmsBody + 1e-4);
+    let targetSharpGain = 1.0;
+    if (sharpRatio > 0.45) {
+      const redDb = Math.min(5.5, (sharpRatio - 0.45) * 12.0);
+      targetSharpGain = Math.pow(10.0, -redDb / 20.0);
+    } else if (rmsSharp > 0.08) {
+      const redDb = Math.min(4.0, (rmsSharp - 0.08) * 16.0);
+      targetSharpGain = Math.pow(10.0, -redDb / 20.0);
+    }
+    for (let i = st; i < en; i++) {
+      // fast attack, slow release
+      const coeff = targetGain < currentGain ? 0.25 : 0.04;
+      currentGain += coeff * (targetGain - currentGain);
+      gainEnv[i] = currentGain;
+      const sharpCoeff = targetSharpGain < currentSharpGain ? 0.2 : 0.04;
+      currentSharpGain += sharpCoeff * (targetSharpGain - currentSharpGain);
+      sharpEnv[i] = currentSharpGain;
+    }
+  }
+  for (let i = 0; i < processed.length; i++) {
+    processed[i] -= metalSig[i] * (1.0 - gainEnv[i]);
+    processed[i] -= sharpSig[i] * (1.0 - sharpEnv[i]);
+  }
+
+  // 4. Sweep the over-bright top: -3.0dB @ 7500Hz high-shelf
+  const highShelf = createBiquadHighShelf(7500, -3.0, sampleRate);
+  applyBiquadFilterInPlace(processed, highShelf);
+
+  // 4b. Gentle "studio air" contour: a very light lift around 11-11.5kHz
+  // emphasises the natural breath/open-vowel air band so converted speech
+  // sounds recorded-in-a-real-room rather than flat/synthetic. Strength is
+  // kept tiny so it never re-introduces harshness or sibilance the shelf
+  // just removed. (AI翻唱"像本人录音室录制"的空气感来源之一)
+  const airPeak = createBiquadPeaking(sampleRate * 0.285, 1.5, 1.2, sampleRate);
+  applyBiquadFilterInPlace(processed, airPeak);
+
+  // 5. Transparent peak normalization (official RVC style): scale the whole
+  //    buffer proportionally instead of per-sample soft-clipping. The old
+  //    tanh knee flattened loud waveform crests into plateaus, which is
+  //    heard as distortion/clipping ("破音").
+  let peak = 0;
+  for (let i = 0; i < processed.length; i++) {
+    const av = Math.abs(processed[i]);
+    if (av > peak) peak = av;
+  }
+  if (peak > 0.95 && isFinite(peak) && peak > 0) {
+    const scale = 0.95 / peak;
+    for (let i = 0; i < processed.length; i++) {
+      processed[i] *= scale;
+    }
+  }
+
+  return processed;
+}
+// Transparent final safety gain. This intentionally performs no EQ, dynamic
+// resonance suppression, saturation, or per-band modulation: those custom
+// effects colour every character and can themselves sound metallic.
 function normalizeOutputPeak(audio, targetPeak = 0.80) {
   if (!audio || audio.length === 0) return audio;
   let peak = 0;
@@ -13724,159 +13812,6 @@ function blendEnvironmentPassthrough(synthAudio, input16k, outputRate) {
   return output;
 }
 
-function repairIsolatedVocalTransients(audio) {
-  if (!audio || audio.length < 35) return audio;
-  const output = new Float32Array(audio);
-  // Rebuild only short, genuinely flat-topped clipping. A legitimate loud
-  // crest is left alone unless at least two samples form the same plateau.
-  for (let start = 2; start < audio.length - 26; start++) {
-    if (Math.abs(audio[start]) < 0.995) continue;
-    let stop = start + 1;
-    while (stop < audio.length && Math.abs(audio[stop]) >= 0.995 && stop - start <= 24) stop++;
-    const width = stop - start;
-    if (width >= 2 && width <= 24 && stop + 1 < audio.length
-        && Math.abs(audio[start - 1]) < 0.995 && Math.abs(audio[stop]) < 0.995) {
-      let flat = true;
-      for (let i = start; i < stop; i++) {
-        if (Math.sign(audio[i]) !== Math.sign(audio[start]) || Math.abs(audio[i] - audio[start]) > 0.008) {
-          flat = false;
-          break;
-        }
-      }
-      if (flat) {
-        const left = audio[start - 1];
-        const right = audio[stop];
-        const leftSlope = Math.max(-0.2, Math.min(0.2, left - audio[start - 2]));
-        const rightSlope = Math.max(-0.2, Math.min(0.2, audio[stop + 1] - right));
-        for (let i = start; i < stop; i++) {
-          const t = (i - start + 1) / (width + 1);
-          output[i] = (2 * t ** 3 - 3 * t ** 2 + 1) * left
-            + (t ** 3 - 2 * t ** 2 + t) * (width + 1) * leftSlope
-            + (-2 * t ** 3 + 3 * t ** 2) * right
-            + (t ** 3 - t ** 2) * (width + 1) * rightSlope;
-        }
-      }
-    }
-    start = stop - 1;
-  }
-  const residual = new Float32Array(audio.length);
-  const prefix = new Float64Array(audio.length + 1);
-  for (let i = 1; i < audio.length - 1; i++) {
-    residual[i] = Math.abs(audio[i] - (audio[i - 1] + audio[i + 1]) * 0.5);
-    prefix[i + 1] = prefix[i] + residual[i];
-  }
-  let lastRepair = -10;
-  for (let i = 16; i < audio.length - 16; i++) {
-    const local = (prefix[i + 16] - prefix[i - 15]) / 31;
-    if (i - lastRepair > 2 && residual[i] > Math.max(0.18, 8 * local)
-        && Math.abs(audio[i - 1] - audio[i + 1]) < Math.max(0.06, 0.35 * residual[i])) {
-      output[i] = (audio[i - 1] + audio[i + 1]) * 0.5;
-      lastRepair = i;
-    }
-  }
-  return output;
-}
-
-function adaptiveRvcBandRepair(audio, sampleRate = 40000) {
-  if (!audio || audio.length < sampleRate / 4 || sampleRate < 16000) return audio;
-  const block = Math.max(1, Math.round(sampleRate * 0.01));
-  const count = Math.ceil(audio.length / block);
-  const rmsBlocks = (samples) => {
-    const levels = new Float32Array(count);
-    for (let frame = 0; frame < count; frame++) {
-      const start = frame * block;
-      const end = Math.min(samples.length, start + block);
-      let energy = 0;
-      for (let i = start; i < end; i++) energy += samples[i] * samples[i];
-      levels[frame] = Math.sqrt(energy / Math.max(1, end - start));
-    }
-    return levels;
-  };
-  const percentile = (values, quantile) => {
-    if (!values.length) return 0;
-    const sorted = [...values].sort((a, b) => a - b);
-    const offset = Math.min(sorted.length - 1, Math.max(0, Math.floor((sorted.length - 1) * quantile)));
-    return sorted[offset];
-  };
-  const body = new Float32Array(audio);
-  applyBiquadFilterInPlace(body, createBiquadBandpass(1350, 0.7, sampleRate));
-  const bodyRms = rmsBlocks(body);
-  const activeLevel = Math.max(0.008, percentile(bodyRms, 0.60) * 0.3);
-  const voiced = new Uint8Array(count);
-  for (let frame = 0; frame < count; frame++) {
-    if (bodyRms[frame] <= activeLevel) continue;
-    const start = Math.max(1, frame * block);
-    const end = Math.min(audio.length, (frame + 1) * block);
-    let crossings = 0;
-    for (let i = start; i < end; i++) if ((audio[i] < 0) !== (audio[i - 1] < 0)) crossings++;
-    if (crossings / Math.max(1, end - start) < 0.24) voiced[frame] = 1;
-  }
-  const sustained = new Uint8Array(count);
-  for (let frame = 0; frame < count; frame++) {
-    let support = 0, available = 0;
-    for (let nearby = Math.max(0, frame - 6); nearby <= Math.min(count - 1, frame + 6); nearby++) {
-      support += voiced[nearby];
-      available++;
-    }
-    if (voiced[frame] && support / available > 0.75) sustained[frame] = 1;
-  }
-  if (sustained.reduce((total, value) => total + value, 0) < 8) return audio;
-  const output = new Float32Array(audio);
-  for (const [center, q, floor, maximumCut] of [
-    [3350, 2.1, 0.50, 2.5],
-    [5200, 2.4, 0.35, 2.3],
-    [7600, 2.7, 0.25, 1.2],
-  ]) {
-    if (center >= sampleRate * 0.44) continue;
-    const band = new Float32Array(audio);
-    applyBiquadFilterInPlace(band, createBiquadBandpass(center, q, sampleRate));
-    const bandRms = rmsBlocks(band);
-    const ratios = new Float32Array(count);
-    const activeRatios = [];
-    for (let frame = 0; frame < count; frame++) {
-      ratios[frame] = bandRms[frame] / (bodyRms[frame] + 0.01);
-      if (sustained[frame]) activeRatios.push(ratios[frame]);
-    }
-    const globalBaseline = Math.max(floor, percentile(activeRatios, 0.60) * 1.18);
-    let reduction = 0;
-    for (let frame = 0; frame < count; frame++) {
-      const localStart = Math.max(0, frame - 50);
-      const localEnd = Math.min(count, frame + 51);
-      const localBaseline = percentile(ratios.subarray(localStart, localEnd), 0.50) * 1.20;
-      const ratio = ratios[frame] / Math.max(globalBaseline, localBaseline);
-      const excess = sustained[frame] ? Math.min(1, Math.max(0, Math.log2(Math.max(1e-8, ratio)))) : 0;
-      const desired = 1 - Math.pow(10, -(maximumCut * excess) / 20);
-      const previous = reduction;
-      reduction += (desired - reduction) * (desired > reduction ? 0.45 : 0.18);
-      const start = frame * block;
-      const end = Math.min(audio.length, start + block);
-      for (let i = start; i < end; i++) {
-        const blend = previous + (reduction - previous) * ((i - start + 1) / (end - start));
-        output[i] -= band[i] * blend;
-      }
-    }
-  }
-  const levels = rmsBlocks(output);
-  const voicedLevels = [];
-  for (const level of levels) if (level > 0.008) voicedLevels.push(level);
-  const threshold = Math.max(0.25, percentile(voicedLevels, 0.80) * 1.8);
-  let compression = 1;
-  for (let frame = 0; frame < count; frame++) {
-    const level = levels[frame];
-    const target = level > threshold
-      ? Math.max(Math.pow(10, -1.2 / 20), (threshold + (level - threshold) / 1.3) / level)
-      : 1;
-    const previous = compression;
-    compression += (target - compression) * (target < compression ? 0.45 : 0.18);
-    const start = frame * block;
-    const end = Math.min(output.length, start + block);
-    for (let i = start; i < end; i++) {
-      output[i] *= previous + (compression - previous) * ((i - start + 1) / (end - start));
-    }
-  }
-  return output;
-}
-
 async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio) {
   const ctx = { state: "idle" };
   const emitStage = (state) => {
@@ -13992,9 +13927,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
           pitch.f0,
           retrievalCodebook,
           options.indexRate ?? 0,
-          options.protect ?? 0.33,
-          chunk.data,
-          pitch.confidence
+          options.protect ?? 0.33
         );
         callbacks.onEvent?.({ type: "chunk_step", step: "synth", current: currentChunk, total: totalChunks });
         const noiseFrameOffset = Math.round(
@@ -14030,9 +13963,8 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     let finalAudio = outputAudio;
     // 1. Blend RMS envelope using official RVC semantics (1 = unchanged).
     finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 1.0, finalSr);
-    // 2. Repair true flat clips and isolated crackles before suppressing
-    // millisecond harsh bursts; clean crests remain unchanged.
-    finalAudio = repairIsolatedVocalTransients(finalAudio);
+    // 2. Repair only detected millisecond harsh bursts; normal audio is
+    // returned unchanged by this guard.
     finalAudio = suppressDetectedHarshBursts(finalAudio, finalSr);
     // 3. Environment and breath passthrough: wind, fans, breaths and coughs
     // are re-injected from the original recording instead of being sung by
@@ -14041,9 +13973,8 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     if (options.environmentPassthrough === true) {
       finalAudio = blendEnvironmentPassthrough(finalAudio, audio, finalSr);
     }
-    // 4. Reduce only locally excessive bands, then reserve output headroom.
-    // No fixed character EQ, high-frequency synthesis or pitch quantization.
-    finalAudio = adaptiveRvcBandRepair(finalAudio, finalSr);
+    // 4. Apply only a transparent global safety gain. The former always-on
+    // multi-band "anti-metallic" master introduced shared colour/modulation.
     finalAudio = normalizeOutputPeak(finalAudio);
 
     ctx.outputAudio = finalAudio;

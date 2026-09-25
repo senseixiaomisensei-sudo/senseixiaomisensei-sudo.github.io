@@ -96,6 +96,7 @@
       ["rvc-step-model-label", "fa-user-group", "角色", "Voice"],
       ["rvc-step-audio-label", "fa-microphone", "声音", "Audio"],
       ["rvc-pitch", "fa-sliders", "调音", "Tune"],
+      ["rvc-result", "fa-wave-square", "结果", "Result"],
     ];
     steps.forEach(([id, icon, zh, english], index) => {
       const button = document.createElement("button");
@@ -104,7 +105,7 @@
       button.dataset.step = String(index);
       if (!index) button.setAttribute("aria-current", "step");
       button.addEventListener("click", () => {
-        const target = document.getElementById(id);
+        const target = document.getElementById(id === "rvc-result" && document.getElementById(id)?.hidden ? "rvc-convert" : id);
         dock.style.setProperty("--step", String(index));
         dock.querySelectorAll("button").forEach(item => item.removeAttribute("aria-current"));
         button.setAttribute("aria-current", "step");
@@ -114,14 +115,28 @@
       });
       dock.append(button);
     });
-    document.querySelector('[aria-labelledby="rvc-workflow-heading"]').prepend(dock);
+    // A fixed dock must not inherit any transformed or filtered workspace
+    // containing block. Keep the navigation at the document's top layer.
+    document.body.append(dock);
+    const viewport = window.visualViewport;
+    function syncKeyboard() {
+      const focus = document.activeElement;
+      const typing = focus?.matches?.('input:not([type="range"]):not([type="checkbox"]):not([type="file"]), textarea, [contenteditable="true"]');
+      const keyboard = !!typing && !!viewport && viewport.height < window.innerHeight * 0.76;
+      dock.classList.toggle("is-keyboard-hidden", keyboard);
+      document.body.classList.toggle("dock-keyboard-hidden", keyboard);
+    }
+    viewport?.addEventListener("resize", syncKeyboard);
+    document.addEventListener("focusin", syncKeyboard);
+    document.addEventListener("focusout", () => requestAnimationFrame(syncKeyboard));
     let scrollFrame = 0;
     function syncDock() {
       scrollFrame = 0;
       const threshold = (document.getElementById("site-header")?.getBoundingClientRect().height || 72) + 140;
       let active = 0;
       steps.forEach(([id], index) => {
-        if (document.getElementById(id)?.getBoundingClientRect().top <= threshold) active = index;
+        const target = document.getElementById(id === "rvc-result" && document.getElementById(id)?.hidden ? "rvc-convert" : id);
+        if (target?.getBoundingClientRect().top <= threshold) active = index;
       });
       dock.style.setProperty("--step", String(active));
       dock.querySelectorAll("button").forEach((button, index) => {
@@ -132,6 +147,7 @@
     window.addEventListener("scroll", () => {
       if (!scrollFrame) scrollFrame = requestAnimationFrame(syncDock);
     }, { passive: true });
+    syncDock();
     const canvas = panel.querySelector("canvas");
     const ctx = canvas.getContext("2d");
     const audio = panel.querySelector("audio");

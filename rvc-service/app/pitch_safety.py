@@ -130,63 +130,7 @@ def median_smooth_pitch(f0, radius=1):
     return result
 
 
-def stabilize_pitch_by_evidence(values, audio, sample_rate, hop, confidence=None):
-    """Repair <=20 ms pitch islands only when the waveform rejects them.
-
-    Contour continuity alone is not evidence: brief register ornaments are
-    legitimate singing.  This check leaves pauses, glides and voiced edges
-    alone and compares autocorrelation at both the tracked and expected F0.
-    """
-    original = np.asarray(values, dtype=np.float64)
-    result = original.copy()
-    signal = np.asarray(audio, dtype=np.float64)
-    scores = None if confidence is None else np.asarray(confidence, dtype=np.float64)
-    radius = max(1, round(sample_rate * 0.025))
-    for start in range(1, len(original) - 1):
-        left = original[start - 1]
-        if left <= 0 or original[start] <= 0:
-            continue
-        for width in (1, 2):
-            end = start + width
-            if end >= len(original) or original[end] <= 0:
-                break
-            right = original[end]
-            if abs(1200 * np.log2(right / left)) > 170:
-                continue
-            island = original[start:end]
-            target = np.geomspace(left, right, width + 2)[1:-1]
-            if np.any(island <= 0) or np.any(np.abs(1200 * np.log2(island / target)) < 520):
-                continue
-            supported = True
-            for offset, frame in enumerate(range(start, end)):
-                center = frame * hop
-                segment = signal[max(0, center - radius):min(len(signal), center + radius)]
-                if segment.size < radius or np.mean(segment * segment) < 1e-6:
-                    supported = False
-                    break
-                segment = segment - np.mean(segment)
-
-                def periodicity(hz):
-                    lag = max(1, round(sample_rate / hz))
-                    if len(segment) < 3 * lag:
-                        return 0.0
-                    a, b = segment[:-lag], segment[lag:]
-                    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-9)
-
-                expected = periodicity(target[offset])
-                measured = periodicity(island[offset])
-                low_confidence = scores is not None and frame < len(scores) and scores[frame] < 0.3
-                if expected < 0.72 or (measured > expected - 0.08 and not low_confidence):
-                    supported = False
-                    break
-            if supported:
-                result[start:end] = target
-                break
-    return result
-
-
 def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
-    confidence = None
     if f0_method == "pm":
         import parselmouth
         track = parselmouth.Sound(np.asarray(x, dtype=np.float64), pipeline.sr).to_pitch_ac(
@@ -205,22 +149,7 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
                 os.path.join(os.environ["rmvpe_root"], "rmvpe.pt"),
                 is_half=pipeline.is_half, device=pipeline.device,
             )
-        rmvpe = pipeline.model_rmvpe
-        if all(hasattr(rmvpe, name) for name in ("extract_mel", "mel2hidden", "decode")):
-            # The pinned RMVPE already computes this salience matrix in
-            # infer_from_audio. Decode it here so the actual frame confidence
-            # can be used without a second network pass or a fabricated score.
-            hidden = rmvpe.mel2hidden(rmvpe.extract_mel(x, center=True))
-            if "privateuseone" not in str(rmvpe.device):
-                hidden = hidden.squeeze(0).cpu().numpy()
-            else:
-                hidden = hidden[0]
-            if rmvpe.is_half:
-                hidden = hidden.astype("float32")
-            confidence = np.max(hidden, axis=1)
-            f0 = rmvpe.decode(hidden, thred=0.03)
-        else:
-            f0 = rmvpe.infer_from_audio(x, thred=0.03)
+        f0 = pipeline.model_rmvpe.infer_from_audio(x, thred=0.03)
     elif f0_method == "fcpe":
         import torch
         if not hasattr(pipeline, "model_fcpe"):
@@ -232,10 +161,8 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
         ).squeeze().detach().cpu().numpy()
     else:
         raise ValueError(f"Unsupported F0 method: {f0_method}")
-    f0 = np.asarray(f0).reshape(-1)
+    f0 = repair_octave_glitches(np.asarray(f0).reshape(-1))
     f0 = np.pad(f0[:p_len], (0, max(0, p_len - len(f0))))
-    f0[~np.isfinite(f0) | (f0 < 40) | (f0 > 2000)] = 0
-    f0 = stabilize_pitch_by_evidence(f0, x, pipeline.sr, pipeline.window, confidence)
     f0 = repair_waveform_octave_drops(f0, x, pipeline.sr, pipeline.window)
     f0 = median_smooth_pitch(f0, int(getattr(pipeline, "pitch_median_radius", 1) or 0))
     f0 *= 2 ** (f0_up_key / 12)

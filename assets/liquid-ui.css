@@ -4,12 +4,15 @@
 .style-toggle { position: relative; width: 42px; height: 42px; flex: 0 0 42px; border: 1px solid #cbd5d1; border-radius: 8px; color: #17594f; background: #fff; }
 .style-toggle::after { content: attr(data-tooltip); position: absolute; top: calc(100% + 10px); right: 0; width: max-content; max-width: 210px; padding: 8px 12px; border-radius: 6px; background: #192824; color: #fff; font-size: 12px; opacity: 0; pointer-events: none; z-index: 60; }
 .style-toggle:hover::after, .style-toggle:focus-visible::after { opacity: 1; }
-html[data-ui="glass"] { --glass-line: #aabeb95c; --glass-ink: #18372f; --glass-accent: #007b67; scroll-padding-top: 100px; }
+html[data-ui="glass"] { --glass-line: #aabeb95c; --glass-ink: #18372f; --glass-accent: #007b67; --z-content: 1; --z-sticky: 20; --z-header: 40; --z-bottom-nav: 70; --z-popover: 80; --z-modal: 90; --z-toast: 100; scroll-padding-top: 100px; }
+html[data-ui="glass"] body[data-page="rvc"] { --bottom-nav-height: 64px; --z-header: 80; padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 42px); }
+html[data-ui="glass"] body[data-page="rvc"].dock-keyboard-hidden { padding-bottom: 24px; }
+html[data-ui="glass"]:has(body[data-page="rvc"]) { scroll-padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 24px); }
 html[data-ui="glass"] body { background: #e8eeed; color: var(--glass-ink); }
 html[data-ui="glass"] body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1; background: linear-gradient(125deg, #d3e8df 0%, #edf0f0 35%, #f5e2df 70%, #dbe6e8 100%); }
 html[data-ui="glass"] * { letter-spacing: 0 !important; }
 html[data-ui="glass"] :is(button, a, input, select, textarea, summary):focus-visible { outline: 3px solid #007b67; outline-offset: 4px; }
-html[data-ui="glass"] #site-header { position: sticky; top: 0; z-index: 40; }
+html[data-ui="glass"] #site-header { position: sticky; top: 0; z-index: var(--z-header); }
 html[data-ui="glass"] #site-header > header { background: #ffffff94; border-color: #ffffffd9; backdrop-filter: blur(20px) saturate(1.6); box-shadow: inset 0 -1px #fff, 0 4px 30px #223e3210; animation: none; }
 html[data-ui="glass"] #site-header > header > div { max-width: 1440px; gap: 12px; }
 html[data-ui="glass"] #site-header nav a { white-space: nowrap; padding-inline: 10px; }
@@ -66,11 +69,13 @@ html[data-ui="glass"] .studio-monitor.glass-only { position: relative; padding: 
 .studio-caption { margin-top: 6px; font-size: 12px; color: #566c62; line-height: 1.6; }
 .studio-wave { display: block; width: 100%; height: 180px; margin-top: 16px; }
 .studio-monitor::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 1px 0 #fff, inset -1px 0 #ffffffb0; background: linear-gradient(var(--glass-angle, 120deg), #ffffff00 25%, #ffffff50 25.4%, #ffffff00 26%, #ffffff00 74%, #ffffff30 74.4%, #ffffff00 75%); }
-.studio-dock { position: sticky; top: 80px; z-index: 25; margin-bottom: 24px; width: min(100%, 410px); padding: 5px; border-radius: 999px; border: 1px solid #ffffffed; background: #ffffff66; backdrop-filter: blur(20px) saturate(1.8); box-shadow: inset 0 2px 2px #fff, inset 0 -1px #ffffffcc, 0 8px 24px #264d3920; isolation: isolate; }
+.studio-dock { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: var(--z-bottom-nav, 70); box-sizing: border-box; width: min(440px, calc(100vw - 32px)); height: 64px; padding: 7px; border-radius: 24px; border: 1px solid #fffffff2; background: linear-gradient(145deg, #ffffffd9, #e9f7efbd 53%, #ffffffcf); -webkit-backdrop-filter: blur(24px) saturate(1.75); backdrop-filter: blur(24px) saturate(1.75); box-shadow: inset 0 2px 2px #fff, inset 0 -1px #ffffffd0, 0 14px 35px #183d3330, 0 2px 8px #183d331c; isolation: isolate; }
 html[data-ui="glass"] .studio-dock { display: flex; }
-.studio-dock button { position: relative; flex: 1; min-width: 0; height: 43px; display: flex; align-items: center; justify-content: center; gap: 9px; border-radius: 999px; background: transparent; color: #355448; font-size: 13px; font-weight: 650; }
+html[data-ui="glass"] .studio-dock.is-keyboard-hidden { display: none; }
+.studio-dock::before { content: ""; position: absolute; inset: 1px 8px auto; height: 20px; border-radius: 20px; pointer-events: none; background: linear-gradient(#ffffff8c, #ffffff00); }
+.studio-dock button { position: relative; flex: 1; min-width: 0; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 17px; background: transparent; color: #355448; font-size: 12px; font-weight: 650; touch-action: manipulation; }
 .studio-dock button[aria-current] { color: #004e3d; }
-.studio-dock-lens { position: absolute; inset: 5px auto 5px 5px; width: calc((100% - 10px) / 3); border-radius: 999px; background: linear-gradient(var(--glass-angle, 135deg), #fffffff0, #e5f2e980 50%, #ffffffed); border: 1px solid #fff; box-shadow: inset 0 1px 3px #fff, inset 0 -2px 4px #477c6025, 0 2px 8px #477c6026; transform: translateX(calc(var(--step, 0) * 100%)); transition: transform .4s cubic-bezier(.22, 1.2, .36, 1); pointer-events: none; }
+.studio-dock-lens { position: absolute; inset: 7px auto 7px 7px; width: calc((100% - 14px) / 4); border-radius: 17px; background: linear-gradient(var(--glass-angle, 135deg), #fffffff0, #e5f2e980 50%, #ffffffed); border: 1px solid #fff; box-shadow: inset 0 1px 3px #fff, inset 0 -2px 4px #477c6025, 0 2px 8px #477c6026; transform: translateX(calc(var(--step, 0) * 100%)); transition: transform .3s cubic-bezier(.22, 1.2, .36, 1); pointer-events: none; }
 @supports (backdrop-filter: url("#glass-refraction")) {
   html[data-ui="glass"] .studio-dock { backdrop-filter: url("#glass-refraction") blur(12px) saturate(1.6); }
 }
@@ -123,7 +128,6 @@ html[data-ui="glass"] #rvc-upload-wrap.is-dragging { background: #d4eee3; border
 
 /* Optical surfaces: preserve the original layout and the Classic switch. */
 html[data-ui="glass"] { scroll-padding-top: calc(var(--site-header-height, 72px) + 84px); }
-html[data-ui="glass"] .studio-dock { top: calc(var(--site-header-height, 72px) + 12px); }
 html[data-ui="glass"] :is(.studio-monitor.glass-only, #rvc-upload-wrap, #rvc-result-section, main article) {
   border-radius: 24px; border: 1px solid #ffffffdc;
   background: radial-gradient(ellipse at var(--light-x, 20%) var(--light-y, 0%), #fffffff0, #ffffff38 65%), linear-gradient(135deg, #edf8f578, #fff4ee65);
@@ -147,11 +151,19 @@ html[data-ui="glass"] #rvc-result-section { padding: 22px; }
 html[data-ui="glass"] #rvc-upload-wrap.is-dragging { box-shadow: inset 0 0 24px #ffffffbc, 0 0 0 3px #00886f60, 0 14px 35px #007b6720; }
 html[data-ui="glass"] :is(.studio-dock, #site-header > header) { -webkit-backdrop-filter: blur(20px) saturate(1.6); }
 @media (max-width: 900px) {
-  html[data-ui="glass"] [data-page="rvc"] { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
-  html[data-ui="glass"] .studio-dock { position: fixed; top: auto; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: min(410px, calc(100% - 32px)); margin: 0; background-color: #eff9f0c9; }
   html[data-ui="glass"] [data-page="rvc"] main > header { padding-block: 12px; }
   html[data-ui="glass"] [data-page="rvc"] main > div { gap: 22px; }
   html[data-ui="glass"] :is(#rvc-pitch, #rvc-step-model-label, #rvc-step-audio-label) { scroll-margin-block: 110px; }
+}
+@media (max-width: 640px) {
+  html[data-ui="glass"] body[data-page="rvc"] { padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 24px); }
+  html[data-ui="glass"] .studio-dock { left: 0; right: 0; bottom: 0; transform: none; width: 100%; height: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)); padding: 7px 7px calc(7px + env(safe-area-inset-bottom, 0px)); border-radius: 21px 21px 0 0; background: linear-gradient(145deg, #f6fffbed, #e7f4eee6 55%, #fff7f4e9); border-bottom: 0; }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  html[data-ui="glass"] body[data-page="rvc"] { --bottom-nav-height: 52px; }
+  html[data-ui="glass"] .studio-dock { height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px)); padding-block: 3px; }
+  html[data-ui="glass"] .studio-dock button { min-height: 44px; }
+  html[data-ui="glass"] .studio-dock-lens { top: 3px; bottom: 3px; }
 }
 @media (prefers-reduced-transparency: reduce) {
   html[data-ui="glass"] :is(.studio-dock, .studio-monitor.glass-only, #rvc-upload-wrap, main article) { background: #f1f7f4; backdrop-filter: none; }

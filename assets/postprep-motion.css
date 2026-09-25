@@ -115,7 +115,7 @@ body[data-page="home"] main article {
   overscroll-behavior: contain;
   padding: 1rem;
   position: fixed;
-  z-index: 2147483000;
+  z-index: var(--z-modal, 90);
 }
 
 .postprep-turnstile-dialog {

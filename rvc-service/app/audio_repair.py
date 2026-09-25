@@ -1,4 +1,4 @@
-"""Conservative, content-adaptive repair of synthesized RVC vocals.
+"""Conservative sample-local repair of synthesized RVC vocals.
 
 Only the converted vocal is processed.  The detector never uses a character
 name or a fixed boost/cut for every model, and it does not retune pitch.
@@ -8,8 +8,8 @@ from pathlib import Path
 
 import numpy as np
 import soundfile as sf
-from scipy.ndimage import gaussian_filter1d, median_filter, uniform_filter1d
-from scipy.signal import butter, resample_poly, sosfiltfilt
+from scipy.ndimage import median_filter
+from scipy.signal import resample_poly
 
 
 def _repair_flat_clips(audio: np.ndarray) -> np.ndarray:
@@ -57,84 +57,8 @@ def _repair_isolated_clicks(audio: np.ndarray) -> np.ndarray:
     return result
 
 
-def _block_rms(audio: np.ndarray, block: int, count: int) -> np.ndarray:
-    squared = np.square(audio.astype(np.float64), dtype=np.float64)
-    padded = np.pad(squared, (0, count * block - len(audio)))
-    return np.sqrt(np.mean(padded.reshape(count, block), axis=1))
-
-
-def _adaptive_bands(audio: np.ndarray, sample_rate: int) -> np.ndarray:
-    """Control abnormal voiced upper harmonics against local and global voice."""
-    if len(audio) < sample_rate // 4 or sample_rate < 16000:
-        return audio
-    block = max(1, round(sample_rate * 0.01))
-    count = (len(audio) + block - 1) // block
-    body = sosfiltfilt(butter(2, [500, 2500], btype="bandpass", fs=sample_rate, output="sos"), audio)
-    body_rms = _block_rms(body, block, count)
-    active = body_rms > max(0.008, float(np.percentile(body_rms, 60)) * 0.3)
-    if np.count_nonzero(active) < 10:
-        return audio
-    # Natural fricatives and breaths are noise-like.  Narrow synthetic vowel
-    # harmonics have a lower flatness and appear inside a stable voiced run.
-    flatness = np.ones(count)
-    zcr = np.ones(count)
-    radius = max(block, round(sample_rate * 0.02))
-    taper = np.hanning(radius * 2)
-    for frame in range(count):
-        center = frame * block
-        segment = audio[max(0, center - radius):min(len(audio), center + radius)]
-        if len(segment) < radius:
-            continue
-        segment = np.pad(segment, (0, max(0, len(taper) - len(segment))))[:len(taper)]
-        zcr[frame] = np.mean(np.signbit(segment[1:]) != np.signbit(segment[:-1]))
-        spectrum = np.abs(np.fft.rfft(segment * taper))[2:] + 1e-9
-        flatness[frame] = np.exp(np.mean(np.log(spectrum))) / np.mean(spectrum)
-    voiced = active & (flatness < 0.38) & (zcr < 0.24)
-    sustained = uniform_filter1d(voiced.astype(np.float64), size=13, mode="nearest") > 0.75
-    if np.count_nonzero(sustained) < 8:
-        return audio
-    result = audio.copy()
-    for low, high, floor, max_cut_db in (
-        (2600, 4200, 0.50, 2.5),
-        (4200, 6500, 0.35, 2.3),
-        (6500, 9000, 0.25, 1.2),
-    ):
-        high = min(high, sample_rate * 0.45)
-        if high <= low + 100:
-            continue
-        band = sosfiltfilt(butter(2, [low, high], btype="bandpass", fs=sample_rate, output="sos"), audio)
-        band_rms = _block_rms(band, block, count)
-        ratio = band_rms / (body_rms + 0.01)
-        global_baseline = max(floor, float(np.percentile(ratio[sustained], 60)) * 1.18)
-        local_baseline = median_filter(ratio, size=101, mode="nearest") * 1.20
-        threshold = np.maximum(global_baseline, local_baseline)
-        excess = np.maximum(0, np.log2(np.maximum(ratio, 1e-8) / threshold))
-        cut_db = max_cut_db * np.minimum(excess, 1.0) * sustained
-        cut_db = gaussian_filter1d(cut_db, sigma=4.0, mode="nearest")
-        frame_gain = 1 - np.power(10.0, -cut_db / 20.0)
-        sample_gain = np.interp(np.arange(len(audio)), np.arange(count) * block, frame_gain)
-        result -= band * sample_gain
-    return result
-
-
-def _control_exceptional_peaks(audio: np.ndarray, sample_rate: int) -> np.ndarray:
-    block = max(1, round(sample_rate * 0.01))
-    count = (len(audio) + block - 1) // block
-    levels = _block_rms(audio, block, count)
-    active = levels[levels > 0.008]
-    if active.size < 10:
-        return audio
-    threshold = max(0.25, float(np.percentile(active, 80)) * 1.8)
-    desired = np.ones(count, dtype=np.float64)
-    loud = levels > threshold
-    desired[loud] = (threshold + (levels[loud] - threshold) / 1.3) / levels[loud]
-    desired = gaussian_filter1d(np.clip(desired, 10 ** (-1.2 / 20), 1), sigma=2.0, mode="nearest")
-    gain = np.interp(np.arange(len(audio)), np.arange(count) * block, desired)
-    return audio * gain
-
-
 def repair_vocal(audio: np.ndarray, sample_rate: int) -> np.ndarray:
-    """Repair transients and anomalous bands without altering melody or timing."""
+    """Repair real flat clips and isolated sample clicks without tonal EQ."""
     samples = np.asarray(audio, dtype=np.float64)
     if samples.ndim != 1 or sample_rate <= 0:
         raise ValueError("Expected mono audio and a positive sample rate")
@@ -143,8 +67,9 @@ def repair_vocal(audio: np.ndarray, sample_rate: int) -> np.ndarray:
     samples = np.nan_to_num(samples, nan=0.0, posinf=0.0, neginf=0.0)
     samples = _repair_flat_clips(samples)
     samples = _repair_isolated_clicks(samples)
-    samples = _adaptive_bands(samples, sample_rate)
-    samples = _control_exceptional_peaks(samples, sample_rate)
+    # Band subtraction and automatic RMS compression are deliberately
+    # bypassed: the same-source A/B did not establish a quality benefit and
+    # they changed sustained vowels. Only sample-local defects are repaired.
     return samples.astype(np.float32)
 
 

@@ -196,18 +196,17 @@ test("voicing gate is a no-op without voiced frames", () => {
   for (let index = 0; index < gated.length; index += 1) assert.equal(gated[index], 0);
 });
 
-test("worker wires the voicing gate and waveform-backed pitch repair", () => {
+test("worker preserves the voicing gate without experimental pitch correction", () => {
   assert.match(workerSource, /applyVoicingSanityGate\(filteredF0, audio\)/u);
-  assert.match(workerSource, /stabilizeF0ByWaveform\(f0, audio, confidence\)/u);
+  assert.doesNotMatch(workerSource, /stabilizeF0ByWaveform\(f0, audio, confidence\)/u);
   assert.doesNotMatch(workerSource, /shoutLikeChunk \? 10 : 3/u);
   assert.match(workerSource, /const VOICE_BAND_RATIO = 0\.18;/u);
 });
 
-test("cloud voice path conditions uploads and polishes voice-mode output", async () => {
+test("cloud voice path conditions uploads and preserves server output", async () => {
   assert.match(clientSource, /const conditioned = conditionCloudUploadAudio\(audio\.float32\);/u);
-  assert.match(clientSource, /await polishCloudVoiceAudio\(rawOutputBlob\)/u);
-  assert.match(clientSource, /state\.audioMode === "song" \|\| outputFormat === "mp3"\s*\n\s*\? rawOutputBlob/u);
-  assert.match(clientSource, /polishedVoiceOutput \? "wav" : outputFormat/u);
+  assert.doesNotMatch(clientSource, /await polishCloudVoiceAudio\(rawOutputBlob\)/u);
+  assert.match(clientSource, /state\.resultUrl = URL\.createObjectURL\(rawOutputBlob\)/u);
 
   const conditionInput = evaluateFunction("conditionCloudUploadAudio", [], [], clientSource);
   const quiet = conditionInput(voiceLikeTone(16000, 16000));
@@ -226,27 +225,14 @@ test("cloud voice path conditions uploads and polishes voice-mode output", async
   for (const value of conditionedHot) hotPeak = Math.max(hotPeak, Math.abs(value));
   assert.ok(hotPeak < 0.95, `shout-level input must be contained (peak=${hotPeak.toFixed(3)})`);
 
-  const suppress = evaluateFunction("suppressDetectedHarshBurstsCloud", [], [], clientSource);
-  const clean = conditionInput(voiceLikeTone(16000, 16000));
-  assert.equal(suppress(clean, 16000), clean, "clean audio must be returned untouched");
-  const burst = Float32Array.from(clean);
-  for (let index = 4000; index < 4080; index += 1) {
-    burst[index] = index % 2 === 0 ? 0.6 : -0.6;
-  }
-  const repaired = suppress(burst, 16000);
-  let burstPeakAfter = 0;
-  for (let index = 4000; index < 4080; index += 1) {
-    burstPeakAfter = Math.max(burstPeakAfter, Math.abs(repaired[index]));
-  }
-  assert.ok(burstPeakAfter < 0.6, `harsh burst should be smoothed (peak=${burstPeakAfter.toFixed(3)})`);
 });
 
 test("local engine and rvc client cache versions are bumped for the workspace release", async () => {
   const runtimeSource = await readFile(new URL("assets/rvc-engine/rvc-web-runtime.js", root), "utf8");
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
-  assert.match(runtimeSource, /inference\.worker\.js\?v=20260924-workspace/u);
-  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260924-workspace/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20260924-workspace/u);
+  assert.match(runtimeSource, /inference\.worker\.js\?v=20260925-stable/u);
+  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260925-stable/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20260925-stable/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {

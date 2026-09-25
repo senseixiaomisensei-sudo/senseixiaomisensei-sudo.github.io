@@ -52,6 +52,53 @@ try {
     await page.goto(`${base}/rvc.html`, { waitUntil: "load" });
     await page.locator("[data-model-id]").first().waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, `RVC workspace overflows at ${width}px`);
+    const dockBefore = await page.locator(".studio-dock").evaluate(dock => ({
+      parent: dock.parentElement === document.body,
+      position: getComputedStyle(dock).position,
+      top: dock.getBoundingClientRect().top,
+      bottom: dock.getBoundingClientRect().bottom,
+      buttons: [...dock.querySelectorAll("button")].map(button => button.getBoundingClientRect().height),
+    }));
+    assert.equal(dockBefore.parent, true, `Dock must be outside workspace at ${width}px`);
+    assert.equal(dockBefore.position, "fixed", `Dock must be viewport-fixed at ${width}px`);
+    assert.equal(dockBefore.buttons.length, 4);
+    assert.ok(dockBefore.buttons.every(height => height >= 44), `Dock actions are touch-sized at ${width}px`);
+    await page.evaluate(() => { document.getElementById("rvc-advanced").open = true; document.getElementById("rvc-result").hidden = false; });
+    await page.locator("#rvc-result-download").scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await page.waitForTimeout(100);
+    const dockAfter = await page.locator(".studio-dock").evaluate(dock => {
+      const bar = dock.getBoundingClientRect();
+      const last = document.getElementById("rvc-result-download").getBoundingClientRect();
+      return { top: bar.top, bottom: bar.bottom, lastBottom: last.bottom, viewport: innerHeight };
+    });
+    assert.ok(Math.abs(dockBefore.top - dockAfter.top) < 2, `Dock moves during scrolling at ${width}px`);
+    assert.ok(dockAfter.bottom <= dockAfter.viewport + 1, `Dock leaves the viewport at ${width}px`);
+    assert.ok(dockAfter.lastBottom < dockAfter.top - 8, `Last result control is covered at ${width}px`);
+    if (width === 390) {
+      const layers = await page.evaluate(() => {
+        const overlay = document.createElement("div");
+        overlay.className = "postprep-turnstile-overlay";
+        document.body.append(overlay);
+        const values = [getComputedStyle(document.querySelector(".studio-dock")).zIndex,
+          getComputedStyle(overlay).zIndex, getComputedStyle(document.getElementById("toast")).zIndex].map(Number);
+        overlay.remove();
+        return values;
+      });
+      assert.ok(layers[0] < layers[1] && layers[1] < layers[2], "Dock, dialog and toast stack in order");
+      await page.evaluate(() => {
+        document.getElementById("rvc-model-search").focus();
+        Object.defineProperty(window.visualViewport, "height", { configurable: true, value: innerHeight * .5 });
+        window.visualViewport.dispatchEvent(new Event("resize"));
+      });
+      assert.equal(await page.locator(".studio-dock").isVisible(), false, "Keyboard hides the dock");
+      await page.evaluate(() => {
+        document.activeElement.blur();
+        delete window.visualViewport.height;
+        window.visualViewport.dispatchEvent(new Event("resize"));
+      });
+      assert.equal(await page.locator(".studio-dock").isVisible(), true, "Dock returns after keyboard closes");
+    }
     assert.equal(await page.locator('#site-header a[aria-current="page"]:visible').count(), width < 1400 ? 0 : 1, `RVC navigation has the correct active item at ${width}px`);
     assert.ok(await page.locator("#rvc-convert").evaluate(button => button.getBoundingClientRect().width >= 44), `Convert action stays tappable at ${width}px`);
     if (width < 1400) {
@@ -68,6 +115,15 @@ try {
       await page.screenshot({ path: path.join(output, `rvc-workspace-${width}.png`), fullPage: true, animations: "disabled" });
     }
   }
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto(`${base}/rvc.html`, { waitUntil: "load" });
+  const landscapeDock = await page.locator(".studio-dock").evaluate(dock => ({
+    bottom: dock.getBoundingClientRect().bottom,
+    height: dock.getBoundingClientRect().height,
+    position: getComputedStyle(dock).position,
+  }));
+  assert.equal(landscapeDock.position, "fixed");
+  assert.ok(landscapeDock.bottom <= 391 && landscapeDock.height <= 64, "Landscape dock stays compact at viewport bottom");
   await page.goto(`${base}/rvc.html`);
   await page.locator("[data-model-id]").first().waitFor();
   await page.locator("[data-model-id]").first().click();

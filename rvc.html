@@ -12,10 +12,10 @@
   <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
   <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260815-rvc">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260815-rvc">
-  <link rel="stylesheet" href="assets/liquid-ui.css?v=20260924-workspace">
-  <link rel="stylesheet" href="assets/rvc.css?v=20260924-workspace">
-  <script src="assets/liquid-ui.js?v=20260924-workspace"></script>
+  <link rel="stylesheet" href="assets/postprep-motion.css?v=20260925-stable">
+  <link rel="stylesheet" href="assets/liquid-ui.css?v=20260925-stable">
+  <link rel="stylesheet" href="assets/rvc.css?v=20260925-stable">
+  <script src="assets/liquid-ui.js?v=20260925-stable"></script>
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="rvc">
   <div id="site-header"></div>
@@ -325,7 +325,7 @@
           <details class="mt-6 rounded-lg border border-line bg-canvas px-4 py-3" id="rvc-advanced">
             <summary class="cursor-pointer text-sm font-bold text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" data-rvc-i18n="advancedToggle">高级参数</summary>
             <div class="mt-5 space-y-6">
-                  <p class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-900">有 `.index` 的角色会使用 RVC 的 FAISS Top-8 检索。默认 0.30 在角色还原与自然度之间取保守平衡；模型没有索引时系统会自动设为 0。</p>
+              <p class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-900" data-rvc-i18n="safeModeHint">稳定模式已启用：固定检索和辅音保护参数，不使用逐帧自适应音色处理；没有索引的角色自动关闭检索。</p>
               <div>
                 <div class="flex items-center justify-between gap-3">
                   <label for="rvc-index-rate" class="text-sm font-bold" data-rvc-i18n="indexRateLabel">相似度</label>
@@ -418,6 +418,6 @@
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
   <script src="assets/postprep.js?v=20260924-workspace"></script>
   <script src="assets/rvc-schools.js?v=20260919-odyssey"></script>
-  <script src="assets/rvc.js?v=20260924-workspace"></script>
+  <script src="assets/rvc.js?v=20260925-stable"></script>
 </body>
 </html>

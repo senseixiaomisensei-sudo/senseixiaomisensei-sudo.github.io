@@ -110,7 +110,7 @@ html[data-ui="glass"] body[data-page="rvc"]::before {
 html[data-ui="glass"] body[data-page="rvc"] #site-header {
   position: sticky;
   top: calc(10px + env(safe-area-inset-top, 0px));
-  z-index: 80;
+  z-index: var(--z-header);
   width: min(100%, 1460px);
   margin: 12px auto 0;
   padding-inline: clamp(12px, 2vw, 24px);
@@ -155,7 +155,7 @@ html[data-ui="glass"] body[data-page="rvc"] #mobile-navigation {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  z-index: 90;
+  z-index: var(--z-popover);
   width: min(340px, calc(100vw - 24px));
   max-height: min(70dvh, 670px);
   overflow-y: auto;
@@ -195,7 +195,7 @@ html[data-ui="glass"] body[data-page="rvc"] .rvc-workflow {
   backdrop-filter: blur(22px) saturate(1.25);
   box-shadow: var(--glass-shadow), inset 0 1px #fff, inset 0 -1px rgba(94,133,114,.10);
 }
-html[data-ui="glass"] body[data-page="rvc"] .rvc-workflow > div:not(.studio-dock) { border-bottom: 1px solid rgba(111,145,130,.18); padding-bottom: 26px; }
+html[data-ui="glass"] body[data-page="rvc"] .rvc-workflow > div { border-bottom: 1px solid rgba(111,145,130,.18); padding-bottom: 26px; }
 html[data-ui="glass"] body[data-page="rvc"] .rvc-workflow > div:last-child { border-bottom: 0; padding-bottom: 0; }
 html[data-ui="glass"] body[data-page="rvc"] .rvc-mode-panel {
   margin-top: 24px;
@@ -238,7 +238,7 @@ html[data-ui="glass"] body[data-page="rvc"] .studio-monitor.glass-only { border-
 html[data-ui="glass"] body[data-page="rvc"] #rvc-result { display: block; padding: 20px; border: 1px solid var(--glass-border); border-radius: 23px; background: var(--glass-bg-heavy); box-shadow: inset 0 1px #fff, 0 10px 25px rgba(30,78,58,.08); }
 html[data-ui="glass"] body[data-page="rvc"] #rvc-result[hidden] { display: none; }
 html[data-ui="glass"] body[data-page="rvc"] #rvc-result-audio { border-radius: 12px; }
-html[data-ui="glass"] body[data-page="rvc"] #toast { bottom: calc(22px + env(safe-area-inset-bottom,0px)); background: rgba(29,57,49,.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.2); border-radius: 14px; }
+html[data-ui="glass"] body[data-page="rvc"] #toast { z-index: var(--z-toast); bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom,0px) + 32px); background: rgba(29,57,49,.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.2); border-radius: 14px; }
 @media (max-width: 1399px) {
   html[data-ui="glass"] body[data-page="rvc"] #site-header nav[aria-label="Primary navigation"] { display: none; }
   html[data-ui="glass"] body[data-page="rvc"] [data-menu-toggle] { display: inline-flex; }
@@ -266,8 +266,6 @@ html[data-ui="glass"] body[data-page="rvc"] #toast { bottom: calc(22px + env(saf
   html[data-ui="glass"] body[data-page="rvc"] .rvc-step-input > div[role="group"] { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
   html[data-ui="glass"] body[data-page="rvc"] :is(#rvc-source-upload,#rvc-source-record,#rvc-source-tts) { min-height: 62px; padding: 8px; font-size: 12px; }
   html[data-ui="glass"] body[data-page="rvc"] :is(#rvc-source-upload,#rvc-source-record,#rvc-source-tts) > span:last-child { display: none; }
-  html[data-ui="glass"] body[data-page="rvc"] .studio-dock { bottom: calc(10px + env(safe-area-inset-bottom,0px)); }
-  html[data-ui="glass"] body[data-page="rvc"] #toast { bottom: calc(78px + env(safe-area-inset-bottom,0px)); }
 }
 @media (prefers-contrast: more) {
   html[data-ui="glass"] body[data-page="rvc"] { --glass-bg: #fff; --glass-bg-heavy: #fff; --glass-border: #688d7e; }

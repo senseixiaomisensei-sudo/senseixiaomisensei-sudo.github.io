@@ -1,4 +1,4 @@
-# PostPrep RVC 变声 - 一键启动（本地 GPU 服务 + 公网隧道 + 线上配置）
+﻿# PostPrep RVC 变声 - 一键启动（本地 GPU 服务 + 公网隧道 + 线上配置）
 # 每次开机后运行本脚本即可恢复线上变声功能。
 # 前置：一次性执行过 setup-rvc.ps1，且本机已完成 `npx wrangler login`。
 # 用法: powershell -ExecutionPolicy Bypass -File start-all.ps1

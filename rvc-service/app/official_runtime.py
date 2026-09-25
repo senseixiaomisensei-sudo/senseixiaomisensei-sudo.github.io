@@ -170,10 +170,11 @@ class OfficialRvcModel:
         self.noise_scale = model_noise_scale(model_path)
         self._noise_hook = configure_synthesis_noise(self._vc.net_g, self.noise_scale)
         from types import MethodType
-        from app.adaptive_inference import adaptive_vc
         from app.pitch_safety import safe_get_f0
         self._vc.pipeline.get_f0 = MethodType(safe_get_f0, self._vc.pipeline)
-        self._vc.pipeline.vc = MethodType(adaptive_vc, self._vc.pipeline)
+        # Keep the pinned upstream's fixed index/protect blend. Per-frame
+        # adaptive retrieval regressed real A/B vocals and overflowed FAISS
+        # distance weights on an operator model.
         self._index_path = str(staged_index) if staged_index else ""
 
     def infer(
@@ -213,10 +214,9 @@ class OfficialRvcModel:
         except TypeError:
             torch.use_deterministic_algorithms(True)
 
-        # Upstream dropped the post-F0 median filter; the pinned pitch adapter
-        # restores it. The old slider applied a single 3-tap median when the
-        # radius was nonzero - keep exactly that gentle behaviour.
-        self._vc.pipeline.pitch_median_radius = 1 if int(filter_radius) > 0 else 0
+        # The web default is zero. Enable the single 3-tap voiced-frame median
+        # only for an explicit high filter radius; preserve ornaments otherwise.
+        self._vc.pipeline.pitch_median_radius = 1 if int(filter_radius) >= 5 else 0
         status, result = self._vc.vc_single(
             0,
             str(input_path),

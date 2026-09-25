@@ -723,9 +723,8 @@ def render_conversion(
     profile_hint: AudioProfile | None = None,
 ) -> str:
     inference = acquire_model(model_path)
-    # Upstream 2.3.260718 removed the post-F0 median filter that weakened
-    # hoarse tracker flutter. The pinned pitch adapter restores it, so the
-    # browser-facing filter_radius parameter becomes effective again.
+    # The pinned pitch adapter defaults to the verified contour. A strong
+    # explicitly requested filter radius enables a small voiced-only median.
     profile = profile_hint or analyze_audio_profile(input_wav)
     if pitch > 0 and not profile.high_pitch:
         shifted_profile = analyze_audio_profile(input_wav, pitch_shift=pitch)
@@ -1874,7 +1873,7 @@ async def create_job(
     pitch: str = Form("0"),
     index_rate: str = Form("0.5"),
     protect: str = Form("0.25"),
-    filter_radius: str = Form("3"),
+    filter_radius: str = Form("0"),
     resample: str = Form("0"),
     rms_mix_rate: str = Form("1"),
     f0_method: str = Form("rmvpe"),
