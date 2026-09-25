@@ -86,6 +86,8 @@ test("RMS mix follows official semantics: 1 is unchanged and 0 follows source", 
   const followed = applyRmsVolumeEnvelope(source, synth, 0, 40000);
   assert.notEqual(followed, synth);
   assert.ok(maxAbs(followed.subarray(800, 6000)) < maxAbs(synth.subarray(800, 6000)));
+  const half = applyRmsVolumeEnvelope(new Float32Array(16000).fill(.1), new Float32Array(40000).fill(.5), .5, 40000);
+  assert.ok(Math.abs(half[20000] / .5 - Math.sqrt(.2)) < .001);
 });
 
 test("transparent output safety gain does not colour normal audio", () => {

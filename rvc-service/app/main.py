@@ -38,6 +38,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from app.audio_dynamics import apply_dynamics
 from app.separation_runtime import (
     SeparationRuntimeError,
+    calibrate_song_vocals,
     remix_song,
     separate_song,
     separation_status,
@@ -159,6 +160,7 @@ class OutputRecord:
     request_id: str = ""
     audio_mode: str = "voice"
     stage: str = "queued"
+    vocal_gain: float = 1.0
 
 
 @dataclass
@@ -438,6 +440,7 @@ def persist_output_records() -> None:
                 "format": record.format,
                 "request_id": record.request_id,
                 "audio_mode": record.audio_mode,
+                "vocal_gain": record.vocal_gain,
                 "expires_at": record.expires_at.isoformat(),
             }
         temporary = OUTPUT_ROOT / "records.json.tmp"
@@ -474,6 +477,7 @@ def load_output_records() -> None:
             error_code="" if state == "completed" else "RVC_SERVICE_RESTARTED",
             request_id=str(entry.get("request_id", "")),
             audio_mode=str(entry.get("audio_mode", "voice")),
+            vocal_gain=float(entry.get("vocal_gain", 1.0)),
             stage="completed" if state == "completed" else "failed",
         )
         if entry.get("request_id"):
@@ -1151,6 +1155,8 @@ def output_payload(job_id: str, record: OutputRecord) -> dict[str, str]:
     }
     if record.f0_method:
         payload["f0Method"] = record.f0_method
+    if record.audio_mode == "song" and record.state == "completed":
+        payload["vocalGain"] = round(record.vocal_gain, 4)
     return payload
 
 
@@ -1761,6 +1767,11 @@ async def process_conversion_job(
             )
             # Preserve the source's short-time dynamics, not its speaker identity.
             await asyncio.to_thread(apply_dynamics, converted_vocals, separated_vocals, 1.0 - rms_mix_rate)
+            vocal_gain = await asyncio.to_thread(calibrate_song_vocals, stems.vocals, converted_vocals)
+            async with outputs_lock:
+                record = outputs.get(job_id)
+                if record:
+                    record.vocal_gain = vocal_gain
             async with outputs_lock:
                 record = outputs.get(job_id)
                 if record:
@@ -1817,12 +1828,13 @@ async def process_conversion_job(
                 record.expires_at = job_expiry()
         persist_output_records()
         logger.info(
-            "conversion completed request_id=%s job_id=%s model=%s mode=%s f0=%s seconds=%.2f",
+            "conversion completed request_id=%s job_id=%s model=%s mode=%s f0=%s vocal_gain=%.3f seconds=%.2f",
             request_id,
             job_id,
             model_id,
             audio_mode,
             used_f0_method,
+            record.vocal_gain if record else 1.0,
             asyncio.get_running_loop().time() - started_at,
         )
     except asyncio.CancelledError:

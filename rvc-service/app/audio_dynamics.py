@@ -40,15 +40,15 @@ def preserve_dynamics(converted, converted_rate, source, source_rate, strength=.
     times, target_env = envelope(converted, converted_rate)
     source_times, source_env = envelope(source, source_rate)
     source_env = np.interp(times, source_times, source_env)
-    active = (source_env > 1e-4) & (target_env > 1e-4)
-    if not np.any(active):
-        return converted.copy()
-    level = np.median(target_env[active]) / np.median(source_env[active])
-    ratio = source_env * level / np.maximum(target_env, 1e-5)
-    gain = np.clip(np.power(ratio, strength), 0., 1.5)
-    # Never amplify the low-level noise floor or turn tiny fluctuations into
-    # hard gates. Linear interpolation gives continuous gain between frames.
-    gain = np.where(source_env < 1e-4, np.minimum(gain, 1.), gain)
+    # Match the device path: 1 on the public rms_mix_rate slider preserves the
+    # synth, while 0 follows the *absolute* source envelope. Normalising both
+    # tracks by their medians made the same 0.5 setting behave differently on
+    # cloud and device and could leave converted song vocals far too loud.
+    active = (source_env >= .003) & (target_env >= .003)
+    ratio = source_env / np.maximum(target_env, 1e-4)
+    gain = np.where(active, np.clip(np.power(ratio, strength), .3, 1.6), 1.)
+    # Interpolation avoids 10 ms gain steps. Silent frames remain at unity;
+    # the separate song-balance step never tries to amplify noise or leakage.
     samples = np.arange(len(converted)) / converted_rate
     gain = np.interp(samples, times, gain)
     return converted * (gain[:, None] if converted.ndim == 2 else gain)

@@ -108,6 +108,53 @@ def separate_song(source: Path, output_dir: Path) -> SongStems:
     return SongStems(vocals=vocals, instrumental=instrumental, sample_rate=sample_rate)
 
 
+def calibrate_song_vocals(source_vocals: Path, converted_vocals: Path,
+                          minimum_gain: float = 0.5, maximum_gain: float = 1.5) -> float:
+    """Apply one conservative vocal gain before remix, measured on voiced frames.
+
+    Band-limited measurement avoids comparing source hiss/air with a model's
+    different high-frequency response. Only the converted stem is modified;
+    the accompaniment, its channels and its timeline remain untouched.
+    """
+    import numpy as np
+    import soundfile as sf
+    from scipy.signal import butter, sosfiltfilt
+    from app.audio_dynamics import envelope
+
+    source, source_rate = sf.read(source_vocals, dtype="float32")
+    converted, converted_rate = sf.read(converted_vocals, dtype="float32")
+    if not np.isfinite(source).all() or not np.isfinite(converted).all():
+        raise SeparationRuntimeError("RVC_REMIX_FAILED")
+    if abs(len(source) / source_rate - len(converted) / converted_rate) > 0.2:
+        raise SeparationRuntimeError("RVC_REMIX_FAILED")
+
+    def measured_envelope(audio, rate):
+        mono = np.mean(audio, axis=1) if audio.ndim == 2 else audio
+        upper = min(4000., rate * .45)
+        sos = butter(2, [120., upper], btype="bandpass", fs=rate, output="sos")
+        return envelope(sosfiltfilt(sos, mono), rate)
+
+    source_times, source_levels = measured_envelope(source, source_rate)
+    converted_times, converted_levels = measured_envelope(converted, converted_rate)
+    if not len(source_times) or not len(converted_times):
+        return 1.0
+    converted_levels = np.interp(source_times, converted_times, converted_levels)
+    # Exclude silence, separator leakage and rare peaks before estimating a
+    # single gain. Do not chase each syllable with another fast envelope.
+    threshold = max(.003, float(np.quantile(source_levels, .25)))
+    active = (source_levels > threshold) & (converted_levels > .003)
+    if np.count_nonzero(active) < 20:
+        return 1.0
+    source_active = source_levels[active]
+    converted_active = converted_levels[active]
+    middle = ((source_active <= np.quantile(source_active, .95))
+              & (converted_active <= np.quantile(converted_active, .95)))
+    ratio = float(np.median(source_active[middle] / converted_active[middle]))
+    gain = float(np.clip(ratio, minimum_gain, maximum_gain))
+    sf.write(converted_vocals, converted * gain, converted_rate, subtype="FLOAT")
+    return gain
+
+
 def remix_song(
     instrumental: Path,
     converted_vocals: Path,

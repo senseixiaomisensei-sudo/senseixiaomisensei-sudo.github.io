@@ -13246,66 +13246,38 @@ function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSa
   // 0 follows the source envelope most strongly.
   if (!isFinite(mixRate) || mixRate >= 1) return synthAudio;
   const hop16k = 160;
-  const win16k = 640;
+  const radius16k = 320;
   const hopSynth = Math.round(synthSampleRate / 100);
-  const winSynth = Math.round(synthSampleRate * 0.04); // 40ms window
-
-  const numFrames = Math.min(
-    Math.floor((input16k.length - win16k) / hop16k) + 1,
-    Math.floor((synthAudio.length - winSynth) / hopSynth) + 1
-  );
+  const radiusSynth = Math.round(synthSampleRate * 0.02);
+  const numFrames = Math.ceil(synthAudio.length / hopSynth);
   if (numFrames <= 0) return synthAudio;
-
   const targetGains = new Float32Array(numFrames);
   const exponent = 1.0 - mixRate;
-
+  // Centered 40 ms RMS windows and 10 ms centers match the cloud path.
+  function rmsAround(data, center, radius) {
+    const left = Math.max(0, center - radius);
+    const right = Math.min(data.length, center + radius + 1);
+    if (right <= left) return 0;
+    let sum = 0;
+    for (let i = left; i < right; i++) sum += data[i] * data[i];
+    return Math.sqrt(sum / (right - left));
+  }
   for (let f = 0; f < numFrames; f++) {
-    let sumIn = 0;
-    const inStart = f * hop16k;
-    for (let i = 0; i < win16k; i++) {
-      const s = input16k[inStart + i];
-      sumIn += s * s;
-    }
-    const rmsIn = Math.sqrt(sumIn / win16k + 1e-8);
-
-    let sumSynth = 0;
-    const synthStart = f * hopSynth;
-    for (let i = 0; i < winSynth; i++) {
-      const s = synthAudio[synthStart + i];
-      sumSynth += s * s;
-    }
-    const rmsSynth = Math.sqrt(sumSynth / winSynth + 1e-8);
-
-    if (rmsIn < 0.003) {
+    const rmsIn = rmsAround(input16k, f * hop16k, radius16k);
+    const rmsSynth = rmsAround(synthAudio, f * hopSynth, radiusSynth);
+    if (rmsIn < 0.003 || rmsSynth < 0.003) {
       targetGains[f] = 1.0;
     } else {
       const rawRatio = Math.pow(rmsIn / Math.max(1e-4, rmsSynth), exponent);
-      // Keep envelope gain conservative: the old [0.2, 4.0] range could
-      // multiply the vocoder output by 4x and slam it into the limiter,
-      // which is a direct cause of audible clipping/distortion.
       targetGains[f] = Math.max(0.3, Math.min(1.6, rawRatio));
     }
   }
-
   const output = new Float32Array(synthAudio);
-  let currentGain = targetGains[0];
-
-  for (let f = 0; f < numFrames; f++) {
-    const startGain = currentGain;
-    const nextGain = targetGains[f];
-    const synthStart = f * hopSynth;
-    const frameLen = Math.min(hopSynth, output.length - synthStart);
-    for (let i = 0; i < frameLen; i++) {
-      const t = (i + 1) / frameLen;
-      const g = startGain + (nextGain - startGain) * t;
-      output[synthStart + i] *= g;
-    }
-    currentGain = nextGain;
-  }
-  // Carry the last gain through the final analysis-window tail; otherwise
-  // the last 30 ms jump abruptly back to unity at every conversion boundary.
-  for (let i = numFrames * hopSynth; i < output.length; i++) {
-    output[i] *= currentGain;
+  for (let i = 0; i < output.length; i++) {
+    const frame = Math.floor(i / hopSynth);
+    const next = Math.min(frame + 1, numFrames - 1);
+    const fraction = (i - frame * hopSynth) / hopSynth;
+    output[i] *= targetGains[frame] + (targetGains[next] - targetGains[frame]) * fraction;
   }
   return output;
 }

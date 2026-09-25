@@ -14,6 +14,18 @@ from app.audio_dynamics import preserve_dynamics
 
 
 class DynamicsTests(unittest.TestCase):
+    def test_slider_half_follows_absolute_level_like_device(self):
+        source = np.full(16000, .1)
+        synth = np.full(40000, .5)
+        result = preserve_dynamics(synth, 40000, source, 16000, .5)
+        self.assertAlmostEqual(float(np.median(result[2000:-2000] / synth[2000:-2000])),
+                               (.1 / .5) ** .5, places=3)
+
+    def test_silence_does_not_raise_noise_floor(self):
+        source = np.zeros(16000)
+        synth = np.full(16000, .001)
+        np.testing.assert_array_equal(preserve_dynamics(synth, 16000, source, 16000, 1), synth)
+
     def test_preserves_identity_and_improves_syllable_dynamics(self):
         rate = 16000
         t = np.arange(rate * 3) / rate
