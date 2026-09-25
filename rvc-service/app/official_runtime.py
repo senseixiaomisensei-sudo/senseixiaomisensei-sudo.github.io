@@ -189,6 +189,7 @@ class OfficialRvcModel:
         rms_mix_rate: float,
         protect: float,
         filter_radius: int = 3,
+        diagnostic_f0_dir: Path | None = None,
     ) -> None:
         import random
 
@@ -217,17 +218,23 @@ class OfficialRvcModel:
         # The web default is zero. Enable the single 3-tap voiced-frame median
         # only for an explicit high filter radius; preserve ornaments otherwise.
         self._vc.pipeline.pitch_median_radius = 1 if int(filter_radius) >= 5 else 0
-        status, result = self._vc.vc_single(
-            0,
-            str(input_path),
-            pitch,
-            f0_method,
-            self._index_path,
-            index_rate,
-            resample_rate,
-            rms_mix_rate,
-            protect,
-        )
+        pipeline = self._vc.pipeline
+        pipeline.diagnostic_f0_dir = diagnostic_f0_dir
+        pipeline.diagnostic_f0_count = 0
+        try:
+            status, result = self._vc.vc_single(
+                0,
+                str(input_path),
+                pitch,
+                f0_method,
+                self._index_path,
+                index_rate,
+                resample_rate,
+                rms_mix_rate,
+                protect,
+            )
+        finally:
+            pipeline.diagnostic_f0_dir = None
         if not result or result[0] is None or result[1] is None:
             raise OfficialRuntimeError(str(status))
         sample_rate, audio = result

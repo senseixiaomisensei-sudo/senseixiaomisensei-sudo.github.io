@@ -38,6 +38,7 @@ from typing import AsyncIterator
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from app.audio_dynamics import apply_dynamics
+from app.diagnostics import capture_job, configured_root
 from app.separation_runtime import (
     SeparationRuntimeError,
     calibrate_song_vocals,
@@ -65,6 +66,7 @@ LONG_CHUNK_SECONDS = 20
 LONG_CHUNK_CROSSFADE_SECONDS = 0.5
 OUTPUT_RETENTION_SECONDS = max(900, min(int(os.getenv("RVC_OUTPUT_RETENTION_SECONDS", "7200")), 21600))
 MAX_CONCURRENCY = max(1, min(int(os.getenv("RVC_MAX_CONCURRENCY", "1")), 2))
+SITE_ROOT = Path(__file__).resolve().parents[2]
 MODELS_DIR = Path(os.getenv("RVC_MODELS_DIR", "/models/rvc")).resolve()
 WORK_ROOT = Path(os.getenv("RVC_WORK_ROOT", "/tmp/rvc-work")).resolve()
 OUTPUT_ROOT = Path(os.getenv("RVC_OUTPUT_ROOT", "/tmp/rvc-output")).resolve()
@@ -82,6 +84,46 @@ MAX_TRAIN_SECONDS = 30 * 60
 DEFAULT_TRAIN_EPOCHS = max(40, min(int(os.getenv("RVC_TRAIN_EPOCHS", "80")), 200))
 TRAIN_PYTHON = Path(os.getenv("RVC_TRAIN_PYTHON", os.sys.executable)).resolve()
 logger = logging.getLogger("postprep.rvc")
+PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py",
+                  "audio_repair.py", "separation_runtime.py", "official_runtime.py")
+
+
+def source_revision() -> str:
+    digest = hashlib.sha256()
+    for name in PIPELINE_FILES:
+        digest.update(name.encode("utf-8"))
+        digest.update((Path(__file__).parent / name).read_bytes())
+    return digest.hexdigest()[:16]
+
+
+def checkout_revision() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "-C", str(SITE_ROOT), "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL, text=True, timeout=5,
+        ).strip()
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+
+
+BACKEND_BUILD_SHA = checkout_revision()
+PIPELINE_REVISION = source_revision()
+FILE_HASH_CACHE: dict[str, tuple[int, int, str]] = {}
+
+
+def verified_file_hash(path: Path) -> str:
+    stat = path.stat()
+    key = str(path.resolve())
+    cached = FILE_HASH_CACHE.get(key)
+    if cached and cached[:2] == (stat.st_size, stat.st_mtime_ns):
+        return cached[2]
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    value = digest.hexdigest()
+    FILE_HASH_CACHE[key] = (stat.st_size, stat.st_mtime_ns, value)
+    return value
 ALLOWED_EXTENSIONS = {"wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"}
 ALLOWED_MIME_TYPES = {
     "audio/wav",
@@ -261,6 +303,7 @@ def scan_models() -> list[dict]:
                 except (OSError, ValueError):
                     meta = {}
                 break
+        sample_rate = meta.get("sampleRate")
         results.append({
             "id": model_id,
             "name": str(meta.get("name") or pth.stem),
@@ -276,6 +319,7 @@ def scan_models() -> list[dict]:
             "trained": meta.get("trained") is True,
             "createdAt": str(meta.get("createdAt") or ""),
             "file": str(relative).replace("\\", "/"),
+            **({"sampleRate": sample_rate} if sample_rate in {32000, 40000, 48000} else {}),
         })
     return results
 
@@ -721,6 +765,16 @@ def prepare_inference_audio(input_wav: Path, profile: AudioProfile) -> Path:
     return input_wav
 
 
+def snapshot_diagnostic_audio(source: Path, diagnostic_dir: Path | None, name: str) -> None:
+    if diagnostic_dir is None or not source.is_file():
+        return
+    try:
+        diagnostic_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, diagnostic_dir / name)
+    except OSError:
+        logger.warning("diagnostic snapshot failed stage=%s", name)
+
+
 def render_conversion(
     model_path: Path,
     input_wav: Path,
@@ -733,6 +787,8 @@ def render_conversion(
     rms_mix_rate: float,
     f0_method: str,
     profile_hint: AudioProfile | None = None,
+    preferred_method: str | None = None,
+    diagnostic_dir: Path | None = None,
 ) -> str:
     inference = acquire_model(model_path)
     # The pinned pitch adapter defaults to the verified contour. A strong
@@ -742,7 +798,7 @@ def render_conversion(
         shifted_profile = analyze_audio_profile(input_wav, pitch_shift=pitch)
         profile = replace(profile, high_pitch=shifted_profile.high_pitch)
     inference_input = input_wav if profile_hint is not None else prepare_inference_audio(input_wav, profile)
-    selected_method = (
+    selected_method = preferred_method or (
         "fcpe"
         if f0_method == "auto" and (profile.high_pitch or profile.complex_pitch)
         else select_f0_method(inference_input, f0_method)
@@ -769,8 +825,10 @@ def render_conversion(
                 # joining, instead of also applying upstream's 1-second window.
                 rms_mix_rate=1.0,
                 filter_radius=int(filter_radius),
+                diagnostic_f0_dir=diagnostic_dir / "f0" if diagnostic_dir else None,
             )
             if output_wav.is_file() and output_wav.stat().st_size > 44:
+                snapshot_diagnostic_audio(output_wav, diagnostic_dir, f"raw-{method}.wav")
                 used_method = method
                 break
         except (OSError, RuntimeError, ValueError) as error:
@@ -787,6 +845,7 @@ def render_conversion(
     from app.audio_repair import repair_vocal_file
 
     repair_vocal_file(output_wav)
+    snapshot_diagnostic_audio(output_wav, diagnostic_dir, "repaired.wav")
     aligned_output = output_wav.with_name(f"{output_wav.stem}-aligned{output_wav.suffix}")
     # The vocoder may round each chunk down by one or two F0 frames. Restore
     # that small tail before overlap-joining, otherwise long files accumulate
@@ -806,6 +865,7 @@ def render_conversion(
     )
     if result.returncode == 0 and aligned_output.is_file() and aligned_output.stat().st_size > 44:
         aligned_output.replace(output_wav)
+        snapshot_diagnostic_audio(output_wav, diagnostic_dir, "aligned.wav")
     else:
         aligned_output.unlink(missing_ok=True)
         raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
@@ -932,6 +992,7 @@ def render_duration_safe_conversion(
     rms_mix_rate: float,
     f0_method: str,
     profile_hint: AudioProfile | None = None,
+    diagnostic_dir: Path | None = None,
 ) -> str:
     if duration_seconds <= LONG_AUDIO_THRESHOLD_SECONDS:
         return render_conversion(
@@ -946,8 +1007,14 @@ def render_duration_safe_conversion(
             rms_mix_rate,
             f0_method,
             profile_hint,
+            None,
+            diagnostic_dir / "whole" if diagnostic_dir else None,
         )
     source_chunks = split_long_audio(input_wav, work_root / "source", duration_seconds)
+    preferred_method = (
+        "fcpe" if f0_method == "auto" and profile_hint and (profile_hint.high_pitch or profile_hint.complex_pitch)
+        else select_f0_method(input_wav, f0_method)
+    )
     output_chunks: list[Path] = []
     methods: list[str] = []
     for index, source_chunk in enumerate(source_chunks):
@@ -964,9 +1031,17 @@ def render_duration_safe_conversion(
             rms_mix_rate,
             f0_method,
             profile_hint,
+            preferred_method,
+            diagnostic_dir / f"chunk-{index:03d}" if diagnostic_dir else None,
         ))
         output_chunks.append(converted_chunk)
     join_long_audio(output_chunks, output_wav, duration_seconds)
+    manifest_path = work_root / "source" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["f0MethodRequested"] = f0_method
+    manifest["f0MethodPreferred"] = preferred_method
+    manifest["f0MethodsUsed"] = methods
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return "+".join(dict.fromkeys(methods))
 
 
@@ -984,6 +1059,7 @@ async def render_duration_safe_conversion_async(
     rms_mix_rate: float,
     f0_method: str,
     profile_hint: AudioProfile | None = None,
+    diagnostic_dir: Path | None = None,
 ) -> str:
     """Run short clips unchanged and yield the GPU between long-audio chunks."""
     if duration_seconds <= LONG_AUDIO_THRESHOLD_SECONDS:
@@ -1001,9 +1077,15 @@ async def render_duration_safe_conversion_async(
                 rms_mix_rate,
                 f0_method,
                 profile_hint,
+                None,
+                diagnostic_dir / "whole" if diagnostic_dir else None,
             )
 
     source_chunks = await asyncio.to_thread(split_long_audio, input_wav, work_root / "source", duration_seconds)
+    preferred_method = (
+        "fcpe" if f0_method == "auto" and profile_hint and (profile_hint.high_pitch or profile_hint.complex_pitch)
+        else await asyncio.to_thread(select_f0_method, input_wav, f0_method)
+    )
     output_chunks: list[Path] = []
     methods: list[str] = []
     for index, source_chunk in enumerate(source_chunks):
@@ -1022,6 +1104,8 @@ async def render_duration_safe_conversion_async(
                 rms_mix_rate,
                 f0_method,
                 profile_hint,
+                preferred_method,
+                diagnostic_dir / f"chunk-{index:03d}" if diagnostic_dir else None,
             )
         methods.append(method)
         output_chunks.append(converted_chunk)
@@ -1035,6 +1119,12 @@ async def render_duration_safe_conversion_async(
             pass
         await asyncio.sleep(0)
     await asyncio.to_thread(join_long_audio, output_chunks, output_wav, duration_seconds)
+    manifest_path = work_root / "source" / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["f0MethodRequested"] = f0_method
+    manifest["f0MethodPreferred"] = preferred_method
+    manifest["f0MethodsUsed"] = methods
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return "+".join(dict.fromkeys(methods))
 
 
@@ -1139,12 +1229,30 @@ async def healthz(request: Request) -> dict[str, object]:
 
     info = await asyncio.to_thread(runtime_info)
     separator = await asyncio.to_thread(separation_status)
+    model_id = request.query_params.get("model_id", "")
+    model_hashes = {}
+    if model_id and re_full_slug(model_id):
+        try:
+            path = await asyncio.to_thread(find_model_path, model_id)
+            index_text = find_index_path(path)
+            model_hashes = {
+                "modelId": model_id,
+                "modelSha256": await asyncio.to_thread(verified_file_hash, path),
+                "indexSha256": await asyncio.to_thread(verified_file_hash, Path(index_text)) if index_text else "",
+            }
+        except (RvcServiceError, OSError):
+            model_hashes = {}
     return {
         "ready": True,
         "maxAudioSeconds": MAX_AUDIO_SECONDS,
         "engine": "RVC-Project/Retrieval-based-Voice-Conversion-WebUI",
         "tag": OFFICIAL_TAG,
         "commit": OFFICIAL_COMMIT,
+        "upstreamCommit": OFFICIAL_COMMIT,
+        "backendBuildSha": BACKEND_BUILD_SHA,
+        "pipelineRevision": PIPELINE_REVISION,
+        "modelHashes": model_hashes,
+        "capabilities": {"voice": True, "song": separator["ready"], "training": True},
         "device": info.device,
         "half": info.is_half,
         "training": bool(active_training_job_id),
@@ -1825,7 +1933,18 @@ async def process_conversion_job(
     audio_mode: str,
     duration_seconds: float,
     input_profile: AudioProfile,
+    diagnostic: bool = False,
 ) -> None:
+    diagnostic_dir = job_root / "diagnostic-stages" if diagnostic else None
+    used_f0_method = ""
+    vocal_gain = 1.0
+    stage_times: dict[str, float] = {}
+    stage_started = asyncio.get_running_loop().time()
+    def mark_stage(name: str) -> None:
+        nonlocal stage_started
+        now = asyncio.get_running_loop().time()
+        stage_times[name] = round(now - stage_started, 3)
+        stage_started = now
     try:
         if audio_mode == "song":
             async with inference_lock:
@@ -1836,6 +1955,7 @@ async def process_conversion_job(
                         record.stage = "separating"
                 await asyncio.to_thread(release_cached_models)
                 stems = await asyncio.to_thread(separate_song, input_raw, job_root / "stems")
+            mark_stage("separation")
             async with outputs_lock:
                 record = outputs.get(job_id)
                 if record:
@@ -1843,6 +1963,7 @@ async def process_conversion_job(
             separated_vocals = job_root / "separated-vocals-16k.wav"
             converted_vocals = job_root / "converted-vocals.wav"
             vocal_profile = await asyncio.to_thread(normalize_audio, stems.vocals, separated_vocals, singing=True)
+            mark_stage("vocalNormalization")
             used_f0_method = await render_duration_safe_conversion_async(
                 model_path,
                 separated_vocals,
@@ -1857,10 +1978,17 @@ async def process_conversion_job(
                 rms_mix_rate,
                 f0_method,
                 vocal_profile,
+                diagnostic_dir,
             )
+            mark_stage("conversion")
+            snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-joined.wav")
             # Preserve the source's short-time dynamics, not its speaker identity.
             await asyncio.to_thread(apply_dynamics, converted_vocals, separated_vocals, 1.0 - rms_mix_rate)
+            mark_stage("dynamics")
+            snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-dynamics.wav")
             vocal_gain = await asyncio.to_thread(calibrate_song_vocals, stems.vocals, converted_vocals)
+            mark_stage("vocalBalance")
+            snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-balanced.wav")
             async with outputs_lock:
                 record = outputs.get(job_id)
                 if record:
@@ -1877,6 +2005,8 @@ async def process_conversion_job(
                 duration_seconds,
                 stems.sample_rate,
             )
+            mark_stage("remix")
+            snapshot_diagnostic_audio(output_wav, diagnostic_dir, "remixed.wav")
         else:
             async with outputs_lock:
                 record = outputs.get(job_id)
@@ -1897,8 +2027,13 @@ async def process_conversion_job(
                 rms_mix_rate,
                 f0_method,
                 input_profile,
+                diagnostic_dir,
             )
+            mark_stage("conversion")
+            snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-joined.wav")
             await asyncio.to_thread(apply_dynamics, output_wav, input_wav, 1.0 - rms_mix_rate)
+            mark_stage("dynamics")
+            snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-dynamics.wav")
         async with outputs_lock:
             record = outputs.get(job_id)
             if record:
@@ -1906,10 +2041,13 @@ async def process_conversion_job(
         # True-peak safety for every conversion output (song and voice).
         # MP3 encoding can add inter-sample overshoot, so reserve 0.5 dB.
         await asyncio.to_thread(finalize_true_peak_safe, output_wav, -1.5 if output_format == "mp3" else -1.0)
+        mark_stage("truePeak")
+        snapshot_diagnostic_audio(output_wav, diagnostic_dir, "final-true-peak.wav")
         if output_format == "mp3":
             await asyncio.to_thread(transcode_mp3_true_peak_safe, output_wav, output_path)
         else:
             shutil.copyfile(output_wav, output_path)
+        mark_stage("encoding")
         if not output_path.is_file() or output_path.stat().st_size < 1:
             raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
         async with outputs_lock:
@@ -1966,6 +2104,30 @@ async def process_conversion_job(
             asyncio.get_running_loop().time() - started_at,
         )
     finally:
+        if diagnostic:
+            try:
+                root = configured_root(SITE_ROOT)
+                if root is not None:
+                    from app.official_runtime import OFFICIAL_COMMIT, runtime_info
+                    index_text = find_index_path(model_path)
+                    metadata = {
+                        "jobId": job_id, "modelId": model_id, "audioMode": audio_mode,
+                        "pitch": pitch, "indexRate": index_rate, "protect": protect,
+                        "rmsMixRate": rms_mix_rate, "filterRadius": filter_radius,
+                        "resample": resample, "requestedF0Method": f0_method,
+                        "actualF0Method": used_f0_method, "vocalGain": vocal_gain,
+                        "sourceDurationSeconds": duration_seconds, "noiseSeed": 20260823,
+                        "backendBuildSha": BACKEND_BUILD_SHA,
+                        "pipelineRevision": PIPELINE_REVISION, "upstreamCommit": OFFICIAL_COMMIT,
+                        "modelSha256": verified_file_hash(model_path),
+                        "indexSha256": verified_file_hash(Path(index_text)) if index_text else "",
+                        "retrievalEnabled": bool(index_text and index_rate > 0),
+                        "runtime": str(runtime_info()),
+                        "stageElapsedSeconds": stage_times,
+                    }
+                    await asyncio.to_thread(capture_job, root, job_id, job_root, output_path, metadata)
+            except (OSError, RuntimeError, ValueError):
+                logger.exception("diagnostic capture failed job_id=%s", job_id)
         shutil.rmtree(job_root, ignore_errors=True)
         if duration_seconds > LONG_AUDIO_THRESHOLD_SECONDS:
             await asyncio.to_thread(release_cached_models)
@@ -1989,6 +2151,12 @@ async def create_job(
     audio: UploadFile = File(...),
 ) -> dict[str, str]:
     ensure_authorized(request)
+    diagnostic = bool(
+        request.headers.get("X-PostPrep-Diagnostic") == "1"
+        and request.client is not None
+        and request.client.host in {"127.0.0.1", "::1"}
+        and configured_root(SITE_ROOT) is not None
+    )
     if active_training_job_id:
         await audio.close()
         raise RvcServiceError(503, "RVC_TRAINING_ACTIVE")
@@ -2112,6 +2280,7 @@ async def create_job(
             audio_mode=audio_mode,
             duration_seconds=duration_seconds,
             input_profile=input_profile,
+            diagnostic=diagnostic,
         ))
         job_tasks.add(task)
         task.add_done_callback(job_tasks.discard)
@@ -2179,7 +2348,8 @@ async def get_output(request: Request, job_id: str, token: str):
         record.path,
         media_type=media_type,
         filename=f"postprep-rvc-audio{record.path.suffix}",
-        headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
+        headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
+                 "X-RVC-F0-Method": record.f0_method},
     )
 
 

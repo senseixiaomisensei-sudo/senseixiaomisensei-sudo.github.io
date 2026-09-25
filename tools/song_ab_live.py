@@ -27,10 +27,13 @@ def main():
     parser.add_argument("--f0-method", default="rmvpe")
     parser.add_argument("--format", choices=("wav", "mp3"), default="wav")
     parser.add_argument("--timeout", type=int, default=1200)
+    parser.add_argument("--diagnostic", action="store_true", help="Capture private intermediate evidence on the local service")
     args = parser.parse_args()
 
     token = args.token_file.read_text(encoding="utf-8").strip()
     headers = {"Authorization": f"Bearer {token}"}
+    if args.diagnostic:
+        headers["X-PostPrep-Diagnostic"] = "1"
     parameters = {
         "model_id": args.model,
         "pitch": args.pitch,

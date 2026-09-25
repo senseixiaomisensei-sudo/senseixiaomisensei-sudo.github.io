@@ -90,7 +90,15 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def _target(self) -> str | None:
         parsed = urlsplit(self.path)
-        if parsed.path in {"/healthz", "/v1/models", "/v1/tts-health"}:
+        if parsed.path == "/healthz":
+            if not parsed.query:
+                return parsed.path
+            values = parse_qs(parsed.query, keep_blank_values=True)
+            model_ids = values.get("model_id", [])
+            if set(values) == {"model_id"} and len(model_ids) == 1 and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", model_ids[0]):
+                return f"/healthz?model_id={model_ids[0]}"
+            return None
+        if parsed.path in {"/v1/models", "/v1/tts-health"}:
             return parsed.path if not parsed.query else None
         if parsed.path == "/v1/tts":
             return parsed.path if self.command == "POST" and not parsed.query else None
@@ -176,7 +184,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             self.close_connection = True
             self.send_response(response.status, response.reason)
             content_length = response.getheader("Content-Length")
-            for key in ("Content-Type", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After"):
+            for key in ("Content-Type", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After", "X-RVC-F0-Method"):
                 value = response.getheader(key)
                 if value:
                     self.send_header(key, value)

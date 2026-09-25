@@ -39,7 +39,9 @@ export async function onRequest(context) {
   }
   if (!upstream.ok || !contentType.startsWith("audio/")) return failure(request, env, 502, "RVC_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
   const headers = new Headers(responseHeaders(request, env, contentType));
-  headers.set("Content-Disposition", 'attachment; filename="postprep-rvc-audio.wav"');
+  headers.set("Content-Disposition", `attachment; filename="postprep-rvc-audio.${contentType.startsWith("audio/mpeg") ? "mp3" : "wav"}"`);
+  const actualF0 = upstream.headers.get("X-RVC-F0-Method") || "";
+  if (/^(rmvpe|fcpe|pm)(\+(rmvpe|fcpe|pm))*$/u.test(actualF0)) headers.set("X-RVC-F0-Method", actualF0);
   headers.set("Referrer-Policy", "no-referrer");
   return new Response(upstream.body, { status: 200, headers });
 }

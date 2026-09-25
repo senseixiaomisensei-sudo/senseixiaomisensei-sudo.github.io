@@ -75,6 +75,7 @@ if (-not $healthy) {
   $env:RVC_RUNTIME_CACHE = "D:\rvc-cache"
   $env:RVC_WORK_ROOT = Join-Path $Root "work"
   $env:RVC_OUTPUT_ROOT = Join-Path $Root "output"
+  $env:RVC_DIAGNOSTIC_ROOT = Join-Path $Root "diagnostics"
   $env:RVC_SEPARATOR_MODELS_DIR = "D:\数据\rvc-runtime\pymss-models"
   $env:RVC_SEPARATOR_MODEL = "model_bs_roformer_ep_368_sdr_12.9628.ckpt"
   $env:RVC_SEPARATOR_DEVICE = "cuda"

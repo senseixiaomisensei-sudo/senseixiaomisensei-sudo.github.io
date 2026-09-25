@@ -4,6 +4,7 @@ Continuous pitch may exceed the training embedding range. Only the coarse
 embedding is bounded: clamping continuous pitch flattens high notes.
 """
 import os
+from pathlib import Path
 
 import numpy as np
 
@@ -161,15 +162,31 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
         ).squeeze().detach().cpu().numpy()
     else:
         raise ValueError(f"Unsupported F0 method: {f0_method}")
-    f0 = repair_octave_glitches(np.asarray(f0).reshape(-1))
+    raw_f0 = np.asarray(f0).reshape(-1).copy()
+    f0 = repair_octave_glitches(raw_f0)
     f0 = np.pad(f0[:p_len], (0, max(0, p_len - len(f0))))
+    contour_f0 = f0.copy()
     # Half-period correlation cannot distinguish an octave error from a real
     # lower note with a stronger second harmonic. Leave this experimental
     # repair off unless a caller explicitly supplies independent evidence.
     if getattr(pipeline, "enable_waveform_octave_repair", False):
         f0 = repair_waveform_octave_drops(f0, x, pipeline.sr, pipeline.window)
     f0 = median_smooth_pitch(f0, int(getattr(pipeline, "pitch_median_radius", 1) or 0))
+    corrected_f0 = f0.copy()
     f0 *= 2 ** (f0_up_key / 12)
+    diagnostic_dir = getattr(pipeline, "diagnostic_f0_dir", None)
+    if diagnostic_dir is not None:
+        target = Path(diagnostic_dir)
+        target.mkdir(parents=True, exist_ok=True)
+        number = int(getattr(pipeline, "diagnostic_f0_count", 0))
+        pipeline.diagnostic_f0_count = number + 1
+        np.savez_compressed(
+            target / f"f0-{number:03d}-{f0_method}.npz",
+            raw=raw_f0, contour=contour_f0, corrected=corrected_f0,
+            shifted=f0, voiced=corrected_f0 > 0,
+            hop=pipeline.window, sample_rate=pipeline.sr,
+            semitones=f0_up_key, method=f0_method,
+        )
     # The embedding ceiling is not a pitch ceiling. Folding frames above it
     # changes the melody and creates artificial octave/glide transitions.
     # Preserve continuous NSF pitch, including the requested transposition.
