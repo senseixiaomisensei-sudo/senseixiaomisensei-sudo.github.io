@@ -19,6 +19,7 @@ import json
 import logging
 import math
 import os
+import re
 
 import numpy as np
 import secrets
@@ -807,6 +808,7 @@ def render_conversion(
 def split_long_audio(input_wav: Path, chunk_root: Path, duration_seconds: float) -> list[Path]:
     chunk_root.mkdir(parents=True, exist_ok=True)
     chunks: list[Path] = []
+    spans: list[dict[str, float | int | str]] = []
     maximum_step = LONG_CHUNK_SECONDS - LONG_CHUNK_CROSSFADE_SECONDS
     chunk_count = max(
         1,
@@ -855,8 +857,20 @@ def split_long_audio(input_wav: Path, chunk_root: Path, duration_seconds: float)
         if result.returncode != 0 or not chunk_path.is_file() or chunk_path.stat().st_size <= 44:
             raise RvcServiceError(502, "RVC_LONG_AUDIO_SPLIT_FAILED")
         chunks.append(chunk_path)
+        spans.append({"index": index, "startSeconds": round(start, 6),
+                      "durationSeconds": round(probe_duration(chunk_path), 6),
+                      "sampleRate": 16000, "file": chunk_path.name})
     if not chunks:
         raise RvcServiceError(502, "RVC_LONG_AUDIO_SPLIT_FAILED")
+    manifest = {"sourceDurationSeconds": duration_seconds,
+                "crossfadeSeconds": LONG_CHUNK_CROSSFADE_SECONDS,
+                "chunks": spans,
+                "overlaps": [
+                    {"startSeconds": round(float(span["startSeconds"]), 6),
+                     "endSeconds": round(float(previous["startSeconds"]) + float(previous["durationSeconds"]), 6)}
+                    for previous, span in zip(spans, spans[1:])
+                ]}
+    (chunk_root / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return chunks
 
 
@@ -1058,11 +1072,12 @@ def select_f0_method(input_wav: Path, requested_method: str) -> str:
         return "rmvpe"
 
 
-def transcode(source: Path, destination: Path, target_format: str) -> None:
+def transcode(source: Path, destination: Path, target_format: str, gain_db: float = 0.0) -> None:
     timeout = max(120, min(600, int(probe_duration(source) * 1.5) + 60))
     if target_format == "mp3":
         result = subprocess.run(
-            ["ffmpeg", "-nostdin", "-v", "error", "-i", str(source), "-codec:a", "libmp3lame", "-b:a", "320k", str(destination)],
+            ["ffmpeg", "-nostdin", "-v", "error", "-y", "-i", str(source),
+             "-af", f"volume={gain_db:.3f}dB", "-codec:a", "libmp3lame", "-b:a", "320k", str(destination)],
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -1070,6 +1085,40 @@ def transcode(source: Path, destination: Path, target_format: str) -> None:
         )
         if result.returncode != 0 or not destination.is_file() or destination.stat().st_size < 1:
             raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
+
+
+def encoded_true_peak_dbfs(path: Path) -> float:
+    """Measure the decoded output, including reconstruction between samples."""
+    result = subprocess.run(
+        ["ffmpeg", "-nostdin", "-hide_banner", "-i", str(path),
+         "-af", "ebur128=peak=true", "-f", "null", "NUL" if os.name == "nt" else "/dev/null"],
+        check=False, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
+        timeout=max(120, min(600, int(probe_duration(path) * 1.5) + 60)),
+    )
+    match = re.search(r"True peak:\s+Peak:\s+(-?\d+(?:\.\d+)?)\s+dBFS", result.stderr)
+    if result.returncode != 0 or not match:
+        raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
+    return float(match.group(1))
+
+
+def transcode_mp3_true_peak_safe(source: Path, destination: Path) -> float:
+    """Retry from the lossless mix, never by re-encoding an old MP3."""
+    source_duration = probe_duration(source)
+    gain_db = 0.0
+    for attempt in range(3):
+        candidate = destination.with_name(f"{destination.stem}-{attempt}.mp3")
+        transcode(source, candidate, "mp3", gain_db)
+        try:
+            if abs(probe_duration(candidate) - source_duration) > .15:
+                raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
+            measured_peak = encoded_true_peak_dbfs(candidate)
+            if measured_peak <= -1.0:
+                candidate.replace(destination)
+                return measured_peak
+            gain_db += min(-0.1, -1.1 - measured_peak)
+        finally:
+            candidate.unlink(missing_ok=True)
+    raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
 
 
 def job_expiry() -> datetime:
@@ -1814,7 +1863,7 @@ async def process_conversion_job(
         # MP3 encoding can add inter-sample overshoot, so reserve 0.5 dB.
         await asyncio.to_thread(finalize_true_peak_safe, output_wav, -1.5 if output_format == "mp3" else -1.0)
         if output_format == "mp3":
-            await asyncio.to_thread(transcode, output_wav, output_path, "mp3")
+            await asyncio.to_thread(transcode_mp3_true_peak_safe, output_wav, output_path)
         else:
             shutil.copyfile(output_wav, output_path)
         if not output_path.is_file() or output_path.stat().st_size < 1:
