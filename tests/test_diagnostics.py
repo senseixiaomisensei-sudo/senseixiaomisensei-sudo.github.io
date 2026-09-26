@@ -38,6 +38,20 @@ class DiagnosticCaptureTests(unittest.TestCase):
             self.assertEqual(evidence["audioStages"]["work/input.wav"]["frames"], 4)
             self.assertAlmostEqual(evidence["audioStages"]["result.wav"]["samplePeak"], 0.5)
 
+    def test_large_job_keeps_manifest_before_bulk_chunks_within_cap(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            work = base / "work"
+            (work / "long-vocals" / "source").mkdir(parents=True)
+            (work / "long-vocals" / "source" / "manifest.json").write_text("{}", encoding="utf-8")
+            (work / "unneeded.wav").write_bytes(b"x" * 150)
+            output = base / "result.wav"
+            sf.write(output, np.zeros(10, dtype=np.float32), 16000, subtype="FLOAT")
+            with patch("app.diagnostics.MAX_JOB_BYTES", output.stat().st_size + 10):
+                destination = capture_job(base / "private", str(uuid.uuid4()), work, output, {})
+            self.assertTrue((destination / "work" / "long-vocals" / "source" / "manifest.json").is_file())
+            self.assertFalse((destination / "work" / "unneeded.wav").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

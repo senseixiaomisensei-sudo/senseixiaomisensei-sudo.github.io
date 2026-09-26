@@ -89,7 +89,41 @@ def capture_job(root: Path, job_id: str, job_root: Path,
         raise ValueError("Invalid diagnostic target")
     if _size(job_root) > MAX_JOB_BYTES:
         target.mkdir(exist_ok=True)
-        metadata["captureError"] = "Job exceeded the 512 MiB diagnostic cap"
+        # Long jobs often exceed the cap because each chunk has several WAV
+        # snapshots. Retain the alignment/F0 manifest and the major stage
+        # outputs before sample chunks, while respecting the same byte cap.
+        def priority(path: Path) -> tuple[int, str]:
+            name = path.name
+            rel = path.relative_to(job_root).as_posix()
+            if name == "manifest.json" or path.suffix == ".npz":
+                return 0, rel
+            if name.startswith("input.") or rel.startswith("stems/"):
+                return 1, rel
+            if name == "separated-vocals-16k.wav":
+                return 2, rel
+            if rel.startswith("diagnostic-stages/") and name in {
+                    "vocals-joined.wav", "vocals-activity.wav", "vocals-balanced.wav",
+                    "vocals-dynamics.wav"}:
+                return 3, rel
+            if name in {"converted-vocals.wav", "output.wav"}:
+                return 4, rel
+            return 5, rel
+
+        budget = max(0, MAX_JOB_BYTES - (output_path.stat().st_size if output_path.is_file() else 0))
+        retained = 0
+        omitted = 0
+        for source in sorted((p for p in job_root.rglob("*") if p.is_file()), key=priority):
+            size = source.stat().st_size
+            if size > budget - retained:
+                omitted += 1
+                continue
+            destination = target / "work" / source.relative_to(job_root)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
+            retained += size
+        metadata["captureNote"] = "Selected stage evidence retained within the 512 MiB cap"
+        metadata["omittedWorkFiles"] = omitted
+        metadata["retainedWorkBytes"] = retained
     else:
         shutil.copytree(job_root, target / "work", dirs_exist_ok=True)
     if output_path.is_file():

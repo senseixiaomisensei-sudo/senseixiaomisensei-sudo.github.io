@@ -7,7 +7,7 @@ import numpy as np
 import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rvc-service"))
-from app.separation_runtime import calibrate_song_vocals
+from app.separation_runtime import calibrate_song_vocals, remix_song
 
 
 class SongBalanceTests(unittest.TestCase):
@@ -39,6 +39,29 @@ class SongBalanceTests(unittest.TestCase):
             before = converted.read_bytes()
             self.assertEqual(calibrate_song_vocals(source, converted), 1.)
             self.assertEqual(converted.read_bytes(), before)
+
+    def test_remix_keeps_independent_stems_and_applies_user_gain_after_balance(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            rate = 44100
+            t = np.arange(rate) / rate
+            voice = .1 * np.sin(2 * np.pi * 220 * t)
+            music = .05 * np.sin(2 * np.pi * 880 * t)
+            vocal_path, music_path, out = root / "voice.wav", root / "music.wav", root / "mix.wav"
+            sf.write(vocal_path, voice, rate, subtype="FLOAT")
+            sf.write(music_path, np.column_stack((music, music)), rate, subtype="FLOAT")
+            remix_song(music_path, vocal_path, out, 1.0, rate,
+                       vocal_gain_db=-6.0, accompaniment_gain_db=6.0)
+            mixed, _ = sf.read(out)
+            expected = voice * 10 ** (-6 / 20) + music * 10 ** (6 / 20)
+            np.testing.assert_allclose(mixed[:, 0], expected, atol=1e-5)
+            np.testing.assert_allclose(mixed[:, 1], expected, atol=1e-5)
+            remix_song(music_path, vocal_path, out, 1.0, rate, vocal_mute=True)
+            muted, _ = sf.read(out)
+            np.testing.assert_allclose(muted[:, 0], music, atol=1e-6)
+            remix_song(music_path, vocal_path, out, 1.0, rate, accompaniment_mute=True)
+            muted, _ = sf.read(out)
+            np.testing.assert_allclose(muted[:, 0], voice, atol=1e-6)
 
 
 if __name__ == "__main__":

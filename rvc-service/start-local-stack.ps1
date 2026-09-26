@@ -70,6 +70,8 @@ if (-not $healthy) {
   # 官方 RVC 2.3.260718 运行时（setup-official-rvc.ps1 装在 D:\数据\rvc-runtime）；服务代码用 site 仓库里的 rvc-service。
   if (-not (Test-Path $OfficialVenvPython)) { throw "未找到官方运行时: $OfficialVenvPython，请先运行 site\rvc-service\setup-official-rvc.ps1" }
   $env:RVC_GATEWAY_TOKEN = $Token
+  try { $env:RVC_BACKEND_BUILD_SHA = (& git -C $SiteDir rev-parse HEAD).Trim() }
+  catch { $env:RVC_BACKEND_BUILD_SHA = "" }
   $env:RVC_MODELS_DIR = $ModelsDir
   $env:RVC_OFFICIAL_ROOT = "D:\数据\rvc-runtime\official-rvc"
   $env:RVC_RUNTIME_CACHE = "D:\rvc-cache"

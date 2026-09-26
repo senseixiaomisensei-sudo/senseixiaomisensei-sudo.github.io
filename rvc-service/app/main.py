@@ -27,6 +27,7 @@ import secrets
 import shutil
 import subprocess
 import tempfile
+import threading
 import uuid
 from collections import OrderedDict
 from contextlib import asynccontextmanager
@@ -37,7 +38,8 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
-from app.audio_dynamics import apply_dynamics
+from app.audio_activity import suppress_silent_synthesis
+from app.audio_dynamics import apply_dynamics, apply_static_gain
 from app.diagnostics import capture_job, configured_root
 from app.separation_runtime import (
     SeparationRuntimeError,
@@ -65,6 +67,9 @@ LONG_AUDIO_THRESHOLD_SECONDS = 20
 LONG_CHUNK_SECONDS = 20
 LONG_CHUNK_CROSSFADE_SECONDS = 0.5
 OUTPUT_RETENTION_SECONDS = max(900, min(int(os.getenv("RVC_OUTPUT_RETENTION_SECONDS", "7200")), 21600))
+MAX_REMIX_STEM_JOB_BYTES = 256 * 1024 * 1024
+MAX_REMIX_STEM_TOTAL_BYTES = 1024 * 1024 * 1024
+remix_stem_lock = threading.Lock()
 MAX_CONCURRENCY = max(1, min(int(os.getenv("RVC_MAX_CONCURRENCY", "1")), 2))
 SITE_ROOT = Path(__file__).resolve().parents[2]
 MODELS_DIR = Path(os.getenv("RVC_MODELS_DIR", "/models/rvc")).resolve()
@@ -84,7 +89,7 @@ MAX_TRAIN_SECONDS = 30 * 60
 DEFAULT_TRAIN_EPOCHS = max(40, min(int(os.getenv("RVC_TRAIN_EPOCHS", "80")), 200))
 TRAIN_PYTHON = Path(os.getenv("RVC_TRAIN_PYTHON", os.sys.executable)).resolve()
 logger = logging.getLogger("postprep.rvc")
-PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py",
+PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_activity.py",
                   "audio_repair.py", "separation_runtime.py", "official_runtime.py")
 
 
@@ -97,6 +102,9 @@ def source_revision() -> str:
 
 
 def checkout_revision() -> str:
+    configured = os.getenv("RVC_BACKEND_BUILD_SHA", "").strip().lower()
+    if re.fullmatch(r"[a-f0-9]{40}", configured):
+        return configured
     try:
         return subprocess.check_output(
             ["git", "-C", str(SITE_ROOT), "rev-parse", "HEAD"],
@@ -204,7 +212,15 @@ class OutputRecord:
     request_id: str = ""
     audio_mode: str = "voice"
     stage: str = "queued"
-    vocal_gain: float = 1.0
+    auto_vocal_gain: float = 1.0
+    vocal_gain_db: float = 0.0
+    accompaniment_gain_db: float = 0.0
+    vocal_mute: bool = False
+    accompaniment_mute: bool = False
+    mix_revision: int = 0
+    remix_available: bool = False
+    source_duration_seconds: float = 0.0
+    stem_sample_rate: int = 0
     fingerprint: str = ""
 
 
@@ -234,6 +250,7 @@ class TrainingRecord:
 outputs: dict[str, OutputRecord] = {}
 request_jobs: dict[str, str] = {}
 outputs_lock = asyncio.Lock()
+remix_lock = asyncio.Lock()
 inference_lock = asyncio.Semaphore(MAX_CONCURRENCY)
 job_tasks: set[asyncio.Task] = set()
 training_records: dict[str, TrainingRecord] = {}
@@ -241,7 +258,7 @@ training_tasks: set[asyncio.Task] = set()
 training_lock = asyncio.Lock()
 active_training_job_id = ""
 
-# Loaded RVCInference instances keyed by resolved .pth path (LRU).
+# Loaded RVCInference instances keyed by actual weight and index revision.
 model_cache: "OrderedDict[str, object]" = OrderedDict()
 model_cache_lock = asyncio.Lock()
 
@@ -367,12 +384,21 @@ def acquire_model(pth: Path):
     """Load (or reuse) the pinned official RVC WebUI inference runtime."""
     from app.official_runtime import OfficialRvcModel
 
-    cached = model_cache.get(str(pth))
+    index_text = find_index_path(pth)
+    revision = verified_file_hash(pth)
+    index_revision = verified_file_hash(Path(index_text)) if index_text else "none"
+    key = f"{pth.resolve()}|{revision}|{index_revision}"
+    cached = model_cache.get(key)
     if cached is not None:
-        model_cache.move_to_end(str(pth))
+        model_cache.move_to_end(key)
         return cached
-    inference = OfficialRvcModel(pth, find_index_path(pth))
-    model_cache[str(pth)] = inference
+    # A same-path replacement must release the previous model and its staged
+    # index; otherwise the process can keep synthesizing from old tensors.
+    for old_key in list(model_cache):
+        if old_key.startswith(f"{pth.resolve()}|"):
+            model_cache.pop(old_key)
+    inference = OfficialRvcModel(pth, index_text)
+    model_cache[key] = inference
     while len(model_cache) > MAX_CACHED_MODELS:
         model_cache.popitem(last=False)
     return inference
@@ -401,13 +427,21 @@ async def cleanup_expired_outputs() -> None:
     now = utcnow()
     async with outputs_lock:
         for job_id, record in tuple(outputs.items()):
-            if record.state not in {"queued", "processing"} and record.expires_at <= now:
+            if record.state not in {"queued", "processing", "remixing"} and record.expires_at <= now:
                 expired.append((job_id, record))
                 outputs.pop(job_id, None)
                 if record.request_id and request_jobs.get(record.request_id) == job_id:
                     request_jobs.pop(record.request_id, None)
-    for _, record in expired:
+    for job_id, record in expired:
         record.path.unlink(missing_ok=True)
+        # A remixed record points at its newest revision, but the original
+        # output still occupies the same short-lived storage allocation.
+        for original in (OUTPUT_ROOT / f"{job_id}.wav", OUTPUT_ROOT / f"{job_id}.mp3"):
+            original.unlink(missing_ok=True)
+        for old_mix in OUTPUT_ROOT.glob(f"{job_id}-mix*.*"):
+            old_mix.unlink(missing_ok=True)
+        for stem in remix_stem_paths(job_id):
+            stem.unlink(missing_ok=True)
 
 
 def training_job_root(job_id: str) -> Path:
@@ -487,7 +521,15 @@ def persist_output_records() -> None:
                 "format": record.format,
                 "request_id": record.request_id,
                 "audio_mode": record.audio_mode,
-                "vocal_gain": record.vocal_gain,
+                "auto_vocal_gain": record.auto_vocal_gain,
+                "vocal_gain_db": record.vocal_gain_db,
+                "accompaniment_gain_db": record.accompaniment_gain_db,
+                "vocal_mute": record.vocal_mute,
+                "accompaniment_mute": record.accompaniment_mute,
+                "mix_revision": record.mix_revision,
+                "remix_available": record.remix_available,
+                "source_duration_seconds": record.source_duration_seconds,
+                "stem_sample_rate": record.stem_sample_rate,
                 "fingerprint": record.fingerprint,
                 "expires_at": record.expires_at.isoformat(),
             }
@@ -525,7 +567,16 @@ def load_output_records() -> None:
             error_code="" if state == "completed" else "RVC_SERVICE_RESTARTED",
             request_id=str(entry.get("request_id", "")),
             audio_mode=str(entry.get("audio_mode", "voice")),
-            vocal_gain=float(entry.get("vocal_gain", 1.0)),
+            auto_vocal_gain=float(entry.get("auto_vocal_gain", entry.get("vocal_gain", 1.0))),
+            vocal_gain_db=float(entry.get("vocal_gain_db", 0.0)),
+            accompaniment_gain_db=float(entry.get("accompaniment_gain_db", 0.0)),
+            vocal_mute=entry.get("vocal_mute") is True,
+            accompaniment_mute=entry.get("accompaniment_mute") is True,
+            mix_revision=int(entry.get("mix_revision", 0)),
+            remix_available=(entry.get("remix_available") is True
+                             and all(p.is_file() for p in remix_stem_paths(job_id))),
+            source_duration_seconds=float(entry.get("source_duration_seconds", 0.0)),
+            stem_sample_rate=int(entry.get("stem_sample_rate", 0)),
             fingerprint=str(entry.get("fingerprint", "")),
             stage="completed" if state == "completed" else "failed",
         )
@@ -1192,7 +1243,7 @@ def encoded_true_peak_dbfs(path: Path) -> float:
         check=False, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
         timeout=max(120, min(600, int(probe_duration(path) * 1.5) + 60)),
     )
-    match = re.search(r"True peak:\s+Peak:\s+(-?\d+(?:\.\d+)?)\s+dBFS", result.stderr)
+    match = re.search(r"True peak:\s+Peak:\s+(-?(?:\d+(?:\.\d+)?|inf))\s+dBFS", result.stderr)
     if result.returncode != 0 or not match:
         raise RvcServiceError(502, "RVC_OUTPUT_SAFETY_FAILED")
     return float(match.group(1))
@@ -1220,6 +1271,54 @@ def transcode_mp3_true_peak_safe(source: Path, destination: Path) -> float:
 
 def job_expiry() -> datetime:
     return utcnow() + timedelta(seconds=OUTPUT_RETENTION_SECONDS)
+
+
+def remix_stem_paths(job_id: str) -> tuple[Path, Path]:
+    return (OUTPUT_ROOT / f"{job_id}-vocals.wav",
+            OUTPUT_ROOT / f"{job_id}-instrumental.wav")
+
+
+def retain_song_stems(job_id: str, vocals: Path, instrumental: Path) -> bool:
+    """Keep balanced stems for the output's short lifetime, within a hard cap."""
+    targets = remix_stem_paths(job_id)
+    total_new = vocals.stat().st_size + instrumental.stat().st_size
+    if total_new > MAX_REMIX_STEM_JOB_BYTES:
+        return False
+    with remix_stem_lock:
+        used = sum(path.stat().st_size for path in OUTPUT_ROOT.glob("*-vocals.wav"))
+        used += sum(path.stat().st_size for path in OUTPUT_ROOT.glob("*-instrumental.wav"))
+        if used + total_new > MAX_REMIX_STEM_TOTAL_BYTES:
+            return False
+        staged = [target.with_suffix(".wav.tmp") for target in targets]
+        try:
+            shutil.copyfile(vocals, staged[0])
+            shutil.copyfile(instrumental, staged[1])
+            staged[0].replace(targets[0])
+            staged[1].replace(targets[1])
+        finally:
+            for path in staged:
+                path.unlink(missing_ok=True)
+    return True
+
+
+def parse_mix_controls(vocal_gain_db: str, accompaniment_gain_db: str,
+                       vocal_mute: str, accompaniment_mute: str,
+                       audio_mode: str) -> tuple[float, float, bool, bool]:
+    try:
+        vocal = float(vocal_gain_db)
+        accompaniment = float(accompaniment_gain_db)
+    except (TypeError, ValueError):
+        raise RvcServiceError(400, "RVC_INVALID_PARAMETER") from None
+    if (not math.isfinite(vocal) or not math.isfinite(accompaniment)
+            or not -24 <= vocal <= 6 or not -24 <= accompaniment <= 6
+            or vocal_mute not in {"true", "false"}
+            or accompaniment_mute not in {"true", "false"}):
+        raise RvcServiceError(400, "RVC_INVALID_PARAMETER")
+    muted_vocal = vocal_mute == "true"
+    muted_accompaniment = accompaniment_mute == "true"
+    if audio_mode == "voice" and (accompaniment != 0 or muted_accompaniment):
+        raise RvcServiceError(400, "RVC_INVALID_PARAMETER")
+    return vocal, accompaniment, muted_vocal, muted_accompaniment
 
 
 @app.get("/healthz")
@@ -1307,7 +1406,7 @@ def valid_request_id(value: str) -> bool:
     return 16 <= len(value) <= 80 and all(ch.isalnum() or ch in "-_" for ch in value)
 
 
-def output_payload(job_id: str, record: OutputRecord) -> dict[str, str]:
+def output_payload(job_id: str, record: OutputRecord) -> dict[str, object]:
     payload = {
         "jobId": job_id,
         "downloadToken": record.token,
@@ -1319,8 +1418,16 @@ def output_payload(job_id: str, record: OutputRecord) -> dict[str, str]:
     }
     if record.f0_method:
         payload["f0Method"] = record.f0_method
+    payload["vocalGainDb"] = record.vocal_gain_db
+    payload["accompanimentGainDb"] = record.accompaniment_gain_db
+    payload["vocalMute"] = record.vocal_mute
+    payload["accompanimentMute"] = record.accompaniment_mute
+    payload["mixRevision"] = record.mix_revision
     if record.audio_mode == "song" and record.state == "completed":
-        payload["vocalGain"] = round(record.vocal_gain, 4)
+        payload["autoVocalGain"] = round(record.auto_vocal_gain, 4)
+        payload["vocalGain"] = round(record.auto_vocal_gain, 4)
+        payload["remixAvailable"] = record.remix_available and all(
+            path.is_file() for path in remix_stem_paths(job_id))
     return payload
 
 
@@ -1926,6 +2033,10 @@ async def process_conversion_job(
     filter_radius: int,
     resample: int,
     rms_mix_rate: float,
+    vocal_gain_db: float,
+    accompaniment_gain_db: float,
+    vocal_mute: bool,
+    accompaniment_mute: bool,
     f0_method: str,
     request_id: str,
     model_id: str,
@@ -1937,7 +2048,8 @@ async def process_conversion_job(
 ) -> None:
     diagnostic_dir = job_root / "diagnostic-stages" if diagnostic else None
     used_f0_method = ""
-    vocal_gain = 1.0
+    auto_vocal_gain = 1.0
+    activity_details: dict[str, object] = {}
     stage_times: dict[str, float] = {}
     stage_started = asyncio.get_running_loop().time()
     def mark_stage(name: str) -> None:
@@ -1982,17 +2094,22 @@ async def process_conversion_job(
             )
             mark_stage("conversion")
             snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-joined.wav")
+            activity_details = await asyncio.to_thread(
+                suppress_silent_synthesis, converted_vocals, separated_vocals,
+            )
+            mark_stage("activityGuard")
+            snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-activity.wav")
             # Preserve the source's short-time dynamics, not its speaker identity.
             await asyncio.to_thread(apply_dynamics, converted_vocals, separated_vocals, 1.0 - rms_mix_rate)
             mark_stage("dynamics")
             snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-dynamics.wav")
-            vocal_gain = await asyncio.to_thread(calibrate_song_vocals, stems.vocals, converted_vocals)
+            auto_vocal_gain = await asyncio.to_thread(calibrate_song_vocals, stems.vocals, converted_vocals)
             mark_stage("vocalBalance")
             snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-balanced.wav")
             async with outputs_lock:
                 record = outputs.get(job_id)
                 if record:
-                    record.vocal_gain = vocal_gain
+                    record.auto_vocal_gain = auto_vocal_gain
             async with outputs_lock:
                 record = outputs.get(job_id)
                 if record:
@@ -2004,6 +2121,10 @@ async def process_conversion_job(
                 output_wav,
                 duration_seconds,
                 stems.sample_rate,
+                vocal_gain_db,
+                accompaniment_gain_db,
+                vocal_mute,
+                accompaniment_mute,
             )
             mark_stage("remix")
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "remixed.wav")
@@ -2031,9 +2152,16 @@ async def process_conversion_job(
             )
             mark_stage("conversion")
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-joined.wav")
+            activity_details = await asyncio.to_thread(
+                suppress_silent_synthesis, output_wav, input_wav,
+            )
+            mark_stage("activityGuard")
+            snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-activity.wav")
             await asyncio.to_thread(apply_dynamics, output_wav, input_wav, 1.0 - rms_mix_rate)
             mark_stage("dynamics")
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-dynamics.wav")
+            await asyncio.to_thread(apply_static_gain, output_wav, vocal_gain_db, vocal_mute)
+            snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-user-gain.wav")
         async with outputs_lock:
             record = outputs.get(job_id)
             if record:
@@ -2050,6 +2178,11 @@ async def process_conversion_job(
         mark_stage("encoding")
         if not output_path.is_file() or output_path.stat().st_size < 1:
             raise RvcServiceError(502, "RVC_EMPTY_OUTPUT")
+        remix_available = False
+        if audio_mode == "song":
+            remix_available = await asyncio.to_thread(
+                retain_song_stems, job_id, converted_vocals, stems.instrumental,
+            )
         async with outputs_lock:
             record = outputs.get(job_id)
             if record:
@@ -2057,6 +2190,9 @@ async def process_conversion_job(
                 record.stage = "completed"
                 record.f0_method = used_f0_method
                 record.expires_at = job_expiry()
+                record.remix_available = remix_available
+                record.source_duration_seconds = duration_seconds
+                record.stem_sample_rate = stems.sample_rate if audio_mode == "song" else 0
         persist_output_records()
         logger.info(
             "conversion completed request_id=%s job_id=%s model=%s mode=%s f0=%s vocal_gain=%.3f seconds=%.2f",
@@ -2065,7 +2201,7 @@ async def process_conversion_job(
             model_id,
             audio_mode,
             used_f0_method,
-            record.vocal_gain if record else 1.0,
+            record.auto_vocal_gain if record else 1.0,
             asyncio.get_running_loop().time() - started_at,
         )
     except asyncio.CancelledError:
@@ -2115,7 +2251,12 @@ async def process_conversion_job(
                         "pitch": pitch, "indexRate": index_rate, "protect": protect,
                         "rmsMixRate": rms_mix_rate, "filterRadius": filter_radius,
                         "resample": resample, "requestedF0Method": f0_method,
-                        "actualF0Method": used_f0_method, "vocalGain": vocal_gain,
+                        "actualF0Method": used_f0_method,
+                        "autoVocalGain": auto_vocal_gain,
+                        "userVocalGainDb": vocal_gain_db,
+                        "userAccompanimentGainDb": accompaniment_gain_db,
+                        "vocalMute": vocal_mute,
+                        "accompanimentMute": accompaniment_mute,
                         "sourceDurationSeconds": duration_seconds, "noiseSeed": 20260823,
                         "backendBuildSha": BACKEND_BUILD_SHA,
                         "pipelineRevision": PIPELINE_REVISION, "upstreamCommit": OFFICIAL_COMMIT,
@@ -2123,6 +2264,7 @@ async def process_conversion_job(
                         "indexSha256": verified_file_hash(Path(index_text)) if index_text else "",
                         "retrievalEnabled": bool(index_text and index_rate > 0),
                         "runtime": str(runtime_info()),
+                        "sourceActivity": activity_details,
                         "stageElapsedSeconds": stage_times,
                     }
                     await asyncio.to_thread(capture_job, root, job_id, job_root, output_path, metadata)
@@ -2143,13 +2285,17 @@ async def create_job(
     filter_radius: str = Form("0"),
     resample: str = Form("0"),
     rms_mix_rate: str = Form("1"),
+    vocal_gain_db: str = Form("0"),
+    accompaniment_gain_db: str = Form("0"),
+    vocal_mute: str = Form("false"),
+    accompaniment_mute: str = Form("false"),
     f0_method: str = Form("rmvpe"),
     format: str = Form("wav"),
     language: str = Form("zh"),
     audio_mode: str = Form("voice"),
     request_id: str = Form(""),
     audio: UploadFile = File(...),
-) -> dict[str, str]:
+) -> dict[str, object]:
     ensure_authorized(request)
     diagnostic = bool(
         request.headers.get("X-PostPrep-Diagnostic") == "1"
@@ -2185,7 +2331,9 @@ async def create_job(
         rms_mix_value = float(rms_mix_rate)
     except ValueError:
         raise RvcServiceError(400, "RVC_INVALID_PARAMETER") from None
-    if not (0 <= index_rate_value <= 1 and 0 <= protect_value <= 0.5 and 0 <= rms_mix_value <= 1):
+    if not (math.isfinite(index_rate_value) and math.isfinite(protect_value)
+            and math.isfinite(rms_mix_value) and 0 <= index_rate_value <= 1
+            and 0 <= protect_value <= 0.5 and 0 <= rms_mix_value <= 1):
         raise RvcServiceError(400, "RVC_INVALID_PARAMETER")
     try:
         filter_radius_value = int(filter_radius)
@@ -2207,6 +2355,9 @@ async def create_job(
         raise RvcServiceError(400, "RVC_INVALID_LANGUAGE")
     if audio_mode not in ALLOWED_AUDIO_MODES:
         raise RvcServiceError(400, "RVC_INVALID_PARAMETER")
+    mix_vocal_db, mix_accompaniment_db, mix_vocal_mute, mix_accompaniment_mute = parse_mix_controls(
+        vocal_gain_db, accompaniment_gain_db, vocal_mute, accompaniment_mute, audio_mode,
+    )
     if client_request_id and not valid_request_id(client_request_id):
         raise RvcServiceError(400, "RVC_INVALID_REQUEST_ID")
 
@@ -2219,6 +2370,8 @@ async def create_job(
     fingerprint = hashlib.sha256(json.dumps({
         "model": model_id, "pitch": pitch_value, "indexRate": index_rate_value,
         "protect": protect_value, "rmsMixRate": rms_mix_value,
+        "vocalGainDb": mix_vocal_db, "accompanimentGainDb": mix_accompaniment_db,
+        "vocalMute": mix_vocal_mute, "accompanimentMute": mix_accompaniment_mute,
         "filterRadius": filter_radius_value, "resample": resample_value,
         "f0Method": f0_method, "format": format, "audioMode": audio_mode,
         "filename": audio.filename, "contentType": audio.content_type,
@@ -2234,6 +2387,10 @@ async def create_job(
         await audio.close()
         logger.info("idempotent retry request_id=%s job_id=%s", trace_id, job_id)
         return output_payload(job_id, record)
+    record.vocal_gain_db = mix_vocal_db
+    record.accompaniment_gain_db = mix_accompaniment_db
+    record.vocal_mute = mix_vocal_mute
+    record.accompaniment_mute = mix_accompaniment_mute
     persist_output_records()
     job_root = None
     output_path = record.path
@@ -2273,6 +2430,10 @@ async def create_job(
             filter_radius=filter_radius_value,
             resample=resample_value,
             rms_mix_rate=rms_mix_value,
+            vocal_gain_db=mix_vocal_db,
+            accompaniment_gain_db=mix_accompaniment_db,
+            vocal_mute=mix_vocal_mute,
+            accompaniment_mute=mix_accompaniment_mute,
             f0_method=f0_method,
             request_id=trace_id,
             model_id=model_id,
@@ -2325,7 +2486,7 @@ async def get_output(request: Request, job_id: str, token: str):
         record = outputs.get(job_id)
     if record is None or not secrets.compare_digest(token, record.token):
         raise HTTPException(status_code=404, detail="Not found")
-    if record.state in {"uploading", "preparing", "queued", "processing"}:
+    if record.state in {"uploading", "preparing", "queued", "processing", "remixing"}:
         return JSONResponse(
             output_payload(job_id, record),
             status_code=202,
@@ -2349,8 +2510,76 @@ async def get_output(request: Request, job_id: str, token: str):
         media_type=media_type,
         filename=f"postprep-rvc-audio{record.path.suffix}",
         headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
-                 "X-RVC-F0-Method": record.f0_method},
+                 "X-RVC-F0-Method": record.f0_method,
+                 "X-RVC-Mix-Revision": str(record.mix_revision),
+                 "X-RVC-Remix-Available": "true" if record.remix_available
+                 and all(path.is_file() for path in remix_stem_paths(job_id)) else "false"},
     )
+
+
+@app.post("/v1/output/{job_id}/remix")
+async def remix_output(
+    request: Request,
+    job_id: str,
+    token: str,
+    vocal_gain_db: str = Form("0"),
+    accompaniment_gain_db: str = Form("0"),
+    vocal_mute: str = Form("false"),
+    accompaniment_mute: str = Form("false"),
+) -> dict[str, object]:
+    ensure_authorized(request)
+    if not re_full_uuid(job_id) or not valid_training_token(token):
+        raise HTTPException(status_code=404, detail="Not found")
+    mix = parse_mix_controls(vocal_gain_db, accompaniment_gain_db,
+                             vocal_mute, accompaniment_mute, "song")
+    await cleanup_expired_outputs()
+    async with remix_lock:
+        async with outputs_lock:
+            record = outputs.get(job_id)
+            if record is None or not secrets.compare_digest(token, record.token):
+                raise HTTPException(status_code=404, detail="Not found")
+            stems = remix_stem_paths(job_id)
+            if (record.state != "completed" or record.audio_mode != "song"
+                    or not record.remix_available or not all(path.is_file() for path in stems)
+                    or record.expires_at <= utcnow()):
+                raise RvcServiceError(409, "RVC_REMIX_UNAVAILABLE")
+            record.state = "remixing"
+            record.stage = "remixing"
+            next_revision = record.mix_revision + 1
+        mix_wav = OUTPUT_ROOT / f"{job_id}-mix{next_revision}.wav"
+        next_path = OUTPUT_ROOT / f"{job_id}-mix{next_revision}.{record.format}"
+        try:
+            await asyncio.to_thread(
+                remix_song, stems[1], stems[0], mix_wav,
+                record.source_duration_seconds, record.stem_sample_rate, *mix,
+            )
+            await asyncio.to_thread(
+                finalize_true_peak_safe, mix_wav,
+                -1.5 if record.format == "mp3" else -1.0,
+            )
+            if record.format == "mp3":
+                await asyncio.to_thread(transcode_mp3_true_peak_safe, mix_wav, next_path)
+            else:
+                next_path = mix_wav
+            async with outputs_lock:
+                record.path = next_path
+                record.vocal_gain_db, record.accompaniment_gain_db = mix[:2]
+                record.vocal_mute, record.accompaniment_mute = mix[2:]
+                record.mix_revision = next_revision
+                record.state = "completed"
+                record.stage = "completed"
+            persist_output_records()
+            return output_payload(job_id, record)
+        except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
+            next_path.unlink(missing_ok=True)
+            raise RvcServiceError(502, "RVC_REMIX_FAILED") from None
+        finally:
+            if mix_wav != next_path:
+                mix_wav.unlink(missing_ok=True)
+            async with outputs_lock:
+                if record.state == "remixing":
+                    record.state = "completed"
+                    record.stage = "completed"
 
 
 def re_full_slug(value: str) -> bool:

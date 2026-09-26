@@ -61,3 +61,28 @@ def apply_dynamics(output_path: Path, source_path: Path, strength=.5):
     source, source_rate = sf.read(source_path, dtype='float64')
     result = preserve_dynamics(converted, rate, source, source_rate, strength)
     sf.write(output_path, result, rate, subtype='FLOAT')
+
+
+def apply_static_gain(path: Path, gain_db: float = 0.0, mute: bool = False) -> None:
+    """Apply a user gain after automatic dynamics, retaining float headroom."""
+    if not np.isfinite(gain_db) or not -24 <= gain_db <= 6:
+        raise ValueError('Invalid user gain')
+    if gain_db == 0 and not mute:
+        return
+    gain = 0.0 if mute else 10 ** (gain_db / 20)
+    staged = path.with_name(path.stem + '-user-gain.wav')
+    try:
+        with sf.SoundFile(path) as source, sf.SoundFile(
+            staged, mode='w', samplerate=source.samplerate,
+            channels=source.channels, subtype='FLOAT',
+        ) as target:
+            while True:
+                block = source.read(65536, dtype='float32', always_2d=True)
+                if not len(block):
+                    break
+                if not np.isfinite(block).all():
+                    raise ValueError('Non-finite vocal audio')
+                target.write(block * gain)
+        staged.replace(path)
+    finally:
+        staged.unlink(missing_ok=True)

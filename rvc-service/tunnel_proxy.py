@@ -26,6 +26,7 @@ TOKEN = os.getenv("RVC_GATEWAY_TOKEN", "").strip()
 MAX_BODY_BYTES = 26 * 1024 * 1024
 MAX_TTS_BODY_BYTES = 8 * 1024
 JOB_RE = re.compile(r"^/v1/output/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.I)
+REMIX_JOB_RE = re.compile(r"^/v1/output/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/remix$", re.I)
 TRAIN_JOB_RE = re.compile(r"^/v1/training/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.I)
 TRAIN_ACTION_RE = re.compile(
     r"^/v1/training/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/(?:start|cancel)$",
@@ -111,6 +112,11 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             token_values = values.get("token", [])
             if len(token_values) == 1 and OUTPUT_TOKEN_RE.fullmatch(token_values[0]):
                 return f"{parsed.path}?token={token_values[0]}"
+        if REMIX_JOB_RE.fullmatch(parsed.path) and self.command == "POST":
+            values = parse_qs(parsed.query, keep_blank_values=True)
+            token_values = values.get("token", [])
+            if len(token_values) == 1 and OUTPUT_TOKEN_RE.fullmatch(token_values[0]):
+                return f"{parsed.path}?token={token_values[0]}"
         if (
             (TRAIN_JOB_RE.fullmatch(parsed.path) and self.command == "GET")
             or (TRAIN_ACTION_RE.fullmatch(parsed.path) and self.command == "POST")
@@ -123,7 +129,9 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         return None
 
     def _body(self) -> bytes:
-        max_bytes = MAX_TTS_BODY_BYTES if urlsplit(self.path).path == "/v1/tts" else MAX_BODY_BYTES
+        path = urlsplit(self.path).path
+        max_bytes = (MAX_TTS_BODY_BYTES if path == "/v1/tts" else
+                     64 * 1024 if REMIX_JOB_RE.fullmatch(path) else MAX_BODY_BYTES)
         transfer_encoding = self.headers.get("Transfer-Encoding", "").lower()
         if "chunked" in transfer_encoding:
             return _read_chunked(self.rfile, max_bytes)
@@ -184,7 +192,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             self.close_connection = True
             self.send_response(response.status, response.reason)
             content_length = response.getheader("Content-Length")
-            for key in ("Content-Type", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After", "X-RVC-F0-Method"):
+            for key in ("Content-Type", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After", "X-RVC-F0-Method", "X-RVC-Mix-Revision", "X-RVC-Remix-Available"):
                 value = response.getheader(key)
                 if value:
                     self.send_header(key, value)

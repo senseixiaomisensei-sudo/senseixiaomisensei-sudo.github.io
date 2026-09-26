@@ -105,7 +105,10 @@ def protect_true_peak(path: Path, ceiling_dbfs: float = -1.0) -> None:
                     peak = max(peak, float(np.max(np.abs(core))))
             gain = min(1.0, target / peak) if peak > 0 else 1.0
             source.seek(0)
-            with sf.SoundFile(staged, mode="w", samplerate=rate, channels=channels, subtype="PCM_16") as target_file:
+            # Keep the protected master in float until the final export codec.
+            # Quantizing here can introduce distortion before MP3 encoding or
+            # an additional remix pass.
+            with sf.SoundFile(staged, mode="w", samplerate=rate, channels=channels, subtype="FLOAT") as target_file:
                 while True:
                     samples = source.read(block, dtype="float32", always_2d=True)
                     if not len(samples):

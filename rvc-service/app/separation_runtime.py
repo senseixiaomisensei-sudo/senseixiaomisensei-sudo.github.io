@@ -161,13 +161,32 @@ def remix_song(
     destination: Path,
     duration_seconds: float,
     sample_rate: int,
+    vocal_gain_db: float = 0.0,
+    accompaniment_gain_db: float = 0.0,
+    vocal_mute: bool = False,
+    accompaniment_mute: bool = False,
 ) -> None:
+    import math
+    import soundfile as sf
+
+    if not all(math.isfinite(value) and -24 <= value <= 6
+               for value in (vocal_gain_db, accompaniment_gain_db)):
+        raise SeparationRuntimeError("RVC_INVALID_PARAMETER")
     duration = max(1.0, float(duration_seconds))
     rate = sample_rate if sample_rate in {32000, 44100, 48000} else 44100
+    # Only compensate the sub-frame rounding introduced by resampling. A large
+    # mismatch is an upstream alignment defect and must not be hidden by apad.
+    if (abs(sf.info(instrumental).duration - duration) > 0.1
+            or abs(sf.info(converted_vocals).duration - duration) > 0.1):
+        raise SeparationRuntimeError("RVC_REMIX_ALIGNMENT_FAILED")
+    music_gain = 0.0 if accompaniment_mute else 10 ** (accompaniment_gain_db / 20)
+    voice_gain = 0.0 if vocal_mute else 10 ** (vocal_gain_db / 20)
     filter_graph = (
-        f"[0:a]aresample={rate}:async=1:first_pts=0,apad,atrim=end={duration:.6f}[music];"
-        f"[1:a]aresample={rate}:async=1:first_pts=0,"
-        f"pan=stereo|c0=c0|c1=c0,apad,atrim=end={duration:.6f}[voice];"
+        f"[0:a]aresample={rate}:async=0:first_pts=0,apad,atrim=end={duration:.6f},"
+        f"volume={music_gain:.10f}[music];"
+        f"[1:a]aresample={rate}:async=0:first_pts=0,"
+        f"pan=stereo|c0=c0|c1=c0,apad,atrim=end={duration:.6f},"
+        f"volume={voice_gain:.10f}[voice];"
         "[music][voice]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[out]"
     )
     result = subprocess.run(
