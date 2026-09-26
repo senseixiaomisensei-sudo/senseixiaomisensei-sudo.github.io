@@ -18,7 +18,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$StagingParent = Join-Path ([System.IO.Path]::GetTempPath()) ("postprep-pages-" + [guid]::NewGuid().ToString("N").Substring(0, 8))
+$StagingRoot = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot "..\部署临时"))
+New-Item -ItemType Directory -Force -Path $StagingRoot | Out-Null
+$StagingParent = [System.IO.Path]::GetFullPath((Join-Path $StagingRoot ("postprep-pages-" + [guid]::NewGuid().ToString("N").Substring(0, 8))))
+if (-not $StagingParent.StartsWith($StagingRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+  throw "Deployment staging path escaped its intended directory"
+}
 $MaxFileBytes = 25 * 1024 * 1024
 
 & git -C $RepoRoot worktree prune
