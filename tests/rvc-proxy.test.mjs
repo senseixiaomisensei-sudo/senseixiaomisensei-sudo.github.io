@@ -286,6 +286,10 @@ test("remix relay validates independent levels and forwards only a protected sav
     form.set("accompanimentGainDb", "-4");
     form.set("vocalMute", "false");
     form.set("accompanimentMute", "true");
+    form.set("vocal_gain_db", gain);
+    form.set("accompaniment_gain_db", "-4");
+    form.set("vocal_mute", "false");
+    form.set("accompaniment_mute", "true");
     return new Request(`https://postprep-ae6.pages.dev/api/rvc-remix?job=${JOB_ID}&token=${DOWNLOAD_TOKEN}`, {
       method: "POST", headers: { Origin: SITE_ORIGIN, "X-PostPrep-Gateway": "gateway-secret" }, body: form,
     });
@@ -300,6 +304,12 @@ test("remix relay validates independent levels and forwards only a protected sav
     assert.equal(forwarded.options.body.get("vocal_gain_db"), "-6");
     assert.equal(forwarded.options.body.get("accompaniment_gain_db"), "-4");
     assert.equal(forwarded.options.body.get("accompaniment_mute"), "true");
+    const conflicting = await makeRequest("-6").formData();
+    conflicting.set("vocal_gain_db", "1");
+    const conflict = await rvcRemixRequest({ request: new Request(`https://postprep-ae6.pages.dev/api/rvc-remix?job=${JOB_ID}&token=${DOWNLOAD_TOKEN}`, {
+      method: "POST", headers: { Origin: SITE_ORIGIN, "X-PostPrep-Gateway": "gateway-secret" }, body: conflicting,
+    }), env: BASE_ENV });
+    assert.equal(conflict.status, 400);
   } finally {
     globalThis.fetch = originalFetch;
   }

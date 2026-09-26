@@ -36,6 +36,8 @@ test("song mode is an additive PyMSS separation, RVC vocal conversion and backin
   assert.match(client, /if \(audioMode === "song"\)[\s\S]*preservesMix: true/u);
   assert.match(client, /body\.set\("audioMode", state\.audioMode\)/u);
   assert.match(client, /body\.set\("audio_mode", state\.audioMode\)/u);
+  assert.match(client, /body\.set\("vocal_gain_db", String\(mixControls\.vocalGainDb\)\)/u);
+  assert.match(client, /body\.set\("accompaniment_gain_db", String\(mix\.accompanimentGainDb\)\)/u);
   assert.match(gateway, /ALLOWED_AUDIO_MODES = new Set\(\["voice", "song"\]\)/u);
   assert.match(gateway, /upstreamBody\.set\("audio_mode", audioMode\)/u);
   assert.match(service, /audio_mode: str = Form\("voice"\)/u);

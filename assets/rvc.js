@@ -4445,6 +4445,10 @@
       body.set("accompanimentGainDb", String(mixControls.accompanimentGainDb));
       body.set("vocalMute", String(mixControls.vocalMute));
       body.set("accompanimentMute", String(mixControls.accompanimentMute));
+      body.set("vocal_gain_db", String(mixControls.vocalGainDb));
+      body.set("accompaniment_gain_db", String(mixControls.accompanimentGainDb));
+      body.set("vocal_mute", String(mixControls.vocalMute));
+      body.set("accompaniment_mute", String(mixControls.accompanimentMute));
       body.set("filterRadius", String(filterRadius));
       body.set("filter_radius", String(filterRadius));
       body.set("language", state.lang === "en" ? "en" : "zh");
@@ -4666,6 +4670,10 @@
     body.set("accompanimentGainDb", String(mix.accompanimentGainDb));
     body.set("vocalMute", String(mix.vocalMute));
     body.set("accompanimentMute", String(mix.accompanimentMute));
+    body.set("vocal_gain_db", String(mix.vocalGainDb));
+    body.set("accompaniment_gain_db", String(mix.accompanimentGainDb));
+    body.set("vocal_mute", String(mix.vocalMute));
+    body.set("accompaniment_mute", String(mix.accompanimentMute));
     state.busy = true;
     syncMixControls();
     if (status) status.textContent = state.lang === "en" ? "Updating the saved stems…" : "正在使用已保存分轨更新混音…";

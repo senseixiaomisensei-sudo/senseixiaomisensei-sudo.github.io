@@ -28,12 +28,18 @@ export async function onRequest({ request, env }) {
   } catch {
     return failure(request, env, 400, "RVC_INVALID_FORM", "Invalid mix settings");
   }
-  const keys = ["vocalGainDb", "accompanimentGainDb", "vocalMute", "accompanimentMute"];
+  const keys = ["vocalGainDb", "accompanimentGainDb", "vocalMute", "accompanimentMute",
+    "vocal_gain_db", "accompaniment_gain_db", "vocal_mute", "accompaniment_mute"];
   if ([...form.keys()].some((key) => !keys.includes(key))) return failure(request, env, 400, "RVC_INVALID_FIELD", "Unsupported mix setting");
-  const vocal = String(form.get("vocalGainDb") ?? "0");
-  const accompaniment = String(form.get("accompanimentGainDb") ?? "0");
-  const vocalMute = String(form.get("vocalMute") ?? "false");
-  const accompanimentMute = String(form.get("accompanimentMute") ?? "false");
+  const pair = (camel, snake, fallback) => {
+    const a = form.get(camel);
+    const b = form.get(snake);
+    return a != null && b != null && String(a) !== String(b) ? null : String(a ?? b ?? fallback);
+  };
+  const vocal = pair("vocalGainDb", "vocal_gain_db", "0");
+  const accompaniment = pair("accompanimentGainDb", "accompaniment_gain_db", "0");
+  const vocalMute = pair("vocalMute", "vocal_mute", "false");
+  const accompanimentMute = pair("accompanimentMute", "accompaniment_mute", "false");
   if (![vocal, accompaniment].every((value) => /^-?(?:\d+)(?:\.\d+)?$/u.test(value) && Number(value) >= -24 && Number(value) <= 6)
     || ![vocalMute, accompanimentMute].every((value) => value === "true" || value === "false")) {
     return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Invalid mix settings");
