@@ -16,6 +16,7 @@ const { onRequest: rvcRequest } = await importFunction("../functions/api/rvc.js"
 const { onRequest: rvcStatusRequest } = await importFunction("../functions/api/rvc-status.js");
 const { onRequest: rvcModelsRequest } = await importFunction("../functions/api/rvc-models.js");
 const { onRequest: rvcOutputRequest } = await importFunction("../functions/api/rvc-output.js");
+const { onRequest: rvcRemixRequest } = await importFunction("../functions/api/rvc-remix.js");
 const { serveRvcMedia } = await importFunction("../functions/api/_rvc-media.js");
 
 const SITE_ORIGIN = "https://senseixiaomisensei-sudo.github.io";
@@ -270,6 +271,38 @@ test("rvc output requires an internal gateway and a constrained job token", asyn
   const body = await response.json();
   assert.equal(response.status, 403);
   assert.equal(body.code, "GATEWAY_NOT_ALLOWED");
+});
+
+test("remix relay validates independent levels and forwards only a protected saved job", async () => {
+  const originalFetch = globalThis.fetch;
+  let forwarded;
+  globalThis.fetch = async (url, options) => {
+    forwarded = { url: String(url), options };
+    return Response.json({ jobId: JOB_ID, state: "completed", mixRevision: 1 });
+  };
+  const makeRequest = (gain) => {
+    const form = new FormData();
+    form.set("vocalGainDb", gain);
+    form.set("accompanimentGainDb", "-4");
+    form.set("vocalMute", "false");
+    form.set("accompanimentMute", "true");
+    return new Request(`https://postprep-ae6.pages.dev/api/rvc-remix?job=${JOB_ID}&token=${DOWNLOAD_TOKEN}`, {
+      method: "POST", headers: { Origin: SITE_ORIGIN, "X-PostPrep-Gateway": "gateway-secret" }, body: form,
+    });
+  };
+  try {
+    const invalid = await rvcRemixRequest({ request: makeRequest("Infinity"), env: BASE_ENV });
+    assert.equal(invalid.status, 400);
+    assert.equal(forwarded, undefined);
+    const response = await rvcRemixRequest({ request: makeRequest("-6"), env: BASE_ENV });
+    assert.equal(response.status, 200);
+    assert.equal(forwarded.url, `https://gpu.example/v1/output/${JOB_ID}/remix?token=${DOWNLOAD_TOKEN}`);
+    assert.equal(forwarded.options.body.get("vocal_gain_db"), "-6");
+    assert.equal(forwarded.options.body.get("accompaniment_gain_db"), "-4");
+    assert.equal(forwarded.options.body.get("accompaniment_mute"), "true");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("rvc gateway preserves queue busy and Retry-After", async () => {

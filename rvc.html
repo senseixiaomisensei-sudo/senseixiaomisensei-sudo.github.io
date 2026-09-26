@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css?v=20260925-rvcfix">
   <link rel="stylesheet" href="assets/liquid-ui.css?v=20260925-rvcfix">
-  <link rel="stylesheet" href="assets/rvc.css?v=20260925-rvcfix">
+  <link rel="stylesheet" href="assets/rvc.css?v=20260926-mixguard1">
   <script src="assets/liquid-ui.js?v=20260925-rvcfix"></script>
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="rvc">
@@ -374,6 +374,33 @@
           </details>
         </div>
 
+        <section id="rvc-mix-panel" class="rvc-mix-panel mt-7 rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5" aria-labelledby="rvc-mix-title">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-[11px] font-black uppercase tracking-[0.14em] text-brand">MIX / STEMS</p>
+              <h3 id="rvc-mix-title" class="mt-1 text-base font-black" data-rvc-i18n="mixTitle">人声与伴奏独立混音</h3>
+              <p id="rvc-mix-hint" class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="mixHint">先设置比例再变声；结果生成后可点“更新混音”，无需重新分离或变声。</p>
+            </div>
+            <button id="rvc-mix-reset" type="button" class="min-h-10 rounded-lg border border-line bg-white px-3 text-xs font-bold text-brand" data-rvc-i18n="mixReset">恢复默认</button>
+          </div>
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div class="rvc-mix-track rounded-xl border border-line bg-white/75 p-4">
+              <div class="flex items-center justify-between gap-2"><label for="rvc-vocal-gain" class="text-sm font-bold" data-rvc-i18n="vocalLevel">角色人声</label><output id="rvc-vocal-gain-value" for="rvc-vocal-gain" class="text-sm font-black tabular-nums text-brand">0 dB</output></div>
+              <input id="rvc-vocal-gain" type="range" min="-24" max="6" step="0.5" value="0" class="rvc-range mt-4 w-full" aria-describedby="rvc-mix-hint">
+              <label class="mt-3 inline-flex min-h-10 items-center gap-2 text-xs font-semibold"><input id="rvc-vocal-mute" type="checkbox" class="h-4 w-4 accent-emerald-700"><span data-rvc-i18n="vocalMute">静音人声</span></label>
+            </div>
+            <fieldset id="rvc-accompaniment-track" class="rvc-mix-track rounded-xl border border-line bg-white/75 p-4" disabled>
+              <div class="flex items-center justify-between gap-2"><label for="rvc-accompaniment-gain" class="text-sm font-bold" data-rvc-i18n="accompanimentLevel">原伴奏</label><output id="rvc-accompaniment-gain-value" for="rvc-accompaniment-gain" class="text-sm font-black tabular-nums text-brand">0 dB</output></div>
+              <input id="rvc-accompaniment-gain" type="range" min="-24" max="6" step="0.5" value="0" class="rvc-range mt-4 w-full" aria-describedby="rvc-mix-hint">
+              <label class="mt-3 inline-flex min-h-10 items-center gap-2 text-xs font-semibold"><input id="rvc-accompaniment-mute" type="checkbox" class="h-4 w-4 accent-emerald-700"><span data-rvc-i18n="accompanimentMute">静音伴奏</span></label>
+            </fieldset>
+          </div>
+          <div class="mt-4 flex flex-wrap items-center gap-3">
+            <button id="rvc-mix-update" type="button" class="min-h-11 rounded-lg border border-brand bg-teal-50 px-4 py-2 text-sm font-bold text-brand transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-45" disabled data-rvc-i18n="mixUpdate">更新混音并试听</button>
+            <p id="rvc-mix-status" class="text-xs leading-5 text-muted" role="status" aria-live="polite" data-rvc-i18n="mixInitial">调整后点击更新混音，预听与下载会同步更新。短期分轨最多保留约 2 小时。</p>
+          </div>
+        </section>
+
         <div class="mt-7 border-t border-line pt-6">
           <p id="rvc-service-status" class="break-words rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" role="status" aria-live="polite" data-rvc-i18n="checkingService">正在就绪变声引擎；此检查不会上传音频。</p>
           <button id="rvc-song-local-fallback" type="button" class="mt-3 rounded-lg border border-brand px-4 py-3 text-sm text-brand" data-rvc-i18n="localDirectConvert">转为本地直接变声（不分离伴奏）</button>
@@ -424,6 +451,6 @@
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
   <script src="assets/postprep.js?v=20260924-workspace"></script>
   <script src="assets/rvc-schools.js?v=20260919-odyssey"></script>
-  <script src="assets/rvc.js?v=20260925-rvcfix"></script>
+  <script src="assets/rvc.js?v=20260926-mixguard1"></script>
 </body>
 </html>

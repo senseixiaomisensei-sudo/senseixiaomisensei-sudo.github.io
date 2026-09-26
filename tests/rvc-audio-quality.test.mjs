@@ -159,7 +159,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260925-rvcfix/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260926-mixguard1/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -242,7 +242,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(service, /record\.state = "processing"/u);
   assert.match(service, /status_code=202/u);
   assert.match(service, /MAX_AUDIO_SECONDS = 900/u);
-  assert.match(service, /record\.state not in \{"queued", "processing"\}/u);
+  assert.match(service, /record\.state not in \{"queued", "processing", "remixing"\}/u);
   assert.match(service, /record\.expires_at = job_expiry\(\)/u);
   assert.doesNotMatch(service, /SHOUT_HARSHNESS_GUARD_MODELS/u);
   assert.match(service, /protect_true_peak/u);

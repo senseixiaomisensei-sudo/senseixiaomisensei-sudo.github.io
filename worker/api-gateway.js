@@ -162,6 +162,26 @@ function requestRoute(request) {
       message: "Use POST for text-to-speech",
     };
   }
+  const remixMatch = path.match(/^\/rvc\/output\/([^/]+)\/remix$/u);
+  if (remixMatch) {
+    const jobId = remixMatch[1];
+    const token = url.searchParams.get("token") || "";
+    if (!isOutputJobId(jobId) || !isOutputToken(token)) {
+      return { error: { status: 400, code: "INVALID_RVC_OUTPUT_TOKEN", message: "Invalid voice output address" } };
+    }
+    return {
+      id: "rvc-output-remix",
+      upstreamBinding: "POSTPREP_RVC_OUTPUT_UPSTREAM_URL",
+      method: "POST",
+      rateBinding: TEXT_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc-remix",
+      maxBytes: 64 * 1024,
+      directPath: `/v1/output/${jobId}/remix`,
+      message: "Use POST to update the song mix",
+      jobId,
+      token,
+    };
+  }
   const outputMatch = path.match(/^\/rvc\/output\/([^/]+)$/u);
   if (outputMatch) {
     const jobId = outputMatch[1];
@@ -276,7 +296,8 @@ function resolvedDirectRvcUrl(route, env) {
     url.pathname = route.directPath || paths[route.id] || "/";
     url.search = "";
     url.hash = "";
-    if (route.id === "rvc-output" || route.id.startsWith("rvc-train-") && route.token) {
+    if ((route.id === "rvc-output" || route.id === "rvc-output-remix")
+        || route.id.startsWith("rvc-train-") && route.token) {
       url.searchParams.set("token", route.token);
     }
     if (route.id === "rvc-status" && route.modelId) {
@@ -296,9 +317,10 @@ function resolvedUpstreamUrl(route, env) {
   try {
     const url = new URL(configured);
     if (url.protocol !== "https:") return "";
-    if (route.id === "rvc-output") {
+    if (route.id === "rvc-output" || route.id === "rvc-output-remix") {
       url.searchParams.set("job", route.jobId);
       url.searchParams.set("token", route.token);
+      if (route.id === "rvc-output-remix") url.pathname = "/api/rvc-remix";
     }
     if (route.id === "rvc-status" && route.modelId) {
       url.searchParams.set("modelId", route.modelId);
@@ -379,7 +401,7 @@ export default {
       upstreamHeaders.set("X-Content-Type-Options", "nosniff");
       upstreamHeaders.set("Vary", "Origin");
       upstreamHeaders.set("Access-Control-Allow-Origin", origin);
-      upstreamHeaders.set("Access-Control-Expose-Headers", "Retry-After, X-PostPrep-Request-Id, X-RVC-F0-Method");
+      upstreamHeaders.set("Access-Control-Expose-Headers", "Retry-After, X-PostPrep-Request-Id, X-RVC-F0-Method, X-RVC-Mix-Revision, X-RVC-Remix-Available");
       upstreamHeaders.set("X-PostPrep-Request-Id", requestId);
       return new Response(upstream.body, { status: upstream.status, headers: upstreamHeaders });
     } catch {

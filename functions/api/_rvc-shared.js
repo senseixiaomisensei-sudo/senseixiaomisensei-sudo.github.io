@@ -36,7 +36,7 @@ export function responseHeaders(request, env, contentType = "application/json; c
   };
   const origin = request.headers.get("Origin");
   if (origin && sameOrigin(request, env)) headers["Access-Control-Allow-Origin"] = origin;
-  if (origin && sameOrigin(request, env)) headers["Access-Control-Expose-Headers"] = "Retry-After, X-RVC-F0-Method";
+  if (origin && sameOrigin(request, env)) headers["Access-Control-Expose-Headers"] = "Retry-After, X-RVC-F0-Method, X-RVC-Mix-Revision, X-RVC-Remix-Available";
   return headers;
 }
 

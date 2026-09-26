@@ -100,6 +100,15 @@
       checkingServiceAction: "正在检查服务…",
       rmsLabel: "音量跟随",
       rmsHint: "0 更贴近原唱音量，1 保留模型原始动态；云端与设备端含义一致。",
+      mixTitle: "人声与伴奏独立混音",
+      mixHint: "先设置比例再变声；结果生成后可点“更新混音”，无需重新分离或变声。",
+      mixReset: "恢复默认",
+      vocalLevel: "角色人声",
+      accompanimentLevel: "原伴奏",
+      vocalMute: "静音人声",
+      accompanimentMute: "静音伴奏",
+      mixUpdate: "更新混音并试听",
+      mixInitial: "调整后点击更新混音，预听与下载会同步更新。短期分轨最多保留约 2 小时。",
       modeTitle: "处理模式",
       modeOfficialTitle: "云端优先",
       modeOfficialHint: "使用 PyTorch GPU；不可达时，纯人声转到设备端。翻唱需要云端。",
@@ -218,6 +227,15 @@
       checkingServiceAction: "Checking service…",
       rmsLabel: "Volume envelope",
       rmsHint: "0 follows the source level; 1 keeps the model dynamics. Cloud and device use the same meaning.",
+      mixTitle: "Independent vocal and backing mix",
+      mixHint: "Set the balance before converting. Update a completed mix without repeating separation or voice conversion.",
+      mixReset: "Restore defaults",
+      vocalLevel: "Character vocal",
+      accompanimentLevel: "Original backing",
+      vocalMute: "Mute vocal",
+      accompanimentMute: "Mute backing",
+      mixUpdate: "Update mix and preview",
+      mixInitial: "Update the mix to refresh both preview and download. Temporary stems are kept for up to about 2 hours.",
       modeTitle: "Processing mode",
       modeOfficialTitle: "Cloud first",
       modeOfficialHint: "PyTorch GPU inference. Dry vocals fall back to your device if the service is unavailable; covers require cloud.",
@@ -1360,6 +1378,8 @@
     baseModels: EMBEDDED_BASE_MODELS,
     rvcContext: null,
     resultUrl: "",
+    latestSongJob: null,
+    resultMetaBase: "",
     trainingFiles: [],
     trainingJob: null,
     activeCollectionId: "blue-archive",
@@ -1967,6 +1987,39 @@
   function selectedRmsMixRate() {
     const value = Number(document.getElementById("rvc-rms-mix")?.value);
     return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : .5;
+  }
+
+  function selectedMixControls() {
+    const db = (id) => {
+      const value = Number(document.getElementById(id)?.value || 0);
+      return Number.isFinite(value) ? Math.max(-24, Math.min(6, value)) : 0;
+    };
+    const cloud = state.inferenceMode === "official";
+    const song = cloud && state.audioMode === "song";
+    return {
+      vocalGainDb: cloud ? db("rvc-vocal-gain") : 0,
+      accompanimentGainDb: song ? db("rvc-accompaniment-gain") : 0,
+      vocalMute: cloud && Boolean(document.getElementById("rvc-vocal-mute")?.checked),
+      accompanimentMute: song && Boolean(document.getElementById("rvc-accompaniment-mute")?.checked),
+    };
+  }
+
+  function syncMixControls() {
+    const controls = selectedMixControls();
+    const dbText = (value) => `${value > 0 ? "+" : ""}${value} dB`;
+    const vocalValue = document.getElementById("rvc-vocal-gain-value");
+    const backingValue = document.getElementById("rvc-accompaniment-gain-value");
+    if (vocalValue) vocalValue.textContent = dbText(controls.vocalGainDb);
+    if (backingValue) backingValue.textContent = dbText(controls.accompanimentGainDb);
+    const backing = document.getElementById("rvc-accompaniment-track");
+    if (backing) backing.disabled = state.audioMode !== "song" || state.inferenceMode !== "official";
+    for (const id of ["rvc-vocal-gain", "rvc-vocal-mute"]) {
+      const input = document.getElementById(id);
+      if (input) input.disabled = state.inferenceMode !== "official";
+    }
+    const button = document.getElementById("rvc-mix-update");
+    if (button) button.disabled = state.busy || state.audioMode !== "song"
+      || state.inferenceMode !== "official" || !state.latestSongJob?.remixAvailable;
   }
 
   // Character models retain a suggested cross-range pitch, but selecting a
@@ -3307,6 +3360,7 @@
       return {
         convertUrl: base,
         outputUrl: (jobId, token) => `${base}/output/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+        remixUrl: (jobId, token) => `${base}/output/${encodeURIComponent(jobId)}/remix?token=${encodeURIComponent(token)}`,
       };
     }
     if (/\/v1\/convert$/u.test(base)) {
@@ -3314,11 +3368,13 @@
       return {
         convertUrl: base,
         outputUrl: (jobId, token) => `${serviceBase}/v1/output/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+        remixUrl: (jobId, token) => `${serviceBase}/v1/output/${encodeURIComponent(jobId)}/remix?token=${encodeURIComponent(token)}`,
       };
     }
     return {
       convertUrl: `${base}/v1/convert`,
       outputUrl: (jobId, token) => `${base}/v1/output/${encodeURIComponent(jobId)}?token=${encodeURIComponent(token)}`,
+      remixUrl: (jobId, token) => `${base}/v1/output/${encodeURIComponent(jobId)}/remix?token=${encodeURIComponent(token)}`,
     };
   }
 
@@ -3440,6 +3496,7 @@
     } else {
       checkCacheStatus();
     }
+    renderAudioMode();
     updateStatusDisplay();
   }
 
@@ -3468,6 +3525,19 @@
         : song
           ? "带伴奏翻唱会保留原始立体声文件：云端 PyMSS 分离人声与伴奏，RVC 只转换人声，随后按原时长回混。"
           : "纯人声模式不会启动伴奏分离，原功能与音质参数保持不变。";
+    }
+    syncMixControls();
+    const mixHint = document.getElementById("rvc-mix-hint");
+    if (mixHint && state.inferenceMode !== "official") {
+      mixHint.textContent = state.lang === "en"
+        ? "This mix panel uses the cloud stems. On-device conversion keeps its original output settings."
+        : "独立混音使用云端分轨；设备端变声沿用原有输出设置。";
+    } else if (mixHint && !song) {
+      mixHint.textContent = state.lang === "en"
+        ? "Dry-vocal mode has no backing stem. Only the vocal level and mute apply."
+        : "纯人声模式没有伴奏轨；仅人声音量与静音生效。";
+    } else if (mixHint) {
+      mixHint.textContent = t("mixHint");
     }
   }
 
@@ -4216,6 +4286,8 @@
         resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.wav`;
       }
       state.resultUrl = outputUrl;
+      state.latestSongJob = null;
+      syncMixControls();
       if (previousResultUrl) URL.revokeObjectURL(previousResultUrl);
       if (resultMeta) {
         const localBackendLabel = result.backend === "webgpu" ? "ONNX/WebGPU" : "ONNX/WebAssembly";
@@ -4297,6 +4369,7 @@
     const indexRate = parseFloat(document.getElementById("rvc-index-rate")?.value || "0.3");
     const protect = parseFloat(document.getElementById("rvc-protect")?.value || "0.25");
     const rmsMixRate = selectedRmsMixRate();
+    const mixControls = selectedMixControls();
     const f0Method = document.getElementById("rvc-f0-method")?.value || "rmvpe";
     const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
     // 纠正错误标称的音频容器 (mp4-in-mp3 等), 避免中继放行后 GPU 服务拒收。
@@ -4325,6 +4398,7 @@
     persistCloudSubmissionTimestamp(state.lastCloudSubmissionAt);
 
     state.busy = true;
+    syncMixControls();
     if (convertBtn) {
       convertBtn.disabled = true;
       convertBtn.setAttribute("aria-busy", "true");
@@ -4367,6 +4441,10 @@
       body.set("resample", "0");
       body.set("rmsMixRate", String(rmsMixRate));
       body.set("rms_mix_rate", String(rmsMixRate));
+      body.set("vocalGainDb", String(mixControls.vocalGainDb));
+      body.set("accompanimentGainDb", String(mixControls.accompanimentGainDb));
+      body.set("vocalMute", String(mixControls.vocalMute));
+      body.set("accompanimentMute", String(mixControls.accompanimentMute));
       body.set("filterRadius", String(filterRadius));
       body.set("filter_radius", String(filterRadius));
       body.set("language", state.lang === "en" ? "en" : "zh");
@@ -4489,6 +4567,7 @@
         : " [2/3] 音频已接收，云端 GPU 已转入后台推理…");
       const outputResponse = await pollCloudOutput(outputUrl, jobTimeoutMs, longJob);
       const actualF0Method = outputResponse.headers.get("X-RVC-F0-Method") || "";
+      const remixAvailable = outputResponse.headers.get("X-RVC-Remix-Available") === "true";
       updateProgressBar(82);
       updateStatusDisplay(" [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
       const rawOutputBlob = await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs);
@@ -4516,6 +4595,18 @@
         resultAudio.hidden = false;
       }
       state.resultUrl = nextResultUrl;
+      state.latestSongJob = state.audioMode === "song" ? {
+        jobId: payload.jobId, token: payload.downloadToken, routes,
+        outputFormat, remixAvailable, durationSeconds: state.audio.duration,
+        mixRevision: Number(outputResponse.headers.get("X-RVC-Mix-Revision") || 0),
+      } : null;
+      syncMixControls();
+      const mixStatus = document.getElementById("rvc-mix-status");
+      if (mixStatus && state.audioMode === "song") {
+        mixStatus.textContent = remixAvailable
+          ? t("mixInitial")
+          : (state.lang === "en" ? "Temporary stems could not be retained; convert again to change this mix." : "本次分轨未能在短期缓存中保留；需要重新变声才能调整混音。");
+      }
       if (previousResultUrl) URL.revokeObjectURL(previousResultUrl);
       const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
       if (resultMeta) {
@@ -4524,6 +4615,7 @@
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
         }) + ` · 云端 PyTorch RVC · F0 ${actualF0Method || (f0Method === "auto" ? "自动（实际算法未返回）" : f0Method.toUpperCase())}${state.audioMode === "song" ? " · PyMSS 人声分离/原伴奏回混" : ""} · ${outputFormat.toUpperCase()}`;
+        state.resultMetaBase = resultMeta.textContent;
       }
       if (resultSection) {
         resultSection.hidden = false;
@@ -4551,12 +4643,68 @@
       return false;
     } finally {
       state.busy = false;
+      syncMixControls();
       setTimeout(() => showProgressBar(false), 800);
       if (convertBtn) {
         convertBtn.disabled = false;
         convertBtn.setAttribute("aria-busy", "false");
       }
       if (convertLabel) convertLabel.textContent = t("convert");
+    }
+  }
+
+  async function updateSongMix() {
+    const job = state.latestSongJob;
+    if (state.busy || !job?.remixAvailable || state.audioMode !== "song" || state.inferenceMode !== "official") return;
+    const mix = selectedMixControls();
+    const status = document.getElementById("rvc-mix-status");
+    const player = document.getElementById("rvc-result-audio");
+    const download = document.getElementById("rvc-result-download");
+    const meta = document.getElementById("rvc-result-meta");
+    const body = new FormData();
+    body.set("vocalGainDb", String(mix.vocalGainDb));
+    body.set("accompanimentGainDb", String(mix.accompanimentGainDb));
+    body.set("vocalMute", String(mix.vocalMute));
+    body.set("accompanimentMute", String(mix.accompanimentMute));
+    state.busy = true;
+    syncMixControls();
+    if (status) status.textContent = state.lang === "en" ? "Updating the saved stems…" : "正在使用已保存分轨更新混音…";
+    try {
+      const response = await fetch(job.routes.remixUrl(job.jobId, job.token), {
+        method: "POST", body, cache: "no-store",
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.state !== "completed") throw new Error(payload.code || payload.message || `HTTP ${response.status}`);
+      const outputUrl = job.routes.outputUrl(job.jobId, job.token);
+      const timeout = cloudJobTimeoutMs(job.durationSeconds, "song");
+      const outputResponse = await pollCloudOutput(outputUrl, timeout, job.durationSeconds >= DURABLE_CLOUD_JOB_SECONDS);
+      const blob = await downloadLongCloudOutput(outputUrl, outputResponse, job.outputFormat, timeout);
+      const nextUrl = URL.createObjectURL(blob);
+      try {
+        if (player) await attachResultAudio(player, nextUrl, false);
+      } catch (error) {
+        URL.revokeObjectURL(nextUrl);
+        throw error;
+      }
+      const previousUrl = state.resultUrl;
+      state.resultUrl = nextUrl;
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      if (download) {
+        download.href = nextUrl;
+        download.download = `postprep-rvc-mix-${job.jobId}-${payload.mixRevision}.${job.outputFormat}`;
+      }
+      job.mixRevision = Number(payload.mixRevision || job.mixRevision + 1);
+      if (meta) meta.textContent = `${state.resultMetaBase} · Mix ${job.mixRevision} · 人声 ${mix.vocalMute ? "静音" : `${mix.vocalGainDb} dB`} · 伴奏 ${mix.accompanimentMute ? "静音" : `${mix.accompanimentGainDb} dB`}`;
+      if (status) status.textContent = state.lang === "en"
+        ? "Mix updated. Preview and download now use the same audio."
+        : "混音已更新；预听与下载现在使用同一份音频。";
+    } catch (error) {
+      if (status) status.textContent = state.lang === "en"
+        ? `Mix update failed: ${String(error?.message || error)}`
+        : `更新混音失败：${String(error?.message || error)}`;
+    } finally {
+      state.busy = false;
+      syncMixControls();
     }
   }
 
@@ -5087,6 +5235,34 @@
     rmsMixInput?.addEventListener("input", syncRmsMix);
     rmsMixInput?.addEventListener("change", syncRmsMix);
     syncRmsMix();
+
+    const markMixPending = () => {
+      syncMixControls();
+      const status = document.getElementById("rvc-mix-status");
+      if (status && state.latestSongJob?.remixAvailable) {
+        status.textContent = state.lang === "en"
+          ? "Settings changed. Update the mix to change both preview and download."
+          : "设置已改动；点击更新混音后，预听和下载才会同步改变。";
+      }
+    };
+    for (const id of ["rvc-vocal-gain", "rvc-accompaniment-gain", "rvc-vocal-mute", "rvc-accompaniment-mute"]) {
+      const input = document.getElementById(id);
+      input?.addEventListener("input", markMixPending);
+      input?.addEventListener("change", markMixPending);
+    }
+    document.getElementById("rvc-mix-reset")?.addEventListener("click", () => {
+      for (const id of ["rvc-vocal-gain", "rvc-accompaniment-gain"]) {
+        const input = document.getElementById(id);
+        if (input) input.value = "0";
+      }
+      for (const id of ["rvc-vocal-mute", "rvc-accompaniment-mute"]) {
+        const input = document.getElementById(id);
+        if (input) input.checked = false;
+      }
+      markMixPending();
+    });
+    document.getElementById("rvc-mix-update")?.addEventListener("click", updateSongMix);
+    syncMixControls();
 
     // Convert Button
     const convertBtn = document.getElementById("rvc-convert");

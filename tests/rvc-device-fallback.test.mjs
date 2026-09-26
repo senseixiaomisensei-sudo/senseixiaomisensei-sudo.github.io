@@ -42,6 +42,8 @@ function cloudHarness(mode) {
     setAudioMode: mode => { state.audioMode = mode; },
     prepareCloudUploadAudio: audio => ({ file: audio.file }),
     selectedRmsMixRate: () => .5,
+    selectedMixControls: () => ({ vocalGainDb: 0, accompanimentGainDb: 0, vocalMute: false, accompanimentMute: false }),
+    syncMixControls() {},
     persistCloudSubmissionTimestamp() {}, showProgressBar() {}, updateProgressBar() {},
     updateStatusDisplay: text => statuses.push(text), showToast: text => toasts.push(text),
     officialRoutes: () => ({ convertUrl: "/test" }), getOfficialEndpoint: () => "",

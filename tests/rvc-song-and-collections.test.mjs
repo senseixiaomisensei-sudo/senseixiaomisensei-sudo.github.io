@@ -73,7 +73,7 @@ test("long audio uses a separate resilient contract without changing short conve
   assert.match(client, /结果下载中断，正在从已完成任务重新拉取/u);
   assert.match(service, /MAX_AUDIO_SECONDS = 900/u);
   assert.match(service, /OUTPUT_RETENTION_SECONDS = max\(900,[\s\S]*"7200"/u);
-  assert.match(service, /record\.state not in \{"queued", "processing"\}/u);
+  assert.match(service, /record\.state not in \{"queued", "processing", "remixing"\}/u);
   assert.match(service, /record\.stage = "encoding"/u);
   assert.match(service, /LONG_AUDIO_THRESHOLD_SECONDS = 20/u);
   assert.match(service, /LONG_CHUNK_SECONDS = 20/u);

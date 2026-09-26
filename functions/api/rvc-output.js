@@ -42,6 +42,8 @@ export async function onRequest(context) {
   headers.set("Content-Disposition", `attachment; filename="postprep-rvc-audio.${contentType.startsWith("audio/mpeg") ? "mp3" : "wav"}"`);
   const actualF0 = upstream.headers.get("X-RVC-F0-Method") || "";
   if (/^(rmvpe|fcpe|pm)(\+(rmvpe|fcpe|pm))*$/u.test(actualF0)) headers.set("X-RVC-F0-Method", actualF0);
+  headers.set("X-RVC-Mix-Revision", upstream.headers.get("X-RVC-Mix-Revision") || "0");
+  headers.set("X-RVC-Remix-Available", upstream.headers.get("X-RVC-Remix-Available") === "true" ? "true" : "false");
   headers.set("Referrer-Policy", "no-referrer");
   return new Response(upstream.body, { status: 200, headers });
 }

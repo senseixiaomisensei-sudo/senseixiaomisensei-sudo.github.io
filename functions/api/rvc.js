@@ -24,6 +24,10 @@ const ALLOWED_FIELDS = new Set([
   "resample",
   "rmsMixRate",
   "rms_mix_rate",
+  "vocalGainDb",
+  "accompanimentGainDb",
+  "vocalMute",
+  "accompanimentMute",
   "filterRadius",
   "filter_radius",
   "language",
@@ -223,6 +227,10 @@ export async function onRequest(context) {
   const format = valueAsString(formData, "format");
   const resample = valueAsString(formData, "resample");
   const rmsMixRate = valueAsString(formData, "rmsMixRate");
+  const vocalGainDb = valueAsString(formData, "vocalGainDb") || "0";
+  const accompanimentGainDb = valueAsString(formData, "accompanimentGainDb") || "0";
+  const vocalMute = valueAsString(formData, "vocalMute") || "false";
+  const accompanimentMute = valueAsString(formData, "accompanimentMute") || "false";
   const filterRadius = valueAsString(formData, "filterRadius");
   const requestedLanguage = valueAsString(formData, "language") === "en" ? "en" : "zh";
   const audioMode = valueAsString(formData, "audioMode") || valueAsString(formData, "audio_mode") || "voice";
@@ -234,6 +242,11 @@ export async function onRequest(context) {
   if (!validDecimal(indexRate, 0, 1)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Similarity must be between 0 and 1");
   if (!validDecimal(protect, 0, 0.5)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Consonant protection must be between 0 and 0.5");
   if (!validDecimal(rmsMixRate, 0, 1)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Volume tracking must be between 0 and 1");
+  if (!validDecimal(vocalGainDb, -24, 6) || !validDecimal(accompanimentGainDb, -24, 6)
+    || !["true", "false"].includes(vocalMute) || !["true", "false"].includes(accompanimentMute)
+    || (audioMode === "voice" && (Number(accompanimentGainDb) !== 0 || accompanimentMute !== "false"))) {
+    return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose valid vocal and accompaniment levels");
+  }
   if (!ALLOWED_F0_METHODS.has(f0Method)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose a supported f0 method");
   if (!ALLOWED_FORMATS.has(format)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose a supported output format");
   if (!ALLOWED_RESAMPLE.has(resample)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose a supported resample rate");
@@ -254,6 +267,10 @@ export async function onRequest(context) {
   upstreamBody.set("format", format);
   upstreamBody.set("resample", resample);
   upstreamBody.set("rms_mix_rate", rmsMixRate);
+  upstreamBody.set("vocal_gain_db", vocalGainDb);
+  upstreamBody.set("accompaniment_gain_db", accompanimentGainDb);
+  upstreamBody.set("vocal_mute", vocalMute);
+  upstreamBody.set("accompaniment_mute", accompanimentMute);
   upstreamBody.set("filter_radius", filterRadius);
   upstreamBody.set("language", requestedLanguage);
   upstreamBody.set("audio_mode", audioMode);

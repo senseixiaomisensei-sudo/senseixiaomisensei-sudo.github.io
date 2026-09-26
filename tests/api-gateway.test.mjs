@@ -291,6 +291,39 @@ test("rvc output route rejects an arbitrary job address before any upstream fetc
   }
 });
 
+test("rvc remix route reaches only a token-bound job and exposes revision", async () => {
+  const originalFetch = globalThis.fetch;
+  let forwarded;
+  globalThis.fetch = async (url, options) => {
+    forwarded = { url: String(url), options };
+    return Response.json({ state: "completed", mixRevision: 1 });
+  };
+  const job = "11111111-2222-4333-8444-555555555555";
+  const token = "wRcxamOTds_6CkZIVCF6mMlbmzuToi9YA2Jfgj9F8pk";
+  try {
+    const form = new FormData();
+    form.set("vocalGainDb", "-6");
+    const request = new Request(`https://postprep-text-gateway.example.workers.dev/rvc/output/${job}/remix?token=${token}`, {
+      method: "POST", headers: { Origin: PAGES_ORIGIN }, body: form,
+    });
+    const env = { ...BASE_ENV,
+      POSTPREP_RVC_DIRECT_BASE_URL: "https://voice-relay-example.trycloudflare.com",
+      POSTPREP_RVC_INFERENCE_TOKEN: "rvc-direct-token-with-at-least-32-characters" };
+    const response = await gateway.fetch(request, env);
+    assert.equal(response.status, 200);
+    assert.equal(forwarded.url, `https://voice-relay-example.trycloudflare.com/v1/output/${job}/remix?token=${token}`);
+    assert.match(response.headers.get("Access-Control-Expose-Headers"), /X-RVC-Mix-Revision/u);
+    assert.equal(forwarded.options.headers.get("Authorization"), `Bearer ${env.POSTPREP_RVC_INFERENCE_TOKEN}`);
+    const invalid = await gateway.fetch(new Request(
+      `https://postprep-text-gateway.example.workers.dev/rvc/output/not-a-job/remix?token=${token}`,
+      { method: "POST", headers: { Origin: PAGES_ORIGIN }, body: form },
+    ), env);
+    assert.equal(invalid.status, 400);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("capability-protected RVC output polling does not consume the task submission limiter", async () => {
   const originalFetch = globalThis.fetch;
   let forwarded;
