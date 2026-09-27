@@ -25,6 +25,25 @@ const stabilizeAnalysisBoundary = Function(
   `"use strict"; return (${extractFunction("stabilizeAnalysisWindowBoundary")});`,
 )();
 
+test("overlap octave disagreement never creates a fabricated slide", () => {
+  const features = { hiddenStates: new Float32Array(200), featureSize: 2, upsampledFrameCount: 100 };
+  const previous = { f0: new Float32Array(100).fill(220) };
+  const current = { f0: new Float32Array(100).fill(440) };
+  const result = stabilizeAnalysisBoundary(features, current, features, previous, 95, 5);
+  assert.ok([...result.pitch.f0].every(hz => hz === 220 || hz === 440));
+});
+
+test("short unvoiced leading consonant is not filled from another window", () => {
+  const features = { hiddenStates: new Float32Array(200), featureSize: 2, upsampledFrameCount: 100 };
+  const previous = { f0: new Float32Array(100).fill(220) };
+  const current = { f0: new Float32Array(100).fill(220) };
+  current.f0[0] = 0;
+  current.f0[1] = 0;
+  const result = stabilizeAnalysisBoundary(features, current, features, previous, 95, 5);
+  assert.equal(result.pitch.f0[0], 0);
+  assert.equal(result.pitch.f0[1], 0);
+});
+
 const preferredInferenceBackends = Function(
   `"use strict"; return (${extractFunction("preferredInferenceBackends")});`,
 )();
@@ -183,7 +202,7 @@ test("local RVC verifies a GPU adapter before selecting WebGPU", async () => {
   );
 });
 
-test("fixed-window analysis blends matching overlap frames and preserves the rest", () => {
+test("fixed-window features blend while pitch and unvoiced decisions remain intact", () => {
   const previousFeatures = {
     hiddenStates: Float32Array.from({ length: 16 }, (_, index) => index),
     upsampledFrameCount: 8,
@@ -210,9 +229,25 @@ test("fixed-window analysis blends matching overlap frames and preserves the res
   assert.ok(stabilized.features.hiddenStates[0] > previousFeatures.hiddenStates[10]);
   assert.ok(stabilized.features.hiddenStates[0] < 100);
   assert.equal(stabilized.features.hiddenStates[6], 100);
-  assert.deepEqual(Array.from(stabilized.pitch.f0.slice(0, 4)), [200, 210, 227.5, 240]);
+  assert.deepEqual(Array.from(stabilized.pitch.f0.slice(0, 4)), [0, 0, 230, 240]);
   assert.equal(stabilized.pitch.f0[4], 250);
   assert.deepEqual(Array.from(currentPitch.f0.slice(0, 4)), [0, 0, 230, 240]);
+});
+
+test("absolute timeline resolves octave disagreements once and slices identical overlap", async () => {
+  const resolve = Function('processAudioInFixedFrameWindows',
+    `return (${extractFunction('resolvePitchTimeline')});`)(processFixedWindows);
+  const slice = Function(`return (${extractFunction('slicePitchTimeline')});`)();
+  let window = 0;
+  const timeline = await resolve(new Float32Array(48000), {
+    frameCount:100, inputSampleRate:16000, outputSampleRate:40000,
+    contextDuration:.15,crossfadeDuration:.05,lookAheadDuration:.04,
+  }, async () => ({ f0: new Float32Array(104).fill(window++ % 2 ? 440 : 220) }));
+  assert.ok(timeline.disagreements.length > 0);
+  assert.ok([...timeline.f0].every(hz=>hz===220||hz===440));
+  const first = slice(timeline, 0, 100);
+  const second = slice(timeline, 65*160, 100);
+  assert.deepEqual([...first.f0.slice(65)], [...second.f0.slice(0,35)]);
 });
 
 test("fixed-window pitch continuity does not turn a genuine pause into a held note", () => {

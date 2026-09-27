@@ -8602,45 +8602,61 @@ function stabilizeAnalysisWindowBoundary(
     }
   }
 
-  let pitch = currentPitch;
-  if (currentPitch.f0 instanceof Float32Array && previousPitch.f0 instanceof Float32Array) {
-    const pitchOverlap = Math.min(
-      overlapFrames,
-      currentPitch.f0.length,
-      Math.max(0, previousPitch.f0.length - stepFrames)
-    );
-    if (pitchOverlap > 0) {
-      const f0 = new Float32Array(currentPitch.f0);
-      let firstCurrentVoiced = -1;
-      for (let frame = 0; frame < pitchOverlap; frame++) {
-        if (f0[frame] > 0) {
-          firstCurrentVoiced = frame;
-          break;
-        }
-      }
-      for (let frame = 0; frame < pitchOverlap; frame++) {
-        const previousHz = previousPitch.f0[stepFrames + frame] || 0;
-        const currentHz = f0[frame] || 0;
-        if (previousHz > 0 && currentHz > 0) {
-          const incoming = (frame + 1) / (pitchOverlap + 1);
-          f0[frame] = previousHz * (1 - incoming) + currentHz * incoming;
-        } else if (
-          previousHz > 0 &&
-          currentHz <= 0 &&
-          firstCurrentVoiced > frame &&
-          firstCurrentVoiced <= 3
-        ) {
-          // RMVPE can drop the first one to three frames of a sustained note
-          // when a fixed model window starts mid-vowel. Bridge only that short
-          // leading gap; genuine pauses and consonants remain unvoiced.
-          f0[frame] = previousHz;
-        }
-      }
-      pitch = { ...currentPitch, f0 };
-    }
-  }
+  // Pitch is resolved once on the absolute timeline before synthesis. Never
+  // average two notes or fill short UV gaps from a neighbouring window.
+  const pitch = currentPitch;
 
   return { features, pitch };
+}
+
+async function resolvePitchTimeline(audio, config, estimate, onWindow) {
+  const rate = config.inputSampleRate ?? 16000;
+  const length = Math.ceil(audio.length * 100 / rate);
+  const f0 = new Float32Array(length);
+  const reliability = new Float32Array(length).fill(-1);
+  const selectedWindow = new Int32Array(length).fill(-1);
+  const disagreements = [];
+  // Reuse the exact window/padding iterator. This analysis pass keeps only
+  // one pitch per absolute frame; no synthesis audio or features are retained.
+  await processAudioInFixedFrameWindows(audio, async chunk => {
+    const pitch = await estimate(chunk.data);
+    const origin = Math.round(chunk.analysisStartSample * 100 / rate);
+    for (let frame = 0; frame < pitch.f0.length; frame++) {
+      const globalFrame = origin + frame;
+      if (globalFrame < 0 || globalFrame >= length) continue;
+      const context = Math.min(frame, pitch.f0.length - 1 - frame);
+      const previous = f0[globalFrame];
+      const current = pitch.f0[frame];
+      const chooseCurrent = context > reliability[globalFrame];
+      if (selectedWindow[globalFrame] >= 0 &&
+          ((previous > 0) !== (current > 0) ||
+           (previous > 0 && current > 0 && Math.abs(12*Math.log2(previous/current)) > 1))) {
+        disagreements.push({ frame: globalFrame, previousHz: previous, currentHz: current,
+          chosenHz: chooseCurrent ? current : previous, reason: 'more real window context; no averaging' });
+      }
+      if (chooseCurrent) {
+        f0[globalFrame] = current;
+        reliability[globalFrame] = context;
+        selectedWindow[globalFrame] = chunk.index;
+      }
+    }
+    onWindow?.(chunk.index, pitch);
+    return new Float32Array(0);
+  }, { ...config, outputSampleRate: 100 });
+  return { f0, selectedWindow, disagreements };
+}
+
+function slicePitchTimeline(timeline, analysisStartSample, count, sampleRate = 16000) {
+  const start = Math.round(analysisStartSample * 100 / sampleRate);
+  const f0 = new Float32Array(count);
+  const length = timeline.f0.length;
+  for (let i = 0; i < count; i++) {
+    let frame = start+i;
+    if (frame < 0) frame = -frame;
+    if (frame >= length) frame = Math.max(0, 2*length-2-frame);
+    f0[i] = timeline.f0[Math.max(0, Math.min(length-1,frame))] || 0;
+  }
+  return { f0, frameCount: count, hopSize: Math.round(sampleRate/100), timelineResolved: true };
 }
 // The currently shipped browser ONNX voices were traced at 100 phone frames.
 // Their attention graph advertises a dynamic axis but contains a fixed Reshape;
@@ -12847,10 +12863,12 @@ async function estimatePitch(audio, options) {
   // Reject voiced F0 on frames whose energy is dominated by low-frequency
   // rumble (wind, fans, traffic). RMVPE's permissive salience threshold turns
   // that noise into a pitch track, and the vocoder then "sings" the wind.
-  filteredF0 = applyVoicingSanityGate(filteredF0, audio);
+  const voicingEvidence = {};
+  filteredF0 = applyVoicingSanityGate(filteredF0, audio, 16000, voicingEvidence);
   return {
     f0: filteredF0,
     frameCount,
+    voicingEvidence,
     hopSize: 160
   };
 }
@@ -13372,19 +13390,11 @@ function createBiquadHighpass(f0, Q, sr) {
   return [b0, b1, b2, a1, a2];
 }
 
-// Noise-rejection voicing gate ("wind is not a singer"). RMVPE's salience
-// threshold is intentionally permissive, so steady low-rumble noise (wind,
-// fans, traffic) can earn a voiced F0 track — and the vocoder then sings the
-// noise as a hollow electronic tone. Real voice always carries ample energy
-// above ~300 Hz (harmonics plus formants), while wind stays concentrated in
-// the sub-200 Hz rumble, so frames whose 300 Hz-high-passed share of total
-// energy falls under the ratio below are demoted to unvoiced. Only demotion
-// happens here: voiced frames keep their decoded pitch untouched, and a
-// single low-ratio frame inside real voice is kept voiced (neighbour
-// agreement required) so genuine low, soft vowels never flicker.
-function applyVoicingSanityGate(f0, audio, sampleRate = 16000) {
+// Low-band energy is a suspicion, never proof that a periodic low note is
+// wind. Require weak waveform periodicity as independent evidence to demote.
+function applyVoicingSanityGate(f0, audio, sampleRate = 16000, diagnostics = null) {
   if (!audio || audio.length === 0 || !f0 || f0.length === 0) return f0;
-  const hop = 160; // matches the RMVPE frame hop at 16 kHz
+  const hop = Math.max(1, Math.round(sampleRate / 100));
   const frameCount = Math.min(f0.length, Math.floor(audio.length / hop));
   if (frameCount < 3) return f0;
   const highpassed = new Float32Array(audio.length);
@@ -13413,6 +13423,27 @@ function applyVoicingSanityGate(f0, audio, sampleRate = 16000) {
   // inside wind is judged against its neighbouring noise frames instead of
   // being protected by them.
   const belowRatio = new Uint8Array(frameCount);
+  const periodicity = new Float32Array(frameCount).fill(1);
+  for (let frame = 0; frame < frameCount; frame++) {
+    if (!(f0[frame] > 0)) continue;
+    const lag = Math.max(2, Math.round(sampleRate / f0[frame]));
+    const radius = Math.max(lag * 4, Math.round(sampleRate * .04));
+    const center = frame * hop;
+    const start = Math.max(0, center - radius);
+    const end = Math.min(audio.length - 1, center + radius);
+    if (end - start < lag * 3) continue; // insufficient context: uncertain, keep
+    // First differences remove slow wind/DC correlation while preserving
+    // periodic low fundamentals and their harmonic phase relationship.
+    let dot = 0, left = 0, right = 0;
+    for (let i = start; i < end - lag; i++) {
+      const x = audio[i + 1] - audio[i];
+      const y = audio[i + lag + 1] - audio[i + lag];
+      dot += x*y; left += x*x; right += y*y;
+    }
+    if (left > 1e-16 && right > 1e-16) {
+      periodicity[frame] = dot / Math.sqrt(left*right);
+    }
+  }
   const smoothingRadius = 2;
   for (let frame = 0; frame < frameCount; frame++) {
     if (!(f0[frame] > 0)) continue;
@@ -13427,7 +13458,9 @@ function applyVoicingSanityGate(f0, audio, sampleRate = 16000) {
     if (window.length > 0) {
       window.sort((left, right) => left - right);
       const median = window[Math.floor(window.length / 2)];
-      if (median < VOICE_BAND_RATIO) belowRatio[frame] = 1;
+      if (median < VOICE_BAND_RATIO && periodicity[frame] < .5) {
+        belowRatio[frame] = 1;
+      }
     }
   }
   const output = new Float32Array(f0);
@@ -13437,6 +13470,13 @@ function applyVoicingSanityGate(f0, audio, sampleRate = 16000) {
     const nextVoiced = frame + 1 < frameCount && f0[frame + 1] > 0 && !belowRatio[frame + 1];
     if (previousVoiced && nextVoiced) continue;
     output[frame] = 0;
+  }
+  if (diagnostics) {
+    diagnostics.rawUv = Array.from(f0, hz => hz <= 0);
+    diagnostics.finalUv = Array.from(output, hz => hz <= 0);
+    diagnostics.periodicity = Array.from(periodicity);
+    diagnostics.rejectedFrames = Array.from(output, (hz, i) => hz === 0 && f0[i] > 0 ? i : -1).filter(i => i >= 0);
+    diagnostics.reason = 'low-band dominance AND weak source-period evidence';
   }
   return output;
 }
@@ -13868,6 +13908,16 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     let previousFeatures = null;
     let previousPitch = null;
     let detectedSampleRate;
+    const pitchTimeline = await resolvePitchTimeline(audio, chunkingConfig,
+      chunkAudio => estimatePitch(chunkAudio, {
+        rmvpe: rmvpeSession,
+        medianFilter: options.medianFilter,
+        medianFilterWindow: options.medianFilterWindow,
+        aggressiveMedianFilter: options.aggressiveMedianFilter
+      }), (current, pitch) => callbacks.onEvent?.({ type: 'pitch_analysis', current: current+1,
+        voicing: pitch.voicingEvidence }));
+    callbacks.onEvent?.({ type: 'pitch_timeline', disagreements: pitchTimeline.disagreements,
+      frames: pitchTimeline.f0.length, method: 'absolute-frame/context-selection' });
     const outputAudio = await processAudioInFixedFrameWindows(
       audio,
       async (chunk, currentChunk, totalChunks) => {
@@ -13876,12 +13926,8 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
           contentVec: contentVecSession
         });
         callbacks.onEvent?.({ type: "chunk_step", step: "pitch", current: currentChunk, total: totalChunks });
-        const rawPitch = await estimatePitch(chunk.data, {
-          rmvpe: rmvpeSession,
-          medianFilter: options.medianFilter,
-          medianFilterWindow: options.medianFilterWindow,
-          aggressiveMedianFilter: options.aggressiveMedianFilter
-        });
+        const rawPitch = slicePitchTimeline(pitchTimeline, chunk.analysisStartSample,
+          Math.floor(chunk.data.length*100/chunkingConfig.inputSampleRate), chunkingConfig.inputSampleRate);
         const stabilized = stabilizeAnalysisWindowBoundary(
           rawFeatures,
           rawPitch,

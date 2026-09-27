@@ -135,6 +135,15 @@ function fullyVoicedF0(length) {
   return Float32Array.from({ length }, () => 220);
 }
 
+test("low periodic tones are not unvoiced solely by their high-band ratio", () => {
+  for (const hz of [80, 100, 120, 220, 440]) {
+    const audio = Float32Array.from({ length: 16000 }, (_, i) =>
+      .2*(Math.sin(2*Math.PI*hz*i/16000)+.03*Math.sin(4*Math.PI*hz*i/16000)));
+    const expected = new Float32Array(100).fill(hz);
+    assert.deepEqual(applyVoicingSanityGate(expected, audio, 16000), expected, `${hz} Hz`);
+  }
+});
+
 test("voicing gate keeps genuine voice fully voiced", () => {
   const sampleRate = 16000;
   const audio = voiceLikeTone(sampleRate * 4, sampleRate);
@@ -197,7 +206,7 @@ test("voicing gate is a no-op without voiced frames", () => {
 });
 
 test("worker preserves the voicing gate without experimental pitch correction", () => {
-  assert.match(workerSource, /applyVoicingSanityGate\(filteredF0, audio\)/u);
+  assert.match(workerSource, /applyVoicingSanityGate\(filteredF0, audio, 16000, voicingEvidence\)/u);
   assert.doesNotMatch(workerSource, /stabilizeF0ByWaveform\(f0, audio, confidence\)/u);
   assert.doesNotMatch(workerSource, /shoutLikeChunk \? 10 : 3/u);
   assert.match(workerSource, /const VOICE_BAND_RATIO = 0\.18;/u);
@@ -231,9 +240,9 @@ test("cloud voice path conditions uploads and preserves server output", async ()
 test("local engine and rvc client cache versions are bumped for the workspace release", async () => {
   const runtimeSource = await readFile(new URL("assets/rvc-engine/rvc-web-runtime.js", root), "utf8");
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
-  assert.match(runtimeSource, /inference\.worker\.js\?v=20260925-rvcfix/u);
-  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260925-rvcfix/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20260926-mixguard1/u);
+  assert.match(runtimeSource, /inference\.worker\.js\?v=20260927-pitchfloat1/u);
+  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260927-pitchfloat1/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20260927-pitchfloat1/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {
