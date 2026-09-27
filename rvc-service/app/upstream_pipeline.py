@@ -59,8 +59,10 @@ class ServicePipeline(PinnedPipeline):
         version,
         protect,
     ):
+        context = getattr(self, 'analysis_context', None)
         observe(self, 'model-input', audio0, sample_rate=self.sr,
-                timeOriginSeconds=self.time_origin_seconds + self.inner_start/self.sr - self.x_pad,
+                timeOriginSeconds=(context.first_frame/100 if context is not None else
+                    self.time_origin_seconds + self.inner_start/self.sr - self.x_pad),
                 paddingSamples=self.t_pad)
         feats = torch.from_numpy(audio0)
         if self.is_half:
@@ -75,12 +77,14 @@ class ServicePipeline(PinnedPipeline):
 
         t0 = ttime()
         with torch.no_grad():
-            feats = extract_hubert_features(
+            feats = (torch.as_tensor(context.features[None], device=self.device,
+                     dtype=torch.float16 if self.is_half else torch.float32)
+                     if context is not None else extract_hubert_features(
                 model,
                 feats.to(self.device),
                 version,
                 padding_mask=padding_mask,
-            )
+            ))
         observe(self, 'hubert', feats, tensorDtype=str(feats.dtype))
         if protect < 0.5 and pitch is not None and pitchf is not None:
             feats0 = feats.clone()
@@ -129,7 +133,13 @@ class ServicePipeline(PinnedPipeline):
         p_len = torch.tensor([p_len], device=self.device).long()
         with torch.no_grad():
             hasp = pitch is not None and pitchf is not None
-            if hasp:
+            if hasp and context is not None:
+                from app.timeline_synthesis import infer_with_timeline
+                synthesized = infer_with_timeline(net_g, feats, p_len, pitch, pitchf, sid, context)
+                self.stage_records.append(dict(stage='synthesis-execution',backend='eager-timeline',
+                    seed=context.seed,absoluteFrame=context.first_frame,
+                    phaseCycles=context.phase_cycles,latentNoise='absolute-frame',sourceNoise='absolute-sample'))
+            elif hasp:
                 synthesized = synthesize(
                     self,
                     net_g,
@@ -157,8 +167,11 @@ class ServicePipeline(PinnedPipeline):
                 )
             audio1 = synthesized[0, 0].data.cpu().float().numpy()
             observe(self, 'generator-float', audio1, sample_rate=self.native_sample_rate,
-                    timeOriginSeconds=self.time_origin_seconds + self.inner_start/self.sr - self.x_pad,
-                    cropLeftSamples=self.t_pad_tgt, cropRightSamples=self.t_pad_tgt)
+                    timeOriginSeconds=(context.first_frame/100 if context is not None else
+                        self.time_origin_seconds + self.inner_start/self.sr - self.x_pad),
+                    cropLeftSamples=context.crop_left if context is not None else self.t_pad_tgt,
+                    cropRightSamples=(len(audio1)-context.crop_left-context.output_samples
+                        if context is not None else self.t_pad_tgt))
             del hasp, synthesized
         del feats, p_len, padding_mask
         if torch.cuda.is_available() and not cuda_graph_enabled(self.device):
@@ -213,6 +226,29 @@ class ServicePipeline(PinnedPipeline):
             dimension=int(index.d) if index else None,
             ntotal=int(index.ntotal) if index else 0,
             featureVersion=version, fallbackReason=fallback_reason))
+        context = getattr(self, 'analysis_context', None)
+        if context is not None:
+            from app.pitch_safety import quantize_pitch
+            if not if_f0:
+                raise ValueError('Timeline synthesis requires an F0 checkpoint')
+            continuous = np.asarray(context.f0, dtype=np.float64)*2**(f0_up_key/12)
+            pitch = torch.as_tensor(quantize_pitch(continuous)[None],device=self.device).long()
+            pitchf = torch.as_tensor(continuous[None],device=self.device,dtype=torch.float32)
+            speaker = torch.as_tensor([sid],device=self.device).long()
+            generated = self.vc(model,net_g,speaker,audio,pitch,pitchf,times,
+                                index,index_vectors,index_rate,version,protect)
+            end = context.crop_left+context.output_samples
+            if end > len(generated):
+                raise InferenceStageError('timeline-crop','Missing real synthesis context')
+            audio_opt = np.asarray(generated[context.crop_left:end],dtype=np.float32)
+            if resample_sr >= 16000 and resample_sr != tgt_sr:
+                raise ValueError('Timeline output is resampled once after joining')
+            observe(self,'upstream-float',audio_opt,sample_rate=tgt_sr,
+                    timeOriginSeconds=(context.first_frame+300)/100)
+            self.stage_records.append(dict(stage='upstream-output',gain=1.,dtype='float32',
+                sampleRate=tgt_sr,absoluteFrameStart=context.first_frame+300,
+                realContext=True,tailPaddingSamples=0))
+            return audio_opt
         audio = signal.filtfilt(bh, ah, audio)
         audio_pad = np.pad(audio, (self.window // 2, self.window // 2), mode="reflect")
         opt_ts = []

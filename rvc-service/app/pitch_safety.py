@@ -157,7 +157,8 @@ def extract_pitch(pipeline, x, p_len, f0_method):
                 is_half=pipeline.is_half, device=pipeline.device,
             )
         estimator = pipeline.model_rmvpe
-        if getattr(pipeline, 'diagnostic_f0_dir', None) is not None:
+        if (getattr(pipeline, 'diagnostic_f0_dir', None) is not None
+                or getattr(pipeline, 'observe_pitch_confidence', False)):
             # Same operations as the pinned infer_from_audio(), with the
             # estimator's salience observed before decode. It is evidence,
             # not a calibrated probability or permission to rewrite melody.

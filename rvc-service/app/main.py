@@ -93,7 +93,8 @@ logger = logging.getLogger("postprep.rvc")
 PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_activity.py",
                   "audio_repair.py", "separation_runtime.py", "official_runtime.py",
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
-                  "content_encoder.py")
+                  "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
+                  "timeline_synthesis.py", "timeline_rendering.py")
 
 
 def source_revision() -> str:
@@ -401,6 +402,7 @@ def acquire_model(pth: Path):
         if old_key.startswith(f"{pth.resolve()}|"):
             model_cache.pop(old_key)
     inference = OfficialRvcModel(pth, index_text)
+    inference.resource_revision = hashlib.sha256(key.encode("utf-8")).hexdigest()
     model_cache[key] = inference
     while len(model_cache) > MAX_CACHED_MODELS:
         model_cache.popitem(last=False)
@@ -1059,6 +1061,14 @@ def render_duration_safe_conversion(
     profile_hint: AudioProfile | None = None,
     diagnostic_dir: Path | None = None,
 ) -> str:
+    if os.getenv('RVC_TIMELINE_INFERENCE','0') == '1':
+        from app.timeline_rendering import prepare, render_window, finish
+        model=acquire_model(model_path)
+        if bool(model._vc.if_f0):
+            timeline=prepare(model,input_wav,work_root,f0_method,diagnostic_dir,pitch,index_rate,protect,filter_radius)
+            chunks=[render_window(model,timeline,index,work_root,pitch,index_rate,protect,
+                filter_radius,diagnostic_dir) for index in range(len(timeline.spans))]
+            return finish(chunks,timeline,output_wav,model._vc.tgt_sr,resample_rate,diagnostic_dir)
     if duration_seconds <= LONG_AUDIO_THRESHOLD_SECONDS:
         return render_conversion(
             model_path,
@@ -1129,6 +1139,25 @@ async def render_duration_safe_conversion_async(
     diagnostic_dir: Path | None = None,
 ) -> str:
     """Run short clips unchanged and yield the GPU between long-audio chunks."""
+    if os.getenv('RVC_TIMELINE_INFERENCE','0') == '1':
+        from app.timeline_rendering import prepare, render_window, finish
+        async with inference_lock:
+            model=await asyncio.to_thread(acquire_model,model_path)
+            timeline=(await asyncio.to_thread(prepare,model,input_wav,work_root,f0_method,diagnostic_dir,
+                                             pitch,index_rate,protect,filter_radius)
+                      if bool(model._vc.if_f0) else None)
+        if timeline is not None:
+            chunks=[]
+            for index in range(len(timeline.spans)):
+                async with inference_lock:
+                    # A different request may have evicted the cached model
+                    # while this job yielded. Analysis remains owned by this job.
+                    model=await asyncio.to_thread(acquire_model,model_path)
+                    chunks.append(await asyncio.to_thread(render_window,model,timeline,index,
+                        work_root,pitch,index_rate,protect,filter_radius,diagnostic_dir))
+                await asyncio.sleep(0)
+            return await asyncio.to_thread(finish,chunks,timeline,output_wav,
+                model._vc.tgt_sr,resample_rate,diagnostic_dir)
     if duration_seconds <= LONG_AUDIO_THRESHOLD_SECONDS:
         async with inference_lock:
             return await asyncio.to_thread(
@@ -1370,6 +1399,9 @@ async def healthz(request: Request) -> dict[str, object]:
         "backendBuildSha": BACKEND_BUILD_SHA,
         "pipelineRevision": PIPELINE_REVISION,
         "modelHashes": model_hashes,
+        "timelineInference": os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1",
+        "pitchConsensus": (os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1"
+                           and os.getenv("RVC_TIMELINE_CONSENSUS", "1") == "1"),
         "capabilities": {"voice": True, "song": separator["ready"], "training": True},
         "device": info.device,
         "half": info.is_half,

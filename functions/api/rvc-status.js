@@ -28,6 +28,8 @@ export async function onRequest(context) {
       upstreamCommit: typeof payload.upstreamCommit === "string" ? payload.upstreamCommit : "",
       backendBuildSha: typeof payload.backendBuildSha === "string" ? payload.backendBuildSha : "",
       pipelineRevision: typeof payload.pipelineRevision === "string" ? payload.pipelineRevision : "",
+      timelineInference: payload.timelineInference === true,
+      pitchConsensus: payload.pitchConsensus === true,
       modelHashes: payload.modelHashes && typeof payload.modelHashes === "object" ? {
         modelId: String(payload.modelHashes.modelId || "").slice(0, 64),
         modelSha256: /^[a-f0-9]{64}$/u.test(payload.modelHashes.modelSha256 || "") ? payload.modelHashes.modelSha256 : "",

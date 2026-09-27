@@ -137,6 +137,9 @@ class OfficialRvcModel:
     """One loaded upstream ``VC`` instance bound to an operator model."""
 
     def __init__(self, model_path: Path, index_path: str) -> None:
+        # Configure cuBLAS before its first inference allocation. RNG seeding
+        # alone does not make CUDA attention/retrieval replays reproducible.
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
         root = _runtime_root()
         _verify_checkout(root)
         root_text = str(root)
@@ -206,6 +209,7 @@ class OfficialRvcModel:
         filter_radius: int = 3,
         diagnostic_f0_dir: Path | None = None,
         time_origin_seconds: float = 0.0,
+        analysis_context=None,
     ) -> None:
         import random
 
@@ -239,6 +243,7 @@ class OfficialRvcModel:
         pipeline.diagnostic_f0_count = 0
         pipeline.time_origin_seconds = time_origin_seconds
         pipeline.stage_records = []
+        pipeline.analysis_context = analysis_context
         pipeline.synthesis_seed = seed
         pipeline.synthesis_backend = os.getenv('RVC_SYNTHESIS_BACKEND', 'eager')
         if pipeline.synthesis_backend not in {'eager','cuda-graph'}:
@@ -252,6 +257,7 @@ class OfficialRvcModel:
             'speakerCount': int(self._vc.net_g.emb_g.weight.shape[0]),
             'featureDimension': int(self._vc.net_g.enc_p.emb_phone.weight.shape[1]),
             'noiseScale': self.noise_scale, 'seed': seed,
+            'cublasWorkspaceConfig': os.getenv('CUBLAS_WORKSPACE_CONFIG', ''),
             'profileRevision': self.profile_revision,
             'precision': 'float16' if self.info.is_half else 'float32',
             'executionBackend': 'cuda-graph' if cuda_graph_enabled(self.info.device) else 'eager',
@@ -267,7 +273,8 @@ class OfficialRvcModel:
             audio = load_audio(str(input_path), 16000)
             observe(pipeline, 'decoded-16k', audio, sample_rate=16000,
                     timeOriginSeconds=time_origin_seconds)
-            input_gain = min(1., .95/max(float(np.max(np.abs(audio))), 1e-12))
+            input_gain = (1. if analysis_context is not None else
+                          min(1., .95/max(float(np.max(np.abs(audio))), 1e-12)))
             if input_gain < 1:
                 audio *= input_gain
             pipeline.stage_records.append({'stage':'input-headroom','gain':input_gain})
@@ -301,6 +308,7 @@ class OfficialRvcModel:
                 if row['stage'] in {'index-load','retrieval-search'}]
             flush(pipeline, self.last_run_metadata)
             pipeline.diagnostic_f0_dir = None
+            pipeline.analysis_context = None
 
 
 def runtime_info() -> RuntimeInfo:

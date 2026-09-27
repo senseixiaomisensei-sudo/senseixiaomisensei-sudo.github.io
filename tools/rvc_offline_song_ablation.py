@@ -28,6 +28,9 @@ def main():
     parser.add_argument('--f0', choices=['rmvpe', 'fcpe', 'pm'], default='rmvpe')
     parser.add_argument('--index-rate', type=float, default=.45)
     parser.add_argument('--reuse-stems', type=Path)
+    parser.add_argument('--device', choices=['auto','cpu'], default='auto')
+    parser.add_argument('--timeline', action='store_true')
+    parser.add_argument('--no-consensus', action='store_true')
     args = parser.parse_args()
     args.source = args.source.resolve(strict=True)
     args.model = args.model.resolve(strict=True)
@@ -44,8 +47,16 @@ def main():
     os.environ.setdefault('RVC_DIAGNOSTIC_ROOT', str(args.output / 'runtime-diagnostics'))
     os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')
     os.environ.setdefault('PYTHONUTF8', '1')
+    if args.timeline:
+        os.environ['RVC_TIMELINE_INFERENCE']='1'
+        os.environ['RVC_TIMELINE_CONSENSUS']='0' if args.no_consensus else '1'
     sys.path.insert(0, str(site / 'rvc-service'))
     from app import main as service
+    if args.device == 'cpu':
+        import torch
+        from app import official_runtime
+        torch.set_num_threads(4)
+        official_runtime._select_device=lambda: ('cpu',False)
     from app.separation_runtime import SongStems
     import soundfile as sf
     source_hash = file_hash(args.source)
@@ -115,6 +126,7 @@ def main():
         workingDiffSha256=hashlib.sha256(subprocess.check_output(['git','diff','HEAD'],cwd=site)).hexdigest(),
         runnerSha256=file_hash(__file__),
         actualF0Method=actual_f0, pitch=0, indexRate=args.index_rate, protect=.33, rmsMixRate=.5,
+        timeline=args.timeline, consensus=args.timeline and not args.no_consensus,
         automaticVocalGain=gain, userVocalGainDb=0, userAccompanimentGainDb=0,
         activity=activity, mp3TruePeakDbtp=encoded_peak, soloMp3TruePeakDbtp=solo_peak,
         elapsedStages=times, completeSourceConverted=True, trimmedDifficultSections=False,
