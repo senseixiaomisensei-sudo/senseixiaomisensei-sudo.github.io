@@ -12,13 +12,35 @@ import torch
 import torch.nn.functional as F
 from scipy import signal
 from infer.hubert import extract_hubert_features
-from tools.cuda_graph import cuda_graph_enabled, run_cuda_graph
+from tools.cuda_graph import cuda_graph_enabled, run_cuda_graph, get_cuda_graph_stats
 from infer.vc.pipeline import Pipeline as PinnedPipeline, bh, ah, change_rms
 from app.stage_evidence import observe
 from app.retrieval_safety import validate_index, stable_retrieval
 from app.inference_errors import InferenceStageError
 
 UPSTREAM_PIPELINE_SHA256 = '020038b9348d41133c8db82f5b972be2bef8a4e37c1a99e05b37826cff947cff'
+
+
+def synthesize(pipeline, owner, namespace, function, *inputs):
+    backend = getattr(pipeline, 'synthesis_backend', 'eager')
+    seed = getattr(pipeline, 'synthesis_seed', 20260823)
+    try:
+        if backend == 'eager':
+            # Graph capture runs a stochastic generator repeatedly to warm up
+            # before returning its first sample. Cold/warm real-audio replays
+            # differed despite the same infer() seed. Keep feature graphs but
+            # use one ordinary generator call, preserving its trained noise.
+            result = function(*inputs)
+            actual = 'eager'
+        else:
+            before = get_cuda_graph_stats(owner)
+            result = run_cuda_graph(owner, namespace, function, *inputs)
+            after = get_cuda_graph_stats(owner)
+            actual = 'cuda-graph' if after['replays'] > before['replays'] else 'eager-fallback'
+        pipeline.stage_records.append(dict(stage='synthesis-execution', backend=actual, seed=seed))
+        return result
+    except RuntimeError as error:
+        raise InferenceStageError('synthesis', str(error)) from error
 
 
 class ServicePipeline(PinnedPipeline):
@@ -108,7 +130,8 @@ class ServicePipeline(PinnedPipeline):
         with torch.no_grad():
             hasp = pitch is not None and pitchf is not None
             if hasp:
-                synthesized = run_cuda_graph(
+                synthesized = synthesize(
+                    self,
                     net_g,
                     "rvc-synth-f0",
                     lambda phone, lengths, coarse, continuous, speaker: net_g.infer(
@@ -121,7 +144,8 @@ class ServicePipeline(PinnedPipeline):
                     sid,
                 )
             else:
-                synthesized = run_cuda_graph(
+                synthesized = synthesize(
+                    self,
                     net_g,
                     "rvc-synth-no-f0",
                     lambda phone, lengths, speaker: net_g.infer(

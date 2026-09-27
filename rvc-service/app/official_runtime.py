@@ -235,6 +235,10 @@ class OfficialRvcModel:
         pipeline.diagnostic_f0_count = 0
         pipeline.time_origin_seconds = time_origin_seconds
         pipeline.stage_records = []
+        pipeline.synthesis_seed = seed
+        pipeline.synthesis_backend = os.getenv('RVC_SYNTHESIS_BACKEND', 'eager')
+        if pipeline.synthesis_backend not in {'eager','cuda-graph'}:
+            raise OfficialRuntimeError('Invalid RVC_SYNTHESIS_BACKEND')
         from app.stage_evidence import flush, observe
         from app.inference_errors import InferenceStageError
         from tools.cuda_graph import cuda_graph_enabled, get_cuda_graph_stats
@@ -283,6 +287,8 @@ class OfficialRvcModel:
         finally:
             self.last_run_metadata['executionBackend'] = 'cuda-graph-enabled' if cuda_graph_enabled(self.info.device) else 'eager'
             self.last_run_metadata['synthesisGraphStats'] = get_cuda_graph_stats(self._vc.net_g)
+            self.last_run_metadata['synthesisExecution'] = [row for row in pipeline.stage_records
+                if row['stage']=='synthesis-execution']
             self.last_run_metadata['retrieval'] = [row for row in pipeline.stage_records
                 if row['stage'] in {'index-load','retrieval-search'}]
             flush(pipeline, self.last_run_metadata)

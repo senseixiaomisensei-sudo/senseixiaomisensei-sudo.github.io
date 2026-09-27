@@ -13269,7 +13269,7 @@ function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSa
   const radiusSynth = Math.round(synthSampleRate * 0.02);
   const numFrames = Math.ceil(synthAudio.length / hopSynth);
   if (numFrames <= 0) return synthAudio;
-  const targetGains = new Float32Array(numFrames);
+  const gainDb = new Float64Array(numFrames);
   const exponent = 1.0 - mixRate;
   // Centered 40 ms RMS windows and 10 ms centers match the cloud path.
   function rmsAround(data, center, radius) {
@@ -13280,14 +13280,22 @@ function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSa
     for (let i = left; i < right; i++) sum += data[i] * data[i];
     return Math.sqrt(sum / (right - left));
   }
+  function ratioConfidence(rms) {
+    const x = Math.max(0, Math.min(1, (20*Math.log10(Math.max(rms,1e-12))+90)/30));
+    return x*x*(3-2*x);
+  }
   for (let f = 0; f < numFrames; f++) {
     const rmsIn = rmsAround(input16k, f * hop16k, radius16k);
     const rmsSynth = rmsAround(synthAudio, f * hopSynth, radiusSynth);
-    if (rmsIn < 0.003 || rmsSynth < 0.003) {
-      targetGains[f] = 1.0;
+    const confidence = ratioConfidence(rmsIn)*ratioConfidence(rmsSynth);
+    const ratioDb = 20*Math.log10(Math.max(rmsIn,1e-12)/Math.max(rmsSynth,1e-12));
+    const desired = confidence*Math.max(20*Math.log10(.3),Math.min(20*Math.log10(1.6),exponent*ratioDb));
+    if (f === 0) {
+      gainDb[f] = desired;
     } else {
-      const rawRatio = Math.pow(rmsIn / Math.max(1e-4, rmsSynth), exponent);
-      targetGains[f] = Math.max(0.3, Math.min(1.6, rawRatio));
+      const tau = confidence < .1 ? .25 : desired < gainDb[f-1] ? .025 : .08;
+      const delta = (desired-gainDb[f-1])*(-Math.expm1(-.01/tau));
+      gainDb[f] = gainDb[f-1] + Math.max(-1.2,Math.min(1.2,delta));
     }
   }
   const output = new Float32Array(synthAudio);
@@ -13295,7 +13303,7 @@ function applyRmsVolumeEnvelope(input16k, synthAudio, rmsMixRate = 0.25, synthSa
     const frame = Math.floor(i / hopSynth);
     const next = Math.min(frame + 1, numFrames - 1);
     const fraction = (i - frame * hopSynth) / hopSynth;
-    output[i] *= targetGains[frame] + (targetGains[next] - targetGains[frame]) * fraction;
+    output[i] *= 10**((gainDb[frame] + (gainDb[next] - gainDb[frame]) * fraction)/20);
   }
   return output;
 }

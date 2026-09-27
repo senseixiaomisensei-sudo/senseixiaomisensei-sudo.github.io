@@ -138,6 +138,21 @@ test("local dynamics retain the final gain through the tail", () => {
   assert.ok(out[39999] < .06);
 });
 
+test("local weak-signal threshold cannot add a ten-decibel gain transition", () => {
+  const applyEnvelope = evaluateFunction('applyRmsVolumeEnvelope');
+  const source = Float32Array.from({length:32000},(_,i)=>
+    Math.SQRT2*Math.sin(2*Math.PI*400*i/16000)*(i<16000?.0029:.0031));
+  const target = Float32Array.from({length:80000},(_,i)=>
+    Math.SQRT2*.1*Math.sin(2*Math.PI*400*i/40000));
+  const output = applyEnvelope(source,target,.5,40000);
+  const medianGain=(start,end)=>{
+    const gains=[];
+    for(let i=start;i<end;i++)if(Math.abs(target[i])>.0001)gains.push(output[i]/target[i]);
+    gains.sort((a,b)=>a-b);return gains[Math.floor(gains.length/2)];
+  };
+  assert.ok(Math.abs(20*Math.log10(medianGain(52000,76000)/medianGain(8000,36000)))<1);
+});
+
 test("RVC page starts neutral and public voices prefer the cloud engine", async () => {
   const [page, client, runtime, service] = await Promise.all([
     readFile(new URL("rvc.html", root), "utf8"),
