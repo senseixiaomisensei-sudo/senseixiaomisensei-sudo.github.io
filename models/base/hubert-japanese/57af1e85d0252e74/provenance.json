@@ -1,0 +1,65 @@
+{
+  "encoder": "hubert-base-japanese",
+  "outputLayer": 12,
+  "featureDimension": 768,
+  "inputSampleRate": 16000,
+  "waveformNormalization": false,
+  "source": "https://huggingface.co/yky-h/japanese-hubert-base",
+  "revision": "9c86c1a3424e8cddca3e59d01c2ed5477e628fcc",
+  "sourceHashes": {
+    "model.safetensors": "9ee2d1c9e6041e4185491183451bd7bd5d771564343874a3ef9c006218663406",
+    "config.json": "2cc68fe950504f7468f4e786a31b8bf65c922de2b9f92cd252e3919bed689fe1",
+    "preprocessor_config.json": "11b3be6aa5979d76000d415a42e74e78fbc7de313e9d3d1a8ac41416b34b3ae9"
+  },
+  "sourceAudioSha256": "08099562025341757c14ccd7b725ee2a3121a74673fd5fa022cf36cc43d15e16",
+  "onnxSha256": "57af1e85d0252e74f897a29b6d7433f4d162f193d3edced0fec6e6ed80b6f318",
+  "onnxBytes": 377747791,
+  "comparisons": [
+    {
+      "startSample": 0,
+      "samples": 16000,
+      "shape": [
+        1,
+        49,
+        768
+      ],
+      "maximumAbsoluteError": 2.6702880859375e-05,
+      "meanAbsoluteError": 9.922110848492594e-07
+    },
+    {
+      "startSample": 16000,
+      "samples": 16640,
+      "shape": [
+        1,
+        51,
+        768
+      ],
+      "maximumAbsoluteError": 3.17692756652832e-05,
+      "meanAbsoluteError": 1.3006201697862707e-06
+    },
+    {
+      "startSample": 32000,
+      "samples": 21440,
+      "shape": [
+        1,
+        66,
+        768
+      ],
+      "maximumAbsoluteError": 3.5040080547332764e-05,
+      "meanAbsoluteError": 1.3151770872354973e-06
+    },
+    {
+      "startSample": 0,
+      "samples": 64000,
+      "shape": [
+        1,
+        199,
+        768
+      ],
+      "maximumAbsoluteError": 4.526972770690918e-05,
+      "meanAbsoluteError": 1.1336295528963092e-06
+    }
+  ],
+  "torchVersion": "2.7.1+cu128",
+  "onnxruntimeVersion": "1.23.2"
+}

@@ -104,6 +104,20 @@ All endpoints require `Authorization: Bearer <RVC_GATEWAY_TOKEN>`.
 
 ## Operating constraints
 
+Declared content encoders are part of a checkpoint's input contract. A v2
+checkpoint declaring `hubert-base-japanese` must use Japanese HuBERT layer 12;
+an ordinary 768-dimensional encoder is not a compatible substitute. Install
+the pinned resources with `python tools/install-japanese-hubert.py <encoder-root>`
+from the repository root and set `RVC_EMBEDDER_ROOT` to that directory. The
+default directory for `<service-root>/models/<character>/model.pth` is
+`<service-root>/encoders`. Missing or changed resources fail explicitly.
+The installer verifies safetensors and both configuration hashes; inference
+does not download models or remote code. See `app/content_encoder.py` for the
+exact source revision and hashes. Unknown declared encoders/layers also fail.
+Undeclared legacy v1/v2 checkpoints retain their existing encoder, with that
+assumption recorded as `legacy-default` in diagnostics. Contract validation
+and feature parity do not constitute listening acceptance.
+
 - Audio is temporary request data; generated files are short-lived,
   token-protected downloads — not a permanent media library.
 - The gateway token must be at least 32 characters; the service refuses to

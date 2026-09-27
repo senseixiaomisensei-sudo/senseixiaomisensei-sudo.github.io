@@ -34,7 +34,7 @@ try {
       constructor(...args) {
         super(...args);
         this.addEventListener('message', ({ data }) => {
-          if (data.type === 'EVENT' && ['pitch_analysis','pitch_timeline'].includes(data.event?.type)) {
+          if (data.type === 'EVENT' && ['pitch_analysis','pitch_timeline','content_encoder'].includes(data.event?.type)) {
             window.rvcEvidence.push(data.event);
           }
         });

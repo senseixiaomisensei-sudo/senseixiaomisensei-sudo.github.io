@@ -240,9 +240,9 @@ test("cloud voice path conditions uploads and preserves server output", async ()
 test("local engine and rvc client cache versions are bumped for the workspace release", async () => {
   const runtimeSource = await readFile(new URL("assets/rvc-engine/rvc-web-runtime.js", root), "utf8");
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
-  assert.match(runtimeSource, /inference\.worker\.js\?v=20260927-pitchfloat1/u);
-  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260927-pitchfloat1/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20260927-pitchfloat1/u);
+  assert.match(runtimeSource, /inference\.worker\.js\?v=20260927-allroles-r40/u);
+  assert.match(clientSource, /rvc-web-runtime\.js\?v=20260927-allroles-r40/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20260927-allroles-r40/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {

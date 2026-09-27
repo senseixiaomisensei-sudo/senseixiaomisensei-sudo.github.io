@@ -156,7 +156,22 @@ def extract_pitch(pipeline, x, p_len, f0_method):
                 os.path.join(os.environ["rmvpe_root"], "rmvpe.pt"),
                 is_half=pipeline.is_half, device=pipeline.device,
             )
-        f0 = pipeline.model_rmvpe.infer_from_audio(x, thred=0.03)
+        estimator = pipeline.model_rmvpe
+        if getattr(pipeline, 'diagnostic_f0_dir', None) is not None:
+            # Same operations as the pinned infer_from_audio(), with the
+            # estimator's salience observed before decode. It is evidence,
+            # not a calibrated probability or permission to rewrite melody.
+            hidden = estimator.mel2hidden(estimator.extract_mel(x, center=True))
+            if hasattr(hidden, 'detach'):
+                hidden = hidden.squeeze(0).detach().cpu().numpy()
+            else:
+                hidden = hidden[0]
+            hidden = np.asarray(hidden, dtype=np.float32)
+            pipeline.pitch_confidence = np.max(hidden, axis=1)
+            pipeline.pitch_confidence_kind = 'rmvpe-maximum-salience-not-calibrated'
+            f0 = estimator.decode(hidden, thred=0.03)
+        else:
+            f0 = estimator.infer_from_audio(x, thred=0.03)
     elif f0_method == "fcpe":
         import torch
         if not hasattr(pipeline, "model_fcpe"):
@@ -172,6 +187,8 @@ def extract_pitch(pipeline, x, p_len, f0_method):
 
 
 def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
+    pipeline.pitch_confidence = None
+    pipeline.pitch_confidence_kind = 'unavailable'
     try:
         f0 = extract_pitch(pipeline, x, p_len, f0_method)
     except (RuntimeError, ValueError, OSError) as error:
@@ -211,7 +228,9 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
             raw=raw_f0, numeric=numeric_f0, contour=contour_f0, corrected=corrected_f0,
             shifted=f0, voiced=corrected_f0 > 0,
             raw_voiced=np.isfinite(raw_f0) & (raw_f0 > 0),
-            confidence_available=False,
+            confidence_available=pipeline.pitch_confidence is not None,
+            confidence=(pipeline.pitch_confidence if pipeline.pitch_confidence is not None else np.array([])),
+            confidence_kind=pipeline.pitch_confidence_kind,
             contour_enabled=contour_enabled, contour_evidence=evidence_reason,
             changed_frames=np.flatnonzero(corrected_f0 != numeric_f0),
             hop=pipeline.window, sample_rate=pipeline.sr,

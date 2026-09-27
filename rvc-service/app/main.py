@@ -1259,6 +1259,7 @@ def encoded_true_peak_dbfs(path: Path) -> float:
         ["ffmpeg", "-nostdin", "-hide_banner", "-i", str(path),
          "-af", "ebur128=peak=true", "-f", "null", "NUL" if os.name == "nt" else "/dev/null"],
         check=False, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True,
+        encoding="utf-8", errors="replace",
         timeout=max(120, min(600, int(probe_duration(path) * 1.5) + 60)),
     )
     match = re.search(r"True peak:\s+Peak:\s+(-?(?:\d+(?:\.\d+)?|inf))\s+dBFS", result.stderr)

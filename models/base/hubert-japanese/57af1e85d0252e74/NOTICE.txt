@@ -1,0 +1,4 @@
+Japanese HuBERT. Source: https://huggingface.co/yky-h/japanese-hubert-base
+Revision: 9c86c1a3424e8cddca3e59d01c2ed5477e628fcc
+Contributors: https://huggingface.co/yky-h/japanese-hubert-base/blob/main/README.md
+Converted to ONNX; trained weights unchanged.

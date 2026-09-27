@@ -83,16 +83,27 @@
     ]
   },
   "hoshino.onnx": {
-    "totalSize": 110813613,
-    "sha256": "c583c52b964c636a5bcf07499972c055406813977c8b9aec0ee9a19f492aa961",
+    "totalSize": 110420397,
+    "sha256": "43feadde41b72c90c27d0f5b77d1c2d11ad8df6ba9a45c56e64b071cc722b9aa",
     "chunks": [
-      "models/characters/hoshino/chunk_0.bin",
-      "models/characters/hoshino/chunk_1.bin",
-      "models/characters/hoshino/chunk_2.bin",
-      "models/characters/hoshino/chunk_3.bin",
-      "models/characters/hoshino/chunk_4.bin",
-      "models/characters/hoshino/chunk_5.bin"
-    ]
+      "models/characters/hoshino/revisions/43feadde41b72c90/chunk_0.bin",
+      "models/characters/hoshino/revisions/43feadde41b72c90/chunk_1.bin",
+      "models/characters/hoshino/revisions/43feadde41b72c90/chunk_2.bin",
+      "models/characters/hoshino/revisions/43feadde41b72c90/chunk_3.bin",
+      "models/characters/hoshino/revisions/43feadde41b72c90/chunk_4.bin",
+      "models/characters/hoshino/revisions/43feadde41b72c90/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "def6826a85f453fcd3960d433bf395238d39a09a35fd63138eac0799a2f771cf",
+      "306b280c909477008b55cc776e13c9c48f8ed4ccb0b30aab600a9e6254dec203",
+      "a30f09b6e0bffc1939272a435849698559026953d479813660da478446e23bb7",
+      "caa31b887ee76ca75fc666310192c24174398c94cecfc1ed8040a4c1cfaaa1d4",
+      "b3a7fc986910f9b13d408423a6cf1130671595586786ef7cd15f5e0b50639d51",
+      "38fbfb8a5a54afd4d1450588c66ced9201ff6060f972c9a245ca588eb8f3ddb3"
+    ],
+    "checkpointSha256": "6f5232f646fd2a8a234118976363d69d3814731bcc6a3692284bae30e5df9d8a",
+    "indexSha256": "6bf0be4288532a6db52b827620987e8fe3b169fae162c45a44eb983a4ab74d88",
+    "rvcVersion": "v1"
   },
   "yuuka.onnx": {
     "totalSize": 110813613,
@@ -425,5 +436,59 @@
       "models/characters/hubert-v1/chunk_12.bin",
       "models/characters/hubert-v1/chunk_13.bin"
     ]
+  },
+  "hubert-base-japanese.onnx": {
+    "name": "hubert-base-japanese.onnx",
+    "manifestKey": "hubert-base-japanese.onnx",
+    "sha256": "57af1e85d0252e74f897a29b6d7433f4d162f193d3edced0fec6e6ed80b6f318",
+    "totalSize": 377747791,
+    "chunks": [
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_0.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_1.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_2.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_3.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_4.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_5.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_6.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_7.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_8.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_9.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_10.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_11.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_12.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_13.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_14.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_15.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_16.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_17.bin",
+      "models/base/hubert-japanese/57af1e85d0252e74/chunk_18.bin"
+    ],
+    "chunkSha256": [
+      "25a3244c0ad77bab0dd8c84983be7cacb6a5492cb9985f448d262a72497d7d2c",
+      "9787c5d83c9ff3da10eddae222804fb09a4861bae6a1f028e234933578076870",
+      "a724215deb10639f9afad397eb1824b480c97f12aeb3001bc9425addb08305ea",
+      "6133f0d504f290ef515673aa2992f13f950b8042e714c64809607a4e46f8a840",
+      "d7633e5211a0f042e84852313aa90c810444478e6a47c712b68d286c33a66380",
+      "c77810f016f2a91734a4e9c414412600c5072723da0f4c329d01d2d30b6b4e98",
+      "b708fe759d08d4b1e1f925da518625a41cbc45d2d1eb9a4f5cc9a52c03549412",
+      "d396957bbd74a822d32faa7576a0eb294a80023bf106c4c76cf7bbdf366b1147",
+      "eb226ba0d7945bf7a80cf61689284325ab436130d9c93395d466b1f801afa329",
+      "33baaca99bcb87596a37729e3a482014f9900b824246d1d4046a61e1db272e3e",
+      "6e55826718081768efacc01befa017d7ff43eeb3ca9d389d9572e0121a42eafc",
+      "3e40ec7487991d2a4e19dc1f8bbf2927e1942d7a2ac3a841c5a3e52062c616b4",
+      "a6f9d2f26737a97ffea0c7a8c2528efb6b2f1d4c3876736d59bad8000048ec4c",
+      "10ce18e2b207bf0e10314b81cf541f944e17a3d20b69e2482548bdc5f35048dc",
+      "78e67d01e0a163874bcf3cc5cc306915abbfa5c76e7f384a3ba89f6cb9a00001",
+      "4fe5820d448e65bb34ccaec5a19a956193cb17724740c3aa66299777034674f1",
+      "036c45f450b3f4d76f22ac871a9a72a2c4619360a8f652417fc932773f971234",
+      "8227ab056acf0e133f20326e1a17f25e11254010e769f78934a458990f9548ea",
+      "d7d8c40219c08593c00fa7b218973baf895d5c5e5a331c01c955a472cfe67fc7"
+    ],
+    "revision": "9c86c1a3424e8cddca3e59d01c2ed5477e628fcc",
+    "contentEncoder": "hubert-base-japanese",
+    "outputLayer": 12,
+    "featureDimension": 768,
+    "inputSampleRate": 16000,
+    "waveformNormalization": false
   }
 }

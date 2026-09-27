@@ -291,10 +291,12 @@ class OfficialRvcModel:
             self.last_run_metadata['errorStage'] = error.stage
             raise
         finally:
-            self.last_run_metadata['executionBackend'] = 'cuda-graph-enabled' if cuda_graph_enabled(self.info.device) else 'eager'
+            self.last_run_metadata['cudaGraphEnabled'] = bool(cuda_graph_enabled(self.info.device))
             self.last_run_metadata['synthesisGraphStats'] = get_cuda_graph_stats(self._vc.net_g)
             self.last_run_metadata['synthesisExecution'] = [row for row in pipeline.stage_records
                 if row['stage']=='synthesis-execution']
+            self.last_run_metadata['executionBackend'] = '+'.join(dict.fromkeys(
+                row['backend'] for row in self.last_run_metadata['synthesisExecution'])) or 'not-executed'
             self.last_run_metadata['retrieval'] = [row for row in pipeline.stage_records
                 if row['stage'] in {'index-load','retrieval-search'}]
             flush(pipeline, self.last_run_metadata)

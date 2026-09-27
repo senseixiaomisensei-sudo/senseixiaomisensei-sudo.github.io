@@ -354,6 +354,60 @@
       manifestKey: "hubert.onnx",
       chunks: Array.from({ length: 19 }, (_, i) => `models/base/hubert/chunk_${i}.bin`)
     },
+    hubertJapanese: {
+      "name": "hubert-base-japanese.onnx",
+      "manifestKey": "hubert-base-japanese.onnx",
+      "sha256": "57af1e85d0252e74f897a29b6d7433f4d162f193d3edced0fec6e6ed80b6f318",
+      "totalSize": 377747791,
+      "chunks": [
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_0.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_1.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_2.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_3.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_4.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_5.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_6.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_7.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_8.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_9.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_10.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_11.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_12.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_13.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_14.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_15.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_16.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_17.bin",
+        "models/base/hubert-japanese/57af1e85d0252e74/chunk_18.bin"
+      ],
+      "chunkSha256": [
+        "25a3244c0ad77bab0dd8c84983be7cacb6a5492cb9985f448d262a72497d7d2c",
+        "9787c5d83c9ff3da10eddae222804fb09a4861bae6a1f028e234933578076870",
+        "a724215deb10639f9afad397eb1824b480c97f12aeb3001bc9425addb08305ea",
+        "6133f0d504f290ef515673aa2992f13f950b8042e714c64809607a4e46f8a840",
+        "d7633e5211a0f042e84852313aa90c810444478e6a47c712b68d286c33a66380",
+        "c77810f016f2a91734a4e9c414412600c5072723da0f4c329d01d2d30b6b4e98",
+        "b708fe759d08d4b1e1f925da518625a41cbc45d2d1eb9a4f5cc9a52c03549412",
+        "d396957bbd74a822d32faa7576a0eb294a80023bf106c4c76cf7bbdf366b1147",
+        "eb226ba0d7945bf7a80cf61689284325ab436130d9c93395d466b1f801afa329",
+        "33baaca99bcb87596a37729e3a482014f9900b824246d1d4046a61e1db272e3e",
+        "6e55826718081768efacc01befa017d7ff43eeb3ca9d389d9572e0121a42eafc",
+        "3e40ec7487991d2a4e19dc1f8bbf2927e1942d7a2ac3a841c5a3e52062c616b4",
+        "a6f9d2f26737a97ffea0c7a8c2528efb6b2f1d4c3876736d59bad8000048ec4c",
+        "10ce18e2b207bf0e10314b81cf541f944e17a3d20b69e2482548bdc5f35048dc",
+        "78e67d01e0a163874bcf3cc5cc306915abbfa5c76e7f384a3ba89f6cb9a00001",
+        "4fe5820d448e65bb34ccaec5a19a956193cb17724740c3aa66299777034674f1",
+        "036c45f450b3f4d76f22ac871a9a72a2c4619360a8f652417fc932773f971234",
+        "8227ab056acf0e133f20326e1a17f25e11254010e769f78934a458990f9548ea",
+        "d7d8c40219c08593c00fa7b218973baf895d5c5e5a331c01c955a472cfe67fc7"
+      ],
+      "revision": "9c86c1a3424e8cddca3e59d01c2ed5477e628fcc",
+      "contentEncoder": "hubert-base-japanese",
+      "outputLayer": 12,
+      "featureDimension": 768,
+      "inputSampleRate": 16000,
+      "waveformNormalization": false
+    },
     rmvpe: {
       name: "rmvpe.onnx",
       manifestKey: "rmvpe.onnx",
@@ -453,35 +507,54 @@
     ]
   },
   {
-    "id": "hoshino",
-    "name": "小鸟游星野 (Hoshino)",
-    "avatarText": "星野",
-    "description": "阿拜多斯对策委员会 · 慵懒柔和少女声线 · 公开社区 RVC v2",
-    "tags": [
-      "女声",
-      "蔚蓝档案",
-      "阿拜多斯"
-    ],
-    "defaultPitch": 0,
-    "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
-    "sampleRate": 40000,
-    "noiseScale": 0.35,
-    "defaultIndexRate": 0.35,
-    "marketplace": "",
-    "source": "https://huggingface.co/momofu/Hoshino_RVCv2",
-    "license": "Community model; repository terms vary; character/performer authorization unverified",
-    "checkpointSha256": "4e17a69cb37a7e26e84445ebeedae539eff2a3aac896a451675906c5703b9145",
-    "indexSha256": "d1d9a80ef06864297302693239b6966783724997a265fa9521b2e65144a0b4b4",
-    "retrieval": "models/characters/hoshino/retrieval.bin",
-    "chunks": [
-      "models/characters/hoshino/chunk_0.bin",
-      "models/characters/hoshino/chunk_1.bin",
-      "models/characters/hoshino/chunk_2.bin",
-      "models/characters/hoshino/chunk_3.bin",
-      "models/characters/hoshino/chunk_4.bin",
-      "models/characters/hoshino/chunk_5.bin"
-    ]
+  "id": "hoshino",
+  "name": "小鸟游星野 (Hoshino)",
+  "avatarText": "星野",
+  "description": "阿拜多斯对策委员会 · 星野同角色候选 · RVC v1",
+  "tags": [
+    "女声",
+    "蔚蓝档案",
+    "阿拜多斯"
+  ],
+  "defaultPitch": 0,
+  "pitchNote": "同音域输入建议 0；跨音域请使用页面预设后微调",
+  "sampleRate": 40000,
+  "noiseScale": 0.35,
+  "defaultIndexRate": 0.45,
+  "marketplace": "",
+  "source": "https://huggingface.co/spaces/andhikagg/rvc-blue-archive/tree/df977abe54df1db5f5b6ad289a94d645d8656039/weights/blue-archive/TakanashiHoshino",
+  "license": "Community model; repository terms vary; character/performer authorization unverified",
+  "checkpointSha256": "6f5232f646fd2a8a234118976363d69d3814731bcc6a3692284bae30e5df9d8a",
+  "indexSha256": "6bf0be4288532a6db52b827620987e8fe3b169fae162c45a44eb983a4ab74d88",
+  "retrieval": "models/characters/hoshino/revisions/43feadde41b72c90/retrieval.bin",
+  "chunks": [
+    "models/characters/hoshino/revisions/43feadde41b72c90/chunk_0.bin",
+    "models/characters/hoshino/revisions/43feadde41b72c90/chunk_1.bin",
+    "models/characters/hoshino/revisions/43feadde41b72c90/chunk_2.bin",
+    "models/characters/hoshino/revisions/43feadde41b72c90/chunk_3.bin",
+    "models/characters/hoshino/revisions/43feadde41b72c90/chunk_4.bin",
+    "models/characters/hoshino/revisions/43feadde41b72c90/chunk_5.bin"
+  ],
+  "contentEncoder": {
+    "name": "hubert_base",
+    "outputLayer": 9,
+    "featureDimension": 256
   },
+  "rvcVersion": "v1",
+  "sha256": "43feadde41b72c90c27d0f5b77d1c2d11ad8df6ba9a45c56e64b071cc722b9aa",
+  "chunkSha256": [
+    "def6826a85f453fcd3960d433bf395238d39a09a35fd63138eac0799a2f771cf",
+    "306b280c909477008b55cc776e13c9c48f8ed4ccb0b30aab600a9e6254dec203",
+    "a30f09b6e0bffc1939272a435849698559026953d479813660da478446e23bb7",
+    "caa31b887ee76ca75fc666310192c24174398c94cecfc1ed8040a4c1cfaaa1d4",
+    "b3a7fc986910f9b13d408423a6cf1130671595586786ef7cd15f5e0b50639d51",
+    "38fbfb8a5a54afd4d1450588c66ced9201ff6060f972c9a245ca588eb8f3ddb3"
+  ],
+  "totalSize": 110420397,
+  "retrievalSha256": "4d8257cb75ee800a4cfcb2c15fda1b00c0d3d225cee57ec90476270ba9f93dfa",
+  "resourceRevision": "43feadde41b72c90c27d0f5b77d1c2d11ad8df6ba9a45c56e64b071cc722b9aa",
+  "qualityValidation": "full A/C generated; listening pending"
+},
   {
     "id": "yuuka",
     "name": "早濑优香 (Yuuka)",
@@ -1399,6 +1472,33 @@
     return 4;
   }
 
+  function resolveContentEncoder(model, baseModels) {
+    const version = model?.rvcVersion || "v2";
+    const contract = model?.contentEncoder;
+    const name = contract?.name || "hubert_base";
+    const outputLayer = version === "v1" ? 9 : 12;
+    if (!["v1", "v2"].includes(version) ||
+        (contract?.outputLayer !== undefined && contract.outputLayer !== outputLayer)) {
+      throw new Error("角色的语义特征层尚未验证，无法使用其他模型替代");
+    }
+    let key;
+    if (["hubert_base", "hubert-base", "contentvec"].includes(name)) {
+      key = version === "v1" ? "hubertV1" : "hubert";
+    } else if (name === "hubert-base-japanese" && version === "v2") {
+      key = "hubertJapanese";
+    } else {
+      throw new Error(`角色需要尚未支持的语义模型：${name}`);
+    }
+    const config = baseModels?.[key] || EMBEDDED_BASE_MODELS[key];
+    if (!config?.chunks?.length || (key === "hubertJapanese" && !/^[a-f0-9]{64}$/.test(config.sha256 || ""))) {
+      throw new Error("角色所需的语义模型资源不完整，请刷新资源目录");
+    }
+    const cacheKey = config.sha256
+      ? `${config.name.replace(/\.onnx$/, "")}.${config.sha256}.onnx`
+      : config.name;
+    return { config, cacheKey, name, outputLayer, featureDimension: version === "v1" ? 256 : 768 };
+  }
+
   // A fast desktop can keep more independent model fragments in flight while
   // constrained phones avoid opening enough streams to starve the UI thread.
   class ConcurrencyPool {
@@ -1431,7 +1531,7 @@
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
   const CHARACTER_MODEL_ASSET_VERSION = "20260919-v37";
-  const HOSHINO_MODEL_ASSET_VERSION = "20260925-v38";
+  const HOSHINO_MODEL_ASSET_VERSION = "43feadde41b72c90c27d0f5b77d1c2d11ad8df6ba9a45c56e64b071cc722b9aa";
 
   function characterAssetVersion(id) {
     return id === "hoshino" ? HOSHINO_MODEL_ASSET_VERSION : CHARACTER_MODEL_ASSET_VERSION;
@@ -1543,14 +1643,26 @@
   }
 
   // Fetch single chunk with Multi-Node Concurrent Racing, Chunk-Level Resumption, Live Streaming & Inactivity Timeout
-  async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress) {
+  async function verifyModelBytes(buffer, expectedHash) {
+    if (!expectedHash) return;
+    const digest = await crypto.subtle.digest("SHA-256", buffer);
+    const actual = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, "0")).join("");
+    if (actual !== expectedHash) throw new Error("模型资源校验失败，请重新下载");
+  }
+
+  async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress, expectedHash) {
     const chunkCacheKey = `chunk:${chunkPath}`;
     const cachedBuf = await getCachedItem(chunkCacheKey);
     if (cachedBuf instanceof ArrayBuffer && cachedBuf.byteLength > 0) {
-      if (typeof onChunkProgress === "function") {
-        onChunkProgress(cachedBuf.byteLength);
+      try {
+        await verifyModelBytes(cachedBuf, expectedHash);
+        if (typeof onChunkProgress === "function") {
+          onChunkProgress(cachedBuf.byteLength);
+        }
+        return { buffer: cachedBuf, fromCache: true };
+      } catch {
+        await removeCachedItem(chunkCacheKey);
       }
-      return { buffer: cachedBuf, fromCache: true };
     }
 
     const mirrors = getChunkMirrorUrls(chunkPath);
@@ -1576,6 +1688,7 @@
           const buf = await resp.arrayBuffer();
           clearTimeout(activityTimer);
           if (buf && buf.byteLength > 0) {
+            await verifyModelBytes(buf, expectedHash);
             if (typeof onChunkProgress === "function") onChunkProgress(buf.byteLength);
             return buf;
           }
@@ -1602,6 +1715,7 @@
           combined.set(c, offset);
           offset += c.length;
         }
+        await verifyModelBytes(combined.buffer, expectedHash);
         return combined.buffer;
       } catch (err) {
         clearTimeout(activityTimer);
@@ -1672,11 +1786,12 @@
     return { buffer: winningBuffer, fromCache: false };
   }
 
-  async function readableCachedModel(name) {
+  async function readableCachedModel(name, expectedHash) {
     const cached = await getCachedItem(name);
     if (!(cached instanceof Blob) || cached.size <= 1024 * 1024) return null;
     try {
       const bytes = await cached.arrayBuffer();
+      await verifyModelBytes(bytes, expectedHash);
       return { name, size: bytes.byteLength, arrayBuffer: async () => bytes };
     } catch {
       await removeCachedItem(name);
@@ -1685,8 +1800,8 @@
   }
 
   // Fetch Chunked Model with Concurrency Pool & Real-Time Granular Progress
-  async function fetchChunkedModel(chunkUrls, name, displayName, mimeType, onProgress) {
-    const cached = await readableCachedModel(name);
+  async function fetchChunkedModel(chunkUrls, name, displayName, mimeType, onProgress, integrity) {
+    const cached = await readableCachedModel(name, integrity?.sha256);
     if (cached) {
       if (typeof onProgress === "function") {
         onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true, ` ${displayName} 已从本地闪存极速就绪`);
@@ -1721,7 +1836,8 @@
           (bytesLoaded) => {
             chunkBytesLoaded[idx] = Math.max(chunkBytesLoaded[idx], bytesLoaded);
             reportProgress();
-          }
+          },
+          integrity?.chunkSha256?.[idx]
         );
         blobParts[idx] = buffer;
         chunkBytesLoaded[idx] = buffer.byteLength;
@@ -1759,7 +1875,7 @@
   }
 
   async function loadModelAuto(modelConfig, name, displayName, mimeType, onProgress) {
-    const cached = await readableCachedModel(name);
+    const cached = await readableCachedModel(name, modelConfig?.sha256);
     if (cached) {
       if (typeof onProgress === "function") {
         onProgress(cached.size, cached.size, 1, 1, true, ` ${displayName} 已从本地闪存秒级就绪`);
@@ -1782,7 +1898,7 @@
       const fetchChunks = isPublishedCharacter
         ? chunks.map(versionCharacterChunkPath)
         : chunks;
-      return await fetchChunkedModel(fetchChunks, name, displayName || name, mimeType, onProgress);
+      return await fetchChunkedModel(fetchChunks, name, displayName || name, mimeType, onProgress, modelConfig);
     }
 
     const urls = modelConfig?.urls || (typeof modelConfig === "string" ? [modelConfig] : [name]);
@@ -2716,10 +2832,8 @@
 
     try {
       const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
-      const useV1 = selectedModel?.rvcVersion === "v1";
-      const hubertCfg = useV1
-        ? (state.baseModels?.hubertV1 || EMBEDDED_BASE_MODELS.hubertV1)
-        : (state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert);
+      const encoder = resolveContentEncoder(selectedModel, state.baseModels);
+      const hubertCfg = encoder.config;
       const rmvpeCfg = state.baseModels?.rmvpe || EMBEDDED_BASE_MODELS.rmvpe;
 
       let hubertLoaded = 0;
@@ -2739,7 +2853,7 @@
       };
 
       const tasks = [
-        loadModelAuto(hubertCfg, useV1 ? "hubert-v1.onnx" : "hubert.onnx", "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
+        loadModelAuto(hubertCfg, encoder.cacheKey, "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
           hubertLoaded = loaded;
           if (total) hubertTotal = total;
           updatePreloadUI(msg || ` 正在缓存 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
@@ -4115,7 +4229,7 @@
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay(" 正在初始化本地推理引擎...");
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260927-pitchfloat1", window.location.href).href);
+      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260927-allroles-r40", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -4128,10 +4242,8 @@
         },
       });
 
-      const useV1 = selectedModel.rvcVersion === "v1";
-      const hubertCfg = useV1
-        ? (state.baseModels?.hubertV1 || EMBEDDED_BASE_MODELS.hubertV1)
-        : (state.baseModels?.hubert || EMBEDDED_BASE_MODELS.hubert);
+      const encoder = resolveContentEncoder(selectedModel, state.baseModels);
+      const hubertCfg = encoder.config;
       const rmvpeCfg = state.baseModels?.rmvpe || { chunks: [] };
 
       // Multi-Model Sequential Loading with Live Milestone Progress Tracking
@@ -4141,7 +4253,7 @@
       updateStatusDisplay(" [1/4] 正在加载基础语义模型 (HuBERT)...");
       const hubertFile = await loadModelAuto(
         hubertCfg,
-        useV1 ? "hubert-v1.onnx" : "hubert.onnx",
+        encoder.cacheKey,
         "HuBERT 语义特征模型",
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
@@ -4254,6 +4366,9 @@
           },
         },
         {
+          contentEncoder: { name: encoder.name, outputLayer: encoder.outputLayer,
+            featureDimension: encoder.featureDimension, onnxSha256: hubertCfg.sha256 || null,
+            revision: hubertCfg.revision || null },
           pitchShift: pitchVal,
           medianFilter: filterRadiusVal >= 3,
           medianFilterWindow: filterRadiusVal >= 3 ? filterRadiusVal : 3,

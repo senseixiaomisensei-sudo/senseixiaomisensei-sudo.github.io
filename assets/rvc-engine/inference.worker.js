@@ -13834,6 +13834,8 @@ function blendEnvironmentPassthrough(synthAudio, input16k, outputRate) {
 
 async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio) {
   const ctx = { state: "idle" };
+  ctx.contentEncoder = options.contentEncoder || null;
+  if (ctx.contentEncoder) callbacks.onEvent?.({ type: "content_encoder", ...ctx.contentEncoder });
   const emitStage = (state) => {
     ctx.state = state;
     callbacks.onEvent?.({ type: "stage", stage: state });
