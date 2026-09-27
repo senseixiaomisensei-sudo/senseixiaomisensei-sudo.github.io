@@ -12881,7 +12881,7 @@ function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift 
     const shiftedF0 = applyPitchShift(pitch.f0, pitchShift);
     const sourceUpp = Math.max(1, Math.round(options.sourceUpp ?? 400));
     const seed = Number(options.noiseSeed ?? 20260821) >>> 0;
-    return {
+    const feeds = {
       phone: buildPhoneTensor(features, frameCount),
       phone_lengths: buildPhoneLengthsTensor(frameCount),
       pitch: buildPitchTensor(shiftedF0, frameCount),
@@ -12900,6 +12900,12 @@ function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift 
         options.sourceSampleOffset ?? null
       )
     };
+    if (options.externalExcitation === true) {
+      feeds.source_excitation = buildSourceExcitationTensor(
+        shiftedF0, frameCount, sourceUpp, feeds.source_noise, options.sourcePhaseCycles ?? 0
+      );
+    }
+    return feeds;
   } catch (cause) {
     throw new RvcError(
       ErrorCodes.SYNTH_FEED_BUILD_FAILED,
@@ -13040,6 +13046,42 @@ function buildSourceNoiseTensor(frameCount, sourceUpp = 400, seed = 20260821, sa
     data[sample] = timelineGaussian(seed, (Number(sampleOffset) | 0) + sample, 0);
   }
   return new Te("float32", data, [1, audioLength, 1]);
+}
+
+function buildPitchPhaseTimeline(f0, semitones = 0) {
+  const shifted = applyPitchShift(f0, semitones);
+  const phase = new Float64Array(shifted.length + 1);
+  for (let i = 0; i < shifted.length; i++) phase[i+1] = phase[i] + shifted[i]/100;
+  return { shifted, phase };
+}
+
+function pitchPhaseAtFrame(timeline, frame) {
+  const { shifted, phase } = timeline;
+  if (frame >= 0 && frame < phase.length) return phase[frame];
+  let value = frame < 0 ? 0 : phase[phase.length-1];
+  if (frame < 0) {
+    for (let i = frame; i < 0; i++) value -= (shifted[Math.min(shifted.length-1,-i)] || 0)/100;
+  } else {
+    for (let i = shifted.length; i < frame; i++) value += (shifted[Math.max(0,2*shifted.length-2-i)] || 0)/100;
+  }
+  return value;
+}
+
+function buildSourceExcitationTensor(f0, frameCount, sourceUpp, noise, phaseCycles = 0) {
+  const rate = sourceUpp*100;
+  const data = new Float32Array(frameCount*sourceUpp);
+  let phase = phaseCycles % 1;
+  for (let frame = 0; frame < frameCount; frame++) {
+    const hz = f0[frame] || 0;
+    for (let sample = 0; sample < sourceUpp; sample++) {
+      const offset = frame*sourceUpp+sample;
+      const cycles = phase + (sample+1)*hz/rate;
+      const sine = hz > 0 ? Math.fround(.1*Math.sin(2*Math.PI*(cycles%1))) : 0;
+      data[offset] = sine + (hz > 0 ? .003 : .1/3)*noise.data[offset];
+    }
+    phase = (phase + hz/100)%1;
+  }
+  return new Te("float32", data, [1, data.length, 1]);
 }
 
 function parseRetrievalCodebook(input) {
@@ -13191,7 +13233,8 @@ async function synthesizeVoice(session, features, pitch, options = {}) {
   const frameCount = computeFrameCount(features, pitch, options.maxFrames);
   const speakerId = options.speakerId ?? 0;
   const pitchShift = options.pitchShift ?? 0;
-  const feeds = buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift, options);
+  const feeds = buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift,
+    { ...options, externalExcitation: session.inputNames.includes("source_excitation") });
   const outputs = await runInference(session, feeds);
   return parseSynthesisOutput(outputs);
 }
@@ -13928,6 +13971,9 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
         voicing: pitch.voicingEvidence }));
     callbacks.onEvent?.({ type: 'pitch_timeline', disagreements: pitchTimeline.disagreements,
       frames: pitchTimeline.f0.length, method: 'absolute-frame/context-selection' });
+    const externalExcitation = rvcSession.inputNames.includes("source_excitation");
+    const sourcePhase = externalExcitation
+      ? buildPitchPhaseTimeline(pitchTimeline.f0, options.pitchShift ?? 0) : null;
     const outputAudio = await processAudioInFixedFrameWindows(
       audio,
       async (chunk, currentChunk, totalChunks) => {
@@ -13967,12 +14013,13 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
         const synthesized = await synthesizeVoice(rvcSession, retrievedFeatures, pitch, {
           speakerId: options.speakerId,
           pitchShift: options.pitchShift,
-          noiseSeed: chunkingConfig.contextDuration > 0
+          noiseSeed: externalExcitation || chunkingConfig.contextDuration > 0
             ? options.noiseSeed ?? 20260821
             : mixNoiseSeed(options.noiseSeed ?? 20260821, currentChunk),
           noiseScale: options.noiseScale ?? 0.5,
-          noiseFrameOffset: chunkingConfig.contextDuration > 0 ? noiseFrameOffset : null,
-          sourceSampleOffset: chunkingConfig.contextDuration > 0 ? sourceSampleOffset : null,
+          noiseFrameOffset: externalExcitation || chunkingConfig.contextDuration > 0 ? noiseFrameOffset : null,
+          sourceSampleOffset: externalExcitation || chunkingConfig.contextDuration > 0 ? sourceSampleOffset : null,
+          sourcePhaseCycles: sourcePhase ? pitchPhaseAtFrame(sourcePhase, noiseFrameOffset) : 0,
           maxFrames: chunkingConfig.frameCount,
           sourceUpp: Math.max(1, Math.round((options.outputSampleRate ?? 40e3) / 100))
         });

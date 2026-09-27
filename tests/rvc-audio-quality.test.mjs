@@ -398,6 +398,37 @@ test("retrieval codebook blends voiced frames and protects unvoiced consonants",
   assert.ok([...unvoiced.hiddenStates].every(Number.isFinite));
 });
 
+test("explicit NSF phase remains continuous through high notes and overlapping windows", () => {
+  class Tensor { constructor(_type,data,dims){Object.assign(this,{data,dims});} }
+  const shift=evaluateFunction("applyPitchShift");
+  const clock=evaluateFunction("buildPitchPhaseTimeline",["applyPitchShift"],[shift]);
+  const phaseAt=evaluateFunction("pitchPhaseAtFrame");
+  const excitation=evaluateFunction("buildSourceExcitationTensor",["Te"],[Tensor]);
+  const f0=Float32Array.from({length:400},(_,i)=>180+i*3.1);
+  f0.fill(0,200,206);
+  const timeline=clock(f0,3);
+  for(const upp of [320,400,480]) {
+    const noise={data:new Float32Array(f0.length*upp)};
+    const whole=excitation(timeline.shifted,f0.length,upp,noise,0).data;
+    const part=excitation(timeline.shifted.slice(145,245),100,upp,
+      {data:noise.data.slice(145*upp,245*upp)},phaseAt(timeline,145)).data;
+    for(let i=0;i<part.length;i++)assert.ok(Math.abs(part[i]-whole[145*upp+i])<2e-7);
+    assert.equal(maxAbs(whole.slice(200*upp,206*upp)),0);
+    assert.ok(whole.every(Number.isFinite));
+  }
+});
+
+test("pitch phase follows the same reflected context as the pitch samples", () => {
+  const shift=evaluateFunction("applyPitchShift");
+  const clock=evaluateFunction("buildPitchPhaseTimeline",["applyPitchShift"],[shift]);
+  const at=evaluateFunction("pitchPhaseAtFrame");
+  const timeline=clock(Float32Array.from([100,200,300,400]),0);
+  assert.equal(at(timeline,-2),-5);
+  assert.equal(at(timeline,0),0);
+  assert.equal(at(timeline,4),10);
+  assert.equal(at(timeline,6),15);
+});
+
 test("unverified waveform pitch repair is absent from the browser default", () => {
   assert.doesNotMatch(workerSource, /stabilizeF0ByWaveform\(f0, audio, confidence\)/u);
 });

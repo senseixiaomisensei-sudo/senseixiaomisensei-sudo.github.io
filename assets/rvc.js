@@ -4381,6 +4381,9 @@
           noiseScale: selectedModel.noiseScale ?? 0.5,
           outputSampleRate: selectedModel.sampleRate || 40000,
           timeout: localTimeoutMs,
+          // Healthy WASM inference can exceed the estimate on slower devices.
+          // Extend only while milestones advance, with a finite total ceiling.
+          maxTotalTimeout: Math.min(4 * 60 * 60 * 1000, localTimeoutMs * 4),
         }
       );
 

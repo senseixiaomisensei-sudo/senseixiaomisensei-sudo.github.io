@@ -118,7 +118,9 @@ class ExplicitNoiseRvc(nn.Module):
             for kernel in range(1, decoder.num_kernels):
                 combined = combined + decoder.resblocks[stage * decoder.num_kernels + kernel](x)
             x = combined / decoder.num_kernels
-        x = F.leaky_relu(x, 0.1)
+        # The checkpoint's final activation uses the default slope (.01),
+        # unlike the upsampling stages (.1). Preserve the trained equation.
+        x = F.leaky_relu(x)
         return torch.tanh(decoder.conv_post(x))
 
 

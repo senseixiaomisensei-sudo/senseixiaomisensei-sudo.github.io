@@ -38,7 +38,7 @@ async function createWorkerUrl(workerScriptUrl, signal) {
   return URL.createObjectURL(blob);
 }
 async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callbacks = {}, options = {}) {
-  const { timeout = 3e5, signal, ...pipelineOptions } = options;
+  const { timeout = 3e5, maxTotalTimeout = timeout, signal, ...pipelineOptions } = options;
   const [modelBuf, contentVecBuf, rmvpeBuf, indexBuf] = await Promise.all([
     files.model.arrayBuffer(),
     files.contentVec.arrayBuffer(),
@@ -50,12 +50,15 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
   return new Promise((resolve, reject) => {
     let worker;
     let timeoutId;
+    let deadlineId;
     let settled = false;
+    const progressSeen = new Set();
     const onAbort = () => finish(new RvcError("WORKER_CANCELLED", "Pipeline was cancelled"));
     const finish = (error, result) => {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutId);
+      clearTimeout(deadlineId);
       signal?.removeEventListener("abort", onAbort);
       if (worker) {
         worker.onmessage = null;
@@ -78,14 +81,32 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
       return;
     }
     signal?.addEventListener("abort", onAbort, { once: true });
-    timeoutId = setTimeout(() => {
-      finish(new RvcError("WORKER_TIMEOUT", `Pipeline timed out after ${timeout}ms`));
-    }, timeout);
+    const armIdleTimeout = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        finish(new RvcError("WORKER_TIMEOUT", `Pipeline made no progress for ${timeout}ms`));
+      }, timeout);
+    };
+    armIdleTimeout();
+    deadlineId = setTimeout(() => {
+      finish(new RvcError("WORKER_TIMEOUT", `Pipeline exceeded its ${maxTotalTimeout}ms total deadline`));
+    }, Math.max(timeout, maxTotalTimeout));
     worker.onmessage = (event) => {
       try {
         const { type } = event.data;
         switch (type) {
         case "EVENT": {
+          const progress = event.data.event;
+          // Only new stage/chunk milestones renew the idle deadline. Logs
+          // and repeated heartbeats cannot keep a stuck worker alive.
+          const key = progress?.type === "stage" ? `stage:${progress.stage}`
+            : ["chunk", "chunk_step", "pitch_analysis"].includes(progress?.type)
+              && Number.isFinite(progress.current)
+              ? `${progress.type}:${progress.current}:${progress.step || ""}` : null;
+          if (key && !progressSeen.has(key)) {
+            progressSeen.add(key);
+            armIdleTimeout();
+          }
           callbacks.onEvent?.(event.data.event);
           break;
         }

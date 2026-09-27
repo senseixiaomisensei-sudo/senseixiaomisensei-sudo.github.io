@@ -6,6 +6,10 @@ import { chromium } from "file:///E:/大肥鱼/rvc-local/convert/node_modules/pl
 
 const PORT = Number(process.env.POSTPREP_RVC_TEST_PORT) || 8126;
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
+const candidateManifest = process.env.POSTPREP_RVC_CANDIDATE_MANIFEST;
+const candidates = candidateManifest
+  ? JSON.parse(fs.readFileSync(candidateManifest, "utf8")) : [];
+const candidateUrl = (id) => `/__rvc_test_candidates/${id}/model.onnx`;
 
 const MIME_MAP = {
   ".html": "text/html; charset=utf-8",
@@ -30,6 +34,12 @@ const server = http.createServer((req, res) => {
 
   let reqPath = req.url.split("?")[0];
   if (reqPath === "/") reqPath = "/rvc.html";
+  const candidate = candidates.find((item) => candidateUrl(item.characterId) === reqPath);
+  if (candidate) {
+    res.setHeader("Content-Type", "application/octet-stream");
+    fs.createReadStream(candidate.candidatePath).pipe(res);
+    return;
+  }
   const filePath = path.join(ROOT, reqPath.replace(/^\//, ""));
 
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
@@ -40,6 +50,27 @@ const server = http.createServer((req, res) => {
 
   const ext = path.extname(filePath).toLowerCase();
   res.setHeader("Content-Type", MIME_MAP[ext] || "application/octet-stream");
+  if (candidates.length && reqPath === "/assets/rvc-models.json") {
+    const catalog = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    for (const model of catalog.models) {
+      const candidate = candidates.find((item) => item.characterId === model.id);
+      if (!candidate) continue;
+      Object.assign(model, { chunks: [candidateUrl(model.id).slice(1)],
+        sha256: candidate.candidateSha256, chunkSha256: [candidate.candidateSha256],
+        resourceRevision: candidate.candidateSha256, totalSize: candidate.bytes });
+    }
+    res.end(JSON.stringify(catalog));
+    return;
+  }
+  if (candidates.length && reqPath === "/models/manifest.json") {
+    const manifest = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    for (const item of candidates) manifest[`candidate-${item.characterId}.onnx`] = {
+      totalSize: item.bytes, sha256: item.candidateSha256,
+      chunks: [candidateUrl(item.characterId).slice(1)]
+    };
+    res.end(JSON.stringify(manifest));
+    return;
+  }
   if (reqPath === "/assets/rvc-models.json" && (process.env.POSTPREP_RVC_NOISE_SCALE || process.env.POSTPREP_RVC_NOISE_SEED)) {
     const catalog = JSON.parse(fs.readFileSync(filePath, "utf8"));
     for (const model of catalog.models || []) {
@@ -146,12 +177,17 @@ server.listen(PORT, "127.0.0.1", async () => {
 
       // Long stability fixtures may need substantially more than the default
       // short-smoke timeout while still exercising the same browser path.
-      const inferenceTimeoutMs = Math.max(90000, Number(process.env.POSTPREP_RVC_E2E_TIMEOUT_MS) || 90000);
+      const audioSeconds = Number(audioStatus.match(/(\d+(?:\.\d+)?)s/)?.[1]) || 0;
+      const inferenceTimeoutMs = Math.max(90000,
+        Number(process.env.POSTPREP_RVC_E2E_TIMEOUT_MS) || 0,
+        Math.min(4 * 3600000, audioSeconds * 15000 + 180000));
       let finished = false;
       const start = Date.now();
       while (Date.now() - start < inferenceTimeoutMs) {
         const currentStatus = await page.locator("#rvc-service-status").textContent();
-        if (currentStatus.startsWith("❌")) throw new Error(currentStatus);
+        if (currentStatus.startsWith("❌") || /推理失败|inference failed/i.test(currentStatus)) {
+          throw new Error(currentStatus);
+        }
         console.log(`[${Math.round((Date.now() - start)/1000)}s] Status:`, currentStatus);
 
         const resultVisible = await page.locator("#rvc-result").isVisible();
