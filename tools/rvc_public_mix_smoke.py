@@ -17,20 +17,23 @@ def main() -> None:
     parser.add_argument("output_dir", type=Path)
     parser.add_argument("--base", default="https://postprep-ae6.pages.dev/rvc-api")
     parser.add_argument("--origin", default="https://senseixiaomisensei-sudo.github.io")
+    parser.add_argument("--rms-mix-rate", type=float, default=1.)
     args = parser.parse_args()
+    if not 0 <= args.rms_mix_rate <= 1:
+        parser.error('rms mix rate must be in [0, 1]')
     args.output_dir.mkdir(parents=True, exist_ok=True)
     headers = {"Origin": args.origin}
     request_id = uuid.uuid4().hex
     with args.source.open("rb") as stream:
         response = requests.post(args.base, headers=headers, timeout=120,
                                  data={"modelId": "hoshino", "pitch": "0", "indexRate": "0.45",
-                                       "protect": "0.33", "rmsMixRate": "1", "filterRadius": "0",
+                                       "protect": "0.33", "rmsMixRate": str(args.rms_mix_rate), "filterRadius": "0",
                                        "f0Method": "rmvpe", "format": "wav", "resample": "0",
                                        "audioMode": "song", "requestId": request_id,
                                        "vocalGainDb": "0", "accompanimentGainDb": "0",
                                        "vocalMute": "false", "accompanimentMute": "false",
                                        "model_id": "hoshino", "index_rate": "0.45",
-                                       "f0_method": "rmvpe", "rms_mix_rate": "1",
+                                       "f0_method": "rmvpe", "rms_mix_rate": str(args.rms_mix_rate),
                                        "filter_radius": "0", "audio_mode": "song",
                                        "request_id": request_id,
                                        "vocal_gain_db": "0", "accompaniment_gain_db": "0",
@@ -68,7 +71,7 @@ def main() -> None:
     remixed.raise_for_status()
     changed = args.output_dir / "production-vocal-minus6-backing-plus3.wav"
     changed.write_bytes(remixed.content)
-    report = {"jobId": job_id, "initialBytes": len(audio.content),
+    report = {"jobId": job_id, "rmsMixRate": args.rms_mix_rate, "initialBytes": len(audio.content),
               "remixedBytes": len(remixed.content), "mixRevision": update.json().get("mixRevision"),
               "initialF0": audio.headers.get("X-RVC-F0-Method"),
               "remixAvailable": audio.headers.get("X-RVC-Remix-Available"),

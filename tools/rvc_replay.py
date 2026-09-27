@@ -24,6 +24,12 @@ def main() -> None:
     parser.add_argument("--index-rate", type=float, default=.45)
     parser.add_argument("--protect", type=float, default=.33)
     parser.add_argument("--rms-mix-rate", type=float, default=1)
+    parser.add_argument('--filter-radius', type=int, default=0)
+    parser.add_argument('--resample', type=int, default=0)
+    parser.add_argument('--vocal-gain-db', type=float, default=0)
+    parser.add_argument('--accompaniment-gain-db', type=float, default=0)
+    parser.add_argument('--vocal-mute', action='store_true')
+    parser.add_argument('--accompaniment-mute', action='store_true')
     parser.add_argument("--f0", default="rmvpe")
     parser.add_argument("--diagnostic", action="store_true")
     parser.add_argument("--deadline", type=int, default=1800)
@@ -36,10 +42,10 @@ def main() -> None:
     params = {
         "model_id": args.model, "pitch": str(args.pitch), "index_rate": str(args.index_rate),
         "protect": str(args.protect), "rms_mix_rate": str(args.rms_mix_rate),
-        "filter_radius": "0", "f0_method": args.f0, "format": args.format,
+        "filter_radius": str(args.filter_radius), 'resample':str(args.resample), "f0_method": args.f0, "format": args.format,
         "audio_mode": args.mode, "request_id": uuid.uuid4().hex,
-        "vocal_gain_db": "0", "accompaniment_gain_db": "0",
-        "vocal_mute": "false", "accompaniment_mute": "false",
+        "vocal_gain_db": str(args.vocal_gain_db), "accompaniment_gain_db": str(args.accompaniment_gain_db),
+        "vocal_mute": str(args.vocal_mute).lower(), "accompaniment_mute": str(args.accompaniment_mute).lower(),
     }
     started = time.monotonic()
     with args.source.open("rb") as stream:
@@ -75,6 +81,7 @@ def main() -> None:
         "mixRevision": response.headers.get("X-RVC-Mix-Revision", ""),
         "remixAvailable": response.headers.get("X-RVC-Remix-Available", ""),
         "capabilityStored": False,
+        'requestedParameters':params,
     }
     (args.output.parent / f"{args.output.stem}-job.json").write_text(
         json.dumps(evidence, ensure_ascii=False, indent=2), encoding="utf-8")

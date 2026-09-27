@@ -7,8 +7,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "file:///E:/大肥鱼/rvc-local/convert/node_modules/playwright/index.mjs";
 
-const [input, output] = process.argv.slice(2);
+const [input, output, rmsText = "0.5"] = process.argv.slice(2);
 if (!input || !output) throw new Error("Usage: node tools/browser-local-smoke.mjs <input.wav> <output.wav>");
+const rmsMix = Number(rmsText);
+assert.ok(Number.isFinite(rmsMix) && rmsMix >= 0 && rmsMix <= 1);
 const root = fileURLToPath(new URL("../", import.meta.url));
 const mime = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".wasm": "application/wasm" };
 const server = http.createServer((req, res) => {
@@ -25,11 +27,30 @@ await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const browser = await chromium.launch({ headless: true, channel: "chrome" });
 try {
   const page = await browser.newPage();
+  await page.addInitScript(() => {
+    window.rvcEvidence = [];
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(...args) {
+        super(...args);
+        this.addEventListener('message', ({ data }) => {
+          if (data.type === 'EVENT' && ['pitch_analysis','pitch_timeline'].includes(data.event?.type)) {
+            window.rvcEvidence.push(data.event);
+          }
+        });
+      }
+    };
+  });
   page.on("pageerror", error => console.error(`page error: ${error.message}`));
   page.on("console", message => { if (message.type() === "error") console.error(`console: ${message.text()}`); });
   await page.goto(`http://127.0.0.1:${server.address().port}/rvc.html`, { waitUntil: "load" });
   await page.locator("#rvc-mode-local").click();
   await page.locator("#rvc-audio-file").setInputFiles(path.resolve(input));
+  await page.locator("#rvc-rms-mix").evaluate((element, value) => {
+    element.value = String(value);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+  }, rmsMix);
   await page.locator("#rvc-convert").waitFor({ state: "visible" });
   await page.waitForFunction(() => !document.getElementById("rvc-convert").disabled, null, { timeout: 30000 });
   await page.locator("#rvc-convert").click();
@@ -52,6 +73,11 @@ try {
   assert.equal(bytes.toString("ascii", 0, 4), "RIFF");
   fs.mkdirSync(path.dirname(path.resolve(output)), { recursive: true });
   fs.writeFileSync(path.resolve(output), bytes);
+  const diagnostics = await page.evaluate(() => window.rvcEvidence);
+  fs.writeFileSync(path.resolve(output) + '.json', JSON.stringify(diagnostics, null, 2));
+  fs.writeFileSync(path.resolve(output) + '.request.json', JSON.stringify({
+    source: path.resolve(input), rmsMix, qualityListening: 'unverified'
+  }, null, 2));
   console.log(JSON.stringify({ output: path.resolve(output), bytes: bytes.length, mime: result.mime }));
 } finally {
   await browser.close();
