@@ -10,11 +10,21 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rvc-service"))
 from app.official_runtime import (
     DEFAULT_NOISE_SCALE, UPSTREAM_NOISE_SCALE,
-    configure_synthesis_noise, model_noise_scale,
+    configure_synthesis_noise, model_noise_scale, model_profile_revision,
 )
 
 
 class SynthesisNoiseTests(unittest.TestCase):
+    def test_profile_revision_changes_at_same_path_and_same_length(self):
+        with tempfile.TemporaryDirectory() as d:
+            model=Path(d)/'model.pth'
+            meta=model.with_name('meta.json')
+            meta.write_text('{"noiseScale":0.35}')
+            before=model_profile_revision(model)
+            meta.write_text('{"noiseScale":0.45}')
+            self.assertNotEqual(before,model_profile_revision(model))
+            self.assertEqual(model_noise_scale(model),.45)
+
     def test_mounted_metadata_and_invalid_values(self):
         with tempfile.TemporaryDirectory() as root:
             model = Path(root) / "model.pth"

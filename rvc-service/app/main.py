@@ -40,6 +40,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response
 from app.audio_activity import suppress_silent_synthesis
 from app.audio_dynamics import apply_dynamics, apply_static_gain
+from app.inference_errors import PitchExtractionError
 from app.diagnostics import capture_job, configured_root
 from app.separation_runtime import (
     SeparationRuntimeError,
@@ -91,7 +92,7 @@ TRAIN_PYTHON = Path(os.getenv("RVC_TRAIN_PYTHON", os.sys.executable)).resolve()
 logger = logging.getLogger("postprep.rvc")
 PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_activity.py",
                   "audio_repair.py", "separation_runtime.py", "official_runtime.py",
-                  "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py")
+                  "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py")
 
 
 def source_revision() -> str:
@@ -383,12 +384,12 @@ def find_index_path(pth: Path) -> str:
 
 def acquire_model(pth: Path):
     """Load (or reuse) the pinned official RVC WebUI inference runtime."""
-    from app.official_runtime import OfficialRvcModel
+    from app.official_runtime import OfficialRvcModel, model_profile_revision
 
     index_text = find_index_path(pth)
     revision = verified_file_hash(pth)
     index_revision = verified_file_hash(Path(index_text)) if index_text else "none"
-    key = f"{pth.resolve()}|{revision}|{index_revision}"
+    key = f"{pth.resolve()}|{revision}|{index_revision}|{model_profile_revision(pth)}"
     cached = model_cache.get(key)
     if cached is not None:
         model_cache.move_to_end(key)
@@ -885,9 +886,9 @@ def render_conversion(
                 snapshot_diagnostic_audio(output_wav, diagnostic_dir, f"raw-{method}.wav")
                 used_method = method
                 break
-        except (OSError, RuntimeError, ValueError) as error:
+        except PitchExtractionError as error:
             last_error = error
-            logger.warning("pitch extraction failed with %s; trying fallback", method)
+            logger.warning("F0 extraction failed method=%s fallback_allowed=%s", method, f0_method == 'auto')
     else:
         if last_error:
             raise last_error
@@ -905,6 +906,15 @@ def render_conversion(
     # that small tail before overlap-joining, otherwise long files accumulate
     # time drift (and source/output envelope alignment eventually fails).
     source_duration = probe_duration(inference_input)
+    actual_duration = probe_duration(output_wav)
+    if abs(source_duration - actual_duration) > .03:
+        raise RvcServiceError(502, 'RVC_OUTPUT_ALIGNMENT_FAILED')
+    if diagnostic_dir is not None:
+        (diagnostic_dir/'alignment.json').write_text(json.dumps({
+            'sourceDuration':source_duration,'generatedDuration':actual_duration,
+            'tailCompensationSeconds':source_duration-actual_duration,
+            'maximumCompensationSeconds':.03, 'timeOriginSeconds':time_origin_seconds,
+        },indent=2),encoding='utf-8')
     output_filter = f"apad,atrim=end={source_duration:.6f}"
     postprocess_timeout = max(120, min(600, int(probe_duration(output_wav) * 1.5) + 60))
     result = subprocess.run(
@@ -2107,7 +2117,8 @@ async def process_conversion_job(
             mark_stage("activityGuard")
             snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-activity.wav")
             # Preserve the source's short-time dynamics, not its speaker identity.
-            await asyncio.to_thread(apply_dynamics, converted_vocals, separated_vocals, 1.0 - rms_mix_rate)
+            await asyncio.to_thread(apply_dynamics, converted_vocals, separated_vocals, 1.0 - rms_mix_rate,
+                                   diagnostic_dir/'dynamics.npz' if diagnostic_dir else None)
             mark_stage("dynamics")
             snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-dynamics.wav")
             auto_vocal_gain = await asyncio.to_thread(calibrate_song_vocals, stems.vocals, converted_vocals)
@@ -2164,7 +2175,8 @@ async def process_conversion_job(
             )
             mark_stage("activityGuard")
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-activity.wav")
-            await asyncio.to_thread(apply_dynamics, output_wav, input_wav, 1.0 - rms_mix_rate)
+            await asyncio.to_thread(apply_dynamics, output_wav, input_wav, 1.0 - rms_mix_rate,
+                                   diagnostic_dir/'dynamics.npz' if diagnostic_dir else None)
             mark_stage("dynamics")
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-dynamics.wav")
             await asyncio.to_thread(apply_static_gain, output_wav, vocal_gain_db, vocal_mute)
@@ -2269,7 +2281,8 @@ async def process_conversion_job(
                         "pipelineRevision": PIPELINE_REVISION, "upstreamCommit": OFFICIAL_COMMIT,
                         "modelSha256": verified_file_hash(model_path),
                         "indexSha256": verified_file_hash(Path(index_text)) if index_text else "",
-                        "retrievalEnabled": bool(index_text and index_rate > 0),
+                        "retrievalRequested": bool(index_text and index_rate > 0),
+                        "retrievalExecutionRecords": 'work/diagnostic-stages/*/inference.json',
                         "runtime": str(runtime_info()),
                         "sourceActivity": activity_details,
                         "stageElapsedSeconds": stage_times,

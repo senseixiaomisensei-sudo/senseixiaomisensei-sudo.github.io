@@ -16,6 +16,16 @@ from app.separation_runtime import remix_song
 
 
 class OutputRepairTests(unittest.TestCase):
+    def test_nonfinite_audio_is_rejected_not_exported_as_zeros(self):
+        for value in (float('nan'),float('inf')):
+            with self.assertRaises(ValueError):
+                repair_vocal(np.array([.1,value,.2]),40000)
+            with tempfile.TemporaryDirectory() as d:
+                path=Path(d)/'broken.wav'
+                sf.write(path,np.array([.1,value,.2]),40000,subtype='FLOAT')
+                with self.assertRaises(ValueError):
+                    protect_true_peak(path)
+
     def test_breath_fricative_and_high_sustained_note_are_retained(self):
         rate = 40000
         rng = np.random.default_rng(19)

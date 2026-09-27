@@ -99,14 +99,14 @@ def capture_job(root: Path, job_id: str, job_root: Path,
                 return 0, rel
             if 'generator-float' in name:
                 return 1, rel
-            if name.startswith("input.") or rel.startswith("stems/"):
-                return 2, rel
             if name == "separated-vocals-16k.wav":
                 return 2, rel
             if rel.startswith("diagnostic-stages/") and name in {
                     "vocals-joined.wav", "vocals-activity.wav", "vocals-balanced.wav",
                     "vocals-dynamics.wav"}:
                 return 3, rel
+            if name.startswith('input.') or rel.startswith('stems/'):
+                return 4, rel
             if name in {"converted-vocals.wav", "output.wav"}:
                 return 4, rel
             return 5, rel

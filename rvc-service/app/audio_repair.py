@@ -64,7 +64,8 @@ def repair_vocal(audio: np.ndarray, sample_rate: int) -> np.ndarray:
         raise ValueError("Expected mono audio and a positive sample rate")
     if samples.size == 0:
         return samples.astype(np.float32)
-    samples = np.nan_to_num(samples, nan=0.0, posinf=0.0, neginf=0.0)
+    if not np.isfinite(samples).all():
+        raise ValueError('Non-finite audio at repair input')
     samples = _repair_flat_clips(samples)
     samples = _repair_isolated_clicks(samples)
     # Band subtraction and automatic RMS compression are deliberately
@@ -99,6 +100,8 @@ def protect_true_peak(path: Path, ceiling_dbfs: float = -1.0) -> None:
                 start = max(0, position - 64)
                 source.seek(start)
                 segment = source.read(min(length - start, position + block + 64 - start), dtype="float32", always_2d=True)
+                if not np.isfinite(segment).all():
+                    raise ValueError('Non-finite audio at true-peak input')
                 raised = resample_poly(segment, 4, 1, axis=0)
                 core = raised[(position - start) * 4:(min(position + block, length) - start) * 4]
                 if core.size:
@@ -113,7 +116,7 @@ def protect_true_peak(path: Path, ceiling_dbfs: float = -1.0) -> None:
                     samples = source.read(block, dtype="float32", always_2d=True)
                     if not len(samples):
                         break
-                    target_file.write(np.nan_to_num(samples * gain, nan=0.0, posinf=0.0, neginf=0.0))
+                    target_file.write(samples * gain)
         staged.replace(path)
     finally:
         staged.unlink(missing_ok=True)

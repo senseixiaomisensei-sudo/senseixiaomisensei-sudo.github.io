@@ -7,11 +7,17 @@ import os
 from pathlib import Path
 
 import numpy as np
+from app.inference_errors import PitchExtractionError
+
+
+def sanitize_pitch(values):
+    result = np.asarray(values, dtype=np.float64).reshape(-1).copy()
+    result[~np.isfinite(result) | (result < 40) | (result > 2000)] = 0
+    return result
 
 
 def repair_octave_glitches(values):
-    result = np.asarray(values, dtype=np.float64).copy()
-    result[~np.isfinite(result) | (result < 40) | (result > 2000)] = 0
+    result = sanitize_pitch(values)
     original = result.copy()
     # Correct only <=30 ms islands bounded by matching voiced pitches.
     # Never bridge silence, sustained register changes or smooth glissandi.
@@ -131,7 +137,7 @@ def median_smooth_pitch(f0, radius=1):
     return result
 
 
-def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
+def extract_pitch(pipeline, x, p_len, f0_method):
     if f0_method == "pm":
         import parselmouth
         track = parselmouth.Sound(np.asarray(x, dtype=np.float64), pipeline.sr).to_pitch_ac(
@@ -162,16 +168,36 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
         ).squeeze().detach().cpu().numpy()
     else:
         raise ValueError(f"Unsupported F0 method: {f0_method}")
+    return f0
+
+
+def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
+    try:
+        f0 = extract_pitch(pipeline, x, p_len, f0_method)
+    except (RuntimeError, ValueError, OSError) as error:
+        raise PitchExtractionError(str(error)) from error
     raw_f0 = np.asarray(f0).reshape(-1).copy()
-    f0 = repair_octave_glitches(raw_f0)
+    f0 = sanitize_pitch(raw_f0)
     f0 = np.pad(f0[:p_len], (0, max(0, p_len - len(f0))))
+    numeric_f0 = f0.copy()
+    contour_enabled = bool(getattr(pipeline, 'enable_contour_octave_repair', False))
+    evidence_reason = ''
+    if contour_enabled:
+        # Contour shape alone cannot decide whether a short octave is music.
+        # Offline callers must provide independently verified frame evidence.
+        evidence = np.asarray(getattr(pipeline, 'contour_evidence_mask', []), dtype=bool)
+        evidence_reason = str(getattr(pipeline, 'contour_evidence_reason', '')).strip()
+        if evidence.shape != f0.shape or not evidence_reason:
+            raise ValueError('Contour repair requires aligned independent evidence and a reason')
+        proposal = repair_octave_glitches(f0)
+        f0 = np.where(evidence, proposal, f0)
     contour_f0 = f0.copy()
     # Half-period correlation cannot distinguish an octave error from a real
     # lower note with a stronger second harmonic. Leave this experimental
     # repair off unless a caller explicitly supplies independent evidence.
     if getattr(pipeline, "enable_waveform_octave_repair", False):
         f0 = repair_waveform_octave_drops(f0, x, pipeline.sr, pipeline.window)
-    f0 = median_smooth_pitch(f0, int(getattr(pipeline, "pitch_median_radius", 1) or 0))
+    f0 = median_smooth_pitch(f0, int(getattr(pipeline, "pitch_median_radius", 0) or 0))
     corrected_f0 = f0.copy()
     f0 *= 2 ** (f0_up_key / 12)
     diagnostic_dir = getattr(pipeline, "diagnostic_f0_dir", None)
@@ -182,8 +208,12 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
         pipeline.diagnostic_f0_count = number + 1
         np.savez_compressed(
             target / f"f0-{number:03d}-{f0_method}.npz",
-            raw=raw_f0, contour=contour_f0, corrected=corrected_f0,
+            raw=raw_f0, numeric=numeric_f0, contour=contour_f0, corrected=corrected_f0,
             shifted=f0, voiced=corrected_f0 > 0,
+            raw_voiced=np.isfinite(raw_f0) & (raw_f0 > 0),
+            confidence_available=False,
+            contour_enabled=contour_enabled, contour_evidence=evidence_reason,
+            changed_frames=np.flatnonzero(corrected_f0 != numeric_f0),
             hop=pipeline.window, sample_rate=pipeline.sr,
             semitones=f0_up_key, method=f0_method,
             time_origin_seconds=getattr(pipeline, 'time_origin_seconds', 0),

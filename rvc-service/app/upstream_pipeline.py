@@ -4,7 +4,6 @@ The two inference methods are vendored to make float interception reproducible.
 See UPSTREAM_LICENSE.txt for the upstream MIT notice. No global monkeypatches.
 """
 import os
-import traceback
 from time import time as ttime
 import faiss
 import librosa
@@ -16,6 +15,8 @@ from infer.hubert import extract_hubert_features
 from tools.cuda_graph import cuda_graph_enabled, run_cuda_graph
 from infer.vc.pipeline import Pipeline as PinnedPipeline, bh, ah, change_rms
 from app.stage_evidence import observe
+from app.retrieval_safety import validate_index, stable_retrieval
+from app.inference_errors import InferenceStageError
 
 UPSTREAM_PIPELINE_SHA256 = '020038b9348d41133c8db82f5b972be2bef8a4e37c1a99e05b37826cff947cff'
 
@@ -71,14 +72,8 @@ class ServicePipeline(PinnedPipeline):
                 npy = npy.astype("float32")
 
             score, ix = index.search(npy, k=8)
-            self.stage_records.append(dict(stage='retrieval-search', rows=len(score),
-                zeroDistances=int(np.count_nonzero(score == 0)),
-                negativeDistances=int(np.count_nonzero(score < 0)),
-                nonFiniteDistances=int(np.count_nonzero(~np.isfinite(score))),
-                invalidNeighbors=int(np.count_nonzero((ix < 0) | (ix >= index.ntotal)))))
-            weight = np.square(1 / score)
-            weight /= weight.sum(axis=1, keepdims=True)
-            npy = np.sum(index_vectors[ix] * np.expand_dims(weight, axis=2), axis=1)
+            npy, retrieval_stats = stable_retrieval(score, ix, index_vectors, npy)
+            self.stage_records.append(dict(stage='retrieval-search', **retrieval_stats))
 
             if self.is_half:
                 npy = npy.astype("float16")
@@ -167,6 +162,7 @@ class ServicePipeline(PinnedPipeline):
         version,
         protect,
     ):
+        fallback_reason = ''
         if (
             file_index != ""
             and os.path.exists(file_index)
@@ -174,19 +170,25 @@ class ServicePipeline(PinnedPipeline):
         ):
             try:
                 index = faiss.read_index(file_index)
+                if not index.ntotal:
+                    raise RuntimeError('Empty index')
                 index_vectors = index.reconstruct_n(0, index.ntotal)
-            except:
-                traceback.print_exc()
+            except (RuntimeError, OSError) as error:
+                fallback_reason = f'Index unavailable: {type(error).__name__}'
                 index = index_vectors = None
         else:
             index = index_vectors = None
+            if index_rate:
+                fallback_reason = 'Index path unavailable'
+        if index is not None:
+            validate_index(index, index_vectors, 256 if version == 'v1' else 768)
         self.native_sample_rate = tgt_sr
         self.inner_start = 0
         self.stage_records.append(dict(stage='index-load', requested=bool(index_rate),
             actual=index is not None, rate=index_rate,
             dimension=int(index.d) if index else None,
             ntotal=int(index.ntotal) if index else 0,
-            featureVersion=version))
+            featureVersion=version, fallbackReason=fallback_reason))
         audio = signal.filtfilt(bh, ah, audio)
         audio_pad = np.pad(audio, (self.window // 2, self.window // 2), mode="reflect")
         opt_ts = []
@@ -308,13 +310,12 @@ class ServicePipeline(PinnedPipeline):
         output_rate = resample_sr if resample_sr >= 16000 else tgt_sr
         observe(self, 'upstream-float', audio_opt, sample_rate=output_rate,
                 timeOriginSeconds=self.time_origin_seconds)
-        audio_max = np.abs(audio_opt).max() / 0.99
-        max_int16 = 32768
-        if audio_max > 1:
-            max_int16 /= audio_max
-        self.stage_records.append(dict(stage='upstream-output', gain=max_int16/32768,
-            dtype='int16', sampleRate=output_rate))
-        audio_opt = (audio_opt * max_int16).astype(np.int16)
+        # Intermediate peak normalization and int16 conversion destroy the
+        # original float evidence and can hide NaN as zeros. The final joined
+        # master owns output headroom; never normalize individual chunks.
+        self.stage_records.append(dict(stage='upstream-output', gain=1.0,
+            dtype='float32', sampleRate=output_rate))
+        audio_opt = np.asarray(audio_opt, dtype=np.float32)
         del pitch, pitchf, sid
         if torch.cuda.is_available() and not cuda_graph_enabled(self.device):
             torch.cuda.empty_cache()

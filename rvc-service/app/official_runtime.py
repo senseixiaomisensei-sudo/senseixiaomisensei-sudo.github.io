@@ -41,6 +41,12 @@ def model_noise_scale(model_path: Path) -> float:
     return DEFAULT_NOISE_SCALE
 
 
+def model_profile_revision(model_path: Path) -> str:
+    path = model_path.parent/'meta.json'
+    content = path.read_bytes() if path.is_file() else b''
+    return hashlib.sha256(content + repr(model_noise_scale(model_path)).encode('ascii')).hexdigest()
+
+
 def configure_synthesis_noise(synthesizer, noise_scale: float):
     """Scale only the prior's random component, without changing model weights.
 
@@ -172,6 +178,7 @@ class OfficialRvcModel:
             raise OfficialRuntimeError('Unreviewed upstream pipeline; reinstall the pinned checkout')
         self._vc.pipeline = ServicePipeline(self._vc.tgt_sr, self._vc.config)
         self.noise_scale = model_noise_scale(model_path)
+        self.profile_revision = model_profile_revision(model_path)
         self._noise_hook = configure_synthesis_noise(self._vc.net_g, self.noise_scale)
         from types import MethodType
         from app.pitch_safety import safe_get_f0
@@ -228,44 +235,58 @@ class OfficialRvcModel:
         pipeline.diagnostic_f0_count = 0
         pipeline.time_origin_seconds = time_origin_seconds
         pipeline.stage_records = []
-        from app.stage_evidence import flush
-        from tools.cuda_graph import cuda_graph_enabled
+        from app.stage_evidence import flush, observe
+        from app.inference_errors import InferenceStageError
+        from tools.cuda_graph import cuda_graph_enabled, get_cuda_graph_stats
         self.last_run_metadata = {
             'modelVersion': self._vc.version, 'sampleRate': self._vc.tgt_sr,
             'f0Enabled': bool(self._vc.if_f0),
             'speakerCount': int(self._vc.net_g.emb_g.weight.shape[0]),
             'featureDimension': int(self._vc.net_g.enc_p.emb_phone.weight.shape[1]),
             'noiseScale': self.noise_scale, 'seed': seed,
+            'profileRevision': self.profile_revision,
             'precision': 'float16' if self.info.is_half else 'float32',
             'executionBackend': 'cuda-graph' if cuda_graph_enabled(self.info.device) else 'eager',
             'adapterSha256': _sha256(Path(__file__).with_name('upstream_pipeline.py')),
             'timeOriginSeconds': time_origin_seconds,
         }
         try:
-            status, result = self._vc.vc_single(
-                0,
-                str(input_path),
-                pitch,
-                f0_method,
-                self._index_path,
-                index_rate,
-                resample_rate,
-                rms_mix_rate,
-                protect,
+            # The WebUI wrapper catches all exceptions and converts them to
+            # translated text. Keep its input contract, but preserve typed
+            # stage failures and the adapter's float output for this service.
+            from infer.audio import load_audio
+            from infer.vc.utils import load_hubert
+            audio = load_audio(str(input_path), 16000)
+            observe(pipeline, 'decoded-16k', audio, sample_rate=16000,
+                    timeOriginSeconds=time_origin_seconds)
+            input_gain = min(1., .95/max(float(np.max(np.abs(audio))), 1e-12))
+            if input_gain < 1:
+                audio *= input_gain
+            pipeline.stage_records.append({'stage':'input-headroom','gain':input_gain})
+            if self._vc.hubert_model is None:
+                self._vc.hubert_model = load_hubert(self._vc.config)
+            audio = pipeline.pipeline(
+                self._vc.hubert_model, self._vc.net_g, 0, audio, [0.,0.,0.],
+                int(pitch), f0_method, self._index_path, index_rate,
+                self._vc.if_f0, self._vc.tgt_sr, resample_rate, rms_mix_rate,
+                self._vc.version, protect,
             )
+            sample_rate = resample_rate if resample_rate >= 16000 else self._vc.tgt_sr
+            if np.asarray(audio).dtype != np.float32:
+                raise InferenceStageError('output-contract', 'Expected float32 synthesis')
+            observe(pipeline, 'service-float', audio, sample_rate=int(sample_rate),
+                    timeOriginSeconds=time_origin_seconds)
+            sf.write(str(output_path), audio, int(sample_rate), subtype='FLOAT')
+        except InferenceStageError as error:
+            self.last_run_metadata['errorStage'] = error.stage
+            raise
         finally:
+            self.last_run_metadata['executionBackend'] = 'cuda-graph-enabled' if cuda_graph_enabled(self.info.device) else 'eager'
+            self.last_run_metadata['synthesisGraphStats'] = get_cuda_graph_stats(self._vc.net_g)
+            self.last_run_metadata['retrieval'] = [row for row in pipeline.stage_records
+                if row['stage'] in {'index-load','retrieval-search'}]
             flush(pipeline, self.last_run_metadata)
             pipeline.diagnostic_f0_dir = None
-        if not result or result[0] is None or result[1] is None:
-            raise OfficialRuntimeError(str(status))
-        sample_rate, audio = result
-        audio = np.asarray(audio)
-        if np.issubdtype(audio.dtype, np.integer):
-            audio = audio.astype(np.float32) / max(abs(np.iinfo(audio.dtype).min), np.iinfo(audio.dtype).max)
-        if not np.isfinite(audio).all():
-            raise OfficialRuntimeError("RVC produced non-finite audio")
-        # Keep floating-point headroom until the final output limiter.
-        sf.write(str(output_path), audio, int(sample_rate), subtype="FLOAT")
 
 
 def runtime_info() -> RuntimeInfo:

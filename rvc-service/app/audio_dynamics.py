@@ -1,5 +1,6 @@
 """Transfer short-time dynamics, never the source speaker's waveform."""
 from pathlib import Path
+import json
 
 import numpy as np
 import soundfile as sf
@@ -17,7 +18,7 @@ def envelope(audio, rate):
     return centers / rate, rms
 
 
-def preserve_dynamics(converted, converted_rate, source, source_rate, strength=.5):
+def preserve_dynamics(converted, converted_rate, source, source_rate, strength=.5, diagnostic_path=None):
     """Gentle 40 ms envelope matching retains syllable/breath dynamics.
 
     No source samples are mixed in, and the converted pitch/timbre is kept.
@@ -27,8 +28,6 @@ def preserve_dynamics(converted, converted_rate, source, source_rate, strength=.
     source = np.asarray(source, dtype=np.float64)
     if not 0 <= strength <= 1:
         raise ValueError('Invalid dynamics strength')
-    if strength == 0:
-        return converted.copy()
     if not converted.size or not source.size:
         return converted.copy()
     if not np.isfinite(converted).all() or not np.isfinite(source).all():
@@ -40,26 +39,52 @@ def preserve_dynamics(converted, converted_rate, source, source_rate, strength=.
     times, target_env = envelope(converted, converted_rate)
     source_times, source_env = envelope(source, source_rate)
     source_env = np.interp(times, source_times, source_env)
-    # Match the device path: 1 on the public rms_mix_rate slider preserves the
-    # synth, while 0 follows the *absolute* source envelope. Normalising both
-    # tracks by their medians made the same 0.5 setting behave differently on
-    # cloud and device and could leave converted song vocals far too loud.
-    active = (source_env >= .003) & (target_env >= .003)
-    ratio = source_env / np.maximum(target_env, 1e-4)
-    gain = np.where(active, np.clip(np.power(ratio, strength), .3, 1.6), 1.)
-    # Interpolation avoids 10 ms gain steps. Silent frames remain at unity;
-    # the separate song-balance step never tries to amplify noise or leakage.
+    # Confidence in an *envelope ratio*, not a voiced/unvoiced gate. Both
+    # endpoints are continuous; crossing the old .003 boundary has no special
+    # effect. Activity protection owns silence, calibration owns whole-song
+    # level, and no source waveform is returned to the output.
+    def confidence(env):
+        db = 20*np.log10(np.maximum(env, 1e-12))
+        x = np.clip((db + 90)/30, 0, 1)
+        return x*x*(3-2*x)
+    confidence_weight = confidence(source_env)*confidence(target_env)
+    ratio_db = 20*np.log10(np.maximum(source_env, 1e-12)/np.maximum(target_env, 1e-12))
+    desired_db = confidence_weight*np.clip(strength*ratio_db, 20*np.log10(.3), 20*np.log10(1.6))
+    gain_db = np.empty_like(desired_db)
+    gain_db[0] = desired_db[0]
+    for i in range(1,len(gain_db)):
+        dt = times[i]-times[i-1]
+        # A low-confidence region returns gently to unity. Reductions follow
+        # 25 ms attack, recovery 80 ms; a 120 dB/s bound prevents abrupt steps.
+        tau = .25 if confidence_weight[i] < .1 else (.025 if desired_db[i] < gain_db[i-1] else .08)
+        delta = (desired_db[i]-gain_db[i-1])*(-np.expm1(-dt/tau))
+        gain_db[i] = gain_db[i-1] + np.clip(delta, -120*dt, 120*dt)
+    if diagnostic_path is not None:
+        path = Path(diagnostic_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(path,times=times,source_rms=source_env,target_rms=target_env,
+                            confidence=confidence_weight,desired_db=desired_db,gain_db=gain_db)
+        step = np.diff(gain_db)
+        path.with_suffix('.json').write_text(json.dumps({
+            'strength':strength,'hopSeconds':.01,'attackSeconds':.025,'releaseSeconds':.08,
+            'lowConfidenceReleaseSeconds':.25, 'timeOriginSeconds':0,
+            'sourceDuration':len(source)/source_rate,'targetDuration':len(converted)/converted_rate,
+            'maxStepDb':float(abs(step).max()) if len(step) else 0,
+            'changedControlFrames':int(np.count_nonzero(abs(gain_db)>1e-6)),
+        },indent=2),encoding='utf-8')
+    if strength == 0:
+        return converted.copy()
     samples = np.arange(len(converted)) / converted_rate
-    gain = np.interp(samples, times, gain)
+    gain = 10**(np.interp(samples, times, gain_db)/20)
     return converted * (gain[:, None] if converted.ndim == 2 else gain)
 
 
-def apply_dynamics(output_path: Path, source_path: Path, strength=.5):
-    if strength == 0:
+def apply_dynamics(output_path: Path, source_path: Path, strength=.5, diagnostic_path=None):
+    if strength == 0 and diagnostic_path is None:
         return
     converted, rate = sf.read(output_path, dtype='float64')
     source, source_rate = sf.read(source_path, dtype='float64')
-    result = preserve_dynamics(converted, rate, source, source_rate, strength)
+    result = preserve_dynamics(converted, rate, source, source_rate, strength, diagnostic_path)
     sf.write(output_path, result, rate, subtype='FLOAT')
 
 

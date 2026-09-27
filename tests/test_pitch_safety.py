@@ -10,6 +10,21 @@ from app.pitch_safety import repair_octave_glitches, quantize_pitch, safe_get_f0
 
 
 class PitchSafetyTests(unittest.TestCase):
+    def test_contour_repair_requires_external_evidence(self):
+        correct = np.full(30,440.)
+        wrong = correct.copy()
+        wrong[12:15] = 880
+        audio = .2*np.sin(2*np.pi*440*np.arange(4800)/16000)
+        pipe = SimpleNamespace(sr=16000,window=160,pitch_median_radius=0,
+            enable_contour_octave_repair=True,
+            model_rmvpe=SimpleNamespace(infer_from_audio=lambda *a,**k: wrong.copy()))
+        with self.assertRaises(ValueError):
+            safe_get_f0(pipe,audio,30,0,'rmvpe')
+        pipe.contour_evidence_mask = (wrong != correct)
+        pipe.contour_evidence_reason = 'Known constant 440 Hz synthetic waveform; injected estimator error'
+        _,actual = safe_get_f0(pipe,audio,30,0,'rmvpe')
+        np.testing.assert_array_equal(actual,correct)
+
     def test_real_low_octave_note_with_strong_second_harmonic_is_not_raised(self):
         # The upper partial of a real 220 Hz note can be louder than its
         # fundamental. Half-period correlation alone must not erase the note.
