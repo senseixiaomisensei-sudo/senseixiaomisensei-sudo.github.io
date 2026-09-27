@@ -24,6 +24,9 @@ p.add_argument('source',type=Path)
 p.add_argument('model',type=Path)
 p.add_argument('timeline',type=Path)
 p.add_argument('output',type=Path)
+p.add_argument('--start-seconds',type=float,default=26.)
+p.add_argument('--seconds',type=float,default=8.)
+p.add_argument('--pitch-key',choices=['raw','corrected','independent','candidate'],default='corrected')
 args=p.parse_args()
 args.output.mkdir(parents=True,exist_ok=True)
 torch.set_num_threads(4)
@@ -88,15 +91,17 @@ else:
     assert not loaded.missing_keys and not [k for k in loaded.unexpected_keys if not k.startswith('enc_q.')]
     net=net.float().eval()
     net.enc_p.register_forward_hook(lambda m,a,r:(r[0],r[1]+math.log(.35/.66666),r[2]))
-    # Real A latter-half conditions, eight seconds; no synthetic test voice.
+    # Real conditions on the recorded absolute frame grid; no synthetic voice.
     z=np.load(args.timeline/'f0.npz')
-    left=2900;count=800;first=left-300
-    f0=z['corrected'][left:left+count].astype(np.float32)
+    left=2*round((args.start_seconds+3)*50);count=2*round(args.seconds*50);first=left-300
+    track=z[args.pitch_key]
+    if left<0 or count<=0 or left+count>len(track):raise ValueError('Invalid evidence interval')
+    f0=track[left:left+count].astype(np.float32)
     feature=np.load(args.timeline/'features.npy')[left//2:(left+count)//2]
     phones=F.interpolate(torch.from_numpy(feature[None]).permute(0,2,1),scale_factor=2).permute(0,2,1)
     lengths=torch.tensor([count]);coarse=torch.from_numpy(quantize_pitch(f0)[None]).long()
     continuous=torch.from_numpy(f0[None]);speaker=torch.tensor([0])
-    phase=float(np.sum(z['corrected'][:left].astype(np.float32),dtype=np.float64)/100)
+    phase=float(np.sum(track[:left].astype(np.float32),dtype=np.float64)/100)
     context=SimpleNamespace(first_frame=first,seed=20260823,phase_cycles=phase)
     with torch.no_grad():
         if args.operation.endswith('reference'):
@@ -114,7 +119,9 @@ else:
             output=infer_with_timeline(net,phones,lengths,coarse,continuous,speaker,context)[0,0].numpy()
     sf.write(args.output/(args.operation+'.wav'),output,40000,subtype='FLOAT')
     metadata.update(frames=len(output),sampleRate=40000,
-        conditions='same actual A features/F0, latent random draw and NSF excitation; native classic infer versus timeline adapter')
+        startSeconds=first/100,pitchKey=args.pitch_key,retrieval=False,
+        f0EvidenceSha256=sha(args.timeline/'f0.npz'),featuresSha256=sha(args.timeline/'features.npy'),
+        conditions='same actual features/F0, latent random draw and NSF excitation; native classic infer versus timeline adapter')
     if args.operation.endswith('current'):
         reference,_=sf.read(args.output/'generator-reference.wav',dtype='float32')
         metadata.update(meanAbsoluteError=float(np.mean(abs(output-reference))),
