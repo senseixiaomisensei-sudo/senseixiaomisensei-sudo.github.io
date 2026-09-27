@@ -173,6 +173,10 @@ class OfficialRvcModel:
         self.info = RuntimeInfo(root=root, device=device, is_half=is_half)
         self._vc = VC(_config(device, is_half))
         self._vc.get_vc(staged_model.name)
+        from app.content_encoder import checkpoint_encoder_contract
+        self.encoder_contract = checkpoint_encoder_contract(self._vc.cpt)
+        self.encoder_metadata = None
+        self.model_path = model_path
         from app.upstream_pipeline import ServicePipeline, UPSTREAM_PIPELINE_SHA256
         if _sha256(root / 'infer/vc/pipeline.py') != UPSTREAM_PIPELINE_SHA256:
             raise OfficialRuntimeError('Unreviewed upstream pipeline; reinstall the pinned checkout')
@@ -259,7 +263,7 @@ class OfficialRvcModel:
             # translated text. Keep its input contract, but preserve typed
             # stage failures and the adapter's float output for this service.
             from infer.audio import load_audio
-            from infer.vc.utils import load_hubert
+            from app.content_encoder import load_content_encoder
             audio = load_audio(str(input_path), 16000)
             observe(pipeline, 'decoded-16k', audio, sample_rate=16000,
                     timeOriginSeconds=time_origin_seconds)
@@ -268,7 +272,9 @@ class OfficialRvcModel:
                 audio *= input_gain
             pipeline.stage_records.append({'stage':'input-headroom','gain':input_gain})
             if self._vc.hubert_model is None:
-                self._vc.hubert_model = load_hubert(self._vc.config)
+                self._vc.hubert_model, self.encoder_metadata = load_content_encoder(
+                    self.encoder_contract, self._vc.config, self.model_path)
+            self.last_run_metadata['contentEncoder'] = self.encoder_metadata
             audio = pipeline.pipeline(
                 self._vc.hubert_model, self._vc.net_g, 0, audio, [0.,0.,0.],
                 int(pitch), f0_method, self._index_path, index_rate,

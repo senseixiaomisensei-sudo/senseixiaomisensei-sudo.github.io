@@ -92,7 +92,8 @@ TRAIN_PYTHON = Path(os.getenv("RVC_TRAIN_PYTHON", os.sys.executable)).resolve()
 logger = logging.getLogger("postprep.rvc")
 PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_activity.py",
                   "audio_repair.py", "separation_runtime.py", "official_runtime.py",
-                  "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py")
+                  "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
+                  "content_encoder.py")
 
 
 def source_revision() -> str:
