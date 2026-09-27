@@ -13149,11 +13149,12 @@ function applyRetrievalCodebook(features, f0, codebook, indexRate = 0.3, protect
         weightTotal += inverseSquared;
       }
     }
-    const voiced = (f0[Math.min(frame, f0.length - 1)] ?? 0) > 0;
-    // Match upstream RVC: protect=0.5 disables protection, while lower values
-    // retain progressively more of the original unvoiced HuBERT features.
-    const effectiveRate = rate * (voiced || consonantRetention >= 0.5 ? 1 : consonantRetention);
     for (let paired = frame; paired < Math.min(frame + 2, frameCount); paired++) {
+      // HuBERT is 50 Hz, but voicing/protect is 100 Hz. A consonant in the
+      // second half of a feature pair must not inherit the vowel's full
+      // retrieval blend (or vice versa).
+      const voiced = (f0[Math.min(paired, f0.length - 1)] ?? 0) > 0;
+      const effectiveRate = rate * (voiced || consonantRetention >= 0.5 ? 1 : consonantRetention);
       const pairedOffset = paired * dimension;
       for (let dim = 0; dim < dimension; dim++) {
         let retrieved = 0;

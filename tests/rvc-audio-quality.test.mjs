@@ -174,7 +174,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260927-allroles-r40/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260927-serina-r41/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -219,14 +219,14 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260927-allroles-r40/u);
+  assert.match(client, /v=20260927-serina-r41/u);
   assert.match(client, /function preferredCloudOutputFormat\(durationSeconds = 0\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
   assert.match(client, /body\.set\("f0Method", f0Method\)/u);
   assert.match(client, /body\.set\("f0_method", f0Method\)/u);
   assert.match(client, /readCloudAudioBody\(response,/u);
-  assert.match(runtime, /v=20260927-allroles-r40/u);
+  assert.match(runtime, /v=20260927-serina-r41/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.wasm/u);
@@ -266,7 +266,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
 test("all deployed character models expose caller-controlled noise without hidden random operators", async () => {
   const catalog = JSON.parse(await readFile(new URL("assets/rvc-models.json", root), "utf8"));
   const manifest = JSON.parse(await readFile(new URL("models/manifest.json", root), "utf8"));
-  assert.equal(catalog.models.length, 30);
+  assert.equal(catalog.models.length, 31);
+  assert.ok(catalog.models.some((model) => model.id === "serina"));
   assert.ok(catalog.models.some((model) => model.id === "momoi"));
   assert.ok(catalog.models.some((model) => model.id === "reisa"));
   assert.ok(catalog.models.some((model) => model.id === "key"));
@@ -280,7 +281,8 @@ test("all deployed character models expose caller-controlled noise without hidde
       totalSize += chunk.length;
       hash.update(chunk);
       hasRndInput ||= chunk.includes(Buffer.from("rnd"));
-      hasSourceNoiseInput ||= chunk.includes(Buffer.from("source_noise"));
+      hasSourceNoiseInput ||= chunk.includes(Buffer.from(
+        model.excitationContract === "explicit-source-v1" ? "source_excitation" : "source_noise"));
       assert.equal(chunk.includes(Buffer.from("RandomNormalLike")), false, `${model.id} contains hidden Gaussian randomness`);
       assert.equal(chunk.includes(Buffer.from("RandomUniformLike")), false, `${model.id} contains hidden phase randomness`);
     }
@@ -396,6 +398,19 @@ test("retrieval codebook blends voiced frames and protects unvoiced consonants",
   assert.equal(voiced.hiddenStates[0], protectionDisabled.hiddenStates[0]);
   assert.ok(protectionDisabled.hiddenStates[0] > unvoiced.hiddenStates[0]);
   assert.ok([...unvoiced.hiddenStates].every(Number.isFinite));
+});
+
+test("retrieval protects each 10 ms consonant inside a 20 ms feature pair", () => {
+  const apply = evaluateFunction("applyRetrievalCodebook");
+  const features = { hiddenStates: new Float32Array(4), featureSize: 2, upsampledFrameCount: 2 };
+  const book = { count: 1, dimension: 2, centers: Float32Array.from([2, 4]) };
+  for (const f0 of [[200, 0], [0, 200]]) {
+    const out = apply(features, f0, book, .5, 0).hiddenStates;
+    for (let frame = 0; frame < 2; frame++) {
+      assert.equal(out[frame*2], f0[frame] ? 1 : 0);
+      assert.equal(out[frame*2+1], f0[frame] ? 2 : 0);
+    }
+  }
 });
 
 test("explicit NSF phase remains continuous through high notes and overlapping windows", () => {

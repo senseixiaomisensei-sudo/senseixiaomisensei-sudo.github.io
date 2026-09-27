@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import json
 import math
+import os
 import numpy as np
 import soundfile as sf
 
@@ -69,7 +70,7 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
     from infer.vc.pipeline import bh, ah
     from infer.hubert import extract_hubert_features
     from app.content_encoder import load_content_encoder
-    from app.pitch_safety import extract_pitch, sanitize_pitch, median_smooth_pitch
+    from app.pitch_safety import extract_pitch, sanitize_pitch, median_smooth_pitch, independent_high_register_pitch
     from app.pitch_consensus import choose_supported_pitch
 
     audio, rate = sf.read(source, dtype='float64')
@@ -126,7 +127,14 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
     actual = base.copy()
     if use_consensus:
         independent = sanitize_pitch(extract_pitch(pipe,audio,n,'pm'))[:n]
-        actual, decision = choose_supported_pitch(base,alternate,independent,audio)
+        # High-register AC/CC consensus remains an opt-in experiment: on the
+        # full stress input, correcting the condition alone did not make the
+        # current checkpoint synthesize a stable matching high note.
+        high_register = os.getenv('RVC_TIMELINE_HIGH_REGISTER','0') == '1'
+        independent_cc = (independent_high_register_pitch(audio,16000,n,HOP)
+                          if high_register else None)
+        actual, decision = choose_supported_pitch(base,alternate,independent,audio,
+            independent_cc=independent_cc,confidence=salience)
         evidence.update(decision)
     if filter_radius>=5:
         actual=median_smooth_pitch(actual,1)
@@ -142,6 +150,7 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
             featureContract=model.encoder_metadata,frames=n,inputSamples=samples,
             changedFrames=int(np.count_nonzero(actual!=base)),paddingFrames=PAD_FRAMES,
             sourceSampleRate=16000,frameRate=100,consensus=use_consensus,
+            highRegisterExperiment=bool(use_consensus and os.getenv('RVC_TIMELINE_HIGH_REGISTER','0')=='1'),
             explicitMedianRadius=1 if filter_radius>=5 else 0),indent=2),encoding='utf8')
     return AnalysisTimeline(audio,feats,actual,spans,samples,Path(source),method,evidence)
 

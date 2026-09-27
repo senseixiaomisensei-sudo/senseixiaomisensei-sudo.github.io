@@ -30,6 +30,7 @@ export async function onRequest(context) {
       pipelineRevision: typeof payload.pipelineRevision === "string" ? payload.pipelineRevision : "",
       timelineInference: payload.timelineInference === true,
       pitchConsensus: payload.pitchConsensus === true,
+      highRegisterExperiment: payload.highRegisterExperiment === true,
       modelHashes: payload.modelHashes && typeof payload.modelHashes === "object" ? {
         modelId: String(payload.modelHashes.modelId || "").slice(0, 64),
         modelSha256: /^[a-f0-9]{64}$/u.test(payload.modelHashes.modelSha256 || "") ? payload.modelHashes.modelSha256 : "",

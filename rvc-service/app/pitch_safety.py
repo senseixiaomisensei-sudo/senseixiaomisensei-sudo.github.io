@@ -187,6 +187,18 @@ def extract_pitch(pipeline, x, p_len, f0_method):
     return f0
 
 
+def independent_high_register_pitch(audio, sample_rate, frame_count, hop):
+    """Cross-correlation evidence only; not a replacement default tracker."""
+    import parselmouth
+    track=parselmouth.Sound(np.asarray(audio,dtype=np.float64),sample_rate).to_pitch_cc(
+        time_step=hop/sample_rate,voicing_threshold=.6,pitch_floor=40,pitch_ceiling=2000)
+    indices=np.rint((np.arange(frame_count)*hop/sample_rate-track.x1)/track.dx).astype(int)
+    valid=(indices>=0)&(indices<track.nx)
+    result=np.zeros(frame_count)
+    result[valid]=track.selected_array['frequency'][indices[valid]]
+    return sanitize_pitch(result)
+
+
 def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
     pipeline.pitch_confidence = None
     pipeline.pitch_confidence_kind = 'unavailable'

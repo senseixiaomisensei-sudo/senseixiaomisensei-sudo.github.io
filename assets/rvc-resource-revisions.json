@@ -1,0 +1,1454 @@
+{
+  "revision": "20260927-explicit-source-v1",
+  "existingCharacterIdsPreserved": true,
+  "note": "Same trained weights and index; decoder export parity and stable excitation correction. Listening unverified.",
+  "models": [
+    {
+      "characterId": "arona",
+      "checkpointSha256": "152ce87951192224b08efdedf2b487fb57509420626437df7d21ef2c74307118",
+      "indexSha256": "735227b51d2928509a15aeb3ccb3415188a979138b93bc0b597013986dda7377",
+      "active": {
+        "chunks": [
+          "models/characters/arona/revisions/bf9a5293f3178734/chunk_0.bin",
+          "models/characters/arona/revisions/bf9a5293f3178734/chunk_1.bin",
+          "models/characters/arona/revisions/bf9a5293f3178734/chunk_2.bin",
+          "models/characters/arona/revisions/bf9a5293f3178734/chunk_3.bin",
+          "models/characters/arona/revisions/bf9a5293f3178734/chunk_4.bin",
+          "models/characters/arona/revisions/bf9a5293f3178734/chunk_5.bin"
+        ],
+        "sha256": "bf9a5293f3178734e40c5f9a5d9c1933434f7f9aff353c63bb277288fdc56e0e",
+        "chunkSha256": [
+          "106e507cc44233ad32d0c2b838f34551e0ae52441192efb44ff55a2f44977d67",
+          "03460e5ec0e1230108e1085adff489b6b412c6471d38f56e01472319c77d87d2",
+          "3db96903625755f3e240b52329e16d69c1c5c97dd4c7ef9cd83c6b3d3949c901",
+          "2432b57e3a45d5b124a7ff371f0776a50a13c5a9b2f48b7db8ec7ad70bf30594",
+          "58705024de01e076fd32a93f1cd98ab373d7630c398925a2915b12132f24b39d",
+          "7fb98aba374cd67392c2ed54879c28e2dfee16c437c991893fa565ea2bc1c7ac"
+        ],
+        "resourceRevision": "bf9a5293f3178734e40c5f9a5d9c1933434f7f9aff353c63bb277288fdc56e0e",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/arona/chunk_0.bin",
+          "models/characters/arona/chunk_1.bin",
+          "models/characters/arona/chunk_2.bin",
+          "models/characters/arona/chunk_3.bin",
+          "models/characters/arona/chunk_4.bin",
+          "models/characters/arona/chunk_5.bin"
+        ],
+        "sha256": "4ab84300f66aa0c1caef47673e2a736c7e884debfa852061acdd48b7c35befd9",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "arisu",
+      "checkpointSha256": "2ec7e8c4050c06b1ad2964695ed40d2deab9d8f8c43065f3ffbdf70e02c016cf",
+      "indexSha256": "1dcef1f47371b506051ad30c476b0fa6fcd291ac38dd5e5924baeb203d848240",
+      "active": {
+        "chunks": [
+          "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_0.bin",
+          "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_1.bin",
+          "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_2.bin",
+          "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_3.bin",
+          "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_4.bin",
+          "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_5.bin"
+        ],
+        "sha256": "772f9aa3a8396fca9ee092c11f93a6623b788e425a43a3c31fe06af7f0635e95",
+        "chunkSha256": [
+          "f7066afc2b831b68890c166b287dad40fd4e69a9589acbed5145f4ca8e2aa65b",
+          "3962b4cfa39c49ef006c1c081199fe934fb5ede4891c0df48b7123884dfcdd4d",
+          "10a724e28eb0f8db9b10a750639f14955301f30ae7abc027adfb2c1aeefc0648",
+          "b46da95bb33fd005d90708443194c452bc489c7f0f3618c9c033fc6e0310986c",
+          "39bd84dc4b559a701a9facbed0f8485b736eb0bb0047fda3eaf9c4b6fb83052e",
+          "e90bdbfa47e458a10b272944a9e79dc2e51cc95683cefd219c8fb14c43ff8c75"
+        ],
+        "resourceRevision": "772f9aa3a8396fca9ee092c11f93a6623b788e425a43a3c31fe06af7f0635e95",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/arisu/chunk_0.bin",
+          "models/characters/arisu/chunk_1.bin",
+          "models/characters/arisu/chunk_2.bin",
+          "models/characters/arisu/chunk_3.bin",
+          "models/characters/arisu/chunk_4.bin",
+          "models/characters/arisu/chunk_5.bin"
+        ],
+        "sha256": "64385b433dc1e098e9fd19e46679f058a36468ad2545abd17414325659031a3b",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "shiroko",
+      "checkpointSha256": "f0f672b2251fff17fe801531e18c38fa9902d387cb45c7c0c687cf9184a4360c",
+      "indexSha256": "fc78b75cf68bbba4130867b8082c2b3a1ab27faaf21d271d824c835d853a62a1",
+      "active": {
+        "chunks": [
+          "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_0.bin",
+          "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_1.bin",
+          "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_2.bin",
+          "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_3.bin",
+          "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_4.bin",
+          "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_5.bin"
+        ],
+        "sha256": "e98fcfb3f84414398c4f7c867b5b847999639ad8f791d05e2f696e3000743061",
+        "chunkSha256": [
+          "ced700bd51dd5599152c2964c3616e6fbacf43796bc44e9afa10a9f6ca1df868",
+          "21d36dd10efb351eded53db1a9202fa590067a65cfcb5307b4d93817070a7b97",
+          "7c6e195ca41c35aa2035ea3ead9ff52393e847b49d65c31e3e00210902f66566",
+          "d91c99c5ac18ab8ec97f521feaf4fa88215d4dc23778825400a40d13b2038b80",
+          "5168d871b7b5a32c1df5f527e71bf18d3cb8514cf24d33aac5112578a895cfe2",
+          "fc094ef9daa56c35bf5e36dde75b5b6a5fc9a5b26de50e5da2f712d8efdfa0ca"
+        ],
+        "resourceRevision": "e98fcfb3f84414398c4f7c867b5b847999639ad8f791d05e2f696e3000743061",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/shiroko/chunk_0.bin",
+          "models/characters/shiroko/chunk_1.bin",
+          "models/characters/shiroko/chunk_2.bin",
+          "models/characters/shiroko/chunk_3.bin",
+          "models/characters/shiroko/chunk_4.bin",
+          "models/characters/shiroko/chunk_5.bin"
+        ],
+        "sha256": "d04be7351d424d1e8c2c209326c83a5bf556097b3d0019e89da50e67c2bf0d8f",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "hoshino",
+      "checkpointSha256": "6f5232f646fd2a8a234118976363d69d3814731bcc6a3692284bae30e5df9d8a",
+      "indexSha256": "6bf0be4288532a6db52b827620987e8fe3b169fae162c45a44eb983a4ab74d88",
+      "active": {
+        "chunks": [
+          "models/characters/hoshino/revisions/c72753b89ad18035/chunk_0.bin",
+          "models/characters/hoshino/revisions/c72753b89ad18035/chunk_1.bin",
+          "models/characters/hoshino/revisions/c72753b89ad18035/chunk_2.bin",
+          "models/characters/hoshino/revisions/c72753b89ad18035/chunk_3.bin",
+          "models/characters/hoshino/revisions/c72753b89ad18035/chunk_4.bin",
+          "models/characters/hoshino/revisions/c72753b89ad18035/chunk_5.bin"
+        ],
+        "sha256": "c72753b89ad18035827f8fc236c82722d6a4578bb8ec80ac353dfaa941c8635c",
+        "chunkSha256": [
+          "67f8e52d034fe19ee129d9ae5f8f8e047fa347122859e3de4b074448664c0991",
+          "e3872a22a3bf0eaf8a765e7a08d4de8c88e0c466018a53ce182b7e9611219f12",
+          "36df0887ceb2b5dbe1f5c0869326025f28c01273cd939cb12777f1de75964eb2",
+          "9257545fe753a1a98d36e4f3d461a8130f862f40668871eeccb9d170a92dc5f2",
+          "467d9fe13c798296525adbc71b2314ca46d168d8aa38577a9d8125303958f63f",
+          "d49628f8607f992db8ef260c89a0847e21221e2590d95a368878729d12214d0c"
+        ],
+        "resourceRevision": "c72753b89ad18035827f8fc236c82722d6a4578bb8ec80ac353dfaa941c8635c",
+        "totalSize": 110420449,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/hoshino/revisions/43feadde41b72c90/chunk_0.bin",
+          "models/characters/hoshino/revisions/43feadde41b72c90/chunk_1.bin",
+          "models/characters/hoshino/revisions/43feadde41b72c90/chunk_2.bin",
+          "models/characters/hoshino/revisions/43feadde41b72c90/chunk_3.bin",
+          "models/characters/hoshino/revisions/43feadde41b72c90/chunk_4.bin",
+          "models/characters/hoshino/revisions/43feadde41b72c90/chunk_5.bin"
+        ],
+        "sha256": "43feadde41b72c90c27d0f5b77d1c2d11ad8df6ba9a45c56e64b071cc722b9aa",
+        "chunkSha256": [
+          "def6826a85f453fcd3960d433bf395238d39a09a35fd63138eac0799a2f771cf",
+          "306b280c909477008b55cc776e13c9c48f8ed4ccb0b30aab600a9e6254dec203",
+          "a30f09b6e0bffc1939272a435849698559026953d479813660da478446e23bb7",
+          "caa31b887ee76ca75fc666310192c24174398c94cecfc1ed8040a4c1cfaaa1d4",
+          "b3a7fc986910f9b13d408423a6cf1130671595586786ef7cd15f5e0b50639d51",
+          "38fbfb8a5a54afd4d1450588c66ced9201ff6060f972c9a245ca588eb8f3ddb3"
+        ],
+        "resourceRevision": "43feadde41b72c90c27d0f5b77d1c2d11ad8df6ba9a45c56e64b071cc722b9aa",
+        "totalSize": 110420397,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "yuuka",
+      "checkpointSha256": "bdd7b78638e95ad2f6ca5995408721bc7f058374ace8ba3fe51da2982d5f1986",
+      "indexSha256": "154e86b7e0ffbf570048860fb10f7ba8a7bd3e14d9fe4cd211560e9c784950c9",
+      "active": {
+        "chunks": [
+          "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_0.bin",
+          "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_1.bin",
+          "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_2.bin",
+          "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_3.bin",
+          "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_4.bin",
+          "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_5.bin"
+        ],
+        "sha256": "3e924d45ffcbd7af357a354c273f5a4574dddf883c8602b99b72bdedc56cf911",
+        "chunkSha256": [
+          "f22b4785b7c48026e283d4eb7a34dfa2a6464fa9cbafb3a2113ff2530407a488",
+          "e0955c5711bf4c8d4eb5acf7d855f50ac93293011d5e1b3bb930b1eedc33caaf",
+          "b778cdce00814604df5444ebaa8ed63359b42c9b2337e5ca40060aaba16a1502",
+          "a60819bfe802894f5ec71fbb3720e8259977d62f9205112e664e0cee519a5b89",
+          "792b5dbac93aadcd2bd0d1a31d8ba925411ec43f8878c7225570f683cd588d11",
+          "f745ca151f9325b3a92fc565d070f3c8c4163fad6843081719e14c2d01dbff7e"
+        ],
+        "resourceRevision": "3e924d45ffcbd7af357a354c273f5a4574dddf883c8602b99b72bdedc56cf911",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/yuuka/chunk_0.bin",
+          "models/characters/yuuka/chunk_1.bin",
+          "models/characters/yuuka/chunk_2.bin",
+          "models/characters/yuuka/chunk_3.bin",
+          "models/characters/yuuka/chunk_4.bin",
+          "models/characters/yuuka/chunk_5.bin"
+        ],
+        "sha256": "00c9274c8d36eebfef316fb71c014e57e5a12cc973c2c60aa021e2081f7c362f",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "hina",
+      "checkpointSha256": "ebc6edcb2b657f57937156eff878e51bf392d7c9c65c3d23a7aef7eb2f3eaf16",
+      "indexSha256": "189e199f6e33ddfca5e1c6351bcc331dc3a71a0680ad7565ef6d05c3b07c593a",
+      "active": {
+        "chunks": [
+          "models/characters/hina/revisions/7962512364d15808/chunk_0.bin",
+          "models/characters/hina/revisions/7962512364d15808/chunk_1.bin",
+          "models/characters/hina/revisions/7962512364d15808/chunk_2.bin",
+          "models/characters/hina/revisions/7962512364d15808/chunk_3.bin",
+          "models/characters/hina/revisions/7962512364d15808/chunk_4.bin",
+          "models/characters/hina/revisions/7962512364d15808/chunk_5.bin"
+        ],
+        "sha256": "7962512364d15808b48e8d4d59adc64cdb509c04e5e6dd6c0ce78fefee341846",
+        "chunkSha256": [
+          "213d41cdee1d4d8d238926acd77d92503ea41de03226401c6133b22f679e804a",
+          "9c0a98ec8cdf7ee637e92bd9cd1aaa1609658732b5ddbe4ad4bf6e53ebd18353",
+          "ca96a43237a933ad10fd5af8e79fb6c8a914456a497f51dbcf4dc34763e58272",
+          "8d353c70066e660ab6732eb3c5989fe4c44f6701c1bfbbe3634171f28248129f",
+          "45cecca2632402da8f6c50df3c33daf793a6a066e04b9bf30add3f0d198d2168",
+          "4d1c88809a180168b0e21fc35903feb9ba5fc18d63b8cbf8652a19d2cfca3f17"
+        ],
+        "resourceRevision": "7962512364d15808b48e8d4d59adc64cdb509c04e5e6dd6c0ce78fefee341846",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/hina/chunk_0.bin",
+          "models/characters/hina/chunk_1.bin",
+          "models/characters/hina/chunk_2.bin",
+          "models/characters/hina/chunk_3.bin",
+          "models/characters/hina/chunk_4.bin",
+          "models/characters/hina/chunk_5.bin"
+        ],
+        "sha256": "bfc0ddf0f8207bb83803f527c822a354d3c20e23824d74b6ce50f6aa95820ea5",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "noa",
+      "checkpointSha256": "4f0d38867fafc07487026981175d2eefb2d28a9c731dcdbab808b41bc069016d",
+      "indexSha256": "a2baefac31b22c26474b57f9e15ffd09b0e5248ffee8a48a7a69234302b4ee94",
+      "active": {
+        "chunks": [
+          "models/characters/noa/revisions/41f93d94f6e98776/chunk_0.bin",
+          "models/characters/noa/revisions/41f93d94f6e98776/chunk_1.bin",
+          "models/characters/noa/revisions/41f93d94f6e98776/chunk_2.bin",
+          "models/characters/noa/revisions/41f93d94f6e98776/chunk_3.bin",
+          "models/characters/noa/revisions/41f93d94f6e98776/chunk_4.bin",
+          "models/characters/noa/revisions/41f93d94f6e98776/chunk_5.bin"
+        ],
+        "sha256": "41f93d94f6e987764c6653b0731a837986b49edcc7a6390bcfb8ddace4bafabf",
+        "chunkSha256": [
+          "416b10f5a92bfad33458280c58e0a7a6389db0f5cfcebe39817777adf4ec7a04",
+          "f3798e87c1ea76b5bea92ca78fc81dfbdee2b7b01b3942e6e03e61f5a2d06f02",
+          "fcd56d55ba4080f196e9e908afc8b7142015eda0f2c04268af1464f3d56d746d",
+          "52368d420e2dab33fb88ec4d4fc69da1ac28a27d5e48cab5adafaf72b97ea5a4",
+          "b372b4c2f0855f7f8d8cc3765a5fe63047ef03ca20f34ecf6ea94c7edabc6a0c",
+          "6c186a4e6cdf983ae82c5f1bbd9a31726ad41fe4a9887d9391e5a620d7158ab3"
+        ],
+        "resourceRevision": "41f93d94f6e987764c6653b0731a837986b49edcc7a6390bcfb8ddace4bafabf",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/noa/chunk_0.bin",
+          "models/characters/noa/chunk_1.bin",
+          "models/characters/noa/chunk_2.bin",
+          "models/characters/noa/chunk_3.bin",
+          "models/characters/noa/chunk_4.bin",
+          "models/characters/noa/chunk_5.bin"
+        ],
+        "sha256": "05e04612f23662b1a01d2b7318e42fff3a0cc1f117506e525cbe5e026d3ce206",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "koharu",
+      "checkpointSha256": "ec375a8ccae860747f2e9e06f80f92127502550c8e89fa44b9e70af5ac3db57d",
+      "indexSha256": "507b54bb32721696ea3850a53eff9965a601bfa37f85fa4cefb29998740d9cef",
+      "active": {
+        "chunks": [
+          "models/characters/koharu/revisions/be7aafff166c3c20/chunk_0.bin",
+          "models/characters/koharu/revisions/be7aafff166c3c20/chunk_1.bin",
+          "models/characters/koharu/revisions/be7aafff166c3c20/chunk_2.bin",
+          "models/characters/koharu/revisions/be7aafff166c3c20/chunk_3.bin",
+          "models/characters/koharu/revisions/be7aafff166c3c20/chunk_4.bin",
+          "models/characters/koharu/revisions/be7aafff166c3c20/chunk_5.bin"
+        ],
+        "sha256": "be7aafff166c3c20baaf9908140d2bb0568c8321576deda0102beb325f2e6a2d",
+        "chunkSha256": [
+          "aaa15c85313ef7398efe4ffc93b5dda73cebd6fbddec7daac035c686cf9ac104",
+          "94608e6477406ec0ba3227a55fa25606f7e31dfaf773bda835af5442b23ea04a",
+          "4a1a2e9bd343cb93c7cbd11cae892a5286c59138d81cff4ca26d3060dec85cc2",
+          "3336a89e126221cb98ee98a3888116c5208a247eb190c6b364e8418d059620b2",
+          "7d36d9253871803785671d4f7f657aca31fe9f548783c25738e36b0fe4bd8a20",
+          "05c10ccfedec28a9d0b1b6edcda1efb2ae4c9fbaffd72cc26299a6c4335754f8"
+        ],
+        "resourceRevision": "be7aafff166c3c20baaf9908140d2bb0568c8321576deda0102beb325f2e6a2d",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/koharu/chunk_0.bin",
+          "models/characters/koharu/chunk_1.bin",
+          "models/characters/koharu/chunk_2.bin",
+          "models/characters/koharu/chunk_3.bin",
+          "models/characters/koharu/chunk_4.bin",
+          "models/characters/koharu/chunk_5.bin"
+        ],
+        "sha256": "f39f5e389efede17cc36cd9c431545b50bfa07f0ac8db1d02fc8bc6667d09016",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "momoi",
+      "checkpointSha256": "a500a4987abb793783ac2a54ff96908c31eb61fa1d0ca25b33a149c46ac81aeb",
+      "indexSha256": "367e1103527003a48ba5b1e5dd0f8b6b5a22b1b78fe352b1b88aeb8ea0e33258",
+      "active": {
+        "chunks": [
+          "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_0.bin",
+          "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_1.bin",
+          "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_2.bin",
+          "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_3.bin",
+          "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_4.bin",
+          "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_5.bin"
+        ],
+        "sha256": "00c4d1f74f03d7caa468321d29d81df3c22981f105fd3aa7998c6cbb25e1c7ef",
+        "chunkSha256": [
+          "5bb5b16aa4de48561f1ede72810ae5187c58a02f6837f49fb83def2763dde4e1",
+          "87f847c7f38656a083f1e31fecd7b74f09d6431655fcfc4143b2fef6066dda17",
+          "1fb2bdf231ab2a4a3d971cb777be618ce2bc250429ef5d529c3ba15f9cde7cd7",
+          "86d9bab4f949e9919d9c46be018a5c08376f498b7040d0d536b239806fd4987c",
+          "ed3166ef362e9129bb8e96804134465ff6ff2874bbdf5f2cc6d7d79e196910e4",
+          "ee228916564b90d3d9dcbff28e6efeec656f0692e707c0dd572ba2522d35a5c4"
+        ],
+        "resourceRevision": "00c4d1f74f03d7caa468321d29d81df3c22981f105fd3aa7998c6cbb25e1c7ef",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/momoi/chunk_0.bin",
+          "models/characters/momoi/chunk_1.bin",
+          "models/characters/momoi/chunk_2.bin",
+          "models/characters/momoi/chunk_3.bin",
+          "models/characters/momoi/chunk_4.bin",
+          "models/characters/momoi/chunk_5.bin"
+        ],
+        "sha256": "cb44ac1b8ea8d79976322a870d0189dd81ecd378c31c6638b25be9e1f99b7b38",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "midori",
+      "checkpointSha256": "5d7c9728c94abb58dd3c5b0fc111550f4acb1ccb0fb3c713bf1ae04a7af86de1",
+      "indexSha256": "3aabf9bd4633c705186f7b5d94d7317ee4e0adb7ae9f610eb1fb530a4d8ef7cb",
+      "active": {
+        "chunks": [
+          "models/characters/midori/revisions/ab5bd6c767e76193/chunk_0.bin",
+          "models/characters/midori/revisions/ab5bd6c767e76193/chunk_1.bin",
+          "models/characters/midori/revisions/ab5bd6c767e76193/chunk_2.bin",
+          "models/characters/midori/revisions/ab5bd6c767e76193/chunk_3.bin",
+          "models/characters/midori/revisions/ab5bd6c767e76193/chunk_4.bin",
+          "models/characters/midori/revisions/ab5bd6c767e76193/chunk_5.bin"
+        ],
+        "sha256": "ab5bd6c767e761936268fd924813902c1999dcc484bdac8f364809d5258362fc",
+        "chunkSha256": [
+          "ee5745b6ec67275d2a25520251f4b6679bb778b61a430e29dbc70b2a87261686",
+          "fa6a6f86edc80e9d062c47c91a36e1a18d200aa108a10158207396ffe64c8515",
+          "0bf8dfb1c28967dbc64720a614a85cd61706e66a2d699daa8c77b900d7fe0e99",
+          "928df160ba0942ca7aa1ca2501d513a8c88ebabfe0f889c23d3a80d38de0a73c",
+          "5cbdfd232b756a791d61694271edd0b674e93b5f94ab01ffabaaa2a1f395543e",
+          "b4607634096734c729176b9f9c15bd1b54d389c67c35f46ae697aa4c42a1b54f"
+        ],
+        "resourceRevision": "ab5bd6c767e761936268fd924813902c1999dcc484bdac8f364809d5258362fc",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/midori/chunk_0.bin",
+          "models/characters/midori/chunk_1.bin",
+          "models/characters/midori/chunk_2.bin",
+          "models/characters/midori/chunk_3.bin",
+          "models/characters/midori/chunk_4.bin",
+          "models/characters/midori/chunk_5.bin"
+        ],
+        "sha256": "39c397dae8d1e52fe54235e6f9833021c3956acc6af4beea75bc5db507836369",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "reisa",
+      "checkpointSha256": "e0d4a0f14bf334cfb5009b6d9ee59ea540a8471934d8b9064d5990b10b81a18a",
+      "indexSha256": "deb1cfff28cbd7e645decd2a7a3e79d4b8e05bbc8b32cefb7aec66c94b624b9d",
+      "active": {
+        "chunks": [
+          "models/characters/reisa/revisions/e17d27c99477811f/chunk_0.bin",
+          "models/characters/reisa/revisions/e17d27c99477811f/chunk_1.bin",
+          "models/characters/reisa/revisions/e17d27c99477811f/chunk_2.bin",
+          "models/characters/reisa/revisions/e17d27c99477811f/chunk_3.bin",
+          "models/characters/reisa/revisions/e17d27c99477811f/chunk_4.bin",
+          "models/characters/reisa/revisions/e17d27c99477811f/chunk_5.bin"
+        ],
+        "sha256": "e17d27c99477811fe14475fba18952d1903430c5f4fa1ed823eb957b4914c4bb",
+        "chunkSha256": [
+          "7b89f191b1427a66138d263c4fdad21bb27aac6bbe88d73e7cbd6296e61734fc",
+          "4759e915e05c650aab01b02ab963339c145fd6a5a171a3c6112c08458cf91d41",
+          "c060fe826cf655b8a49e04fbddd435a786db6306dbb5d700247b8f254a511261",
+          "5c5181d83cd8e6921b5e9a089b898cbfaa453fde5c0f4067f7861e3d262a0593",
+          "99ac33861364633d4357df1f1385056bbe0ecf8babcacfd4cd70a8b733b5772b",
+          "0dd1f97b899088bc8c5f99cc80ea4829b59859136438347f8f295a2be334a9a9"
+        ],
+        "resourceRevision": "e17d27c99477811fe14475fba18952d1903430c5f4fa1ed823eb957b4914c4bb",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/reisa/chunk_0.bin",
+          "models/characters/reisa/chunk_1.bin",
+          "models/characters/reisa/chunk_2.bin",
+          "models/characters/reisa/chunk_3.bin",
+          "models/characters/reisa/chunk_4.bin",
+          "models/characters/reisa/chunk_5.bin"
+        ],
+        "sha256": "8452610c853dbc3dc8de8216511b9d3ffdb9c16487bf8d0dad7dd16d929e9a22",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "yuzu",
+      "checkpointSha256": "c8aa31f36a5ee5fae466217d3a6ed931e6512ed58f78f1ee535e52a7d22f1aec",
+      "indexSha256": "0764aeed793827e30e8c4b7687a733acf27ed9afacbb3dbc0ac4353e45d634be",
+      "active": {
+        "chunks": [
+          "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_0.bin",
+          "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_1.bin",
+          "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_2.bin",
+          "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_3.bin",
+          "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_4.bin",
+          "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_5.bin"
+        ],
+        "sha256": "827b147a83c1b7d59e373f4e8deb4f8e65b812441e169c329dd3e918ea059b18",
+        "chunkSha256": [
+          "16a6c97a8516245dc978ebef5b851044f1e040117c53dfe59c6e1774e9df08aa",
+          "3ac9046a770515c09e76a21c165e445c70e8462731edeac5ef179dde94748cc0",
+          "728f77e94cde67b59d54b7d5c179ee902b1c5510b6f7940148fbdd793a9a524a",
+          "be90830fbaa21a27221b5d62df46ad067dd0ccab6d878450ab4385e2ec41efcd",
+          "108476cdc3ffe3c6258cc651697ea6ca319ec4e85f916a804eaec49ea242a274",
+          "df75593fca2e4ffd8a2e830272458e396edd648c7b4070c65ba8d6d49427a3d2"
+        ],
+        "resourceRevision": "827b147a83c1b7d59e373f4e8deb4f8e65b812441e169c329dd3e918ea059b18",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/yuzu/chunk_0.bin",
+          "models/characters/yuzu/chunk_1.bin",
+          "models/characters/yuzu/chunk_2.bin",
+          "models/characters/yuzu/chunk_3.bin",
+          "models/characters/yuzu/chunk_4.bin",
+          "models/characters/yuzu/chunk_5.bin"
+        ],
+        "sha256": "4c5a0fd73a9885fc103ad499e7d37bcdd82c11b88141695acbcdf4d4e9169345",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "toki",
+      "checkpointSha256": "9e9b8deaa840620047a78c71f8aeb22fa46b4c12b43906ed0b9f20880928c939",
+      "indexSha256": "2db922d0d1bfb4b911ecd5c81d9404560d6207e1efac060742c7491181a6da75",
+      "active": {
+        "chunks": [
+          "models/characters/toki/revisions/183995e73947ebd5/chunk_0.bin",
+          "models/characters/toki/revisions/183995e73947ebd5/chunk_1.bin",
+          "models/characters/toki/revisions/183995e73947ebd5/chunk_2.bin",
+          "models/characters/toki/revisions/183995e73947ebd5/chunk_3.bin",
+          "models/characters/toki/revisions/183995e73947ebd5/chunk_4.bin",
+          "models/characters/toki/revisions/183995e73947ebd5/chunk_5.bin"
+        ],
+        "sha256": "183995e73947ebd56f30f2cf8a367ef8d7f9564d7034104e1932ba7f6275a373",
+        "chunkSha256": [
+          "433d045f98280d10f3e76c6e5d85879a388e06770116b1a8496471cffc3d9182",
+          "4daedaaa5136f083d6937a279815df3984b386f6fc812387f6a7300ef2a8e04f",
+          "701bf4b305a1eba3db1e343e3358a94e7e278b2d6945accb4aa2dab7ca576cc3",
+          "4e3d0d6d4fdd47277613d930af955fd257e0c8cabced9a3f214649ef7a825be6",
+          "8fcc6eed330245401bd5cc51bfc4b57fba5e412c9762c859bdcea29e497294c2",
+          "24fc17f27a42c8f243e59f20803eab12f567f3e1fba2dae36333fa5e99908541"
+        ],
+        "resourceRevision": "183995e73947ebd56f30f2cf8a367ef8d7f9564d7034104e1932ba7f6275a373",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/toki/chunk_0.bin",
+          "models/characters/toki/chunk_1.bin",
+          "models/characters/toki/chunk_2.bin",
+          "models/characters/toki/chunk_3.bin",
+          "models/characters/toki/chunk_4.bin",
+          "models/characters/toki/chunk_5.bin"
+        ],
+        "sha256": "7651f54515928c7abd82d7351009288c441e0a86160b8c4f20908d5e604aad97",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "asuna",
+      "checkpointSha256": "3aba85f50b6817d58c26e5653b3d22c71a3cead759c0d1d709399cd80fd791b4",
+      "indexSha256": "ba4c6becfc53c0d6c6d8b14c72913c5341d5bce4b678459ff983808d455b3ede",
+      "active": {
+        "chunks": [
+          "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_0.bin",
+          "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_1.bin",
+          "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_2.bin",
+          "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_3.bin",
+          "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_4.bin",
+          "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_5.bin"
+        ],
+        "sha256": "1feab8f91332dc0a178b997baab0f0965b4b613df069c4b99185f0516b5129dc",
+        "chunkSha256": [
+          "7be8db521a6a808dab07273511e5e5655a5ed3c3d71857b5e565a029a8554799",
+          "aaada7ed85911de57092f3a1ac08460f67537ab1ed4dcc8acd6dddb313482905",
+          "bd182be5e3a2641f56a2ba7a0b5d2fa16dfed5d500512a89a61ebd0bbe5dbcc5",
+          "04fa44fe44bcea394d4db4be21dc903ee543d875c1b67df2597645c35750107c",
+          "ee4c31b6dc07c3c38ea99b3a7f2f42927d6bfc2e57e209e548737b35ae7266cd",
+          "575b3ce48048dfc65f0f379f5ffc49feb40b15b44ac7e0dac54abd0da828f8f6"
+        ],
+        "resourceRevision": "1feab8f91332dc0a178b997baab0f0965b4b613df069c4b99185f0516b5129dc",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/asuna/chunk_0.bin",
+          "models/characters/asuna/chunk_1.bin",
+          "models/characters/asuna/chunk_2.bin",
+          "models/characters/asuna/chunk_3.bin",
+          "models/characters/asuna/chunk_4.bin",
+          "models/characters/asuna/chunk_5.bin"
+        ],
+        "sha256": "af5baa9b1c951675bf936a9283ad37714e7698b3d6b6a1762f8dce1a2ab7e05d",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "aru",
+      "checkpointSha256": "a543c781358021d2436df894fda1605fed005209b8a28746b1d4d88c8ec01781",
+      "indexSha256": "206816de6751786dc09a9bf5d76ba17c719ae40155bf5e2faae824133f632395",
+      "active": {
+        "chunks": [
+          "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_0.bin",
+          "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_1.bin",
+          "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_2.bin",
+          "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_3.bin",
+          "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_4.bin",
+          "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_5.bin"
+        ],
+        "sha256": "d69cbf6b7c91aeaaa742c4b313489198663084562788d90e7ccd25787adbba63",
+        "chunkSha256": [
+          "311e592c848cdd02f47f3acb20bf1dd8da49eeb528fd8f9bc5d4fa2ccc03829f",
+          "8b13b098f7545ae570117475795814294890fa9ff2d29f8165d4669838bbcbd2",
+          "571ca230a1ac14d1c9a2480fbcd36f2e4f34f338478766a1cb2951b797276f40",
+          "e05f5e6f24b91a2864c374927932a76376899dcdfb399a31c0f5ac99641750f3",
+          "445389e2c0aceda0b07c27d8dc73ead110c813487209a6ef704e054a6ecca947",
+          "8d8f3bf8626c434e5cbe6102a75632a77cc5f3fb085305a538a818819c5a4def"
+        ],
+        "resourceRevision": "d69cbf6b7c91aeaaa742c4b313489198663084562788d90e7ccd25787adbba63",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/aru/chunk_0.bin",
+          "models/characters/aru/chunk_1.bin",
+          "models/characters/aru/chunk_2.bin",
+          "models/characters/aru/chunk_3.bin",
+          "models/characters/aru/chunk_4.bin",
+          "models/characters/aru/chunk_5.bin"
+        ],
+        "sha256": "eb94d0798cf94f12ba4da11965e5d1d332c9896e6186a3fc0a98e3bfa5f1e34a",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "kirara",
+      "checkpointSha256": "16af2edf48f9996112eb1888fe31d308ea9b63eb343068e26f5d5b6639d32142",
+      "indexSha256": "2047677dc16cf48ae713b438e40c7bb039b0e64c6af6567cac93d6588bbd8cec",
+      "active": {
+        "chunks": [
+          "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_0.bin",
+          "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_1.bin",
+          "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_2.bin",
+          "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_3.bin",
+          "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_4.bin",
+          "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_5.bin"
+        ],
+        "sha256": "f6e1cd66f26242da263e93bbc0e280151dd9b1ed2c451e5d9bbc652270e80601",
+        "chunkSha256": [
+          "590e7d05ed69c01e703d143ef25e58f3975aafb7e5d1ecb38bb8f75a4b3514f1",
+          "757c16dad5b778c73aa0e15a1758211d362a8654e55daf8a7ec202ddb8016e41",
+          "a4c1fc44b6d71542dff63ca20d00de40fa3c7d620cfbd4873697a401be0bba66",
+          "cb2fb2a1d18aca54c4afb59f61891e6a320d5733b3a127af9110e1cd2c2213da",
+          "87349880a6776cfc0c6f59b0c523e206dec18c5dac354fc586c796e8da177e4d",
+          "a8c3fb648cf8bedfd3d857026a8fd22b03d227d991df8c1f7537d2d5e996f5e2"
+        ],
+        "resourceRevision": "f6e1cd66f26242da263e93bbc0e280151dd9b1ed2c451e5d9bbc652270e80601",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/kirara/chunk_0.bin",
+          "models/characters/kirara/chunk_1.bin",
+          "models/characters/kirara/chunk_2.bin",
+          "models/characters/kirara/chunk_3.bin",
+          "models/characters/kirara/chunk_4.bin",
+          "models/characters/kirara/chunk_5.bin"
+        ],
+        "sha256": "e8421e86899db0c1de677d5d5b0312667434582c4d55b789f940b47fb72a00b5",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "koyuki",
+      "checkpointSha256": "d73d3ce1403178bb064300a9cf3daa69c77dec4af686d42713754ef76eea032a",
+      "indexSha256": "0f66eb4acd0e3b88ef4a4b36f7b64f5473df48b3cd75a1bc094daa739bd80f0a",
+      "active": {
+        "chunks": [
+          "models/characters/koyuki/revisions/dad207130d7acd34/chunk_0.bin",
+          "models/characters/koyuki/revisions/dad207130d7acd34/chunk_1.bin",
+          "models/characters/koyuki/revisions/dad207130d7acd34/chunk_2.bin",
+          "models/characters/koyuki/revisions/dad207130d7acd34/chunk_3.bin",
+          "models/characters/koyuki/revisions/dad207130d7acd34/chunk_4.bin",
+          "models/characters/koyuki/revisions/dad207130d7acd34/chunk_5.bin"
+        ],
+        "sha256": "dad207130d7acd347eff3a5002190358cd3c6553d36f8178e1d4f2e4ebb1cda7",
+        "chunkSha256": [
+          "ebcee76224b46555ad0d8d78818c756a6e755a9c96f4f5f6bc55f2e3ea3dd749",
+          "099309f0add6d5af5768d5aa652b9443e6d6a679f6a95b0990b9bf0f6afd519f",
+          "25d7d4ab29033c58ab6c10160d3a06f6362476f7f70de02502c48955a7b95324",
+          "231f51a895bbbb154701f517d8df42f82dfe24a2f0071b8e0944cec4cadd8070",
+          "e99aa25f97f0d93e5b092d3c984963cac1111832316129520dacacd477c182f0",
+          "a86a08f4eeac9f9b386a42fcf5a3ce6d7f6ed886ba41b34b4e0a266295885df8"
+        ],
+        "resourceRevision": "dad207130d7acd347eff3a5002190358cd3c6553d36f8178e1d4f2e4ebb1cda7",
+        "totalSize": 115532257,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/koyuki/chunk_0.bin",
+          "models/characters/koyuki/chunk_1.bin",
+          "models/characters/koyuki/chunk_2.bin",
+          "models/characters/koyuki/chunk_3.bin",
+          "models/characters/koyuki/chunk_4.bin",
+          "models/characters/koyuki/chunk_5.bin"
+        ],
+        "sha256": "56fd2819decb6a51ba77bbf434a94ee3b4997da97bf6b3e756e0b1c10a886944",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "kayoko",
+      "checkpointSha256": "bfe47515acd3372b29b4224e0c7d626def0806cec5b1d263969e8267860e8c42",
+      "indexSha256": "12d47f208e26adc23db83855f7902ed9f98dc89f9ccb11f36bb1df3871438b69",
+      "active": {
+        "chunks": [
+          "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_0.bin",
+          "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_1.bin",
+          "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_2.bin",
+          "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_3.bin",
+          "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_4.bin",
+          "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_5.bin"
+        ],
+        "sha256": "70eeb1e76926e1c193fde0da3cf3dfcd7c28a1ee6a951fc834f9239ea593a72f",
+        "chunkSha256": [
+          "bc8c615057f6243a8aa811dbdde8d43603f1bba3fd7875ab2575e2fc8d176a25",
+          "bbc2114efd8ba099fa86ace138a34b82fcea04523156b27e6b3bc4d1cc3e110c",
+          "b120d0d57576015f8e226270c4926ff253b0647ff5b0f308a3f540520525a1f0",
+          "d3f7fd520ed2e902ead941402065caa38d4a0e9c419dc700af360b1056d857a6",
+          "42417f43ec7d6ee22ef59a37ffef15ea8f3f3c767d8cb665a5f47cbaa20ea5ae",
+          "cbe0766d8783ac2f5fe72fe57218dfad0ba3cd8d21124b6db1c63e7bf6face9f"
+        ],
+        "resourceRevision": "70eeb1e76926e1c193fde0da3cf3dfcd7c28a1ee6a951fc834f9239ea593a72f",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/kayoko/chunk_0.bin",
+          "models/characters/kayoko/chunk_1.bin",
+          "models/characters/kayoko/chunk_2.bin",
+          "models/characters/kayoko/chunk_3.bin",
+          "models/characters/kayoko/chunk_4.bin",
+          "models/characters/kayoko/chunk_5.bin"
+        ],
+        "sha256": "60c1387f368099da08a3aacb84cccf9cd2d2c8ac8fcce7e589da539946da1a9a",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "seia",
+      "checkpointSha256": "a3d27a43a7c58b369d868363c4557e65fc82fa2db7c86678f9058af189ab849b",
+      "indexSha256": "1806c1f43a78f0b86360d794d743b6593df6082fc60f1b9e0516a53f7f3c4ce8",
+      "active": {
+        "chunks": [
+          "models/characters/seia/revisions/e754de7890a5d9d6/chunk_0.bin",
+          "models/characters/seia/revisions/e754de7890a5d9d6/chunk_1.bin",
+          "models/characters/seia/revisions/e754de7890a5d9d6/chunk_2.bin",
+          "models/characters/seia/revisions/e754de7890a5d9d6/chunk_3.bin",
+          "models/characters/seia/revisions/e754de7890a5d9d6/chunk_4.bin",
+          "models/characters/seia/revisions/e754de7890a5d9d6/chunk_5.bin"
+        ],
+        "sha256": "e754de7890a5d9d66cca061caaf3c5c330b3435819d7c6fd6dc1c4778eb52b28",
+        "chunkSha256": [
+          "b6d3a3affa46ef8562444aff9402fcc9532188b4c366ba749b0dbdcb031b5a99",
+          "f80584f798209415120ce164042480bde0f387b905ce2360315ca670912b230c",
+          "a8328b6f815ffd7e4b3cdea9f20b5862f44466e8f187b105649aefa798c22bf0",
+          "af914a008b87f157d71ee5be39158e6d4736b677e8b7d18b8304f115993ea5d3",
+          "6ac933e85c392e5387c08ca4ec5b1c19a96649ccd89c1d11e95ebfb9eb2eb415",
+          "5723bf61afcf2e7b229d74178e702f007830c55b9f20131e8d1b1711cf52ae66"
+        ],
+        "resourceRevision": "e754de7890a5d9d66cca061caaf3c5c330b3435819d7c6fd6dc1c4778eb52b28",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/seia/chunk_0.bin",
+          "models/characters/seia/chunk_1.bin",
+          "models/characters/seia/chunk_2.bin",
+          "models/characters/seia/chunk_3.bin",
+          "models/characters/seia/chunk_4.bin",
+          "models/characters/seia/chunk_5.bin"
+        ],
+        "sha256": "50c78090f819d694307574f320a369198907707643e0be5d4bd077fa179b1d99",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "mika",
+      "checkpointSha256": "0d8b3aa3ec3e768743d8b7ed4df1e66c9de89d985c873e45b15f2a588b3c8fd4",
+      "indexSha256": "f0f95e71508bcc0d227e0d2eccff229939ace4f79e0b5e0e72ead7d2a12f30f1",
+      "active": {
+        "chunks": [
+          "models/characters/mika/revisions/ed88a9717474c866/chunk_0.bin",
+          "models/characters/mika/revisions/ed88a9717474c866/chunk_1.bin",
+          "models/characters/mika/revisions/ed88a9717474c866/chunk_2.bin",
+          "models/characters/mika/revisions/ed88a9717474c866/chunk_3.bin",
+          "models/characters/mika/revisions/ed88a9717474c866/chunk_4.bin",
+          "models/characters/mika/revisions/ed88a9717474c866/chunk_5.bin"
+        ],
+        "sha256": "ed88a9717474c866b5f30edae491f33a913ad3443640d079cf55ceb8b41063e4",
+        "chunkSha256": [
+          "3fff4d9be769a5bb6734493c56b72fef69e01c7d37c5348547041630e8026fd5",
+          "3f816fe355100ed9cf717dc4034f8be0d8db8269be01007481a90346e8e54fc8",
+          "1713b637a2e28974848181a9a19a507c2d1fb8701d8628f49c1051083cee644c",
+          "44728ad36083cf7351195ba67652454879b8d706f6029b2e14adb59e19eebbae",
+          "e74d06c045fbf376948ea7796e58c5015463a6718599ab099789e42f3e3ef5e2",
+          "255bd883ffdef395631151fcfcfabc38e3a43462d7abcc30e682712a1fa15e3f"
+        ],
+        "resourceRevision": "ed88a9717474c866b5f30edae491f33a913ad3443640d079cf55ceb8b41063e4",
+        "totalSize": 112894433,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/mika/chunk_0.bin",
+          "models/characters/mika/chunk_1.bin",
+          "models/characters/mika/chunk_2.bin",
+          "models/characters/mika/chunk_3.bin",
+          "models/characters/mika/chunk_4.bin",
+          "models/characters/mika/chunk_5.bin"
+        ],
+        "sha256": "98ce094ab053b039c0339269089691f05ac385c91a7505d9c3a708225056663b",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "gojo",
+      "checkpointSha256": "8a473aaae82a9e7be0bbde859fc3b654c877b340fb002e462bbf5c68b38ab6fa",
+      "indexSha256": "8e643bf9f1ee96e7eb954d9b1dd56cf7fa7bb1c6ec3d02580e394eab2368543",
+      "active": {
+        "chunks": [
+          "models/characters/gojo/revisions/d1896506134d2691/chunk_0.bin",
+          "models/characters/gojo/revisions/d1896506134d2691/chunk_1.bin",
+          "models/characters/gojo/revisions/d1896506134d2691/chunk_2.bin",
+          "models/characters/gojo/revisions/d1896506134d2691/chunk_3.bin",
+          "models/characters/gojo/revisions/d1896506134d2691/chunk_4.bin",
+          "models/characters/gojo/revisions/d1896506134d2691/chunk_5.bin"
+        ],
+        "sha256": "d1896506134d26911266c5f23c99697a17d093a062b5caaabd5dbf13eabe8acb",
+        "chunkSha256": [
+          "c290f500875cf200e9757fa6fee2a845eda3039aac07a63ab7aa9a1e0c17e5b3",
+          "1e5782732cd0df4b281c8483a3d1533b9b2b4918171c637f27c55063df17cd94",
+          "c3956a5afaf8172334beb3a5cd6c08343950f65741038ed2c5fbe496be45efde",
+          "eec572db243b8be0bc6bdbbc79214b745c51a7f358308fb9c89214e115870ba4",
+          "c6dbb7617e9b10a3e9d827dc639addfa0221671a22d6f59e02245df56ff39c53",
+          "c4587095a20aaec6f57033a6b20b3b765e8493bb816cc79f639c30e93ffdf03c"
+        ],
+        "resourceRevision": "d1896506134d26911266c5f23c99697a17d093a062b5caaabd5dbf13eabe8acb",
+        "totalSize": 115532257,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/gojo/chunk_0.bin",
+          "models/characters/gojo/chunk_1.bin",
+          "models/characters/gojo/chunk_2.bin",
+          "models/characters/gojo/chunk_3.bin",
+          "models/characters/gojo/chunk_4.bin",
+          "models/characters/gojo/chunk_5.bin"
+        ],
+        "sha256": "52e29eeb345e3c8dca885b508d0dc52a23d73266f23bffbdcb88205fb21929a5",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "sukuna",
+      "checkpointSha256": "e66c9c880131788736b086badd8835fa1177b1a387ea9f1a530313496342516d",
+      "indexSha256": "b10493894265c1692c9dde370a95e13703dac3a50d229b651c29215ddd80fd82",
+      "active": {
+        "chunks": [
+          "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_0.bin",
+          "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_1.bin",
+          "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_2.bin",
+          "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_3.bin",
+          "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_4.bin",
+          "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_5.bin"
+        ],
+        "sha256": "ae5ba5078720c93c37a17d0168fed24a00d612b2d0c7c66bda697d435a62c3bf",
+        "chunkSha256": [
+          "aff63fc2282b4130289bd1d0ff658a27d6ca0f37bde9b063c50774bd4e3312a7",
+          "45d197f5fccc326547b24c3027fb34464540c81bba212f09744161bba1880755",
+          "8a550e56c6dfaa36ea21fa915be0c6fc5fa3af470440280ab34c32d4ec61730d",
+          "4f18841b796f57fd76b4e15fa5b1bf6913e433dade7a268e513b29e8fae4b64b",
+          "4a282d2c9e374eba5d90620ca618854e20c0f41a1cfcf3da54a045f3ab7f45da",
+          "e3d0bcdfc1ecb9b008b9334237dcdc5f15172658534c67caf260187488aa7251"
+        ],
+        "resourceRevision": "ae5ba5078720c93c37a17d0168fed24a00d612b2d0c7c66bda697d435a62c3bf",
+        "totalSize": 115532257,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/sukuna/chunk_0.bin",
+          "models/characters/sukuna/chunk_1.bin",
+          "models/characters/sukuna/chunk_2.bin",
+          "models/characters/sukuna/chunk_3.bin",
+          "models/characters/sukuna/chunk_4.bin",
+          "models/characters/sukuna/chunk_5.bin"
+        ],
+        "sha256": "0a599132d54ef31b05b1963355cfd8f1c9424b9f6a61a02112aa9d465e1e1463",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "geto",
+      "checkpointSha256": "29377d351b87e9873e71a6ea4fee2130a2b0222751494ff6c408ea21ac95094b",
+      "indexSha256": "509f8327fb3b588ade669a253eddc0ffe3aa2b7a6aeb9205d1878676f916808e",
+      "active": {
+        "chunks": [
+          "models/characters/geto/revisions/60b389b299b2fd43/chunk_0.bin",
+          "models/characters/geto/revisions/60b389b299b2fd43/chunk_1.bin",
+          "models/characters/geto/revisions/60b389b299b2fd43/chunk_2.bin",
+          "models/characters/geto/revisions/60b389b299b2fd43/chunk_3.bin",
+          "models/characters/geto/revisions/60b389b299b2fd43/chunk_4.bin",
+          "models/characters/geto/revisions/60b389b299b2fd43/chunk_5.bin"
+        ],
+        "sha256": "60b389b299b2fd43aa44710d58a0cb6abeb8fe7f297424141bffb3eb8ae968ca",
+        "chunkSha256": [
+          "a113a2335401f8423a744da834afc5e21dc2edc10d9876d91a7dad2d60b99dac",
+          "27f01d71e689651d41eccfb886bbcc788c784303bf9c3d66c0cdfc11a1449272",
+          "c0e86b4b6074dca31318f8afc29e52cde680c70631c31ec28d729642121e5636",
+          "150aee1ff6c47b227d6ff7e106d349a57ac3e865a743d3b85962447aa9f2ca7d",
+          "2d89c80021e22576b5739d6db28e67ba4a0528a64b32a93d46672e99fda8dc03",
+          "1afa7a5d38765f899d7f93ad4ff61b538bf23dc3b1411442b4dd01ac02d5d63a"
+        ],
+        "resourceRevision": "60b389b299b2fd43aa44710d58a0cb6abeb8fe7f297424141bffb3eb8ae968ca",
+        "totalSize": 115532257,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/geto/chunk_0.bin",
+          "models/characters/geto/chunk_1.bin",
+          "models/characters/geto/chunk_2.bin",
+          "models/characters/geto/chunk_3.bin",
+          "models/characters/geto/chunk_4.bin",
+          "models/characters/geto/chunk_5.bin"
+        ],
+        "sha256": "ad6a81196c57848e66d5b4c2363273af85d0b60293a1a10e35c9e7ab1b26b11d",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "toji",
+      "checkpointSha256": "7f9da37feac47f5b6fd06962c01292253866528ecae5284a5693f1a07b887122",
+      "indexSha256": "3ca686e1b45e2d76910cc0ec4e99be225837be7e984dc81062459e5f33545672",
+      "active": {
+        "chunks": [
+          "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_0.bin",
+          "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_1.bin",
+          "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_2.bin",
+          "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_3.bin",
+          "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_4.bin",
+          "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_5.bin"
+        ],
+        "sha256": "b3a86a7cf8df0a496ea02a948beb5354a13eb10de999f0bdbfb3c805e5255a0b",
+        "chunkSha256": [
+          "58e6fb9d37d0eb3e33ff4fda03e44c09fe240d3e227e65798be3ed47232f920b",
+          "e813862109e0dc786b708063e24d92ee1437abc48100f6723258b3f366bf23fa",
+          "c56bb799350fb47612be4060fd4026c4e7f7f47212cf9c745dce314add75641c",
+          "c9da2796a3023b625c366994fb1d4018c120100404ab22f3a8608f70bce5737c",
+          "9833072bfc5932d8bd456d2e9780d8c94d1656566972a2ce924b0c5fec322d8b",
+          "fc85a0ccd04d894eed1d619d8a364fe6693cd2893209a0cecadf4adf0f1e6190"
+        ],
+        "resourceRevision": "b3a86a7cf8df0a496ea02a948beb5354a13eb10de999f0bdbfb3c805e5255a0b",
+        "totalSize": 115532257,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/toji/chunk_0.bin",
+          "models/characters/toji/chunk_1.bin",
+          "models/characters/toji/chunk_2.bin",
+          "models/characters/toji/chunk_3.bin",
+          "models/characters/toji/chunk_4.bin",
+          "models/characters/toji/chunk_5.bin"
+        ],
+        "sha256": "d250a7562b158a1781bc9577e2884e0c93c9e668313d6e3f8038c3600153d9c9",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "megumi",
+      "checkpointSha256": "5607805eca963f7cffd25962ecdd47366ba38377cccdca254bd1a4c7c871424f",
+      "indexSha256": "3cb0baec983878498ba311bc861a0677d35125c400bf89a3c5ef8c1a037aa7e5",
+      "active": {
+        "chunks": [
+          "models/characters/megumi/revisions/33e691f9d79fce49/chunk_0.bin",
+          "models/characters/megumi/revisions/33e691f9d79fce49/chunk_1.bin",
+          "models/characters/megumi/revisions/33e691f9d79fce49/chunk_2.bin",
+          "models/characters/megumi/revisions/33e691f9d79fce49/chunk_3.bin",
+          "models/characters/megumi/revisions/33e691f9d79fce49/chunk_4.bin",
+          "models/characters/megumi/revisions/33e691f9d79fce49/chunk_5.bin"
+        ],
+        "sha256": "33e691f9d79fce4983c4694f8ef1f457a475c61d6e3a4c5af44bbdfabb5e32e9",
+        "chunkSha256": [
+          "7e40fbf144849f7db7bf627f1dd4a6f97c8b3606d67faa1320a46eeab9eb48a2",
+          "8cc5637f2fb2856c805a2b9b71b324fbc5266c0c297ad65d36704ad9bab104c9",
+          "837b6285bff4bbf80d2a387d4f2ac0a53fa122db660388fcc94c9ef9be7e08d9",
+          "95f5465a40cf014900b419ee7a604094a9daa3e0ea3121c946807e3bfab239af",
+          "5152e684446f45f9cb9dc182efc3bc9fcef80e28220deec7a32d4006532efd18",
+          "e55519045a9322a037b72c74376299860c58a1aacfdc096a6ff5e80ca38cbf5e"
+        ],
+        "resourceRevision": "33e691f9d79fce4983c4694f8ef1f457a475c61d6e3a4c5af44bbdfabb5e32e9",
+        "totalSize": 115532257,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/megumi/chunk_0.bin",
+          "models/characters/megumi/chunk_1.bin",
+          "models/characters/megumi/chunk_2.bin",
+          "models/characters/megumi/chunk_3.bin",
+          "models/characters/megumi/chunk_4.bin",
+          "models/characters/megumi/chunk_5.bin"
+        ],
+        "sha256": "6cc775add963ed89658837fdc586fd69d60a8cb63886a2fbf9eef0c6e2b503da",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "key",
+      "checkpointSha256": "be27f3fdc4baf71fd6ce305ea4c08667641cc87318ea42239cfbd43dbc608251",
+      "indexSha256": "9bd81dd0531a64b835c9b56df909b5939d3cd258e10b69b0a05826001fb88741",
+      "active": {
+        "chunks": [
+          "models/characters/key/revisions/a548c6d95a98a26b/chunk_0.bin",
+          "models/characters/key/revisions/a548c6d95a98a26b/chunk_1.bin",
+          "models/characters/key/revisions/a548c6d95a98a26b/chunk_2.bin",
+          "models/characters/key/revisions/a548c6d95a98a26b/chunk_3.bin",
+          "models/characters/key/revisions/a548c6d95a98a26b/chunk_4.bin",
+          "models/characters/key/revisions/a548c6d95a98a26b/chunk_5.bin"
+        ],
+        "sha256": "a548c6d95a98a26beac11b0fd2cb9d9e4a72505a4f3f7846a67d09d0c686ce4a",
+        "chunkSha256": [
+          "26d255ed02f76ee1854b14f1b065027450dc10044eee75edcfcb486dc99de9b9",
+          "1009ad0fde1c53b6282d9d8f5233abcde3edda3492bc0fd62206c8ef4866214b",
+          "e81f3395203e1a0b297bc5bdee9bc3624dfffc21940f7f19b342690636eaf2f7",
+          "72b7e850a85c62066233baf0876721ec7d1779ff172a160a9dc2d0d296daf5f3",
+          "b4b7e4eed03bc62d23746708685aa1fcbb4aff794e67c6829f93cdd3d1b4bebd",
+          "8cc2619af076a899faaf716c573cc95b7f066afd004bec91f2171f2a9d0f734b"
+        ],
+        "resourceRevision": "a548c6d95a98a26beac11b0fd2cb9d9e4a72505a4f3f7846a67d09d0c686ce4a",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/key/chunk_0.bin",
+          "models/characters/key/chunk_1.bin",
+          "models/characters/key/chunk_2.bin",
+          "models/characters/key/chunk_3.bin",
+          "models/characters/key/chunk_4.bin",
+          "models/characters/key/chunk_5.bin"
+        ],
+        "sha256": "0fa2bd7752c3cca9edb955458c706428a82444101be549c0ee2147e378f2a7a1",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "nonomi",
+      "checkpointSha256": "0c5acc244323d4f455b6a7f6b74e6e7d60504c3e0eb3e21065af01c5deae6b18",
+      "indexSha256": "2c9a63fe0d2e06b6c48f9dc0e4cc545cb871c7ba99f687ea7945ccf2a4a77033",
+      "active": {
+        "chunks": [
+          "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_0.bin",
+          "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_1.bin",
+          "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_2.bin",
+          "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_3.bin",
+          "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_4.bin",
+          "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_5.bin"
+        ],
+        "sha256": "b47bd717b9e7e34415a34f87d8c0a79295202f6c8d76bb279aa097b7275db6a4",
+        "chunkSha256": [
+          "340b0745117ac97996a4a847b1c446d5d20b7c77e82e10791b26e546438f5592",
+          "e39c4037da80784b2f203ef4a15da7d36254069082a8db50d935b2efeb6a989c",
+          "c3a4d26f83ac4899b35c2e9c623c29aa0a00711fc196c0686c0a3ae2c3e7999c",
+          "7a0eca68055da92ec9a3880ae1169206c768d5ffd31f65ce99a203768afd7e5e",
+          "213f97354737aafbad92eba1540fca6b90e52f435b3e0441994affa114952660",
+          "0f8f15ea873f590fa918341616b0dac4342a8abc46bca67ec2d72c757215cc76"
+        ],
+        "resourceRevision": "b47bd717b9e7e34415a34f87d8c0a79295202f6c8d76bb279aa097b7275db6a4",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/nonomi/chunk_0.bin",
+          "models/characters/nonomi/chunk_1.bin",
+          "models/characters/nonomi/chunk_2.bin",
+          "models/characters/nonomi/chunk_3.bin",
+          "models/characters/nonomi/chunk_4.bin",
+          "models/characters/nonomi/chunk_5.bin"
+        ],
+        "sha256": "9c996879079acefaf6da2241540279cd6fa839eca03f431f93c6e80f39e5b4fb",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "serika",
+      "checkpointSha256": "725d93fac82e864fb9b01042698832c55b574a8b8cbdc5cf14cc30821c08bc71",
+      "indexSha256": "bcd3754e79195175628d54d614768d9c6458c25b325ae75782b7edf4417af834",
+      "active": {
+        "chunks": [
+          "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_0.bin",
+          "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_1.bin",
+          "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_2.bin",
+          "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_3.bin",
+          "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_4.bin",
+          "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_5.bin"
+        ],
+        "sha256": "c2aff7b5eb7fc6795e6a3b16c8b7104d0c95a279d039704559f447330737a6e8",
+        "chunkSha256": [
+          "06b7415dc9a9bff72c557f70413d841004ef5ec191bf52b0ba498cafbad69486",
+          "cc6a2d92902843a2964d0a398a51639f49862cc25a03fe0358186cde259b2b84",
+          "e8f916620f79c2e5f8c8c5a36fc15332dcd7c076804e43e3dd4badba23cb9cd5",
+          "e76426a371bc513d47debee69f320b0ba239694bd6cb9e78b8e42a4a5967d9bf",
+          "824c62b8de27533582f4aa016254fed5465c7f405424102e2b19f4d91917df94",
+          "ecb977f668ad1b0118466f94f43b69d75f927a5dd0ca656ec91fdbaf6de53467"
+        ],
+        "resourceRevision": "c2aff7b5eb7fc6795e6a3b16c8b7104d0c95a279d039704559f447330737a6e8",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/serika/chunk_0.bin",
+          "models/characters/serika/chunk_1.bin",
+          "models/characters/serika/chunk_2.bin",
+          "models/characters/serika/chunk_3.bin",
+          "models/characters/serika/chunk_4.bin",
+          "models/characters/serika/chunk_5.bin"
+        ],
+        "sha256": "3ebb3264a290fe5984a109962bd1c25a3ea884471d00f444a937b2dc3d3ff461",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "ayane",
+      "checkpointSha256": "9953556bf704f41478c0ca902097dc17005c1a655232a06e91c375d47fb0ddc5",
+      "indexSha256": "37d5dd684d15ff99b7760cf8bca895ceff52978aa3322818cf5052a0dbe1eff1",
+      "active": {
+        "chunks": [
+          "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_0.bin",
+          "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_1.bin",
+          "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_2.bin",
+          "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_3.bin",
+          "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_4.bin",
+          "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_5.bin"
+        ],
+        "sha256": "162006ad3d8cdf159beca116db16ffb53be51e20d2990d840bf303b4bdebad5a",
+        "chunkSha256": [
+          "0f2d3a06c45f95fd7b648e6943e475d0ab57d448b8d4746c48a5597342b0b2be",
+          "e17ef83ffa936e7bcf109f561e0226067500971b908f4ab48cf867d2a5b7c44f",
+          "58cb325e221f9f3da50c8a2449aada4298f37b942523e3ad5ecc8919b68f3bc1",
+          "b3eb994c8964154060307e54a0eee477d1ea4b1298773f5851cc5d6285d54bbe",
+          "6e7322dcc98e72a9a61d3ae7a4765b181806638a9695ddd383949bfe855ebb30",
+          "06d51e6a53004dd054aa1f9b972e57f0eacf3ce5f9eb2509cf1cd7edbd4ce504"
+        ],
+        "resourceRevision": "162006ad3d8cdf159beca116db16ffb53be51e20d2990d840bf303b4bdebad5a",
+        "totalSize": 110813665,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/ayane/chunk_0.bin",
+          "models/characters/ayane/chunk_1.bin",
+          "models/characters/ayane/chunk_2.bin",
+          "models/characters/ayane/chunk_3.bin",
+          "models/characters/ayane/chunk_4.bin",
+          "models/characters/ayane/chunk_5.bin"
+        ],
+        "sha256": "9a79a27057a9bc7111fc6a89ccc939472fb0c7aef1cc27f163d59ab60f0b3b47",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    },
+    {
+      "characterId": "maki",
+      "checkpointSha256": "170a9e6e3f7c79c0eb82f3aa0d8dfad5325e593582386bcac07a46cbc4e51f70",
+      "indexSha256": "9576619fa1375174ad1d239769c2ea4049c46ecd295b046a28a21ac2e2a939ed",
+      "active": {
+        "chunks": [
+          "models/characters/maki/revisions/c33881471e8660ff/chunk_0.bin",
+          "models/characters/maki/revisions/c33881471e8660ff/chunk_1.bin",
+          "models/characters/maki/revisions/c33881471e8660ff/chunk_2.bin",
+          "models/characters/maki/revisions/c33881471e8660ff/chunk_3.bin",
+          "models/characters/maki/revisions/c33881471e8660ff/chunk_4.bin",
+          "models/characters/maki/revisions/c33881471e8660ff/chunk_5.bin"
+        ],
+        "sha256": "c33881471e8660ff4357bea9aa301bd75c0809f0b3b83735c6d1703a0dbfcf07",
+        "chunkSha256": [
+          "ef078aba73e30296c63e2f109bab8527a9e07ab0fa4021c35559b8c425cf80fa",
+          "139f2d61dbdb932a9ef8e3c4322e7687bcf202493b4edaab4d0f3306ea45a915",
+          "1e01350e47b170b483aed582c01c949ba37348f78caf8f77161ee89dd0faaa29",
+          "e971fe5135db324f8e22042689ffdf8e4df9ae1fef98fdae358dc62a5734a06c",
+          "e6e4f13d4a4b4058cd6d38f4dc58ce6cad99a0b3b1dbfe6efa6e10b3eff3563e",
+          "cfeebfb7239fa68d5d690e3349297b50e6b73a7bd72f1d9460979c2c6e0c1e95"
+        ],
+        "resourceRevision": "c33881471e8660ff4357bea9aa301bd75c0809f0b3b83735c6d1703a0dbfcf07",
+        "totalSize": 110420449,
+        "excitationContract": "explicit-source-v1"
+      },
+      "rollback": {
+        "chunks": [
+          "models/characters/maki/chunk_0.bin",
+          "models/characters/maki/chunk_1.bin",
+          "models/characters/maki/chunk_2.bin",
+          "models/characters/maki/chunk_3.bin",
+          "models/characters/maki/chunk_4.bin",
+          "models/characters/maki/chunk_5.bin"
+        ],
+        "sha256": "986273711405da096e30033715fb32c4fa246d7e45ae2da50a7ac94138cd6d68",
+        "chunkSha256": null,
+        "resourceRevision": null,
+        "totalSize": null,
+        "excitationContract": null
+      },
+      "changes": {
+        "previousFinalSlope": 0.10000000149011612,
+        "finalSlope": 0.01,
+        "excitation": "explicit float32 samples computed from a float64 phase clock"
+      },
+      "qualityListening": "unverified"
+    }
+  ]
+}

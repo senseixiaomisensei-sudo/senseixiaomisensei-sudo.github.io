@@ -32,7 +32,8 @@ report=json.loads((a.candidate/'report.json').read_text(encoding='utf8'))
 timeline=a.candidate/'diagnostic-stages/timeline'
 z=np.load(timeline/'f0.npz')
 times=np.arange(len(z['raw']))*.01-3
-windows=([(33.22,33.34),(39.50,39.57),(39.77,39.86),(46.78,46.95)] if a.label=='A'
+windows=([(33.22,33.34),(33.33,33.43),(36.05,36.18),(36.24,36.36),
+          (39.50,39.57),(39.77,39.86),(46.78,46.95)] if a.label=='A'
          else [(57.52,57.67),(85.75,85.92),(141.35,141.50),(184.90,184.97)])
 raw_pitch=pitch_at(a.candidate/'diagnostic-stages/joined-before-repair.wav',times)
 source_pitch=pitch_at(a.candidate/'model-input-16k.wav',times)

@@ -490,5 +490,625 @@
     "featureDimension": 768,
     "inputSampleRate": 16000,
     "waveformNormalization": false
+  },
+  "serina.onnx": {
+    "totalSize": 110813665,
+    "sha256": "877539d8058aa4391fb6c3f7c810e969f72e5f6776f6fead5d25856fe17e6242",
+    "chunks": [
+      "models/characters/serina/revisions/877539d8058aa439/chunk_0.bin",
+      "models/characters/serina/revisions/877539d8058aa439/chunk_1.bin",
+      "models/characters/serina/revisions/877539d8058aa439/chunk_2.bin",
+      "models/characters/serina/revisions/877539d8058aa439/chunk_3.bin",
+      "models/characters/serina/revisions/877539d8058aa439/chunk_4.bin",
+      "models/characters/serina/revisions/877539d8058aa439/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "71bd82280f7afa76b4067219efef5b80bb088d07c82211465c44e8b700c3ae96",
+      "b4918172f5e19358bba9dfa27b0ba76d8024be2ee0dabb0969a25fb5cd859c08",
+      "1fa95c134ef77769bab4185a5b69b515685a15e499b8910b278b84657dce720e",
+      "dba72547ced0ac3e0ffcdbca48486a1a5edbea7149ab22bb4fe35173c267db1c",
+      "c7eae7660f58630019dc6b32d7e07c17ef17d402b6dfc47e458e44e2e3643668",
+      "a2ded18ad9f01e303f4e5d5d255e4d4a4e0e38f2864a1cd65f60d3cfc578221e"
+    ]
+  },
+  "arona-bf9a5293f3178734.onnx": {
+    "totalSize": 110813665,
+    "sha256": "bf9a5293f3178734e40c5f9a5d9c1933434f7f9aff353c63bb277288fdc56e0e",
+    "chunks": [
+      "models/characters/arona/revisions/bf9a5293f3178734/chunk_0.bin",
+      "models/characters/arona/revisions/bf9a5293f3178734/chunk_1.bin",
+      "models/characters/arona/revisions/bf9a5293f3178734/chunk_2.bin",
+      "models/characters/arona/revisions/bf9a5293f3178734/chunk_3.bin",
+      "models/characters/arona/revisions/bf9a5293f3178734/chunk_4.bin",
+      "models/characters/arona/revisions/bf9a5293f3178734/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "106e507cc44233ad32d0c2b838f34551e0ae52441192efb44ff55a2f44977d67",
+      "03460e5ec0e1230108e1085adff489b6b412c6471d38f56e01472319c77d87d2",
+      "3db96903625755f3e240b52329e16d69c1c5c97dd4c7ef9cd83c6b3d3949c901",
+      "2432b57e3a45d5b124a7ff371f0776a50a13c5a9b2f48b7db8ec7ad70bf30594",
+      "58705024de01e076fd32a93f1cd98ab373d7630c398925a2915b12132f24b39d",
+      "7fb98aba374cd67392c2ed54879c28e2dfee16c437c991893fa565ea2bc1c7ac"
+    ]
+  },
+  "arisu-772f9aa3a8396fca.onnx": {
+    "totalSize": 110813665,
+    "sha256": "772f9aa3a8396fca9ee092c11f93a6623b788e425a43a3c31fe06af7f0635e95",
+    "chunks": [
+      "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_0.bin",
+      "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_1.bin",
+      "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_2.bin",
+      "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_3.bin",
+      "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_4.bin",
+      "models/characters/arisu/revisions/772f9aa3a8396fca/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "f7066afc2b831b68890c166b287dad40fd4e69a9589acbed5145f4ca8e2aa65b",
+      "3962b4cfa39c49ef006c1c081199fe934fb5ede4891c0df48b7123884dfcdd4d",
+      "10a724e28eb0f8db9b10a750639f14955301f30ae7abc027adfb2c1aeefc0648",
+      "b46da95bb33fd005d90708443194c452bc489c7f0f3618c9c033fc6e0310986c",
+      "39bd84dc4b559a701a9facbed0f8485b736eb0bb0047fda3eaf9c4b6fb83052e",
+      "e90bdbfa47e458a10b272944a9e79dc2e51cc95683cefd219c8fb14c43ff8c75"
+    ]
+  },
+  "shiroko-e98fcfb3f8441439.onnx": {
+    "totalSize": 110813665,
+    "sha256": "e98fcfb3f84414398c4f7c867b5b847999639ad8f791d05e2f696e3000743061",
+    "chunks": [
+      "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_0.bin",
+      "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_1.bin",
+      "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_2.bin",
+      "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_3.bin",
+      "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_4.bin",
+      "models/characters/shiroko/revisions/e98fcfb3f8441439/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "ced700bd51dd5599152c2964c3616e6fbacf43796bc44e9afa10a9f6ca1df868",
+      "21d36dd10efb351eded53db1a9202fa590067a65cfcb5307b4d93817070a7b97",
+      "7c6e195ca41c35aa2035ea3ead9ff52393e847b49d65c31e3e00210902f66566",
+      "d91c99c5ac18ab8ec97f521feaf4fa88215d4dc23778825400a40d13b2038b80",
+      "5168d871b7b5a32c1df5f527e71bf18d3cb8514cf24d33aac5112578a895cfe2",
+      "fc094ef9daa56c35bf5e36dde75b5b6a5fc9a5b26de50e5da2f712d8efdfa0ca"
+    ]
+  },
+  "hoshino-c72753b89ad18035.onnx": {
+    "totalSize": 110420449,
+    "sha256": "c72753b89ad18035827f8fc236c82722d6a4578bb8ec80ac353dfaa941c8635c",
+    "chunks": [
+      "models/characters/hoshino/revisions/c72753b89ad18035/chunk_0.bin",
+      "models/characters/hoshino/revisions/c72753b89ad18035/chunk_1.bin",
+      "models/characters/hoshino/revisions/c72753b89ad18035/chunk_2.bin",
+      "models/characters/hoshino/revisions/c72753b89ad18035/chunk_3.bin",
+      "models/characters/hoshino/revisions/c72753b89ad18035/chunk_4.bin",
+      "models/characters/hoshino/revisions/c72753b89ad18035/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "67f8e52d034fe19ee129d9ae5f8f8e047fa347122859e3de4b074448664c0991",
+      "e3872a22a3bf0eaf8a765e7a08d4de8c88e0c466018a53ce182b7e9611219f12",
+      "36df0887ceb2b5dbe1f5c0869326025f28c01273cd939cb12777f1de75964eb2",
+      "9257545fe753a1a98d36e4f3d461a8130f862f40668871eeccb9d170a92dc5f2",
+      "467d9fe13c798296525adbc71b2314ca46d168d8aa38577a9d8125303958f63f",
+      "d49628f8607f992db8ef260c89a0847e21221e2590d95a368878729d12214d0c"
+    ]
+  },
+  "yuuka-3e924d45ffcbd7af.onnx": {
+    "totalSize": 110813665,
+    "sha256": "3e924d45ffcbd7af357a354c273f5a4574dddf883c8602b99b72bdedc56cf911",
+    "chunks": [
+      "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_0.bin",
+      "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_1.bin",
+      "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_2.bin",
+      "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_3.bin",
+      "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_4.bin",
+      "models/characters/yuuka/revisions/3e924d45ffcbd7af/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "f22b4785b7c48026e283d4eb7a34dfa2a6464fa9cbafb3a2113ff2530407a488",
+      "e0955c5711bf4c8d4eb5acf7d855f50ac93293011d5e1b3bb930b1eedc33caaf",
+      "b778cdce00814604df5444ebaa8ed63359b42c9b2337e5ca40060aaba16a1502",
+      "a60819bfe802894f5ec71fbb3720e8259977d62f9205112e664e0cee519a5b89",
+      "792b5dbac93aadcd2bd0d1a31d8ba925411ec43f8878c7225570f683cd588d11",
+      "f745ca151f9325b3a92fc565d070f3c8c4163fad6843081719e14c2d01dbff7e"
+    ]
+  },
+  "hina-7962512364d15808.onnx": {
+    "totalSize": 110813665,
+    "sha256": "7962512364d15808b48e8d4d59adc64cdb509c04e5e6dd6c0ce78fefee341846",
+    "chunks": [
+      "models/characters/hina/revisions/7962512364d15808/chunk_0.bin",
+      "models/characters/hina/revisions/7962512364d15808/chunk_1.bin",
+      "models/characters/hina/revisions/7962512364d15808/chunk_2.bin",
+      "models/characters/hina/revisions/7962512364d15808/chunk_3.bin",
+      "models/characters/hina/revisions/7962512364d15808/chunk_4.bin",
+      "models/characters/hina/revisions/7962512364d15808/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "213d41cdee1d4d8d238926acd77d92503ea41de03226401c6133b22f679e804a",
+      "9c0a98ec8cdf7ee637e92bd9cd1aaa1609658732b5ddbe4ad4bf6e53ebd18353",
+      "ca96a43237a933ad10fd5af8e79fb6c8a914456a497f51dbcf4dc34763e58272",
+      "8d353c70066e660ab6732eb3c5989fe4c44f6701c1bfbbe3634171f28248129f",
+      "45cecca2632402da8f6c50df3c33daf793a6a066e04b9bf30add3f0d198d2168",
+      "4d1c88809a180168b0e21fc35903feb9ba5fc18d63b8cbf8652a19d2cfca3f17"
+    ]
+  },
+  "noa-41f93d94f6e98776.onnx": {
+    "totalSize": 110813665,
+    "sha256": "41f93d94f6e987764c6653b0731a837986b49edcc7a6390bcfb8ddace4bafabf",
+    "chunks": [
+      "models/characters/noa/revisions/41f93d94f6e98776/chunk_0.bin",
+      "models/characters/noa/revisions/41f93d94f6e98776/chunk_1.bin",
+      "models/characters/noa/revisions/41f93d94f6e98776/chunk_2.bin",
+      "models/characters/noa/revisions/41f93d94f6e98776/chunk_3.bin",
+      "models/characters/noa/revisions/41f93d94f6e98776/chunk_4.bin",
+      "models/characters/noa/revisions/41f93d94f6e98776/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "416b10f5a92bfad33458280c58e0a7a6389db0f5cfcebe39817777adf4ec7a04",
+      "f3798e87c1ea76b5bea92ca78fc81dfbdee2b7b01b3942e6e03e61f5a2d06f02",
+      "fcd56d55ba4080f196e9e908afc8b7142015eda0f2c04268af1464f3d56d746d",
+      "52368d420e2dab33fb88ec4d4fc69da1ac28a27d5e48cab5adafaf72b97ea5a4",
+      "b372b4c2f0855f7f8d8cc3765a5fe63047ef03ca20f34ecf6ea94c7edabc6a0c",
+      "6c186a4e6cdf983ae82c5f1bbd9a31726ad41fe4a9887d9391e5a620d7158ab3"
+    ]
+  },
+  "koharu-be7aafff166c3c20.onnx": {
+    "totalSize": 110813665,
+    "sha256": "be7aafff166c3c20baaf9908140d2bb0568c8321576deda0102beb325f2e6a2d",
+    "chunks": [
+      "models/characters/koharu/revisions/be7aafff166c3c20/chunk_0.bin",
+      "models/characters/koharu/revisions/be7aafff166c3c20/chunk_1.bin",
+      "models/characters/koharu/revisions/be7aafff166c3c20/chunk_2.bin",
+      "models/characters/koharu/revisions/be7aafff166c3c20/chunk_3.bin",
+      "models/characters/koharu/revisions/be7aafff166c3c20/chunk_4.bin",
+      "models/characters/koharu/revisions/be7aafff166c3c20/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "aaa15c85313ef7398efe4ffc93b5dda73cebd6fbddec7daac035c686cf9ac104",
+      "94608e6477406ec0ba3227a55fa25606f7e31dfaf773bda835af5442b23ea04a",
+      "4a1a2e9bd343cb93c7cbd11cae892a5286c59138d81cff4ca26d3060dec85cc2",
+      "3336a89e126221cb98ee98a3888116c5208a247eb190c6b364e8418d059620b2",
+      "7d36d9253871803785671d4f7f657aca31fe9f548783c25738e36b0fe4bd8a20",
+      "05c10ccfedec28a9d0b1b6edcda1efb2ae4c9fbaffd72cc26299a6c4335754f8"
+    ]
+  },
+  "momoi-00c4d1f74f03d7ca.onnx": {
+    "totalSize": 110813665,
+    "sha256": "00c4d1f74f03d7caa468321d29d81df3c22981f105fd3aa7998c6cbb25e1c7ef",
+    "chunks": [
+      "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_0.bin",
+      "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_1.bin",
+      "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_2.bin",
+      "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_3.bin",
+      "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_4.bin",
+      "models/characters/momoi/revisions/00c4d1f74f03d7ca/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "5bb5b16aa4de48561f1ede72810ae5187c58a02f6837f49fb83def2763dde4e1",
+      "87f847c7f38656a083f1e31fecd7b74f09d6431655fcfc4143b2fef6066dda17",
+      "1fb2bdf231ab2a4a3d971cb777be618ce2bc250429ef5d529c3ba15f9cde7cd7",
+      "86d9bab4f949e9919d9c46be018a5c08376f498b7040d0d536b239806fd4987c",
+      "ed3166ef362e9129bb8e96804134465ff6ff2874bbdf5f2cc6d7d79e196910e4",
+      "ee228916564b90d3d9dcbff28e6efeec656f0692e707c0dd572ba2522d35a5c4"
+    ]
+  },
+  "midori-ab5bd6c767e76193.onnx": {
+    "totalSize": 110813665,
+    "sha256": "ab5bd6c767e761936268fd924813902c1999dcc484bdac8f364809d5258362fc",
+    "chunks": [
+      "models/characters/midori/revisions/ab5bd6c767e76193/chunk_0.bin",
+      "models/characters/midori/revisions/ab5bd6c767e76193/chunk_1.bin",
+      "models/characters/midori/revisions/ab5bd6c767e76193/chunk_2.bin",
+      "models/characters/midori/revisions/ab5bd6c767e76193/chunk_3.bin",
+      "models/characters/midori/revisions/ab5bd6c767e76193/chunk_4.bin",
+      "models/characters/midori/revisions/ab5bd6c767e76193/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "ee5745b6ec67275d2a25520251f4b6679bb778b61a430e29dbc70b2a87261686",
+      "fa6a6f86edc80e9d062c47c91a36e1a18d200aa108a10158207396ffe64c8515",
+      "0bf8dfb1c28967dbc64720a614a85cd61706e66a2d699daa8c77b900d7fe0e99",
+      "928df160ba0942ca7aa1ca2501d513a8c88ebabfe0f889c23d3a80d38de0a73c",
+      "5cbdfd232b756a791d61694271edd0b674e93b5f94ab01ffabaaa2a1f395543e",
+      "b4607634096734c729176b9f9c15bd1b54d389c67c35f46ae697aa4c42a1b54f"
+    ]
+  },
+  "reisa-e17d27c99477811f.onnx": {
+    "totalSize": 110813665,
+    "sha256": "e17d27c99477811fe14475fba18952d1903430c5f4fa1ed823eb957b4914c4bb",
+    "chunks": [
+      "models/characters/reisa/revisions/e17d27c99477811f/chunk_0.bin",
+      "models/characters/reisa/revisions/e17d27c99477811f/chunk_1.bin",
+      "models/characters/reisa/revisions/e17d27c99477811f/chunk_2.bin",
+      "models/characters/reisa/revisions/e17d27c99477811f/chunk_3.bin",
+      "models/characters/reisa/revisions/e17d27c99477811f/chunk_4.bin",
+      "models/characters/reisa/revisions/e17d27c99477811f/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "7b89f191b1427a66138d263c4fdad21bb27aac6bbe88d73e7cbd6296e61734fc",
+      "4759e915e05c650aab01b02ab963339c145fd6a5a171a3c6112c08458cf91d41",
+      "c060fe826cf655b8a49e04fbddd435a786db6306dbb5d700247b8f254a511261",
+      "5c5181d83cd8e6921b5e9a089b898cbfaa453fde5c0f4067f7861e3d262a0593",
+      "99ac33861364633d4357df1f1385056bbe0ecf8babcacfd4cd70a8b733b5772b",
+      "0dd1f97b899088bc8c5f99cc80ea4829b59859136438347f8f295a2be334a9a9"
+    ]
+  },
+  "yuzu-827b147a83c1b7d5.onnx": {
+    "totalSize": 110813665,
+    "sha256": "827b147a83c1b7d59e373f4e8deb4f8e65b812441e169c329dd3e918ea059b18",
+    "chunks": [
+      "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_0.bin",
+      "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_1.bin",
+      "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_2.bin",
+      "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_3.bin",
+      "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_4.bin",
+      "models/characters/yuzu/revisions/827b147a83c1b7d5/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "16a6c97a8516245dc978ebef5b851044f1e040117c53dfe59c6e1774e9df08aa",
+      "3ac9046a770515c09e76a21c165e445c70e8462731edeac5ef179dde94748cc0",
+      "728f77e94cde67b59d54b7d5c179ee902b1c5510b6f7940148fbdd793a9a524a",
+      "be90830fbaa21a27221b5d62df46ad067dd0ccab6d878450ab4385e2ec41efcd",
+      "108476cdc3ffe3c6258cc651697ea6ca319ec4e85f916a804eaec49ea242a274",
+      "df75593fca2e4ffd8a2e830272458e396edd648c7b4070c65ba8d6d49427a3d2"
+    ]
+  },
+  "toki-183995e73947ebd5.onnx": {
+    "totalSize": 110813665,
+    "sha256": "183995e73947ebd56f30f2cf8a367ef8d7f9564d7034104e1932ba7f6275a373",
+    "chunks": [
+      "models/characters/toki/revisions/183995e73947ebd5/chunk_0.bin",
+      "models/characters/toki/revisions/183995e73947ebd5/chunk_1.bin",
+      "models/characters/toki/revisions/183995e73947ebd5/chunk_2.bin",
+      "models/characters/toki/revisions/183995e73947ebd5/chunk_3.bin",
+      "models/characters/toki/revisions/183995e73947ebd5/chunk_4.bin",
+      "models/characters/toki/revisions/183995e73947ebd5/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "433d045f98280d10f3e76c6e5d85879a388e06770116b1a8496471cffc3d9182",
+      "4daedaaa5136f083d6937a279815df3984b386f6fc812387f6a7300ef2a8e04f",
+      "701bf4b305a1eba3db1e343e3358a94e7e278b2d6945accb4aa2dab7ca576cc3",
+      "4e3d0d6d4fdd47277613d930af955fd257e0c8cabced9a3f214649ef7a825be6",
+      "8fcc6eed330245401bd5cc51bfc4b57fba5e412c9762c859bdcea29e497294c2",
+      "24fc17f27a42c8f243e59f20803eab12f567f3e1fba2dae36333fa5e99908541"
+    ]
+  },
+  "asuna-1feab8f91332dc0a.onnx": {
+    "totalSize": 110813665,
+    "sha256": "1feab8f91332dc0a178b997baab0f0965b4b613df069c4b99185f0516b5129dc",
+    "chunks": [
+      "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_0.bin",
+      "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_1.bin",
+      "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_2.bin",
+      "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_3.bin",
+      "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_4.bin",
+      "models/characters/asuna/revisions/1feab8f91332dc0a/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "7be8db521a6a808dab07273511e5e5655a5ed3c3d71857b5e565a029a8554799",
+      "aaada7ed85911de57092f3a1ac08460f67537ab1ed4dcc8acd6dddb313482905",
+      "bd182be5e3a2641f56a2ba7a0b5d2fa16dfed5d500512a89a61ebd0bbe5dbcc5",
+      "04fa44fe44bcea394d4db4be21dc903ee543d875c1b67df2597645c35750107c",
+      "ee4c31b6dc07c3c38ea99b3a7f2f42927d6bfc2e57e209e548737b35ae7266cd",
+      "575b3ce48048dfc65f0f379f5ffc49feb40b15b44ac7e0dac54abd0da828f8f6"
+    ]
+  },
+  "aru-d69cbf6b7c91aeaa.onnx": {
+    "totalSize": 110813665,
+    "sha256": "d69cbf6b7c91aeaaa742c4b313489198663084562788d90e7ccd25787adbba63",
+    "chunks": [
+      "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_0.bin",
+      "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_1.bin",
+      "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_2.bin",
+      "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_3.bin",
+      "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_4.bin",
+      "models/characters/aru/revisions/d69cbf6b7c91aeaa/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "311e592c848cdd02f47f3acb20bf1dd8da49eeb528fd8f9bc5d4fa2ccc03829f",
+      "8b13b098f7545ae570117475795814294890fa9ff2d29f8165d4669838bbcbd2",
+      "571ca230a1ac14d1c9a2480fbcd36f2e4f34f338478766a1cb2951b797276f40",
+      "e05f5e6f24b91a2864c374927932a76376899dcdfb399a31c0f5ac99641750f3",
+      "445389e2c0aceda0b07c27d8dc73ead110c813487209a6ef704e054a6ecca947",
+      "8d8f3bf8626c434e5cbe6102a75632a77cc5f3fb085305a538a818819c5a4def"
+    ]
+  },
+  "kirara-f6e1cd66f26242da.onnx": {
+    "totalSize": 110813665,
+    "sha256": "f6e1cd66f26242da263e93bbc0e280151dd9b1ed2c451e5d9bbc652270e80601",
+    "chunks": [
+      "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_0.bin",
+      "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_1.bin",
+      "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_2.bin",
+      "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_3.bin",
+      "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_4.bin",
+      "models/characters/kirara/revisions/f6e1cd66f26242da/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "590e7d05ed69c01e703d143ef25e58f3975aafb7e5d1ecb38bb8f75a4b3514f1",
+      "757c16dad5b778c73aa0e15a1758211d362a8654e55daf8a7ec202ddb8016e41",
+      "a4c1fc44b6d71542dff63ca20d00de40fa3c7d620cfbd4873697a401be0bba66",
+      "cb2fb2a1d18aca54c4afb59f61891e6a320d5733b3a127af9110e1cd2c2213da",
+      "87349880a6776cfc0c6f59b0c523e206dec18c5dac354fc586c796e8da177e4d",
+      "a8c3fb648cf8bedfd3d857026a8fd22b03d227d991df8c1f7537d2d5e996f5e2"
+    ]
+  },
+  "koyuki-dad207130d7acd34.onnx": {
+    "totalSize": 115532257,
+    "sha256": "dad207130d7acd347eff3a5002190358cd3c6553d36f8178e1d4f2e4ebb1cda7",
+    "chunks": [
+      "models/characters/koyuki/revisions/dad207130d7acd34/chunk_0.bin",
+      "models/characters/koyuki/revisions/dad207130d7acd34/chunk_1.bin",
+      "models/characters/koyuki/revisions/dad207130d7acd34/chunk_2.bin",
+      "models/characters/koyuki/revisions/dad207130d7acd34/chunk_3.bin",
+      "models/characters/koyuki/revisions/dad207130d7acd34/chunk_4.bin",
+      "models/characters/koyuki/revisions/dad207130d7acd34/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "ebcee76224b46555ad0d8d78818c756a6e755a9c96f4f5f6bc55f2e3ea3dd749",
+      "099309f0add6d5af5768d5aa652b9443e6d6a679f6a95b0990b9bf0f6afd519f",
+      "25d7d4ab29033c58ab6c10160d3a06f6362476f7f70de02502c48955a7b95324",
+      "231f51a895bbbb154701f517d8df42f82dfe24a2f0071b8e0944cec4cadd8070",
+      "e99aa25f97f0d93e5b092d3c984963cac1111832316129520dacacd477c182f0",
+      "a86a08f4eeac9f9b386a42fcf5a3ce6d7f6ed886ba41b34b4e0a266295885df8"
+    ]
+  },
+  "kayoko-70eeb1e76926e1c1.onnx": {
+    "totalSize": 110813665,
+    "sha256": "70eeb1e76926e1c193fde0da3cf3dfcd7c28a1ee6a951fc834f9239ea593a72f",
+    "chunks": [
+      "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_0.bin",
+      "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_1.bin",
+      "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_2.bin",
+      "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_3.bin",
+      "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_4.bin",
+      "models/characters/kayoko/revisions/70eeb1e76926e1c1/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "bc8c615057f6243a8aa811dbdde8d43603f1bba3fd7875ab2575e2fc8d176a25",
+      "bbc2114efd8ba099fa86ace138a34b82fcea04523156b27e6b3bc4d1cc3e110c",
+      "b120d0d57576015f8e226270c4926ff253b0647ff5b0f308a3f540520525a1f0",
+      "d3f7fd520ed2e902ead941402065caa38d4a0e9c419dc700af360b1056d857a6",
+      "42417f43ec7d6ee22ef59a37ffef15ea8f3f3c767d8cb665a5f47cbaa20ea5ae",
+      "cbe0766d8783ac2f5fe72fe57218dfad0ba3cd8d21124b6db1c63e7bf6face9f"
+    ]
+  },
+  "seia-e754de7890a5d9d6.onnx": {
+    "totalSize": 110813665,
+    "sha256": "e754de7890a5d9d66cca061caaf3c5c330b3435819d7c6fd6dc1c4778eb52b28",
+    "chunks": [
+      "models/characters/seia/revisions/e754de7890a5d9d6/chunk_0.bin",
+      "models/characters/seia/revisions/e754de7890a5d9d6/chunk_1.bin",
+      "models/characters/seia/revisions/e754de7890a5d9d6/chunk_2.bin",
+      "models/characters/seia/revisions/e754de7890a5d9d6/chunk_3.bin",
+      "models/characters/seia/revisions/e754de7890a5d9d6/chunk_4.bin",
+      "models/characters/seia/revisions/e754de7890a5d9d6/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "b6d3a3affa46ef8562444aff9402fcc9532188b4c366ba749b0dbdcb031b5a99",
+      "f80584f798209415120ce164042480bde0f387b905ce2360315ca670912b230c",
+      "a8328b6f815ffd7e4b3cdea9f20b5862f44466e8f187b105649aefa798c22bf0",
+      "af914a008b87f157d71ee5be39158e6d4736b677e8b7d18b8304f115993ea5d3",
+      "6ac933e85c392e5387c08ca4ec5b1c19a96649ccd89c1d11e95ebfb9eb2eb415",
+      "5723bf61afcf2e7b229d74178e702f007830c55b9f20131e8d1b1711cf52ae66"
+    ]
+  },
+  "mika-ed88a9717474c866.onnx": {
+    "totalSize": 112894433,
+    "sha256": "ed88a9717474c866b5f30edae491f33a913ad3443640d079cf55ceb8b41063e4",
+    "chunks": [
+      "models/characters/mika/revisions/ed88a9717474c866/chunk_0.bin",
+      "models/characters/mika/revisions/ed88a9717474c866/chunk_1.bin",
+      "models/characters/mika/revisions/ed88a9717474c866/chunk_2.bin",
+      "models/characters/mika/revisions/ed88a9717474c866/chunk_3.bin",
+      "models/characters/mika/revisions/ed88a9717474c866/chunk_4.bin",
+      "models/characters/mika/revisions/ed88a9717474c866/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "3fff4d9be769a5bb6734493c56b72fef69e01c7d37c5348547041630e8026fd5",
+      "3f816fe355100ed9cf717dc4034f8be0d8db8269be01007481a90346e8e54fc8",
+      "1713b637a2e28974848181a9a19a507c2d1fb8701d8628f49c1051083cee644c",
+      "44728ad36083cf7351195ba67652454879b8d706f6029b2e14adb59e19eebbae",
+      "e74d06c045fbf376948ea7796e58c5015463a6718599ab099789e42f3e3ef5e2",
+      "255bd883ffdef395631151fcfcfabc38e3a43462d7abcc30e682712a1fa15e3f"
+    ]
+  },
+  "gojo-d1896506134d2691.onnx": {
+    "totalSize": 115532257,
+    "sha256": "d1896506134d26911266c5f23c99697a17d093a062b5caaabd5dbf13eabe8acb",
+    "chunks": [
+      "models/characters/gojo/revisions/d1896506134d2691/chunk_0.bin",
+      "models/characters/gojo/revisions/d1896506134d2691/chunk_1.bin",
+      "models/characters/gojo/revisions/d1896506134d2691/chunk_2.bin",
+      "models/characters/gojo/revisions/d1896506134d2691/chunk_3.bin",
+      "models/characters/gojo/revisions/d1896506134d2691/chunk_4.bin",
+      "models/characters/gojo/revisions/d1896506134d2691/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "c290f500875cf200e9757fa6fee2a845eda3039aac07a63ab7aa9a1e0c17e5b3",
+      "1e5782732cd0df4b281c8483a3d1533b9b2b4918171c637f27c55063df17cd94",
+      "c3956a5afaf8172334beb3a5cd6c08343950f65741038ed2c5fbe496be45efde",
+      "eec572db243b8be0bc6bdbbc79214b745c51a7f358308fb9c89214e115870ba4",
+      "c6dbb7617e9b10a3e9d827dc639addfa0221671a22d6f59e02245df56ff39c53",
+      "c4587095a20aaec6f57033a6b20b3b765e8493bb816cc79f639c30e93ffdf03c"
+    ]
+  },
+  "sukuna-ae5ba5078720c93c.onnx": {
+    "totalSize": 115532257,
+    "sha256": "ae5ba5078720c93c37a17d0168fed24a00d612b2d0c7c66bda697d435a62c3bf",
+    "chunks": [
+      "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_0.bin",
+      "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_1.bin",
+      "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_2.bin",
+      "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_3.bin",
+      "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_4.bin",
+      "models/characters/sukuna/revisions/ae5ba5078720c93c/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "aff63fc2282b4130289bd1d0ff658a27d6ca0f37bde9b063c50774bd4e3312a7",
+      "45d197f5fccc326547b24c3027fb34464540c81bba212f09744161bba1880755",
+      "8a550e56c6dfaa36ea21fa915be0c6fc5fa3af470440280ab34c32d4ec61730d",
+      "4f18841b796f57fd76b4e15fa5b1bf6913e433dade7a268e513b29e8fae4b64b",
+      "4a282d2c9e374eba5d90620ca618854e20c0f41a1cfcf3da54a045f3ab7f45da",
+      "e3d0bcdfc1ecb9b008b9334237dcdc5f15172658534c67caf260187488aa7251"
+    ]
+  },
+  "geto-60b389b299b2fd43.onnx": {
+    "totalSize": 115532257,
+    "sha256": "60b389b299b2fd43aa44710d58a0cb6abeb8fe7f297424141bffb3eb8ae968ca",
+    "chunks": [
+      "models/characters/geto/revisions/60b389b299b2fd43/chunk_0.bin",
+      "models/characters/geto/revisions/60b389b299b2fd43/chunk_1.bin",
+      "models/characters/geto/revisions/60b389b299b2fd43/chunk_2.bin",
+      "models/characters/geto/revisions/60b389b299b2fd43/chunk_3.bin",
+      "models/characters/geto/revisions/60b389b299b2fd43/chunk_4.bin",
+      "models/characters/geto/revisions/60b389b299b2fd43/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "a113a2335401f8423a744da834afc5e21dc2edc10d9876d91a7dad2d60b99dac",
+      "27f01d71e689651d41eccfb886bbcc788c784303bf9c3d66c0cdfc11a1449272",
+      "c0e86b4b6074dca31318f8afc29e52cde680c70631c31ec28d729642121e5636",
+      "150aee1ff6c47b227d6ff7e106d349a57ac3e865a743d3b85962447aa9f2ca7d",
+      "2d89c80021e22576b5739d6db28e67ba4a0528a64b32a93d46672e99fda8dc03",
+      "1afa7a5d38765f899d7f93ad4ff61b538bf23dc3b1411442b4dd01ac02d5d63a"
+    ]
+  },
+  "toji-b3a86a7cf8df0a49.onnx": {
+    "totalSize": 115532257,
+    "sha256": "b3a86a7cf8df0a496ea02a948beb5354a13eb10de999f0bdbfb3c805e5255a0b",
+    "chunks": [
+      "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_0.bin",
+      "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_1.bin",
+      "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_2.bin",
+      "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_3.bin",
+      "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_4.bin",
+      "models/characters/toji/revisions/b3a86a7cf8df0a49/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "58e6fb9d37d0eb3e33ff4fda03e44c09fe240d3e227e65798be3ed47232f920b",
+      "e813862109e0dc786b708063e24d92ee1437abc48100f6723258b3f366bf23fa",
+      "c56bb799350fb47612be4060fd4026c4e7f7f47212cf9c745dce314add75641c",
+      "c9da2796a3023b625c366994fb1d4018c120100404ab22f3a8608f70bce5737c",
+      "9833072bfc5932d8bd456d2e9780d8c94d1656566972a2ce924b0c5fec322d8b",
+      "fc85a0ccd04d894eed1d619d8a364fe6693cd2893209a0cecadf4adf0f1e6190"
+    ]
+  },
+  "megumi-33e691f9d79fce49.onnx": {
+    "totalSize": 115532257,
+    "sha256": "33e691f9d79fce4983c4694f8ef1f457a475c61d6e3a4c5af44bbdfabb5e32e9",
+    "chunks": [
+      "models/characters/megumi/revisions/33e691f9d79fce49/chunk_0.bin",
+      "models/characters/megumi/revisions/33e691f9d79fce49/chunk_1.bin",
+      "models/characters/megumi/revisions/33e691f9d79fce49/chunk_2.bin",
+      "models/characters/megumi/revisions/33e691f9d79fce49/chunk_3.bin",
+      "models/characters/megumi/revisions/33e691f9d79fce49/chunk_4.bin",
+      "models/characters/megumi/revisions/33e691f9d79fce49/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "7e40fbf144849f7db7bf627f1dd4a6f97c8b3606d67faa1320a46eeab9eb48a2",
+      "8cc5637f2fb2856c805a2b9b71b324fbc5266c0c297ad65d36704ad9bab104c9",
+      "837b6285bff4bbf80d2a387d4f2ac0a53fa122db660388fcc94c9ef9be7e08d9",
+      "95f5465a40cf014900b419ee7a604094a9daa3e0ea3121c946807e3bfab239af",
+      "5152e684446f45f9cb9dc182efc3bc9fcef80e28220deec7a32d4006532efd18",
+      "e55519045a9322a037b72c74376299860c58a1aacfdc096a6ff5e80ca38cbf5e"
+    ]
+  },
+  "key-a548c6d95a98a26b.onnx": {
+    "totalSize": 110813665,
+    "sha256": "a548c6d95a98a26beac11b0fd2cb9d9e4a72505a4f3f7846a67d09d0c686ce4a",
+    "chunks": [
+      "models/characters/key/revisions/a548c6d95a98a26b/chunk_0.bin",
+      "models/characters/key/revisions/a548c6d95a98a26b/chunk_1.bin",
+      "models/characters/key/revisions/a548c6d95a98a26b/chunk_2.bin",
+      "models/characters/key/revisions/a548c6d95a98a26b/chunk_3.bin",
+      "models/characters/key/revisions/a548c6d95a98a26b/chunk_4.bin",
+      "models/characters/key/revisions/a548c6d95a98a26b/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "26d255ed02f76ee1854b14f1b065027450dc10044eee75edcfcb486dc99de9b9",
+      "1009ad0fde1c53b6282d9d8f5233abcde3edda3492bc0fd62206c8ef4866214b",
+      "e81f3395203e1a0b297bc5bdee9bc3624dfffc21940f7f19b342690636eaf2f7",
+      "72b7e850a85c62066233baf0876721ec7d1779ff172a160a9dc2d0d296daf5f3",
+      "b4b7e4eed03bc62d23746708685aa1fcbb4aff794e67c6829f93cdd3d1b4bebd",
+      "8cc2619af076a899faaf716c573cc95b7f066afd004bec91f2171f2a9d0f734b"
+    ]
+  },
+  "nonomi-b47bd717b9e7e344.onnx": {
+    "totalSize": 110813665,
+    "sha256": "b47bd717b9e7e34415a34f87d8c0a79295202f6c8d76bb279aa097b7275db6a4",
+    "chunks": [
+      "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_0.bin",
+      "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_1.bin",
+      "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_2.bin",
+      "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_3.bin",
+      "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_4.bin",
+      "models/characters/nonomi/revisions/b47bd717b9e7e344/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "340b0745117ac97996a4a847b1c446d5d20b7c77e82e10791b26e546438f5592",
+      "e39c4037da80784b2f203ef4a15da7d36254069082a8db50d935b2efeb6a989c",
+      "c3a4d26f83ac4899b35c2e9c623c29aa0a00711fc196c0686c0a3ae2c3e7999c",
+      "7a0eca68055da92ec9a3880ae1169206c768d5ffd31f65ce99a203768afd7e5e",
+      "213f97354737aafbad92eba1540fca6b90e52f435b3e0441994affa114952660",
+      "0f8f15ea873f590fa918341616b0dac4342a8abc46bca67ec2d72c757215cc76"
+    ]
+  },
+  "serika-c2aff7b5eb7fc679.onnx": {
+    "totalSize": 110813665,
+    "sha256": "c2aff7b5eb7fc6795e6a3b16c8b7104d0c95a279d039704559f447330737a6e8",
+    "chunks": [
+      "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_0.bin",
+      "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_1.bin",
+      "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_2.bin",
+      "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_3.bin",
+      "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_4.bin",
+      "models/characters/serika/revisions/c2aff7b5eb7fc679/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "06b7415dc9a9bff72c557f70413d841004ef5ec191bf52b0ba498cafbad69486",
+      "cc6a2d92902843a2964d0a398a51639f49862cc25a03fe0358186cde259b2b84",
+      "e8f916620f79c2e5f8c8c5a36fc15332dcd7c076804e43e3dd4badba23cb9cd5",
+      "e76426a371bc513d47debee69f320b0ba239694bd6cb9e78b8e42a4a5967d9bf",
+      "824c62b8de27533582f4aa016254fed5465c7f405424102e2b19f4d91917df94",
+      "ecb977f668ad1b0118466f94f43b69d75f927a5dd0ca656ec91fdbaf6de53467"
+    ]
+  },
+  "ayane-162006ad3d8cdf15.onnx": {
+    "totalSize": 110813665,
+    "sha256": "162006ad3d8cdf159beca116db16ffb53be51e20d2990d840bf303b4bdebad5a",
+    "chunks": [
+      "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_0.bin",
+      "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_1.bin",
+      "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_2.bin",
+      "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_3.bin",
+      "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_4.bin",
+      "models/characters/ayane/revisions/162006ad3d8cdf15/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "0f2d3a06c45f95fd7b648e6943e475d0ab57d448b8d4746c48a5597342b0b2be",
+      "e17ef83ffa936e7bcf109f561e0226067500971b908f4ab48cf867d2a5b7c44f",
+      "58cb325e221f9f3da50c8a2449aada4298f37b942523e3ad5ecc8919b68f3bc1",
+      "b3eb994c8964154060307e54a0eee477d1ea4b1298773f5851cc5d6285d54bbe",
+      "6e7322dcc98e72a9a61d3ae7a4765b181806638a9695ddd383949bfe855ebb30",
+      "06d51e6a53004dd054aa1f9b972e57f0eacf3ce5f9eb2509cf1cd7edbd4ce504"
+    ]
+  },
+  "maki-c33881471e8660ff.onnx": {
+    "totalSize": 110420449,
+    "sha256": "c33881471e8660ff4357bea9aa301bd75c0809f0b3b83735c6d1703a0dbfcf07",
+    "chunks": [
+      "models/characters/maki/revisions/c33881471e8660ff/chunk_0.bin",
+      "models/characters/maki/revisions/c33881471e8660ff/chunk_1.bin",
+      "models/characters/maki/revisions/c33881471e8660ff/chunk_2.bin",
+      "models/characters/maki/revisions/c33881471e8660ff/chunk_3.bin",
+      "models/characters/maki/revisions/c33881471e8660ff/chunk_4.bin",
+      "models/characters/maki/revisions/c33881471e8660ff/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "ef078aba73e30296c63e2f109bab8527a9e07ab0fa4021c35559b8c425cf80fa",
+      "139f2d61dbdb932a9ef8e3c4322e7687bcf202493b4edaab4d0f3306ea45a915",
+      "1e01350e47b170b483aed582c01c949ba37348f78caf8f77161ee89dd0faaa29",
+      "e971fe5135db324f8e22042689ffdf8e4df9ae1fef98fdae358dc62a5734a06c",
+      "e6e4f13d4a4b4058cd6d38f4dc58ce6cad99a0b3b1dbfe6efa6e10b3eff3563e",
+      "cfeebfb7239fa68d5d690e3349297b50e6b73a7bd72f1d9460979c2c6e0c1e95"
+    ]
   }
 }

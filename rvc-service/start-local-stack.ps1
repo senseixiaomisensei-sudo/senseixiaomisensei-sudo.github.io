@@ -82,6 +82,10 @@ if (-not $healthy) {
   $env:RVC_SEPARATOR_MODEL = "model_bs_roformer_ep_368_sdr_12.9628.ckpt"
   $env:RVC_SEPARATOR_DEVICE = "cuda"
   $env:RVC_MAX_CONCURRENCY = "1"
+  # Keep the deployed process on the validated shared frame/phase clock.
+  # Operators can explicitly set either flag to 0 for a controlled rollback.
+  if (-not (Test-Path Env:RVC_TIMELINE_INFERENCE)) { $env:RVC_TIMELINE_INFERENCE = "1" }
+  if (-not (Test-Path Env:RVC_TIMELINE_CONSENSUS)) { $env:RVC_TIMELINE_CONSENSUS = "1" }
   $env:CUBLAS_WORKSPACE_CONFIG = ":4096:8"
   $ServiceAppDir = Join-Path $SiteDir "rvc-service"
   Start-Process -FilePath $OfficialVenvPython -ArgumentList "-m","uvicorn","app.main:app","--app-dir",$ServiceAppDir,"--host","127.0.0.1","--port",$LocalPort,"--no-access-log" -WindowStyle Hidden

@@ -1402,6 +1402,8 @@ async def healthz(request: Request) -> dict[str, object]:
         "timelineInference": os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1",
         "pitchConsensus": (os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1"
                            and os.getenv("RVC_TIMELINE_CONSENSUS", "1") == "1"),
+        "highRegisterExperiment": (os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1"
+                                   and os.getenv("RVC_TIMELINE_HIGH_REGISTER", "0") == "1"),
         "capabilities": {"voice": True, "song": separator["ready"], "training": True},
         "device": info.device,
         "half": info.is_half,
