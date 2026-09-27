@@ -90,7 +90,8 @@ DEFAULT_TRAIN_EPOCHS = max(40, min(int(os.getenv("RVC_TRAIN_EPOCHS", "80")), 200
 TRAIN_PYTHON = Path(os.getenv("RVC_TRAIN_PYTHON", os.sys.executable)).resolve()
 logger = logging.getLogger("postprep.rvc")
 PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_activity.py",
-                  "audio_repair.py", "separation_runtime.py", "official_runtime.py")
+                  "audio_repair.py", "separation_runtime.py", "official_runtime.py",
+                  "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py")
 
 
 def source_revision() -> str:
@@ -840,6 +841,7 @@ def render_conversion(
     profile_hint: AudioProfile | None = None,
     preferred_method: str | None = None,
     diagnostic_dir: Path | None = None,
+    time_origin_seconds: float = 0.0,
 ) -> str:
     inference = acquire_model(model_path)
     # The pinned pitch adapter defaults to the verified contour. A strong
@@ -877,6 +879,7 @@ def render_conversion(
                 rms_mix_rate=1.0,
                 filter_radius=int(filter_radius),
                 diagnostic_f0_dir=diagnostic_dir / "f0" if diagnostic_dir else None,
+                time_origin_seconds=time_origin_seconds,
             )
             if output_wav.is_file() and output_wav.stat().st_size > 44:
                 snapshot_diagnostic_audio(output_wav, diagnostic_dir, f"raw-{method}.wav")
@@ -1062,6 +1065,7 @@ def render_duration_safe_conversion(
             diagnostic_dir / "whole" if diagnostic_dir else None,
         )
     source_chunks = split_long_audio(input_wav, work_root / "source", duration_seconds)
+    source_manifest = json.loads((work_root / 'source' / 'manifest.json').read_text(encoding='utf-8'))
     preferred_method = (
         "fcpe" if f0_method == "auto" and profile_hint and (profile_hint.high_pitch or profile_hint.complex_pitch)
         else select_f0_method(input_wav, f0_method)
@@ -1084,6 +1088,7 @@ def render_duration_safe_conversion(
             profile_hint,
             preferred_method,
             diagnostic_dir / f"chunk-{index:03d}" if diagnostic_dir else None,
+            float(source_manifest['chunks'][index]['startSeconds']),
         ))
         output_chunks.append(converted_chunk)
     join_long_audio(output_chunks, output_wav, duration_seconds)
@@ -1133,6 +1138,7 @@ async def render_duration_safe_conversion_async(
             )
 
     source_chunks = await asyncio.to_thread(split_long_audio, input_wav, work_root / "source", duration_seconds)
+    source_manifest = json.loads((work_root / 'source' / 'manifest.json').read_text(encoding='utf-8'))
     preferred_method = (
         "fcpe" if f0_method == "auto" and profile_hint and (profile_hint.high_pitch or profile_hint.complex_pitch)
         else await asyncio.to_thread(select_f0_method, input_wav, f0_method)
@@ -1157,6 +1163,7 @@ async def render_duration_safe_conversion_async(
                 profile_hint,
                 preferred_method,
                 diagnostic_dir / f"chunk-{index:03d}" if diagnostic_dir else None,
+                float(source_manifest['chunks'][index]['startSeconds']),
             )
         methods.append(method)
         output_chunks.append(converted_chunk)

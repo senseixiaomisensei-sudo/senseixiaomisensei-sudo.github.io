@@ -1,0 +1,321 @@
+"""Observed adapter derived from pinned RVC 8f2fdbf.
+
+The two inference methods are vendored to make float interception reproducible.
+See UPSTREAM_LICENSE.txt for the upstream MIT notice. No global monkeypatches.
+"""
+import os
+import traceback
+from time import time as ttime
+import faiss
+import librosa
+import numpy as np
+import torch
+import torch.nn.functional as F
+from scipy import signal
+from infer.hubert import extract_hubert_features
+from tools.cuda_graph import cuda_graph_enabled, run_cuda_graph
+from infer.vc.pipeline import Pipeline as PinnedPipeline, bh, ah, change_rms
+from app.stage_evidence import observe
+
+UPSTREAM_PIPELINE_SHA256 = '020038b9348d41133c8db82f5b972be2bef8a4e37c1a99e05b37826cff947cff'
+
+
+class ServicePipeline(PinnedPipeline):
+    def vc(
+        self,
+        model,
+        net_g,
+        sid,
+        audio0,
+        pitch,
+        pitchf,
+        times,
+        index,
+        index_vectors,
+        index_rate,
+        version,
+        protect,
+    ):
+        observe(self, 'model-input', audio0, sample_rate=self.sr,
+                timeOriginSeconds=self.time_origin_seconds + self.inner_start/self.sr - self.x_pad,
+                paddingSamples=self.t_pad)
+        feats = torch.from_numpy(audio0)
+        if self.is_half:
+            feats = feats.half()
+        else:
+            feats = feats.float()
+        if feats.dim() == 2:  # double channels
+            feats = feats.mean(-1)
+        assert feats.dim() == 1, feats.dim()
+        feats = feats.view(1, -1)
+        padding_mask = torch.BoolTensor(feats.shape).to(self.device).fill_(False)
+
+        t0 = ttime()
+        with torch.no_grad():
+            feats = extract_hubert_features(
+                model,
+                feats.to(self.device),
+                version,
+                padding_mask=padding_mask,
+            )
+        observe(self, 'hubert', feats, tensorDtype=str(feats.dtype))
+        if protect < 0.5 and pitch is not None and pitchf is not None:
+            feats0 = feats.clone()
+        if (
+            not isinstance(index, type(None))
+            and not isinstance(index_vectors, type(None))
+            and index_rate != 0
+        ):
+            npy = feats[0].cpu().numpy()
+            if self.is_half:
+                npy = npy.astype("float32")
+
+            score, ix = index.search(npy, k=8)
+            self.stage_records.append(dict(stage='retrieval-search', rows=len(score),
+                zeroDistances=int(np.count_nonzero(score == 0)),
+                negativeDistances=int(np.count_nonzero(score < 0)),
+                nonFiniteDistances=int(np.count_nonzero(~np.isfinite(score))),
+                invalidNeighbors=int(np.count_nonzero((ix < 0) | (ix >= index.ntotal)))))
+            weight = np.square(1 / score)
+            weight /= weight.sum(axis=1, keepdims=True)
+            npy = np.sum(index_vectors[ix] * np.expand_dims(weight, axis=2), axis=1)
+
+            if self.is_half:
+                npy = npy.astype("float16")
+            feats = (
+                torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
+                + (1 - index_rate) * feats
+            )
+
+        observe(self, 'retrieved-features', feats, tensorDtype=str(feats.dtype))
+        feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
+        if protect < 0.5 and pitch is not None and pitchf is not None:
+            feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
+                0, 2, 1
+            )
+        t1 = ttime()
+        p_len = audio0.shape[0] // self.window
+        if feats.shape[1] < p_len:
+            p_len = feats.shape[1]
+            if pitch is not None and pitchf is not None:
+                pitch = pitch[:, :p_len]
+                pitchf = pitchf[:, :p_len]
+
+        if protect < 0.5 and pitch is not None and pitchf is not None:
+            pitchff = pitchf.clone()
+            pitchff[pitchf > 0] = 1
+            pitchff[pitchf < 1] = protect
+            pitchff = pitchff.unsqueeze(-1)
+            feats = feats * pitchff + feats0 * (1 - pitchff)
+            feats = feats.to(feats0.dtype)
+        observe(self, 'protected-features', feats, tensorDtype=str(feats.dtype))
+        p_len = torch.tensor([p_len], device=self.device).long()
+        with torch.no_grad():
+            hasp = pitch is not None and pitchf is not None
+            if hasp:
+                synthesized = run_cuda_graph(
+                    net_g,
+                    "rvc-synth-f0",
+                    lambda phone, lengths, coarse, continuous, speaker: net_g.infer(
+                        phone, lengths, coarse, continuous, speaker
+                    )[0],
+                    feats,
+                    p_len,
+                    pitch,
+                    pitchf,
+                    sid,
+                )
+            else:
+                synthesized = run_cuda_graph(
+                    net_g,
+                    "rvc-synth-no-f0",
+                    lambda phone, lengths, speaker: net_g.infer(
+                        phone, lengths, speaker
+                    )[0],
+                    feats,
+                    p_len,
+                    sid,
+                )
+            audio1 = synthesized[0, 0].data.cpu().float().numpy()
+            observe(self, 'generator-float', audio1, sample_rate=self.native_sample_rate,
+                    timeOriginSeconds=self.time_origin_seconds + self.inner_start/self.sr - self.x_pad,
+                    cropLeftSamples=self.t_pad_tgt, cropRightSamples=self.t_pad_tgt)
+            del hasp, synthesized
+        del feats, p_len, padding_mask
+        if torch.cuda.is_available() and not cuda_graph_enabled(self.device):
+            torch.cuda.empty_cache()
+        t2 = ttime()
+        times[0] += t1 - t0
+        times[2] += t2 - t1
+        return audio1
+
+    def pipeline(
+        self,
+        model,
+        net_g,
+        sid,
+        audio,
+        times,
+        f0_up_key,
+        f0_method,
+        file_index,
+        index_rate,
+        if_f0,
+        tgt_sr,
+        resample_sr,
+        rms_mix_rate,
+        version,
+        protect,
+    ):
+        if (
+            file_index != ""
+            and os.path.exists(file_index)
+            and index_rate != 0
+        ):
+            try:
+                index = faiss.read_index(file_index)
+                index_vectors = index.reconstruct_n(0, index.ntotal)
+            except:
+                traceback.print_exc()
+                index = index_vectors = None
+        else:
+            index = index_vectors = None
+        self.native_sample_rate = tgt_sr
+        self.inner_start = 0
+        self.stage_records.append(dict(stage='index-load', requested=bool(index_rate),
+            actual=index is not None, rate=index_rate,
+            dimension=int(index.d) if index else None,
+            ntotal=int(index.ntotal) if index else 0,
+            featureVersion=version))
+        audio = signal.filtfilt(bh, ah, audio)
+        audio_pad = np.pad(audio, (self.window // 2, self.window // 2), mode="reflect")
+        opt_ts = []
+        if audio_pad.shape[0] > self.t_max:
+            audio_sum = np.zeros_like(audio)
+            for i in range(self.window):
+                audio_sum += np.abs(audio_pad[i : i - self.window])
+            for t in range(self.t_center, audio.shape[0], self.t_center):
+                opt_ts.append(
+                    t
+                    - self.t_query
+                    + np.where(
+                        audio_sum[t - self.t_query : t + self.t_query]
+                        == audio_sum[t - self.t_query : t + self.t_query].min()
+                    )[0][0]
+                )
+        s = 0
+        audio_opt = []
+        t = None
+        t1 = ttime()
+        audio_pad = np.pad(audio, (self.t_pad, self.t_pad), mode="reflect")
+        p_len = audio_pad.shape[0] // self.window
+        sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
+        pitch, pitchf = None, None
+        if if_f0 == 1:
+            pitch, pitchf = self.get_f0(
+                audio_pad,
+                p_len,
+                f0_up_key,
+                f0_method,
+            )
+            pitch = pitch[:p_len]
+            pitchf = pitchf[:p_len]
+            pitchf = pitchf.astype(np.float32)
+            pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
+            pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
+        t2 = ttime()
+        times[1] += t2 - t1
+        for t in opt_ts:
+            t = t // self.window * self.window
+            self.inner_start = s
+            if if_f0 == 1:
+                audio_opt.append(
+                    self.vc(
+                        model,
+                        net_g,
+                        sid,
+                        audio_pad[s : t + self.t_pad2 + self.window],
+                        pitch[:, s // self.window : (t + self.t_pad2) // self.window],
+                        pitchf[:, s // self.window : (t + self.t_pad2) // self.window],
+                        times,
+                        index,
+                        index_vectors,
+                        index_rate,
+                        version,
+                        protect,
+                    )[self.t_pad_tgt : -self.t_pad_tgt]
+                )
+            else:
+                audio_opt.append(
+                    self.vc(
+                        model,
+                        net_g,
+                        sid,
+                        audio_pad[s : t + self.t_pad2 + self.window],
+                        None,
+                        None,
+                        times,
+                        index,
+                        index_vectors,
+                        index_rate,
+                        version,
+                        protect,
+                    )[self.t_pad_tgt : -self.t_pad_tgt]
+                )
+            s = t
+        self.inner_start = t or 0
+        if if_f0 == 1:
+            audio_opt.append(
+                self.vc(
+                    model,
+                    net_g,
+                    sid,
+                    audio_pad[t:],
+                    pitch[:, t // self.window :] if t is not None else pitch,
+                    pitchf[:, t // self.window :] if t is not None else pitchf,
+                    times,
+                    index,
+                    index_vectors,
+                    index_rate,
+                    version,
+                    protect,
+                )[self.t_pad_tgt : -self.t_pad_tgt]
+            )
+        else:
+            audio_opt.append(
+                self.vc(
+                    model,
+                    net_g,
+                    sid,
+                    audio_pad[t:],
+                    None,
+                    None,
+                    times,
+                    index,
+                    index_vectors,
+                    index_rate,
+                    version,
+                    protect,
+                )[self.t_pad_tgt : -self.t_pad_tgt]
+            )
+        audio_opt = np.concatenate(audio_opt)
+        if rms_mix_rate != 1:
+            audio_opt = change_rms(audio, 16000, audio_opt, tgt_sr, rms_mix_rate)
+        if tgt_sr != resample_sr >= 16000:
+            audio_opt = librosa.resample(
+                audio_opt, orig_sr=tgt_sr, target_sr=resample_sr
+            )
+        output_rate = resample_sr if resample_sr >= 16000 else tgt_sr
+        observe(self, 'upstream-float', audio_opt, sample_rate=output_rate,
+                timeOriginSeconds=self.time_origin_seconds)
+        audio_max = np.abs(audio_opt).max() / 0.99
+        max_int16 = 32768
+        if audio_max > 1:
+            max_int16 /= audio_max
+        self.stage_records.append(dict(stage='upstream-output', gain=max_int16/32768,
+            dtype='int16', sampleRate=output_rate))
+        audio_opt = (audio_opt * max_int16).astype(np.int16)
+        del pitch, pitchf, sid
+        if torch.cuda.is_available() and not cuda_graph_enabled(self.device):
+            torch.cuda.empty_cache()
+        return audio_opt

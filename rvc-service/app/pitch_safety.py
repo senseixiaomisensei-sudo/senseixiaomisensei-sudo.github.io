@@ -186,6 +186,8 @@ def safe_get_f0(pipeline, x, p_len, f0_up_key, f0_method):
             shifted=f0, voiced=corrected_f0 > 0,
             hop=pipeline.window, sample_rate=pipeline.sr,
             semitones=f0_up_key, method=f0_method,
+            time_origin_seconds=getattr(pipeline, 'time_origin_seconds', 0),
+            padding_samples=getattr(pipeline, 't_pad', 0),
         )
     # The embedding ceiling is not a pitch ceiling. Folding frames above it
     # changes the melody and creates artificial octave/glide transitions.

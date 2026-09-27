@@ -95,10 +95,12 @@ def capture_job(root: Path, job_id: str, job_root: Path,
         def priority(path: Path) -> tuple[int, str]:
             name = path.name
             rel = path.relative_to(job_root).as_posix()
-            if name == "manifest.json" or path.suffix == ".npz":
+            if name == "manifest.json" or path.suffix in {".npz", ".json"}:
                 return 0, rel
-            if name.startswith("input.") or rel.startswith("stems/"):
+            if 'generator-float' in name:
                 return 1, rel
+            if name.startswith("input.") or rel.startswith("stems/"):
+                return 2, rel
             if name == "separated-vocals-16k.wav":
                 return 2, rel
             if rel.startswith("diagnostic-stages/") and name in {

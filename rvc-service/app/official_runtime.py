@@ -167,6 +167,10 @@ class OfficialRvcModel:
         self.info = RuntimeInfo(root=root, device=device, is_half=is_half)
         self._vc = VC(_config(device, is_half))
         self._vc.get_vc(staged_model.name)
+        from app.upstream_pipeline import ServicePipeline, UPSTREAM_PIPELINE_SHA256
+        if _sha256(root / 'infer/vc/pipeline.py') != UPSTREAM_PIPELINE_SHA256:
+            raise OfficialRuntimeError('Unreviewed upstream pipeline; reinstall the pinned checkout')
+        self._vc.pipeline = ServicePipeline(self._vc.tgt_sr, self._vc.config)
         self.noise_scale = model_noise_scale(model_path)
         self._noise_hook = configure_synthesis_noise(self._vc.net_g, self.noise_scale)
         from types import MethodType
@@ -190,6 +194,7 @@ class OfficialRvcModel:
         protect: float,
         filter_radius: int = 3,
         diagnostic_f0_dir: Path | None = None,
+        time_origin_seconds: float = 0.0,
     ) -> None:
         import random
 
@@ -221,6 +226,21 @@ class OfficialRvcModel:
         pipeline = self._vc.pipeline
         pipeline.diagnostic_f0_dir = diagnostic_f0_dir
         pipeline.diagnostic_f0_count = 0
+        pipeline.time_origin_seconds = time_origin_seconds
+        pipeline.stage_records = []
+        from app.stage_evidence import flush
+        from tools.cuda_graph import cuda_graph_enabled
+        self.last_run_metadata = {
+            'modelVersion': self._vc.version, 'sampleRate': self._vc.tgt_sr,
+            'f0Enabled': bool(self._vc.if_f0),
+            'speakerCount': int(self._vc.net_g.emb_g.weight.shape[0]),
+            'featureDimension': int(self._vc.net_g.enc_p.emb_phone.weight.shape[1]),
+            'noiseScale': self.noise_scale, 'seed': seed,
+            'precision': 'float16' if self.info.is_half else 'float32',
+            'executionBackend': 'cuda-graph' if cuda_graph_enabled(self.info.device) else 'eager',
+            'adapterSha256': _sha256(Path(__file__).with_name('upstream_pipeline.py')),
+            'timeOriginSeconds': time_origin_seconds,
+        }
         try:
             status, result = self._vc.vc_single(
                 0,
@@ -234,6 +254,7 @@ class OfficialRvcModel:
                 protect,
             )
         finally:
+            flush(pipeline, self.last_run_metadata)
             pipeline.diagnostic_f0_dir = None
         if not result or result[0] is None or result[1] is None:
             raise OfficialRuntimeError(str(status))
