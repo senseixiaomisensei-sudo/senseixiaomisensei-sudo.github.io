@@ -7,11 +7,20 @@ import numpy as np
 import soundfile as sf
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'rvc-service'))
-from app.analysis_timeline import frame_spans, AnalysisTimeline, join_timeline
+from app.analysis_timeline import frame_spans, AnalysisTimeline, join_timeline, condition_seam_metrics
 from app.timeline_synthesis import source_excitation, counter_gaussian
 
 
 class AnalysisTimelineTests(unittest.TestCase):
+    def test_common_condition_seam_is_detected_even_with_identical_overlapping_arrays(self):
+        values=np.zeros((4,200));values[:,100:]=1
+        # Both decoders reuse this same array: overlap differences would be 0.
+        metrics=condition_seam_metrics(values,100)
+        self.assertEqual(metrics['cutStepRms'],1.)
+        self.assertEqual(metrics['neighborMedianStepRms'],0.)
+        self.assertGreater(metrics['stepToNeighborRatio'],1000)
+        ordinary=condition_seam_metrics(np.tile(np.arange(200),(4,1)),100)
+        self.assertEqual(ordinary['stepToNeighborRatio'],1.)
     def test_model_replacement_cannot_mix_cached_priors_with_new_weights(self):
         from app.timeline_rendering import render_window
         with self.assertRaisesRegex(ValueError,'resources changed'):

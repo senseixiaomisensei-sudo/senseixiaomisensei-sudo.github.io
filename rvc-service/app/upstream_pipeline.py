@@ -76,60 +76,73 @@ class ServicePipeline(PinnedPipeline):
         padding_mask = torch.BoolTensor(feats.shape).to(self.device).fill_(False)
 
         t0 = ttime()
-        with torch.no_grad():
-            feats = (torch.as_tensor(context.features[None], device=self.device,
-                     dtype=torch.float16 if self.is_half else torch.float32)
-                     if context is not None else extract_hubert_features(
-                model,
-                feats.to(self.device),
-                version,
-                padding_mask=padding_mask,
-            ))
-        observe(self, 'hubert', feats, tensorDtype=str(feats.dtype))
-        if protect < 0.5 and pitch is not None and pitchf is not None:
-            feats0 = feats.clone()
-        if (
-            not isinstance(index, type(None))
-            and not isinstance(index_vectors, type(None))
-            and index_rate != 0
-        ):
-            npy = feats[0].cpu().numpy()
-            if self.is_half:
-                npy = npy.astype("float32")
-
-            score, ix = index.search(npy, k=8)
-            npy, retrieval_stats = stable_retrieval(score, ix, index_vectors, npy)
-            self.stage_records.append(dict(stage='retrieval-search', **retrieval_stats))
-
-            if self.is_half:
-                npy = npy.astype("float16")
-            feats = (
-                torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
-                + (1 - index_rate) * feats
-            )
-
-        observe(self, 'retrieved-features', feats, tensorDtype=str(feats.dtype))
-        feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
-        if protect < 0.5 and pitch is not None and pitchf is not None:
-            feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
-                0, 2, 1
-            )
-        t1 = ttime()
-        p_len = audio0.shape[0] // self.window
-        if feats.shape[1] < p_len:
+        if context is not None and context.prior_mean is not None:
+            if context.conditioning_features is None:
+                raise InferenceStageError('shared-conditioning', 'Missing actual retrieved/protected timeline')
+            feats = torch.as_tensor(context.conditioning_features[None],device=self.device,
+                dtype=torch.float16 if self.is_half else torch.float32)
+            observe(self, 'protected-features', feats, source='prepare_priors; actual synthesis conditioning')
+            observe(self, 'shared-prior-mean', context.prior_mean, source='prepare_priors')
+            observe(self, 'shared-prior-logs', context.prior_logs, source='prepare_priors')
             p_len = feats.shape[1]
-            if pitch is not None and pitchf is not None:
-                pitch = pitch[:, :p_len]
-                pitchf = pitchf[:, :p_len]
+            if p_len != context.prior_mean.shape[-1]:
+                raise InferenceStageError('shared-conditioning', 'Prior/feature timeline mismatch')
+            t1 = ttime()
+        else:
+            with torch.no_grad():
+                feats = (torch.as_tensor(context.features[None], device=self.device,
+                         dtype=torch.float16 if self.is_half else torch.float32)
+                         if context is not None else extract_hubert_features(
+                    model,
+                    feats.to(self.device),
+                    version,
+                    padding_mask=padding_mask,
+                ))
+            observe(self, 'hubert', feats, tensorDtype=str(feats.dtype))
+            if protect < 0.5 and pitch is not None and pitchf is not None:
+                feats0 = feats.clone()
+            if (
+                not isinstance(index, type(None))
+                and not isinstance(index_vectors, type(None))
+                and index_rate != 0
+            ):
+                npy = feats[0].cpu().numpy()
+                if self.is_half:
+                    npy = npy.astype("float32")
 
-        if protect < 0.5 and pitch is not None and pitchf is not None:
-            pitchff = pitchf.clone()
-            pitchff[pitchf > 0] = 1
-            pitchff[pitchf < 1] = protect
-            pitchff = pitchff.unsqueeze(-1)
-            feats = feats * pitchff + feats0 * (1 - pitchff)
-            feats = feats.to(feats0.dtype)
-        observe(self, 'protected-features', feats, tensorDtype=str(feats.dtype))
+                score, ix = index.search(npy, k=8)
+                npy, retrieval_stats = stable_retrieval(score, ix, index_vectors, npy)
+                self.stage_records.append(dict(stage='retrieval-search', **retrieval_stats))
+
+                if self.is_half:
+                    npy = npy.astype("float16")
+                feats = (
+                    torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
+                    + (1 - index_rate) * feats
+                )
+
+            observe(self, 'retrieved-features', feats, tensorDtype=str(feats.dtype))
+            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
+            if protect < 0.5 and pitch is not None and pitchf is not None:
+                feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
+                    0, 2, 1
+                )
+            t1 = ttime()
+            p_len = audio0.shape[0] // self.window
+            if feats.shape[1] < p_len:
+                p_len = feats.shape[1]
+                if pitch is not None and pitchf is not None:
+                    pitch = pitch[:, :p_len]
+                    pitchf = pitchf[:, :p_len]
+
+            if protect < 0.5 and pitch is not None and pitchf is not None:
+                pitchff = pitchf.clone()
+                pitchff[pitchf > 0] = 1
+                pitchff[pitchf < 1] = protect
+                pitchff = pitchff.unsqueeze(-1)
+                feats = feats * pitchff + feats0 * (1 - pitchff)
+                feats = feats.to(feats0.dtype)
+            observe(self, 'protected-features', feats, tensorDtype=str(feats.dtype))
         p_len = torch.tensor([p_len], device=self.device).long()
         with torch.no_grad():
             hasp = pitch is not None and pitchf is not None
@@ -200,29 +213,39 @@ class ServicePipeline(PinnedPipeline):
         protect,
     ):
         fallback_reason = ''
-        if (
-            file_index != ""
-            and os.path.exists(file_index)
-            and index_rate != 0
-        ):
-            try:
-                index = faiss.read_index(file_index)
-                if not index.ntotal:
-                    raise RuntimeError('Empty index')
-                index_vectors = index.reconstruct_n(0, index.ntotal)
-            except (RuntimeError, OSError) as error:
-                fallback_reason = f'Index unavailable: {type(error).__name__}'
-                index = index_vectors = None
-        else:
+        context = getattr(self, 'analysis_context', None)
+        uses_shared_prior = context is not None and context.prior_mean is not None
+        if uses_shared_prior:
+            # Retrieval already ran on the absolute timeline in prepare_priors.
+            # Do not recompute a side branch and report it as decoder input.
             index = index_vectors = None
-            if index_rate:
-                fallback_reason = 'Index path unavailable'
+            fallback_reason = 'retrieval belongs to shared-prior preparation'
+            self.stage_records.append(dict(stage='retrieval-search',
+                conditioningSource='prepare_priors', **(context.retrieval or {})))
+        else:
+            if (
+                file_index != ""
+                and os.path.exists(file_index)
+                and index_rate != 0
+            ):
+                try:
+                    index = faiss.read_index(file_index)
+                    if not index.ntotal:
+                        raise RuntimeError('Empty index')
+                    index_vectors = index.reconstruct_n(0, index.ntotal)
+                except (RuntimeError, OSError) as error:
+                    fallback_reason = f'Index unavailable: {type(error).__name__}'
+                    index = index_vectors = None
+            else:
+                index = index_vectors = None
+                if index_rate:
+                    fallback_reason = 'Index path unavailable'
         if index is not None:
             validate_index(index, index_vectors, 256 if version == 'v1' else 768)
         self.native_sample_rate = tgt_sr
         self.inner_start = 0
         self.stage_records.append(dict(stage='index-load', requested=bool(index_rate),
-            actual=index is not None, rate=index_rate,
+            actual=bool(context.retrieval and context.retrieval.get('actual')) if uses_shared_prior else index is not None, rate=index_rate,
             dimension=int(index.d) if index else None,
             ntotal=int(index.ntotal) if index else 0,
             featureVersion=version, fallbackReason=fallback_reason))

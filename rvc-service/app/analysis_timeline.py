@@ -11,6 +11,25 @@ HOP = 160
 PAD_FRAMES = 300
 
 
+def condition_seam_metrics(values, cut, radius=20):
+    """Measure the shared array itself, independently of waveform overlap.
+
+    Values are [channels, absolute frames]. A large step is evidence for
+    investigation, not proof of an audible artifact or permission to smooth.
+    """
+    values=np.asarray(values,dtype=np.float64)
+    if not 0<cut<values.shape[-1]:
+        raise ValueError('Condition cut outside timeline')
+    first=max(0,cut-radius);last=min(values.shape[-1],cut+radius)
+    differences=np.sqrt(np.mean(np.diff(values[:,first:last],axis=-1)**2,axis=0))
+    step=float(np.sqrt(np.mean((values[:,cut]-values[:,cut-1])**2)))
+    neighbors=np.delete(differences,cut-first-1)
+    reference=float(np.median(neighbors)) if len(neighbors) else 0.
+    return dict(cutFrame=int(cut),cutStepRms=step,neighborMedianStepRms=reference,
+                stepToNeighborRatio=step/max(reference,1e-12),
+                interpretation='condition discontinuity measurement; listening not inferred')
+
+
 @dataclass
 class WindowContext:
     features: np.ndarray
@@ -22,6 +41,8 @@ class WindowContext:
     seed: int = 20260823
     prior_mean: np.ndarray | None = None
     prior_logs: np.ndarray | None = None
+    conditioning_features: np.ndarray | None = None
+    retrieval: dict | None = None
 
 
 @dataclass
@@ -37,6 +58,8 @@ class AnalysisTimeline:
     prior_mean: np.ndarray | None = None
     prior_logs: np.ndarray | None = None
     model_revision: str | None = None
+    conditioning_features: np.ndarray | None = None
+    retrieval: dict | None = None
 
     def window(self, index, rate, shift):
         start, end = self.spans[index]
@@ -53,6 +76,8 @@ class AnalysisTimeline:
         if self.prior_mean is not None:
             context.prior_mean=self.prior_mean[:,left:right]
             context.prior_logs=self.prior_logs[:,left:right]
+            context.conditioning_features=self.conditioning_features[left:right] if self.conditioning_features is not None else None
+            context.retrieval=self.retrieval
         return self.audio[left*HOP:right*HOP], context
 
 
@@ -96,6 +121,7 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
     # Overlap ownership is a fixed absolute frame boundary, not a crossfade of
     # phonemes or a per-window decision. Every synthesis sees identical rows.
     cuts = [2*round((spans[i][0]+spans[i-1][1])/4) for i in range(1,len(spans))]
+    feature_cuts={};previous_part=previous_start=None;feature_overlaps=[]
     previous_observe = getattr(pipe,'observe_pitch_confidence',False)
     pipe.observe_pitch_confidence = True
     try:
@@ -117,7 +143,17 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
                 input_tensor = torch.as_tensor(waveform[None],device=pipe.device,
                     dtype=torch.float16 if pipe.is_half else torch.float32)
                 part = extract_hubert_features(model._vc.hubert_model,input_tensor,model._vc.version)
-                feats[first//2:last//2] = part[0,a//2:b//2].float().cpu().numpy()
+                part=part[0].float().cpu().numpy()
+                feats[first//2:last//2] = part[a//2:b//2]
+                if diagnostics is not None and previous_part is not None:
+                    cut=first//2;lo=max(cut-10,start//2);hi=min(cut+10,(previous_start//2)+len(previous_part))
+                    left=previous_part[lo-previous_start//2:hi-previous_start//2]
+                    right=part[lo-start//2:hi-start//2]
+                    feature_cuts[f'left_{i:03d}']=left
+                    feature_cuts[f'right_{i:03d}']=right
+                    feature_overlaps.append(dict(cutFrame100Hz=first,timeSeconds=first/100-3,
+                        firstAbsoluteFrame50Hz=lo,independentContextDifferenceRms=float(np.sqrt(np.mean((left-right)**2)))))
+                previous_part,previous_start=part,start
             owners[first:last] = i
     finally:
         pipe.observe_pitch_confidence = previous_observe
@@ -134,7 +170,7 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
         independent_cc = (independent_high_register_pitch(audio,16000,n,HOP)
                           if high_register else None)
         actual, decision = choose_supported_pitch(base,alternate,independent,audio,
-            independent_cc=independent_cc,confidence=salience)
+            independent_cc=independent_cc,confidence=salience,time_origin_seconds=-3.)
         evidence.update(decision)
     if filter_radius>=5:
         actual=median_smooth_pitch(actual,1)
@@ -146,6 +182,10 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
         # Features can be compared with the reference without retaining any
         # original singer waveform in synthesized output.
         np.save(root/'features.npy',feats)
+        np.savez_compressed(root/'feature-cuts.npz',**feature_cuts)
+        for row in feature_overlaps:
+            row.update(condition_seam_metrics(feats.T,row['cutFrame100Hz']//2,10))
+        (root/'feature-cuts.json').write_text(json.dumps(feature_overlaps,indent=2),encoding='utf8')
         (root/'analysis.json').write_text(json.dumps(dict(method=method,inputGain=gain,
             featureContract=model.encoder_metadata,frames=n,inputSamples=samples,
             changedFrames=int(np.count_nonzero(actual!=base)),paddingFrames=PAD_FRAMES,
@@ -155,7 +195,7 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
     return AnalysisTimeline(audio,feats,actual,spans,samples,Path(source),method,evidence)
 
 
-def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None):
+def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None,analysis_spans=None):
     """Share the stochastic prior too: enc_p itself contains attention.
 
     Identical HuBERT rows and pitch alone do not guarantee identical means or
@@ -187,13 +227,23 @@ def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None):
         voiced=torch.as_tensor(np.where(timeline.f0>0,1.,protect)[None,:,None],device=pipe.device,dtype=torch.float32)
         features=(features*voiced+initial*(1-voiced)).to(dtype)
     coarse=quantize_pitch(timeline.f0*2**(pitch/12))
-    cuts=[2*round((timeline.spans[i][0]+timeline.spans[i-1][1])/4) for i in range(1,len(timeline.spans))]
+    analysis_spans=timeline.spans if analysis_spans is None else analysis_spans
+    if not analysis_spans or analysis_spans[0][0]!=0 or analysis_spans[-1][1]!=len(timeline.f0)-2*PAD_FRAMES:
+        raise ValueError('Prior analysis must cover the original absolute timeline')
+    if any(a%2 or b%2 or b<=a for a,b in analysis_spans):
+        raise ValueError('Prior analysis must follow the content encoder frame grid')
+    if any(a<0 or b>len(timeline.f0)-2*PAD_FRAMES for a,b in analysis_spans) or any(
+        current[0]<=previous[0] or current[1]<=previous[1] or current[0]>previous[1]
+        for previous,current in zip(analysis_spans,analysis_spans[1:])):
+        raise ValueError('Prior analysis has gaps, reversed coverage or out-of-range spans')
+    cuts=[2*round((analysis_spans[i][0]+analysis_spans[i-1][1])/4) for i in range(1,len(analysis_spans))]
     frames=len(timeline.f0)
     prior_mean=prior_logs=None
     overlaps=[]
     previous_mean=previous_span=None
+    previous_logs=None;prior_cuts={}
     with torch.no_grad():
-        for i,(start,end) in enumerate(timeline.spans):
+        for i,(start,end) in enumerate(analysis_spans):
             stop=end+2*PAD_FRAMES
             mean,logs,mask=model._vc.net_g.enc_p(features[:,start:stop],
                 torch.as_tensor(coarse[None,start:stop],device=pipe.device).long(),
@@ -205,7 +255,7 @@ def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None):
                 prior_mean=np.empty((mean.shape[0],frames),dtype=mean.dtype)
                 prior_logs=np.empty_like(prior_mean)
             first=(cuts[i-1] if i else -PAD_FRAMES)+PAD_FRAMES
-            last=(cuts[i] if i+1<len(timeline.spans) else frames-PAD_FRAMES)+PAD_FRAMES
+            last=(cuts[i] if i+1<len(analysis_spans) else frames-PAD_FRAMES)+PAD_FRAMES
             prior_mean[:,first:last]=mean[:,first-start:last-start]
             prior_logs[:,first:last]=logs[:,first-start:last-start]
             if previous_mean is not None:
@@ -214,18 +264,32 @@ def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None):
                 right=mean[:,a-start:b-start].astype(np.float64)
                 overlaps.append(dict(startSeconds=start/100,
                     independentlyEncodedPriorDifferenceRms=float(np.sqrt(np.mean((left-right)**2))),
-                    sharedPriorDifferenceRms=0.))
-            previous_mean,previous_span=mean,(start,end)
+                    sharedArraysReused=True))
+                cut=first;lo=max(start,cut-20);hi=min(previous_span[1]+2*PAD_FRAMES,cut+20)
+                for name,current,previous in [('mean',mean,previous_mean),('logs',logs,previous_logs)]:
+                    prior_cuts[f'{name}_left_{i:03d}']=previous[:,lo-previous_span[0]:hi-previous_span[0]]
+                    prior_cuts[f'{name}_right_{i:03d}']=current[:,lo-start:hi-start]
+                overlaps[-1].update(cutFrame=cut,cutTimeSeconds=cut/100-3)
+            previous_mean,previous_logs,previous_span=mean,logs,(start,end)
     timeline.prior_mean=prior_mean;timeline.prior_logs=prior_logs
+    timeline.conditioning_features=features[0].float().cpu().numpy()
+    timeline.retrieval=retrieval
     timeline.model_revision=getattr(model,'resource_revision',None)
     if diagnostics:
         root=Path(diagnostics)/'timeline'
         np.savez_compressed(root/'priors.npz',mean=prior_mean,logs=prior_logs)
+        np.save(root/'conditioning-features.npy',timeline.conditioning_features)
+        np.savez_compressed(root/'prior-cuts.npz',**prior_cuts)
+        for row in overlaps:
+            row['meanSharedSeam']=condition_seam_metrics(prior_mean,row['cutFrame'])
+            row['logsSharedSeam']=condition_seam_metrics(prior_logs,row['cutFrame'])
         np.savez_compressed(root/'final-pitch.npz',
             continuous=(timeline.f0*2**(pitch/12)).astype(np.float32),coarse=coarse,
             voiced=timeline.f0>0,pitch_shift=pitch,time_origin_seconds=-3.,frame_rate=100)
         (root/'prior.json').write_text(json.dumps(dict(retrieval=retrieval,pitchShift=pitch,
-            protect=protect,noiseScale=model.noise_scale,overlaps=overlaps),indent=2),encoding='utf8')
+            protect=protect,noiseScale=model.noise_scale,overlaps=overlaps,
+            analysisSpans=analysis_spans,synthesisSpans=timeline.spans,
+            actualSynthesisCondition='shared enc_p mean/logs, not per-window retrieval recomputation'),indent=2),encoding='utf8')
 
 
 def join_timeline(chunks, timeline, destination, rate, diagnostics=None):

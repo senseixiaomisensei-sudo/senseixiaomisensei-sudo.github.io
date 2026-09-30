@@ -8,16 +8,28 @@ import numpy as np
 
 
 def _period_correlation(segment, rate, hz):
-    lag = int(round(rate / hz))
-    if lag < 1 or lag >= len(segment) - 8:
+    # Evaluate the *requested* period, rather than rounding it to a sample.
+    # A 0.5-sample error at the eighth harmonic can reverse the pitch verdict.
+    # 129-tap Kaiser-windowed sinc preserves the 16 kHz encoder passband;
+    # discard filter edges instead of correlating padding/transients.
+    segment = np.asarray(segment, dtype=np.float64)
+    lag = rate / hz if hz > 0 else 0
+    whole = int(np.floor(lag))
+    radius = 64
+    if whole < 1 or whole >= len(segment) - 2*radius - 8:
         return 0.0
-    a, b = segment[:-lag], segment[lag:]
+    offsets = np.arange(-radius, radius+1)
+    kernel = np.sinc(lag-whole-offsets) * np.kaiser(2*radius+1, 8.6)
+    kernel /= kernel.sum()
+    shifted = np.convolve(segment, kernel[::-1], mode='valid')
+    a = segment[radius:len(segment)-radius-whole]
+    b = shifted[whole:]
     a, b = a - a.mean(), b - b.mean()
     return float(a @ b / np.sqrt((a @ a) * (b @ b) + 1e-30))
 
 
 def choose_supported_pitch(primary, alternative, independent, audio, rate=16000, hop=160,
-                           independent_cc=None, confidence=None):
+                           independent_cc=None, confidence=None, time_origin_seconds=0.):
     """Return a conservative track and auditable per-frame evidence.
 
     Thresholds are deliberately exclusionary, not a quality score. The 60 ms
@@ -32,6 +44,9 @@ def choose_supported_pitch(primary, alternative, independent, audio, rate=16000,
         raise ValueError('Pitch evidence must share the same absolute frame grid')
     if not all(np.isfinite(a).all() for a in (primary, alternative, independent, audio)):
         raise ValueError('Non-finite pitch evidence')
+    salience = np.full(primary.shape, np.nan) if confidence is None else np.asarray(confidence, dtype=np.float64)
+    if salience.shape != primary.shape:
+        raise ValueError('Salience evidence must share the absolute frame grid')
     both = (primary > 0) & (alternative > 0)
     valid = both & (independent > 0)
     difference = np.zeros(len(primary))
@@ -43,6 +58,8 @@ def choose_supported_pitch(primary, alternative, independent, audio, rate=16000,
     alternative_ac = np.zeros(len(primary))
     evidence = np.zeros(len(primary), dtype=bool)
     harmonic_family = np.zeros(len(primary), dtype=bool)
+    harmonic_ambiguity = np.zeros(len(primary), dtype=bool)
+    reason = np.full(len(primary), 'keep_primary_no_supported_alternative', dtype='U64')
     high_register = np.zeros(len(primary), dtype=bool)
     high_register_ac = np.zeros(len(primary))
     proposal = alternative.copy()
@@ -54,6 +71,16 @@ def choose_supported_pitch(primary, alternative, independent, audio, rate=16000,
             continue
         current_ac[frame] = _period_correlation(segment, rate, primary[frame])
         alternative_ac[frame] = _period_correlation(segment, rate, alternative[frame])
+        ratio = max(primary[frame], alternative[frame])/min(primary[frame], alternative[frame])
+        multiple = round(ratio)
+        harmonic_ambiguity[frame] = (multiple in range(2,9)
+            and abs(1200*np.log2(ratio/multiple)) <= 50
+            and current_ac[frame] > .65 and alternative_ac[frame] > .65)
+        # Agreement/salience cannot distinguish a period from its multiples.
+        # Retain the primary even if both neural trackers favor its subperiod.
+        if harmonic_ambiguity[frame]:
+            reason[frame] = 'keep_primary_integer_harmonic_ambiguity'
+            continue
         evidence[frame] = (current_ac[frame] < .35 and alternative_ac[frame] > .65
                            and agreement[frame] <= 100)
         # Praat can select a third/fourth sub-period of a stable sung vowel.
@@ -62,19 +89,19 @@ def choose_supported_pitch(primary, alternative, independent, audio, rate=16000,
         # when the current note has *negative/weak* waveform support and the
         # neural alternative has strong periodic support. A real lower note
         # with a strong upper partial also supports its own full period and
-        # cannot pass the current_ac < .25 guard.
+        # cannot pass the conservative < .15 fractional-period guard.
         if independent[frame] > 0:
             ratio = alternative[frame] / independent[frame]
             multiple = round(ratio)
             harmonic_family[frame] = (
                 multiple in (2, 3, 4)
                 and abs(1200*np.log2(ratio/multiple)) <= 50
-                and current_ac[frame] < .25 and alternative_ac[frame] > .85
+                and current_ac[frame] < .15 and alternative_ac[frame] > .85
             )
             evidence[frame] |= harmonic_family[frame]
     if independent_cc is not None and confidence is not None:
         independent_cc = np.asarray(independent_cc, dtype=np.float64)
-        confidence = np.asarray(confidence, dtype=np.float64)
+        confidence = salience
         if independent_cc.shape != primary.shape or confidence.shape != primary.shape:
             raise ValueError('Secondary pitch evidence must share the absolute frame grid')
         if not np.isfinite(independent_cc).all():
@@ -95,7 +122,14 @@ def choose_supported_pitch(primary, alternative, independent, audio, rate=16000,
             before=_period_correlation(segment,rate,primary[frame])
             after=_period_correlation(segment,rate,independent_cc[frame])
             high_register_ac[frame]=after
-            high_register[frame]=(after>.80 and before<.75 and after-before>.15)
+            ratio=independent_cc[frame]/primary[frame]
+            multiple=round(ratio)
+            ambiguous=(multiple in range(2,9) and abs(1200*np.log2(ratio/multiple))<=50
+                       and before>.65 and after>.65)
+            harmonic_ambiguity[frame] |= ambiguous
+            if ambiguous:
+                reason[frame]='keep_primary_integer_harmonic_ambiguity'
+            high_register[frame]=(not ambiguous and after>.80 and before<.75 and after-before>.15)
             if high_register[frame]:
                 proposal[frame]=independent_cc[frame]
                 evidence[frame]=True
@@ -114,7 +148,8 @@ def choose_supported_pitch(primary, alternative, independent, audio, rate=16000,
                                      np.maximum(proposal[2:],1)))
         bridged[1:-1] = (evidence[:-2] & evidence[2:] & ~evidence[1:-1]
             & neural_neighbors & (adjacent_cents<=100) & (next_cents<=100)
-            & candidates[1:-1] & (current_ac[1:-1]<.35) & (alternative_ac[1:-1]>.65))
+            & candidates[1:-1] & ~harmonic_ambiguity[1:-1]
+            & (current_ac[1:-1]<.35) & (alternative_ac[1:-1]>.65))
     evidence |= bridged
     # Correct contiguous, independently supported regions only. Do not bridge
     # consonants or fill short gaps with invented vibrato/pitch interpolation.
@@ -124,7 +159,15 @@ def choose_supported_pitch(primary, alternative, independent, audio, rate=16000,
         if (end-start)*hop/rate >= .03:
             accepted[start:end] = True
     result = np.where(accepted, proposal, primary)
-    return result, dict(candidate=alternative, independent=independent,
+    reason[evidence & ~accepted]='keep_primary_evidence_too_short'
+    reason[accepted]='replace_independent_waveform_supported'
+    reason[accepted & harmonic_family]='replace_supported_non_octave_harmonic_reference'
+    reason[accepted & high_register]='replace_low_salience_high_register_supported'
+    reason[accepted & bridged]='replace_supported_single_frame_tracker_dropout'
+    return result, dict(primary=primary, final=result,
+        absolute_time_seconds=time_origin_seconds+np.arange(len(primary))*hop/rate,
+        salience=salience, decision_reason=reason, harmonic_ambiguity=harmonic_ambiguity,
+        candidate=alternative, independent=independent,
         primary_correlation=current_ac, candidate_correlation=alternative_ac,
         supported=evidence, accepted=accepted, bridged=bridged,
         harmonic_family=harmonic_family,high_register=high_register,

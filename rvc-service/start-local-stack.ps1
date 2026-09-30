@@ -86,9 +86,14 @@ if (-not $healthy) {
   # Operators can explicitly set either flag to 0 for a controlled rollback.
   if (-not (Test-Path Env:RVC_TIMELINE_INFERENCE)) { $env:RVC_TIMELINE_INFERENCE = "1" }
   if (-not (Test-Path Env:RVC_TIMELINE_CONSENSUS)) { $env:RVC_TIMELINE_CONSENSUS = "1" }
+  # Per-model HuBERT graph captures retain large private CUDA pools across
+  # character switches on this 8 GiB device. Eager inference is the stable
+  # default; an operator may explicitly opt back in for a controlled trial.
+  if (-not (Test-Path Env:RVC_CUDA_GRAPH)) { $env:RVC_CUDA_GRAPH = "0" }
   $env:CUBLAS_WORKSPACE_CONFIG = ":4096:8"
   $ServiceAppDir = Join-Path $SiteDir "rvc-service"
-  Start-Process -FilePath $OfficialVenvPython -ArgumentList "-m","uvicorn","app.main:app","--app-dir",$ServiceAppDir,"--host","127.0.0.1","--port",$LocalPort,"--no-access-log" -WindowStyle Hidden
+  $ServiceLog = Join-Path $Root "gpu-service-runtime.log"
+  Start-Process -FilePath $OfficialVenvPython -ArgumentList "-m","uvicorn","app.main:app","--app-dir",$ServiceAppDir,"--host","127.0.0.1","--port",$LocalPort,"--no-access-log" -RedirectStandardOutput $ServiceLog -RedirectStandardError "$ServiceLog.err" -WindowStyle Hidden
   # 官方运行时冷启动要把 HuBERT/RMVPE 权重载入显存，实测远超 8 秒；轮询到 120 秒再判失败。
   for ($i = 0; $i -lt 40 -and -not $healthy; $i++) {
     Start-Sleep -Seconds 3

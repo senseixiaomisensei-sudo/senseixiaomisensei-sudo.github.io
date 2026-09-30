@@ -4,10 +4,58 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'rvc-service'))
-from app.pitch_consensus import choose_supported_pitch
+from app.pitch_consensus import choose_supported_pitch, _period_correlation
 
 
 class PitchConsensusTests(unittest.TestCase):
+    def test_fractional_period_strong_harmonics_do_not_lower_correct_high_note(self):
+        t=np.arange(16000)/16000
+        for hz in (820., 773.3, 911.7):
+            for harmonic in range(2,9):
+                if hz*harmonic>=7600: continue
+                with self.subTest(hz=hz,harmonic=harmonic):
+                    audio=.02*np.sin(2*np.pi*hz*t)+.2*np.sin(2*np.pi*hz*harmonic*t)
+                    primary=np.full(100,hz);wrong=np.full(100,hz/2)
+                    result,evidence=choose_supported_pitch(primary,wrong,wrong,audio,
+                        confidence=np.ones(100),time_origin_seconds=30.)
+                    np.testing.assert_array_equal(result,primary)
+                    self.assertGreater(_period_correlation(audio[4000:4960],16000,hz),.99)
+                    self.assertTrue(evidence['harmonic_ambiguity'][50])
+                    self.assertIn('ambiguity',evidence['decision_reason'][50])
+                    self.assertEqual(evidence['absolute_time_seconds'][50],30.5)
+
+    def test_correct_low_note_and_wrong_integer_multiple_remain_ambiguous(self):
+        t=np.arange(16000)/16000
+        for harmonic in range(2,9):
+            audio=.02*np.sin(2*np.pi*211.3*t)+.2*np.sin(2*np.pi*211.3*harmonic*t)
+            primary=np.full(100,211.3);wrong=primary*harmonic
+            result,_=choose_supported_pitch(primary,wrong,wrong,audio,confidence=np.full(100,.05))
+            np.testing.assert_array_equal(result,primary)
+
+    def test_real_octave_jump_ornament_glide_and_vibrato_are_not_flattened(self):
+        t=np.arange(16000)/16000
+        for hz in (np.where(t<.5,410.,820.), 700+80*t,
+                   710+20*np.sin(2*np.pi*5*t),np.where((t>.4)&(t<.42),900.,700.)):
+            audio=.2*np.sin(2*np.pi*np.cumsum(hz)/16000)
+            primary=hz[::160];wrong=primary/2
+            result,_=choose_supported_pitch(primary,wrong,wrong,audio)
+            np.testing.assert_array_equal(result,primary)
+
+    def test_breathy_consonants_and_noisy_shouts_are_not_forced_to_candidate(self):
+        rng=np.random.default_rng(820)
+        for audio in (rng.normal(0,.05,16000),rng.normal(0,.003,16000),
+                      .02*np.sin(2*np.pi*820*np.arange(16000)/16000)+rng.normal(0,.1,16000)):
+            primary=np.full(100,820.);wrong=np.full(100,410.)
+            result,_=choose_supported_pitch(primary,wrong,wrong,audio)
+            np.testing.assert_array_equal(result,primary)
+
+    def test_wrong_double_frequency_can_be_corrected_with_real_fundamental_evidence(self):
+        audio=.2*np.sin(2*np.pi*411.3*np.arange(16000)/16000)
+        correct=np.full(100,411.3);primary=correct*2
+        result,evidence=choose_supported_pitch(primary,correct,correct,audio)
+        np.testing.assert_array_equal(result,correct)
+        self.assertFalse(evidence['harmonic_ambiguity'].any())
+
     def test_subperiod_reference_does_not_veto_supported_non_octave_correction(self):
         t=np.arange(16000)/16000
         audio=.2*np.sin(2*np.pi*408*t)+.2*np.sin(2*np.pi*816*t)
