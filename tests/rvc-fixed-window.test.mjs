@@ -25,6 +25,54 @@ const stabilizeAnalysisBoundary = Function(
   `"use strict"; return (${extractFunction("stabilizeAnalysisWindowBoundary")});`,
 )();
 
+test('shared content uses one 50 Hz grid and identical overlap, without feature averaging', async()=>{
+  const resolve=Function('processAudioInFixedFrameWindows',`return (${extractFunction('resolveContentTimeline')});`)(processFixedWindows);
+  const slice=Function(`return (${extractFunction('sliceContentTimeline')});`)();
+  const observed=[];let calls=0;
+  const timeline=await resolve(new Float32Array(16000*3),{inputSampleRate:16000,lookAheadDuration:.04},
+    async data=>{const id=++calls;return {hiddenStates:new Float32Array(104*2).fill(id),
+      featureSize:2,frameCount:52,upsampledFrameCount:104};},row=>observed.push(row));
+  assert.ok(observed.every(row=>row.analysisStartSample%320===0));
+  assert.ok(observed.slice(1).some(row=>row.independentContextDifferenceRms>0));
+  assert.ok([...timeline.hiddenStates].every(value=>Number.isInteger(value)),'no averages of phoneme features');
+  const a=slice(timeline,0,100),b=slice(timeline,65*160,100);
+  assert.deepEqual(a.hiddenStates.slice(65*2),b.hiddenStates.slice(0,35*2));
+  assert.deepEqual(b.hiddenStates.slice(0,2),timeline.hiddenStates.slice(130,132),'odd synthesis starts still use absolute rows');
+});
+
+test('content grid and initial windows are unchanged across the old 20 second threshold',async()=>{
+  const resolve=Function('processAudioInFixedFrameWindows',`return (${extractFunction('resolveContentTimeline')});`)(processFixedWindows);
+  const beginnings=[];
+  for(const seconds of [19.9,20.1]) {
+    const starts=[];
+    await resolve(new Float32Array(Math.round(seconds*16000)),{inputSampleRate:16000,lookAheadDuration:.04},
+      async()=>({hiddenStates:new Float32Array(104),featureSize:1,frameCount:52,upsampledFrameCount:104}),
+      row=>starts.push(row.analysisStartSample));
+    beginnings.push(starts.slice(0,25));
+  }
+  assert.deepEqual(beginnings[0],beginnings[1]);
+});
+
+test('shared priors slice identical absolute rows through odd starts and reflected edges',()=>{
+  const slice=Function(`return (${extractFunction('slicePriorTimeline')});`)();
+  const timeline={mean:Float32Array.from({length:400},(_,i)=>i),
+    logs:Float32Array.from({length:400},(_,i)=>-i),channels:2,frames:200};
+  const a=slice(timeline,0,100),b=slice(timeline,65,100);
+  for(let channel=0;channel<2;channel++) {
+    assert.deepEqual(a.mean.slice(channel*100+65,(channel+1)*100),b.mean.slice(channel*100,channel*100+35));
+    assert.deepEqual(a.logs.slice(channel*100+65,(channel+1)*100),b.logs.slice(channel*100,channel*100+35));
+  }
+  const reflected=slice(timeline,-4,10);
+  assert.deepEqual([...reflected.mean.slice(0,6)],[4,3,2,1,0,1]);
+  assert.deepEqual([...slice(timeline,198,6).mean.slice(0,6)],[198,199,198,197,196,195]);
+});
+
+test('content analysis rejects a half-grid context instead of silently shifting feature centres',async()=>{
+  const resolve=Function('processAudioInFixedFrameWindows',`return (${extractFunction('resolveContentTimeline')});`)(processFixedWindows);
+  await assert.rejects(resolve(new Float32Array(16000),{contentAnalysisContext:.15},
+    async()=>{throw new Error('must fail before inference');}),/aligned content analysis/);
+});
+
 test("overlap octave disagreement never creates a fabricated slide", () => {
   const features = { hiddenStates: new Float32Array(200), featureSize: 2, upsampledFrameCount: 100 };
   const previous = { f0: new Float32Array(100).fill(220) };
@@ -61,7 +109,7 @@ const suppressHarshBursts = Function(`
 
 test("unverified local band subtraction stays outside the default pipeline", () => {
   assert.doesNotMatch(source, /finalAudio = adaptiveRvcBandRepair\(finalAudio/u);
-  assert.match(source, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
+  assert.match(source, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr, burstDiagnostics\)/u);
 });
 
 test("fixed browser RVC windows overlap and crossfade without changing duration", async () => {

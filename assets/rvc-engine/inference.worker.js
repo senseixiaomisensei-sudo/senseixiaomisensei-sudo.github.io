@@ -8658,6 +8658,117 @@ function slicePitchTimeline(timeline, analysisStartSample, count, sampleRate = 1
   }
   return { f0, frameCount: count, hopSize: Math.round(sampleRate/100), timelineResolved: true };
 }
+
+async function resolveContentTimeline(audio, config, extract, onWindow) {
+  const rate=config.inputSampleRate ?? 16000;
+  const frames=2*Math.ceil(audio.length*50/rate);
+  const reliability=new Int32Array(frames/2).fill(-1);
+  const owners=new Int32Array(frames/2).fill(-1);
+  let hiddenStates=null, featureSize=0;
+  // Analysis is independent of decoder length. Origins and hop must remain
+  // on HuBERT's 320-sample grid, including controlled context ablations.
+  const analysisFrames=config.contentAnalysisFrames??100;
+  const analysisContext=config.contentAnalysisContext??.16;
+  if(!Number.isInteger(analysisFrames) || analysisFrames<100 || analysisFrames>600
+    || analysisFrames%2 || !Number.isFinite(analysisContext)
+    || !Number.isInteger(analysisContext*100) || Math.round(analysisContext*100)%2 || analysisContext<.16
+    || analysisContext*200+4>=analysisFrames) throw new Error('Invalid aligned content analysis window');
+  const analysisConfig={...config,frameCount:analysisFrames,contextDuration:analysisContext,crossfadeDuration:.04};
+  await processAudioInFixedFrameWindows(audio,async chunk=>{
+    if (chunk.analysisStartSample % (rate/50)!==0) throw new Error('Content analysis is off the absolute 50 Hz grid');
+    const features=await extract(chunk.data);
+    if (!hiddenStates) {
+      featureSize=features.featureSize;
+      hiddenStates=new Float32Array(frames*featureSize);
+    }
+    if (features.featureSize!==featureSize) throw new Error('Content feature dimension changed');
+    const origin=chunk.analysisStartSample*50/rate;
+    let overlapEnergy=0,overlapValues=0;
+    for(let frame=0;frame<features.frameCount;frame++) {
+      const absolute=origin+frame;
+      if(absolute<0 || absolute>=frames/2) continue;
+      const context=Math.min(frame,features.frameCount-1-frame);
+      const source=frame*2*featureSize,destination=absolute*2*featureSize;
+      if(owners[absolute]>=0) {
+        for(let dimension=0;dimension<featureSize;dimension++) {
+          overlapEnergy+=(features.hiddenStates[source+dimension]-hiddenStates[destination+dimension])**2;
+          overlapValues++;
+        }
+      }
+      if(context<=reliability[absolute]) continue;
+      hiddenStates.set(features.hiddenStates.subarray(source,source+2*featureSize),destination);
+      reliability[absolute]=context;owners[absolute]=chunk.index;
+    }
+    onWindow?.({index:chunk.index,analysisStartSample:chunk.analysisStartSample,
+      independentContextDifferenceRms:overlapValues?Math.sqrt(overlapEnergy/overlapValues):null});
+    return new Float32Array(0);
+  },{...analysisConfig,outputSampleRate:100});
+  if(owners.some(owner=>owner<0)) throw new Error('Incomplete absolute content timeline');
+  return {hiddenStates,featureSize,frameCount:frames/2,upsampledFrameCount:frames,
+    owners,analysisGridSamples:rate/50,timelineResolved:true};
+}
+
+function sliceContentTimeline(timeline, analysisStartSample, count, sampleRate=16000) {
+  const start=analysisStartSample*100/sampleRate;
+  if(!Number.isInteger(start)) throw new Error('Synthesis window is off the 100 Hz grid');
+  const hiddenStates=new Float32Array(count*timeline.featureSize);
+  for(let frame=0;frame<count;frame++) {
+    let absolute=start+frame;
+    const length=timeline.upsampledFrameCount;
+    while(absolute<0 || absolute>=length) absolute=absolute<0?-absolute:2*length-2-absolute;
+    const offset=absolute*timeline.featureSize;
+    hiddenStates.set(timeline.hiddenStates.subarray(offset,offset+timeline.featureSize),frame*timeline.featureSize);
+  }
+  return {...timeline,hiddenStates,upsampledFrameCount:count,frameCount:Math.ceil(count/2)};
+}
+
+async function resolvePriorTimeline(features,pitch,session,options={},onWindow) {
+  const length=features.upsampledFrameCount;
+  const frames=600,context=100,core=frames-2*context,step=core-40;
+  let mean=null,logs=null,channels=0;
+  const reliability=new Int32Array(length).fill(-1);
+  for(let start=0;start<length;start+=step) {
+    const origin=start-context;
+    const phones=sliceContentTimeline(features,origin*160,frames);
+    const hz=slicePitchTimeline(pitch,origin*160,frames);
+    const result=await session.run({phone:buildPhoneTensor(phones,frames),
+      pitch:buildPitchTensor(applyPitchShift(hz.f0,options.pitchShift??0),frames),
+      phone_lengths:buildPhoneLengthsTensor(frames)});
+    const m=result.prior_mean,l=result.prior_logs;
+    if(m.dims[2]!==frames || l.dims[2]!==frames || m.dims[1]!==l.dims[1]) throw new Error('Invalid shared prior contract');
+    if(!mean) {channels=m.dims[1];mean=new Float32Array(channels*length);logs=new Float32Array(channels*length);}
+    let differenceEnergy=0,differenceValues=0;
+    for(let frame=0;frame<frames;frame++) {
+      const absolute=origin+frame;
+      if(absolute<0 || absolute>=length) continue;
+      const support=Math.min(frame,frames-1-frame);
+      for(let channel=0;channel<channels;channel++) {
+        const src=channel*frames+frame,dst=channel*length+absolute;
+        if(!Number.isFinite(m.data[src]) || !Number.isFinite(l.data[src])) throw new Error('Non-finite shared prior');
+        if(reliability[absolute]>=0) {differenceEnergy+=(m.data[src]-mean[dst])**2;differenceValues++;}
+        if(support>reliability[absolute]) {mean[dst]=m.data[src];logs[dst]=l.data[src];}
+      }
+      if(support>reliability[absolute]) reliability[absolute]=support;
+    }
+    onWindow?.({firstAbsoluteFrame:origin,frames,independentPriorDifferenceRms:differenceValues?Math.sqrt(differenceEnergy/differenceValues):null});
+    if(start+core>=length) break;
+  }
+  if(reliability.some(value=>value<0)) throw new Error('Incomplete shared prior timeline');
+  return {mean,logs,channels,frames:length};
+}
+
+function slicePriorTimeline(timeline,start,count) {
+  const mean=new Float32Array(timeline.channels*count),logs=new Float32Array(mean.length);
+  for(let frame=0;frame<count;frame++) {
+    let absolute=start+frame;
+    while(absolute<0 || absolute>=timeline.frames) absolute=absolute<0?-absolute:2*timeline.frames-2-absolute;
+    for(let channel=0;channel<timeline.channels;channel++) {
+      mean[channel*count+frame]=timeline.mean[channel*timeline.frames+absolute];
+      logs[channel*count+frame]=timeline.logs[channel*timeline.frames+absolute];
+    }
+  }
+  return {mean,logs,channels:timeline.channels,frames:count};
+}
 // The currently shipped browser ONNX voices were traced at 100 phone frames.
 // Their attention graph advertises a dynamic axis but contains a fixed Reshape;
 // feeding a longer mobile clip therefore fails inside OrtRun. Process one exact
@@ -12905,6 +13016,12 @@ function buildSynthesisFeeds(features, pitch, frameCount, speakerId, pitchShift 
         shiftedF0, frameCount, sourceUpp, feeds.source_noise, options.sourcePhaseCycles ?? 0
       );
     }
+    if(options.sharedPrior) {
+      const prior=options.sharedPrior;
+      feeds.prior_mean=new Te('float32',prior.mean,[1,prior.channels,frameCount]);
+      feeds.prior_logs=new Te('float32',prior.logs,[1,prior.channels,frameCount]);
+      feeds.x_mask=new Te('float32',new Float32Array(frameCount).fill(1),[1,1,frameCount]);
+    }
     return feeds;
   } catch (cause) {
     throw new RvcError(
@@ -13538,7 +13655,7 @@ function applyVoicingSanityGate(f0, audio, sampleRate = 16000, diagnostics = nul
 // it contains repeated >0.45 adjacent-sample jumps (or one extreme >0.75
 // jump), a signature produced by the browser vocoder during the supplied
 // stress sample. Smooth attack/release avoids creating new edit boundaries.
-function suppressDetectedHarshBursts(audio, sampleRate = 40000) {
+function suppressDetectedHarshBursts(audio, sampleRate = 40000, diagnostics = null) {
   if (!audio || audio.length < 3) return audio;
   const blockSamples = Math.max(16, Math.round(sampleRate * 0.01));
   const blocks = Math.ceil(audio.length / blockSamples);
@@ -13563,10 +13680,31 @@ function suppressDetectedHarshBursts(audio, sampleRate = 40000) {
       detected = true;
     }
   }
-  if (!detected) return audio;
-  const expanded = new Uint8Array(flagged);
+  const repairMask = new Uint8Array(blocks);
+  const runs = [];
+  for (let start = 0; start < blocks;) {
+    if (!flagged[start]) { start++; continue; }
+    let end = start + 1;
+    while (end < blocks && flagged[end]) end++;
+    const durationSamples = Math.min(audio.length, end * blockSamples) - start * blockSamples;
+    const short = durationSamples <= Math.round(sampleRate * .03);
+    runs.push({ startSeconds: start * blockSamples / sampleRate,
+      endSeconds: Math.min(audio.length, end * blockSamples) / sampleRate,
+      durationSamples, action: short ? 'repair_short_burst' : 'mark_sustained_unproven' });
+    if (short) repairMask.fill(1, start, end);
+    start = end;
+  }
+  if (diagnostics) {
+    diagnostics.detectedMask = Array.from(flagged);
+    diagnostics.repairMask = Array.from(repairMask);
+    diagnostics.runs = runs;
+    diagnostics.differenceRms = 0;
+    diagnostics.reason = 'Only isolated <=30 ms detections; sustained content is marked, never lowpassed';
+  }
+  if (!detected || !repairMask.some(value => value > 0)) return audio;
+  const expanded = new Uint8Array(repairMask);
   for (let block = 0; block < blocks; block++) {
-    if (!flagged[block]) continue;
+    if (!repairMask[block]) continue;
     if (block > 0) expanded[block - 1] = 1;
     if (block + 1 < blocks) expanded[block + 1] = 1;
   }
@@ -13581,6 +13719,11 @@ function suppressDetectedHarshBursts(audio, sampleRate = 40000) {
     const coefficient = target > blend ? attack : release;
     blend = coefficient * blend + (1 - coefficient) * target;
     output[index] = audio[index] * (1 - blend) + filtered[index] * blend;
+  }
+  if (diagnostics) {
+    let differenceEnergy = 0;
+    for (let index = 0; index < output.length; index++) differenceEnergy += (output[index] - audio[index]) ** 2;
+    diagnostics.differenceRms = Math.sqrt(differenceEnergy / output.length);
   }
   return output;
 }
@@ -13712,7 +13855,11 @@ function normalizeOutputPeak(audio, targetPeak = 0.80) {
   if (!audio || audio.length === 0) return audio;
   let peak = 0;
   for (let i = 0; i < audio.length; i++) {
-    if (!isFinite(audio[i])) audio[i] = 0;
+    if (!Number.isFinite(audio[i])) {
+      const error = new Error(`Non-finite synthesis output at sample ${i}; refusing to encode damaged audio`);
+      error.firstInvalidSample = i;
+      throw error;
+    }
     const absolute = Math.abs(audio[i]);
     if (absolute > peak) peak = absolute;
   }
@@ -13915,6 +14062,12 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       files.rmvpe instanceof ArrayBuffer ? files.rmvpe : files.rmvpe.arrayBuffer()
     ]);
     const rvcSession = rvcSessionResult.session;
+    let priorSession=null;
+    if(rvcSession.inputNames.includes('prior_mean')) {
+      if(!files.prior || options.sharedContentTimeline!==true) throw new Error('Shared-prior decoder requires its matching prior model and absolute content timeline');
+      const buffer=files.prior instanceof ArrayBuffer?files.prior:await files.prior.arrayBuffer();
+      priorSession=await qu.create(buffer,{executionProviders:['wasm'],graphOptimizationLevel:'basic'});
+    }
     // Compile the two large encoders sequentially to bound mobile peak memory.
     emitStage("feature_model_loading");
     const contentVecSession = await qu.create(contentVecBuffer, {
@@ -13941,17 +14094,26 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     ctx.backend = rvcSessionResult.backend;
     consoleProxy.log(`[Worker] Generator execution provider: ${ctx.backend}`);
     emitStage(PIPELINE_STAGES[2]);
+    const sharedFrames=options.sharedSynthesisFrames??100;
+    const sharedContext=options.sharedSynthesisContext??.16;
+    if(priorSession && (!Number.isInteger(sharedFrames) || sharedFrames<100 || sharedFrames>600
+      || !Number.isFinite(sharedContext) || sharedContext<.16 || sharedContext*200+5>=sharedFrames)) {
+      throw new Error('Invalid shared-prior decoder window');
+    }
     const chunkingConfig = {
       inputSampleRate: options.inputSampleRate ?? 16e3,
       outputSampleRate: options.outputSampleRate ?? 40e3,
-      frameCount: 100,
+      frameCount: priorSession?sharedFrames:100,
       crossfadeDuration: 0.05,
       // The fixed browser generators accept only 100 phone frames. For long
       // audio, reserve 150 ms on both sides as analysis context and crop it
       // after synthesis. This mirrors official RVC's pad -> infer -> crop path
       // and prevents the vocoder from restarting directly on every syllable.
-      contextDuration: audio.length > (options.inputSampleRate ?? 16e3) * 20 ? 0.15 : 0,
-      lookAheadDuration: 0.04
+      contextDuration: priorSession?sharedContext:options.sharedContentTimeline === true ? .16
+        : audio.length > (options.inputSampleRate ?? 16e3) * 20 ? 0.15 : 0,
+      lookAheadDuration: 0.04,
+      contentAnalysisFrames:options.contentAnalysisFrames,
+      contentAnalysisContext:options.contentAnalysisContext
     };
     const coreFrames = Math.max(1, chunkingConfig.frameCount - Math.round(chunkingConfig.contextDuration * 200));
     const stepFrames = Math.max(1, coreFrames - Math.round(chunkingConfig.crossfadeDuration * 100));
@@ -13962,7 +14124,11 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     let previousFeatures = null;
     let previousPitch = null;
     let detectedSampleRate;
-    const pitchTimeline = await resolvePitchTimeline(audio, chunkingConfig,
+    // Freeze pitch analysis when testing decoder context: changing a decoder
+    // window must not silently change the F0 estimator's input window too.
+    const pitchConfig=options.sharedContentTimeline===true
+      ? {...chunkingConfig,frameCount:100,contextDuration:.16}:chunkingConfig;
+    const pitchTimeline = await resolvePitchTimeline(audio, pitchConfig,
       chunkAudio => estimatePitch(chunkAudio, {
         rmvpe: rmvpeSession,
         medianFilter: options.medianFilter,
@@ -13972,6 +14138,28 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
         voicing: pitch.voicingEvidence }));
     callbacks.onEvent?.({ type: 'pitch_timeline', disagreements: pitchTimeline.disagreements,
       frames: pitchTimeline.f0.length, method: 'absolute-frame/context-selection' });
+    callbacks.onDiagnostic?.({stage:'pitch-timeline',f0:pitchTimeline.f0});
+    let contentTimeline=null;
+    let priorTimeline=null;
+    if(options.sharedContentTimeline===true) {
+      contentTimeline=await resolveContentTimeline(audio,chunkingConfig,
+        chunkAudio=>extractHubertFeatures(chunkAudio,{contentVec:contentVecSession}),
+        evidence=>callbacks.onEvent?.({type:'content_analysis',...evidence}));
+      contentTimeline=applyRetrievalCodebook(contentTimeline,pitchTimeline.f0,retrievalCodebook,
+        options.indexRate??0,options.protect??.33);
+      callbacks.onDiagnostic?.({stage:'content-timeline',features:contentTimeline.hiddenStates,
+        owners:contentTimeline.owners,featureSize:contentTimeline.featureSize,frames:contentTimeline.upsampledFrameCount});
+      callbacks.onEvent?.({type:'content_timeline',analysisGridSamples:contentTimeline.analysisGridSamples,
+        sharedFeatures:true,sharedPriors:false,validation:'experimental; generator context still window-local'});
+      if(priorSession) {
+        priorTimeline=await resolvePriorTimeline(contentTimeline,pitchTimeline,priorSession,options,
+          evidence=>callbacks.onEvent?.({type:'prior_analysis',...evidence}));
+        callbacks.onDiagnostic?.({stage:'prior-timeline',mean:priorTimeline.mean,logs:priorTimeline.logs,
+          channels:priorTimeline.channels,frames:priorTimeline.frames});
+        callbacks.onEvent?.({type:'prior_timeline',frames:priorTimeline.frames,sharedPriors:true,
+          validation:'experimental; common condition seams require separate validation'});
+      }
+    }
     const externalExcitation = rvcSession.inputNames.includes("source_excitation");
     const sourcePhase = externalExcitation
       ? buildPitchPhaseTimeline(pitchTimeline.f0, options.pitchShift ?? 0) : null;
@@ -13979,13 +14167,15 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       audio,
       async (chunk, currentChunk, totalChunks) => {
         callbacks.onEvent?.({ type: "chunk_step", step: "feature", current: currentChunk, total: totalChunks });
-        const rawFeatures = await extractHubertFeatures(chunk.data, {
+        const rawFeatures = contentTimeline ? sliceContentTimeline(contentTimeline,chunk.analysisStartSample,
+          Math.floor(chunk.data.length*100/chunkingConfig.inputSampleRate),chunkingConfig.inputSampleRate)
+          : await extractHubertFeatures(chunk.data, {
           contentVec: contentVecSession
         });
         callbacks.onEvent?.({ type: "chunk_step", step: "pitch", current: currentChunk, total: totalChunks });
         const rawPitch = slicePitchTimeline(pitchTimeline, chunk.analysisStartSample,
           Math.floor(chunk.data.length*100/chunkingConfig.inputSampleRate), chunkingConfig.inputSampleRate);
-        const stabilized = stabilizeAnalysisWindowBoundary(
+        const stabilized = contentTimeline ? {features:rawFeatures,pitch:rawPitch} : stabilizeAnalysisWindowBoundary(
           rawFeatures,
           rawPitch,
           previousFeatures,
@@ -13997,7 +14187,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
         const pitch = stabilized.pitch;
         previousFeatures = features;
         previousPitch = pitch;
-        const retrievedFeatures = applyRetrievalCodebook(
+        const retrievedFeatures = contentTimeline ? features : applyRetrievalCodebook(
           features,
           pitch.f0,
           retrievalCodebook,
@@ -14021,6 +14211,7 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
           noiseFrameOffset: externalExcitation || chunkingConfig.contextDuration > 0 ? noiseFrameOffset : null,
           sourceSampleOffset: externalExcitation || chunkingConfig.contextDuration > 0 ? sourceSampleOffset : null,
           sourcePhaseCycles: sourcePhase ? pitchPhaseAtFrame(sourcePhase, noiseFrameOffset) : 0,
+          sharedPrior: priorTimeline?slicePriorTimeline(priorTimeline,noiseFrameOffset,chunkingConfig.frameCount):null,
           maxFrames: chunkingConfig.frameCount,
           sourceUpp: Math.max(1, Math.round((options.outputSampleRate ?? 40e3) / 100))
         });
@@ -14036,12 +14227,22 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       }
     );
     const finalSr = detectedSampleRate || options.outputSampleRate || 40e3;
+    callbacks.onDiagnostic?.({stage:'raw-synthesis',audio:outputAudio,sampleRate:finalSr});
+    // Fail at the generating stage, before DSP can turn NaN/Inf into holes.
+    for (let sample = 0; sample < outputAudio.length; sample++) {
+      if (!Number.isFinite(outputAudio[sample])) {
+        callbacks.onEvent?.({ type: 'invalid_synthesis', firstInvalidSample: sample, sampleRate: finalSr });
+        throw new Error(`Non-finite raw synthesis output at sample ${sample}`);
+      }
+    }
     let finalAudio = outputAudio;
     // 1. Blend RMS envelope using official RVC semantics (1 = unchanged).
     finalAudio = applyRmsVolumeEnvelope(audio, finalAudio, options.rmsMixRate ?? 1.0, finalSr);
     // 2. Repair only detected millisecond harsh bursts; normal audio is
     // returned unchanged by this guard.
-    finalAudio = suppressDetectedHarshBursts(finalAudio, finalSr);
+    const burstDiagnostics = {};
+    finalAudio = suppressDetectedHarshBursts(finalAudio, finalSr, burstDiagnostics);
+    callbacks.onEvent?.({ type: 'burst_repair', ...burstDiagnostics });
     // 3. Environment and breath passthrough: wind, fans, breaths and coughs
     // are re-injected from the original recording instead of being sung by
     // the character voice. Sung regions return untouched.
@@ -14115,6 +14316,7 @@ self.onmessage = async (event) => {
     if (files.index) {
       pipelineFiles.index = files.index;
     }
+    if(files.prior) pipelineFiles.prior=files.prior;
     consoleProxy.log("[Worker] Starting pipeline...");
     const callbacks = {
       onEvent: (event2) => {

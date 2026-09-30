@@ -98,10 +98,34 @@ test("transparent output safety gain does not colour normal audio", () => {
   assert.deepEqual(ordinary, original);
 
   const loud = sine(4000, 1.3, 25);
-  loud[7] = Number.NaN;
   normalizeOutputPeak(loud);
-  assert.equal(loud[7], 0);
   assert.ok(maxAbs(loud) <= 0.951);
+  for (const invalid of [NaN, Infinity, -Infinity]) {
+    const broken = sine(4000, 1.3, 25);
+    broken[7] = invalid;
+    assert.throws(() => normalizeOutputPeak(broken), /Non-finite synthesis output at sample 7/);
+    assert.ok(Object.is(broken[7], invalid), 'invalid synthesis is rejected, never cleared');
+  }
+});
+
+test("burst repair marks sustained high frequencies without colouring them", () => {
+  const filter = evaluateFunction('applyBiquadFilterInPlace');
+  const lowpass = evaluateFunction('createBiquadLowpass');
+  const repair = evaluateFunction('suppressDetectedHarshBursts',
+    ['applyBiquadFilterInPlace','createBiquadLowpass'],[filter,lowpass]);
+  const sustained = sine(40000,.8,10000);
+  const evidence = {};
+  assert.equal(repair(sustained,40000,evidence),sustained);
+  assert.equal(evidence.differenceRms,0);
+  assert.equal(evidence.runs[0].action,'mark_sustained_unproven');
+  assert.equal(evidence.runs[0].durationSamples,40000);
+  const short = sine(40000,.1,440);
+  short.set(sine(400,.8,100),20000);
+  const shortEvidence = {};
+  const repaired = repair(short,40000,shortEvidence);
+  assert.ok(shortEvidence.runs.some(run=>run.action==='repair_short_burst'));
+  assert.ok(shortEvidence.differenceRms>0);
+  assert.deepEqual(repaired.subarray(0,19000),short.subarray(0,19000));
 });
 
 test("RMVPE salience decoder supports class-last and class-first tensors", () => {
@@ -173,8 +197,8 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /stabilizeF0ByWaveform\(f0, audio, confidence\)/u);
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
-  assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260927-serina-r41/u);
+  assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr, burstDiagnostics\)/u);
+  assert.match(page, /assets\/rvc\.js\?v=20260930-fractional-r42/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -213,20 +237,20 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /OWN_MODEL_PREFIX/u);
   assert.match(workerSource, /extractHubertFeatures[\s\S]*?normalize: false/u);
   assert.match(workerSource, /processAudioInFixedFrameWindows/u);
-  assert.match(workerSource, /frameCount: 100/u);
+  assert.match(workerSource, /frameCount: priorSession\?sharedFrames:100/u);
   assert.match(workerSource, /maxFrames: chunkingConfig\.frameCount/u);
   assert.doesNotMatch(workerSource, /extractHubertFeatures[\s\S]{0,180}?normalize: true/u);
   assert.match(workerSource, /fMin: 30,/u);
   assert.match(workerSource, /2595 \* Math\.log10\(1 \+ hz \/ 700\)/u);
   assert.match(workerSource, /medianFilterEnabled = options\.medianFilter === true/u);
-  assert.match(client, /v=20260927-serina-r41/u);
+  assert.match(client, /v=20260930-fractional-r42/u);
   assert.match(client, /function preferredCloudOutputFormat\(durationSeconds = 0\)/u);
   assert.match(client, /MOBILE_AUDIO_USER_AGENT/u);
   assert.match(client, /body\.set\("format", outputFormat\)/u);
   assert.match(client, /body\.set\("f0Method", f0Method\)/u);
   assert.match(client, /body\.set\("f0_method", f0Method\)/u);
   assert.match(client, /readCloudAudioBody\(response,/u);
-  assert.match(runtime, /v=20260927-serina-r41/u);
+  assert.match(runtime, /v=20260930-fractional-r42/u);
   assert.match(runtime, /typeof rawWasm === "string"/u);
   assert.match(client, /ort-wasm-simd-threaded\.mjs/u);
   assert.match(client, /ort-wasm-simd-threaded\.wasm/u);
