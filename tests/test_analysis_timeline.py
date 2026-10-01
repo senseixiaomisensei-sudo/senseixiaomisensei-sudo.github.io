@@ -7,8 +7,54 @@ import numpy as np
 import soundfile as sf
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'rvc-service'))
-from app.analysis_timeline import frame_spans, AnalysisTimeline, join_timeline, condition_seam_metrics
+from app.analysis_timeline import (frame_spans, AnalysisTimeline, join_timeline,
+    condition_seam_metrics, choose_cut_positions)
 from app.timeline_synthesis import source_excitation, counter_gaussian
+
+
+class OwnershipCutPlacementTests(unittest.TestCase):
+    def setUp(self):
+        hop, pad = 160, 300
+        self.spans = [(0, 1050), (1000, 2050), (2000, 3050)]
+        n = (3050 + 2 * pad) * hop
+        t = np.arange(n) / 16000.0
+        # Loud singing with one deliberate 100 ms near-silence at 20.4 s,
+        # inside the first overlap region [20.0 s, 21.0 s].
+        self.audio = 0.3 * np.sin(2 * np.pi * 220 * t)
+        self.audio *= 0.02 + 0.98 * (np.abs(t - 20.4) > 0.05)
+
+    def test_cut_moves_to_calm_frame_and_stays_on_even_grid(self):
+        cuts = choose_cut_positions(self.audio, self.spans)
+        self.assertEqual(len(cuts), 2)
+        self.assertTrue(all(c % 2 == 0 for c in cuts))
+        self.assertLess(abs(cuts[0] / 50.0 - 20.4), 0.15)
+
+    def test_cut_stays_inside_overlap_margin(self):
+        for previous, current, cut in zip(self.spans, self.spans[1:],
+                                          choose_cut_positions(self.audio, self.spans)):
+            self.assertGreaterEqual(cut, current[0] + 10)
+            self.assertLessEqual(cut, previous[1] - 10)
+
+    def test_steady_loud_audio_keeps_predictable_midpoints(self):
+        loud = 0.3 * np.sin(2 * np.pi * 220 * np.arange((3050 + 600) * 160) / 16000.0)
+        cuts = choose_cut_positions(loud, self.spans)
+        self.assertEqual(cuts, [2 * round((c[0] + p[1]) / 4) for p, c in
+                                zip(self.spans, self.spans[1:])])
+
+    def test_chosen_cut_energy_never_exceeds_midpoint(self):
+        cuts = choose_cut_positions(self.audio, self.spans)
+        pad = 300
+        def energy(frame):
+            a = (frame - 5 + pad) * 160
+            b = (frame + 5 + pad) * 160
+            return float(np.dot(self.audio[a:b], self.audio[a:b]))
+        for previous, current, cut in zip(self.spans, self.spans[1:], cuts):
+            midpoint = 2 * round((current[0] + previous[1]) / 4)
+            self.assertLessEqual(energy(cut), energy(midpoint) + 1e-12)
+
+    def test_degenerate_overlap_falls_back_to_midpoint(self):
+        cuts = choose_cut_positions(self.audio, [(0, 1000), (990, 2000)])
+        self.assertEqual(cuts, [2 * round((990 + 1000) / 4)])
 
 
 class AnalysisTimelineTests(unittest.TestCase):
