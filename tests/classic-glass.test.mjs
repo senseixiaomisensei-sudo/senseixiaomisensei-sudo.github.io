@@ -67,7 +67,7 @@ async function modalFixture(fetchImpl) {
   const document={documentElement:root,body,readyState:'loading',getElementById:id=>id==='site-header'?header:null,createElement:tag=>new Element(tag),addEventListener(){}};
   const pending=[];
   const context=vm.createContext({document,matchMedia:()=>({matches:true}),MutationObserver:class{observe(){}},AbortController,fetch:fetchImpl,setTimeout:fn=>(pending.push(fn),pending.length),clearTimeout(){}});
-  vm.runInContext((await file('assets/classic-glass.js')).replace(/^import[^\n]+\n/,''),context);
+  vm.runInContext((await file('assets/classic-glass.js')).replace(/^import[^\n]+\n/gm,''),context);
   vm.runInContext('initCommunity()',context);
   return {body,button:header.children[1],dialog:body.children[0],pending};
 }
@@ -103,7 +103,7 @@ test('slider feedback follows actual values without changing inference state; th
   const root={dataset:{ui:'classic'}}, observers=[], frames=new Map(); let next=0;
   const document={documentElement:root,readyState:'loading',hidden:false,querySelectorAll:()=>[input],getElementById:()=>output,createElement:tag=>new Element(tag),addEventListener(){}};
   const context=vm.createContext({document,Spring,rangeFraction,performance:{now:()=>0},queueMicrotask,matchMedia:()=>({matches:false}),MutationObserver:class{constructor(fn){observers.push(fn);}observe(){}},requestAnimationFrame:fn=>(frames.set(++next,fn),next),cancelAnimationFrame:id=>frames.delete(id),setTimeout:()=>1,clearTimeout(){}});
-  vm.runInContext((await file('assets/classic-glass.js')).replace(/^import[^\n]+\n/,''),context);
+  vm.runInContext((await file('assets/classic-glass.js')).replace(/^import[^\n]+\n/gm,''),context);
   vm.runInContext('initRanges()',context);
   function tick(time) { const callbacks=[...frames.values()]; frames.clear(); callbacks.forEach(fn=>fn(time)); }
   tick(16); assert.equal(input.properties['--classic-fill'],'50.000%');

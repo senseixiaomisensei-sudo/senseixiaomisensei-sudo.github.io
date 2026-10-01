@@ -162,5 +162,6 @@ function updateLiquidGlassFilter({ id = DEFAULT_FILTER_ID, scales, saturate } = 
 
 
 
-injectLiquidGlassFilter({id:'classic-refraction', scales:[-42,-40,-38], saturate:1.15});
+// Keep the supplied page's narrow, neutral-centre refraction; highlights live in CSS.
+injectLiquidGlassFilter({id:'classic-refraction', scales:[-11,-10.5,-10], saturate:1.03});
 })();

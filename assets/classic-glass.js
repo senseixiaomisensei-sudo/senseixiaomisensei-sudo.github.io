@@ -1,4 +1,5 @@
 import { Spring, rangeFraction } from './classic-glass/motion.js';
+import { initCharacterModes } from './classic-glass/characters.js';
 
 // Presentation only: no writes to inference parameters, uploads or audio processing.
 const root = document.documentElement;
@@ -8,20 +9,52 @@ const text = (zh, en) => root.lang.startsWith('en') ? en : zh;
 
 function init() {
   initCommunity();
-  let classicReady = false, deckRefresh = () => {};
+  let classicReady = false, deckRefresh = () => {}, characterRefresh = () => {};
   function syncTheme() {
     if (isClassic() && !classicReady) {
       classicReady = true;
       const optics = document.createElement('script');
-      optics.src = 'assets/classic-glass/optics.js?v=20261001';
+      optics.src = 'assets/classic-glass/optics.js?v=20261001-4';
       document.head.append(optics);
       initRanges();
+      initReflections();
       deckRefresh = initDeck();
+      characterRefresh = initCharacterModes({ root, document, isClassic, text, reduced });
     }
     deckRefresh();
+    characterRefresh();
   }
   new MutationObserver(syncTheme).observe(root, { attributes: true, attributeFilter: ['data-ui', 'lang'] });
   syncTheme();
+}
+
+function initReflections() {
+  const x = new Spring(.24), y = new Spring(.1);
+  let target, frame = 0, previous = 0;
+  function paint(time) {
+    frame = 0;
+    if (!target || !isClassic() || document.hidden) return;
+    const dt = (time - previous) / 1000 || 1/60; previous = time;
+    const movingX = x.step(dt, reduced.matches), movingY = y.step(dt, reduced.matches);
+    target.style.setProperty('--classic-light-x', `${x.value * 100}%`);
+    target.style.setProperty('--classic-light-y', `${y.value * 100}%`);
+    if (movingX || movingY) frame = requestAnimationFrame(paint);
+  }
+  function clear() { cancelAnimationFrame(frame); frame = 0; target = null; }
+  document.addEventListener('pointermove', event => {
+    if (!isClassic() || reduced.matches || event.pointerType === 'touch') return;
+    const next = event.target.closest?.('#site-header > header,.classic-pane,[data-model-id]');
+    if (!next) { clear(); return; }
+    const box = next.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    target = next;
+    x.target = Math.max(0,Math.min(1,(event.clientX - box.left)/box.width));
+    y.target = Math.max(0,Math.min(1,(event.clientY - box.top)/box.height));
+    if (!frame) { previous = performance.now(); frame = requestAnimationFrame(paint); }
+  }, { passive:true });
+  document.addEventListener('visibilitychange', clear);
+  document.addEventListener('pointerleave', clear);
+  new MutationObserver(clear).observe(root, { attributes:true, attributeFilter:['data-ui'] });
 }
 
 function initRanges() {
@@ -36,6 +69,7 @@ function initRanges() {
     input.before(wrap); wrap.append(input, bubble);
     const spring = new Spring(rangeFraction(input));
     let frame = 0, previous = 0, fade = 0;
+    let holding = false;
     function paint(time) {
       frame = 0;
       const moving = spring.step((time - previous) / 1000 || 1 / 60, reduced.matches);
@@ -51,7 +85,8 @@ function initRanges() {
       bubble.textContent = output?.textContent?.trim() || input.value;
       if (feedback && isClassic()) {
         wrap.classList.add('is-adjusting');
-        clearTimeout(fade); fade = setTimeout(() => wrap.classList.remove('is-adjusting'), 700);
+        clearTimeout(fade);
+        if (!holding) fade = setTimeout(() => wrap.classList.remove('is-adjusting'), 500);
       }
       if (isClassic() && !document.hidden && !frame) { previous = performance.now(); frame = requestAnimationFrame(paint); }
       if (!isClassic()) { cancelAnimationFrame(frame); frame = 0; wrap.classList.remove('is-adjusting'); }
@@ -59,7 +94,12 @@ function initRanges() {
     input.addEventListener('input', () => queueMicrotask(() => sync(true)));
     input.addEventListener('change', () => queueMicrotask(() => sync(true)));
     input.addEventListener('focus', () => sync(true));
-    input.addEventListener('blur', () => wrap.classList.remove('is-adjusting'));
+    input.addEventListener('pointerdown', () => { holding = true; sync(true); });
+    const release = () => { holding = false; sync(true); };
+    input.addEventListener('pointerup', release);
+    input.addEventListener('pointercancel', release);
+    input.addEventListener('lostpointercapture', release);
+    input.addEventListener('blur', () => { holding = false; wrap.classList.remove('is-adjusting'); });
     // Existing preset/reset handlers update the real value; read it after they run.
     controllers.set(input, sync); sync();
   }
@@ -148,14 +188,15 @@ function initDeck() {
   function refresh() {
     section.hidden = !isClassic();
     section.setAttribute('aria-label', text('叠层声音工作台','Stacked voice workspace'));
+    section.querySelector('.classic-console-top span').textContent = text('声音工作台','Voice workspace');
     deck.setAttribute('aria-label', text('左右滑动或使用方向键切换卡片','Swipe or use arrow keys to switch cards'));
     const selected = document.querySelector('[data-model-id][aria-selected="true"]');
     const name = selected?.querySelector('p.font-black')?.textContent || text('选择角色','Choose a voice');
     cards[0].querySelector('h3').textContent = name;
-    cards[0].querySelector('p').textContent = text('保留角色入口，按你的选择转换声线。','Your selected character sets the target voice.');
+    cards[0].querySelector('p').textContent = text('查看并切换当前声线。','View and change the current voice.');
     const file = document.getElementById('rvc-audio-file')?.files?.[0];
     cards[1].querySelector('h3').textContent = text('原声输入','Source audio');
-    cards[1].querySelector('p').textContent = file?.name || text('上传或录制原声，沿用已有处理流程。','Upload or record audio with the existing workflow.');
+    cards[1].querySelector('p').textContent = file?.name || text('上传一首歌，或录制一段声音。','Upload a song or record your voice.');
     cards[2].querySelector('h3').textContent = `${document.getElementById('rvc-pitch')?.value || 0} ${text('半音','semitones')}`;
     cards[2].querySelector('p').textContent = text('音高、动态和混音参数，各自独立调节。','Adjust pitch, dynamics and mix independently.');
     const names = [text('角色','Voice'),text('声音','Audio'),text('调音','Tune')];
