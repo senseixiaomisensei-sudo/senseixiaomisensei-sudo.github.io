@@ -60,6 +60,7 @@ class AnalysisTimeline:
     model_revision: str | None = None
     conditioning_features: np.ndarray | None = None
     retrieval: dict | None = None
+    cut_frames: list | None = None
 
     def window(self, index, rate, shift):
         start, end = self.spans[index]
@@ -87,6 +88,41 @@ def frame_spans(samples, maximum=2000, overlap=50):
     starts = [2*round(i*(frames-overlap)/count/2) for i in range(count)]
     return [(start, starts[i+1]+overlap if i+1<count else frames)
             for i,start in enumerate(starts)]
+
+
+def choose_cut_positions(audio, spans, pad_frames=PAD_FRAMES, margin=10, probe=5):
+    """Place each ownership cut at the calmest frame of its overlap region.
+
+    Two encodings of the same absolute frame never agree exactly, so the
+    handover between windows belongs where the recording cannot expose it:
+    the lowest-energy frame inside the overlap. The move happens only when a
+    candidate is measurably calmer than the midpoint, so steady loud passages
+    keep the predictable midpoint. The cut only decides which window owns
+    each shared row - window geometry, F0 and synthesis spans are untouched.
+    Candidates stay at least `margin` frames from either window's unsupported
+    edge and on the even 50 Hz frame grid.
+    """
+    cuts = []
+    for previous, current in zip(spans, spans[1:]):
+        midpoint = 2*round((current[0]+previous[1])/4)
+        low, high = current[0]+margin, previous[1]-margin
+
+        def energy(frame):
+            a = (frame - probe + pad_frames)*HOP
+            b = (frame + probe + pad_frames)*HOP
+            return float(np.dot(audio[a:b], audio[a:b]))
+
+        if high <= low:
+            cuts.append(midpoint)
+            continue
+        baseline = energy(midpoint)
+        best, best_energy = midpoint, baseline
+        for frame in range(low + (low % 2), high + 1, 2):
+            candidate = energy(frame)
+            if candidate < best_energy:
+                best, best_energy = frame, candidate
+        cuts.append(best if best_energy < baseline * .98 else midpoint)
+    return cuts
 
 
 def prepare_analysis(model, source, method, diagnostics=None, consensus=True, filter_radius=0):
@@ -118,9 +154,11 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
     base = np.zeros(n); alternate = np.zeros(n); salience = np.full(n,np.nan)
     owners = np.full(n,-1,dtype=np.int32)
     use_consensus = consensus and method == 'rmvpe' and bool(model._vc.if_f0)
-    # Overlap ownership is a fixed absolute frame boundary, not a crossfade of
-    # phonemes or a per-window decision. Every synthesis sees identical rows.
-    cuts = [2*round((spans[i][0]+spans[i-1][1])/4) for i in range(1,len(spans))]
+    # Overlap ownership is an absolute frame boundary placed at the calmest
+    # frame of each overlap, not a crossfade of phonemes or a per-window
+    # decision. Every synthesis sees identical rows.
+    cuts = choose_cut_positions(audio, spans)
+    evidence = {'cut_frames': cuts}
     feature_cuts={};previous_part=previous_start=None;feature_overlaps=[]
     previous_observe = getattr(pipe,'observe_pitch_confidence',False)
     pipe.observe_pitch_confidence = True
@@ -151,7 +189,9 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
                     right=part[lo-start//2:hi-start//2]
                     feature_cuts[f'left_{i:03d}']=left
                     feature_cuts[f'right_{i:03d}']=right
+                    midpoint=2*round((spans[i][0]+spans[i-1][1])/4)
                     feature_overlaps.append(dict(cutFrame100Hz=first,timeSeconds=first/100-3,
+                        midpointFrame100Hz=midpoint,midpointTimeSeconds=midpoint/100-3,
                         firstAbsoluteFrame50Hz=lo,independentContextDifferenceRms=float(np.sqrt(np.mean((left-right)**2)))))
                 previous_part,previous_start=part,start
             owners[first:last] = i
@@ -192,7 +232,8 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
             sourceSampleRate=16000,frameRate=100,consensus=use_consensus,
             highRegisterExperiment=bool(use_consensus and os.getenv('RVC_TIMELINE_HIGH_REGISTER','0')=='1'),
             explicitMedianRadius=1 if filter_radius>=5 else 0),indent=2),encoding='utf8')
-    return AnalysisTimeline(audio,feats,actual,spans,samples,Path(source),method,evidence)
+    return AnalysisTimeline(audio,feats,actual,spans,samples,Path(source),method,evidence,
+                            cut_frames=cuts)
 
 
 def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None,analysis_spans=None):
@@ -236,7 +277,11 @@ def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None,anal
         current[0]<=previous[0] or current[1]<=previous[1] or current[0]>previous[1]
         for previous,current in zip(analysis_spans,analysis_spans[1:])):
         raise ValueError('Prior analysis has gaps, reversed coverage or out-of-range spans')
-    cuts=[2*round((analysis_spans[i][0]+analysis_spans[i-1][1])/4) for i in range(1,len(analysis_spans))]
+    cuts = timeline.cut_frames if (
+        analysis_spans is timeline.spans or analysis_spans == timeline.spans
+    ) and timeline.cut_frames else [
+        2*round((analysis_spans[i][0]+analysis_spans[i-1][1])/4) for i in range(1,len(analysis_spans))
+    ]
     frames=len(timeline.f0)
     prior_mean=prior_logs=None
     overlaps=[]
