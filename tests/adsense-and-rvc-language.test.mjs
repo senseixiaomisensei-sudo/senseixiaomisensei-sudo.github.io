@@ -25,7 +25,7 @@ test("every public page carries one valid asynchronous AdSense Auto ads tag", as
     assert.match(html, new RegExp(`<meta name="google-adsense-account" content="${publisherId}">`), page);
     assert.doesNotMatch(html, /\[https:\/\/pagead2\.googlesyndication\.com[^\]]*\]\(/u, page);
     assert.match(html, /script-src[^">]*https:/u, `${page} CSP must permit AdSense scripts`);
-    assert.match(html, /frame-src https:/u, `${page} CSP must permit AdSense frames`);
+    assert.match(html, /frame-src(?:\s+'self')?\s+https:/u, `${page} CSP must permit AdSense frames`);
   }
 });
 
