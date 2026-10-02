@@ -42,6 +42,7 @@ from app.audio_activity import suppress_silent_synthesis
 from app.audio_dynamics import apply_dynamics, apply_static_gain
 from app.inference_errors import PitchExtractionError
 from app.diagnostics import capture_job, configured_root
+from app.speech_runtime import ENGINE as SPEECH_ENGINE, render_speech, speech_profile, speech_status
 from app.separation_runtime import (
     SeparationRuntimeError,
     calibrate_song_vocals,
@@ -94,7 +95,7 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "audio_repair.py", "separation_runtime.py", "official_runtime.py",
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
-                  "timeline_synthesis.py", "timeline_rendering.py")
+                  "timeline_synthesis.py", "timeline_rendering.py", "speech_runtime.py", "speech_worker.py")
 
 
 def source_revision() -> str:
@@ -226,6 +227,9 @@ class OutputRecord:
     source_duration_seconds: float = 0.0
     stem_sample_rate: int = 0
     fingerprint: str = ""
+    engine: str = "rvc"
+    engine_revision: str = ""
+    reference_sha256: str = ""
 
 
 @dataclass
@@ -334,6 +338,7 @@ def scan_models() -> list[dict]:
             "collectionId": str(meta.get("collectionId") or ""),
             "collectionName": str(meta.get("collectionName") or ""),
             "hasIndex": index.is_file(),
+            "speechProfile": {k:v for k,v in speech_profile(model_id).items() if k in {"enabled", "engine", "engineRevision", "sha256", "hearing"}},
             "license": str(meta.get("license") or "unverified"),
             "source": str(meta.get("source") or ""),
             "modelVersion": str(meta.get("modelVersion") or ""),
@@ -536,6 +541,9 @@ def persist_output_records() -> None:
                 "source_duration_seconds": record.source_duration_seconds,
                 "stem_sample_rate": record.stem_sample_rate,
                 "fingerprint": record.fingerprint,
+                "engine": record.engine,
+                "engine_revision": record.engine_revision,
+                "reference_sha256": record.reference_sha256,
                 "expires_at": record.expires_at.isoformat(),
             }
         temporary = OUTPUT_ROOT / "records.json.tmp"
@@ -583,6 +591,9 @@ def load_output_records() -> None:
             source_duration_seconds=float(entry.get("source_duration_seconds", 0.0)),
             stem_sample_rate=int(entry.get("stem_sample_rate", 0)),
             fingerprint=str(entry.get("fingerprint", "")),
+            engine=str(entry.get("engine", "rvc")),
+            engine_revision=str(entry.get("engine_revision", "")),
+            reference_sha256=str(entry.get("reference_sha256", "")),
             stage="completed" if state == "completed" else "failed",
         )
         if entry.get("request_id"):
@@ -1398,6 +1409,7 @@ async def healthz(request: Request) -> dict[str, object]:
         "upstreamCommit": OFFICIAL_COMMIT,
         "backendBuildSha": BACKEND_BUILD_SHA,
         "pipelineRevision": PIPELINE_REVISION,
+        "speechEngine": await asyncio.to_thread(speech_status),
         "modelHashes": model_hashes,
         "timelineInference": os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1",
         "pitchConsensus": (os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1"
@@ -1471,6 +1483,9 @@ def output_payload(job_id: str, record: OutputRecord) -> dict[str, object]:
     }
     if record.f0_method:
         payload["f0Method"] = record.f0_method
+    payload["engine"] = record.engine
+    payload["engineRevision"] = record.engine_revision
+    payload["referenceSha256"] = record.reference_sha256
     payload["vocalGainDb"] = record.vocal_gain_db
     payload["accompanimentGainDb"] = record.accompaniment_gain_db
     payload["vocalMute"] = record.vocal_mute
@@ -2098,12 +2113,15 @@ async def process_conversion_job(
     duration_seconds: float,
     input_profile: AudioProfile,
     diagnostic: bool = False,
+    selected_engine: str = "rvc",
+    selected_profile: dict | None = None,
 ) -> None:
     diagnostic_dir = job_root / "diagnostic-stages" if diagnostic else None
     used_f0_method = ""
     auto_vocal_gain = 1.0
     activity_details: dict[str, object] = {}
     stage_times: dict[str, float] = {}
+    speech_evidence: dict = {}
     stage_started = asyncio.get_running_loop().time()
     def mark_stage(name: str) -> None:
         nonlocal stage_started
@@ -2188,22 +2206,30 @@ async def process_conversion_job(
                 if record:
                     record.state = "processing"
                     record.stage = "converting"
-            used_f0_method = await render_duration_safe_conversion_async(
-                model_path,
-                input_wav,
-                output_wav,
-                job_root / "long-voice",
-                duration_seconds,
-                pitch,
-                index_rate,
-                protect,
-                filter_radius,
-                resample,
-                rms_mix_rate,
-                f0_method,
-                input_profile,
-                diagnostic_dir,
-            )
+            if selected_engine == SPEECH_ENGINE:
+                async with inference_lock:
+                    await asyncio.to_thread(release_cached_models)
+                    speech_evidence = await asyncio.to_thread(
+                        render_speech, input_wav, output_wav, model_id, selected_profile or {},
+                        job_root / "speech-evidence")
+                used_f0_method = ""
+            else:
+                used_f0_method = await render_duration_safe_conversion_async(
+                    model_path,
+                    input_wav,
+                    output_wav,
+                    job_root / "long-voice",
+                    duration_seconds,
+                    pitch,
+                    index_rate,
+                    protect,
+                    filter_radius,
+                    resample,
+                    rms_mix_rate,
+                    f0_method,
+                    input_profile,
+                    diagnostic_dir,
+                )
             mark_stage("conversion")
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-joined.wav")
             activity_details = await asyncio.to_thread(
@@ -2217,6 +2243,12 @@ async def process_conversion_job(
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-dynamics.wav")
             await asyncio.to_thread(apply_static_gain, output_wav, vocal_gain_db, vocal_mute)
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "voice-user-gain.wav")
+            if selected_engine == SPEECH_ENGINE and resample:
+                resampled = job_root / "speech-resampled.wav"
+                await asyncio.to_thread(subprocess.run,
+                    ["ffmpeg", "-nostdin", "-v", "error", "-i", str(output_wav),
+                     "-ar", str(resample), "-c:a", "pcm_f32le", str(resampled)], check=True, timeout=120)
+                resampled.replace(output_wav)
         async with outputs_lock:
             record = outputs.get(job_id)
             if record:
@@ -2307,6 +2339,8 @@ async def process_conversion_job(
                         "rmsMixRate": rms_mix_rate, "filterRadius": filter_radius,
                         "resample": resample, "requestedF0Method": f0_method,
                         "actualF0Method": used_f0_method,
+                        "engine": selected_engine,
+                        "speechEvidence": speech_evidence if selected_engine == SPEECH_ENGINE else None,
                         "autoVocalGain": auto_vocal_gain,
                         "userVocalGainDb": vocal_gain_db,
                         "userAccompanimentGainDb": accompaniment_gain_db,
@@ -2317,7 +2351,7 @@ async def process_conversion_job(
                         "pipelineRevision": PIPELINE_REVISION, "upstreamCommit": OFFICIAL_COMMIT,
                         "modelSha256": verified_file_hash(model_path),
                         "indexSha256": verified_file_hash(Path(index_text)) if index_text else "",
-                        "retrievalRequested": bool(index_text and index_rate > 0),
+                        "retrievalRequested": selected_engine == "rvc" and bool(index_text and index_rate > 0),
                         "retrievalExecutionRecords": 'work/diagnostic-stages/*/inference.json',
                         "runtime": str(runtime_info()),
                         "sourceActivity": activity_details,
@@ -2349,6 +2383,7 @@ async def create_job(
     format: str = Form("wav"),
     language: str = Form("zh"),
     audio_mode: str = Form("voice"),
+    voice_engine: str = Form("auto"),
     request_id: str = Form(""),
     audio: UploadFile = File(...),
 ) -> dict[str, object]:
@@ -2417,6 +2452,12 @@ async def create_job(
     if client_request_id and not valid_request_id(client_request_id):
         raise RvcServiceError(400, "RVC_INVALID_REQUEST_ID")
 
+    if voice_engine not in {"auto", "rvc", SPEECH_ENGINE}:
+        raise RvcServiceError(400, "RVC_INVALID_PARAMETER")
+    profile = await asyncio.to_thread(speech_profile, model_id) if audio_mode == "voice" else {}
+    if voice_engine == SPEECH_ENGINE and (not profile or pitch_value != 0 or audio_mode != "voice"):
+        raise RvcServiceError(400, "RVC_SPEECH_PARAMETERS_UNSUPPORTED")
+    selected_engine = SPEECH_ENGINE if profile and audio_mode == "voice" and pitch_value == 0 and voice_engine != "rvc" else "rvc"
     extension = safe_extension(audio)
     try:
         model_path = find_model_path(model_id)
@@ -2425,6 +2466,9 @@ async def create_job(
         raise
     fingerprint = hashlib.sha256(json.dumps({
         "model": model_id, "pitch": pitch_value, "indexRate": index_rate_value,
+        "engine": selected_engine, "pipelineRevision": PIPELINE_REVISION,
+        "speechRevision": profile.get("engineRevision", "") if selected_engine == SPEECH_ENGINE else "",
+        "referenceSha256": profile.get("sha256", "") if selected_engine == SPEECH_ENGINE else "",
         "protect": protect_value, "rmsMixRate": rms_mix_value,
         "vocalGainDb": mix_vocal_db, "accompanimentGainDb": mix_accompaniment_db,
         "vocalMute": mix_vocal_mute, "accompanimentMute": mix_accompaniment_mute,
@@ -2443,6 +2487,9 @@ async def create_job(
         await audio.close()
         logger.info("idempotent retry request_id=%s job_id=%s", trace_id, job_id)
         return output_payload(job_id, record)
+    record.engine = selected_engine
+    record.engine_revision = profile.get("engineRevision", "") if selected_engine == SPEECH_ENGINE else PIPELINE_REVISION
+    record.reference_sha256 = profile.get("sha256", "") if selected_engine == SPEECH_ENGINE else ""
     record.vocal_gain_db = mix_vocal_db
     record.accompaniment_gain_db = mix_accompaniment_db
     record.vocal_mute = mix_vocal_mute
@@ -2453,7 +2500,7 @@ async def create_job(
     try:
         job_root = Path(tempfile.mkdtemp(prefix=f"{job_id}-", dir=WORK_ROOT))
         input_raw = job_root / f"input.{extension}"
-        input_wav = job_root / "input.wav"
+        input_wav = job_root / "model-input.wav"
         output_wav = job_root / "output.wav"
         await write_upload(audio, input_raw)
         async with outputs_lock:
@@ -2466,7 +2513,12 @@ async def create_job(
             raise RvcServiceError(400, "RVC_AUDIO_TOO_LONG")
         input_profile = AudioProfile()
         if audio_mode == "voice":
-            input_profile = await asyncio.to_thread(normalize_audio, input_raw, input_wav)
+            if selected_engine == SPEECH_ENGINE:
+                await asyncio.to_thread(subprocess.run,
+                    ["ffmpeg", "-nostdin", "-v", "error", "-i", str(input_raw), "-vn", "-ac", "1",
+                     "-ar", "22050", "-c:a", "pcm_f32le", str(input_wav)], check=True, timeout=120)
+            else:
+                input_profile = await asyncio.to_thread(normalize_audio, input_raw, input_wav)
         async with outputs_lock:
             record.state = "queued"
             record.stage = "queued"
@@ -2498,6 +2550,8 @@ async def create_job(
             duration_seconds=duration_seconds,
             input_profile=input_profile,
             diagnostic=diagnostic,
+            selected_engine=selected_engine,
+            selected_profile=profile,
         ))
         job_tasks.add(task)
         task.add_done_callback(job_tasks.discard)
@@ -2566,6 +2620,10 @@ async def get_output(request: Request, job_id: str, token: str):
         media_type=media_type,
         filename=f"postprep-rvc-audio{record.path.suffix}",
         headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
+                 "X-RVC-Engine": record.engine,
+                 "X-RVC-Engine-Revision": record.engine_revision,
+                 "X-RVC-Reference-Sha256": record.reference_sha256,
+                 "X-RVC-Backend-Build": BACKEND_BUILD_SHA,
                  "X-RVC-F0-Method": record.f0_method,
                  "X-RVC-Mix-Revision": str(record.mix_revision),
                  "X-RVC-Remix-Available": "true" if record.remix_available

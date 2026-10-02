@@ -456,7 +456,15 @@
     "totalSize": 110813665,
     "sha256": "bf9a5293f3178734e40c5f9a5d9c1933434f7f9aff353c63bb277288fdc56e0e",
     "resourceRevision": "bf9a5293f3178734e40c5f9a5d9c1933434f7f9aff353c63bb277288fdc56e0e",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "0be9ef2dfc003d3c563acac9c5b8d43089d31bf00583d4985c9b98a63756371d",
+      "source": "https://bluearchive.wiki/wiki/File:Arona_Work_Talk_3.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "arisu",
@@ -498,7 +506,15 @@
     "totalSize": 110813665,
     "sha256": "772f9aa3a8396fca9ee092c11f93a6623b788e425a43a3c31fe06af7f0635e95",
     "resourceRevision": "772f9aa3a8396fca9ee092c11f93a6623b788e425a43a3c31fe06af7f0635e95",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "021d454ca1a0b16b7eb4140c36df9b2d8d9ce2be19adefd8ad9b753ed3386a92",
+      "source": "https://bluearchive.wiki/wiki/File:Arisu_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "shiroko",
@@ -540,7 +556,15 @@
     "totalSize": 110813665,
     "sha256": "e98fcfb3f84414398c4f7c867b5b847999639ad8f791d05e2f696e3000743061",
     "resourceRevision": "e98fcfb3f84414398c4f7c867b5b847999639ad8f791d05e2f696e3000743061",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "26ab61d6f9626832f97e43dd3950349010208e3cfd81623aa5f85860c168752b",
+      "source": "https://bluearchive.wiki/wiki/File:Shiroko_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "hoshino",
@@ -590,7 +614,15 @@
     "retrievalSha256": "4d8257cb75ee800a4cfcb2c15fda1b00c0d3d225cee57ec90476270ba9f93dfa",
     "resourceRevision": "c72753b89ad18035827f8fc236c82722d6a4578bb8ec80ac353dfaa941c8635c",
     "qualityValidation": "full A/C generated; listening pending",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "be4d6aeeac5c7e2945550f98035a31fd2bd2f16009878260ba91eddb4a7313e0",
+      "source": "https://bluearchive.wiki/wiki/File:Hoshino_Lobby_3.ogg",
+      "hearing": "用户确认参考音色正常"
+    }
   },
   {
     "id": "yuuka",
@@ -632,7 +664,15 @@
     "totalSize": 110813665,
     "sha256": "3e924d45ffcbd7af357a354c273f5a4574dddf883c8602b99b72bdedc56cf911",
     "resourceRevision": "3e924d45ffcbd7af357a354c273f5a4574dddf883c8602b99b72bdedc56cf911",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "0a00a256f751ca4e7f34524760fe980621edfa09e5f997b55e478d1501f50872",
+      "source": "https://bluearchive.wiki/wiki/File:Yuuka_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "hina",
@@ -674,7 +714,15 @@
     "totalSize": 110813665,
     "sha256": "7962512364d15808b48e8d4d59adc64cdb509c04e5e6dd6c0ce78fefee341846",
     "resourceRevision": "7962512364d15808b48e8d4d59adc64cdb509c04e5e6dd6c0ce78fefee341846",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "d123878f7063e7205f257ff8dbaa0ca9cf43657e72873695bdfc5ecef7a11743",
+      "source": "https://bluearchive.wiki/wiki/File:Hina_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "noa",
@@ -716,7 +764,15 @@
     "totalSize": 110813665,
     "sha256": "41f93d94f6e987764c6653b0731a837986b49edcc7a6390bcfb8ddace4bafabf",
     "resourceRevision": "41f93d94f6e987764c6653b0731a837986b49edcc7a6390bcfb8ddace4bafabf",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "3d8591d9b61e72a547b64873ffc1fa12e632aa8d53cb1e0544d2bea8e269d823",
+      "source": "https://bluearchive.wiki/wiki/File:Noa_Lobby_5.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "koharu",
@@ -758,7 +814,15 @@
     "totalSize": 110813665,
     "sha256": "be7aafff166c3c20baaf9908140d2bb0568c8321576deda0102beb325f2e6a2d",
     "resourceRevision": "be7aafff166c3c20baaf9908140d2bb0568c8321576deda0102beb325f2e6a2d",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "1f0e1d9e87ca466b20554fddd774f593c01ef827badb9a04c6c24d4bece25d4e",
+      "source": "https://bluearchive.wiki/wiki/File:Koharu_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "momoi",
@@ -800,7 +864,15 @@
     "totalSize": 110813665,
     "sha256": "00c4d1f74f03d7caa468321d29d81df3c22981f105fd3aa7998c6cbb25e1c7ef",
     "resourceRevision": "00c4d1f74f03d7caa468321d29d81df3c22981f105fd3aa7998c6cbb25e1c7ef",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "f5985cb2b80d5fef14b60cba62ed3c53b57776efa79bcd78206030313daaa844",
+      "source": "https://bluearchive.wiki/wiki/File:Momoi_Lobby_3.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "midori",
@@ -842,7 +914,15 @@
     "totalSize": 110813665,
     "sha256": "ab5bd6c767e761936268fd924813902c1999dcc484bdac8f364809d5258362fc",
     "resourceRevision": "ab5bd6c767e761936268fd924813902c1999dcc484bdac8f364809d5258362fc",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "f68a32efc50fa90ea42dc3406319c6430151033307567e3d3a792d48ae4bad07",
+      "source": "https://bluearchive.wiki/wiki/File:Midori_Lobby_5.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "reisa",
@@ -884,7 +964,15 @@
     "totalSize": 110813665,
     "sha256": "e17d27c99477811fe14475fba18952d1903430c5f4fa1ed823eb957b4914c4bb",
     "resourceRevision": "e17d27c99477811fe14475fba18952d1903430c5f4fa1ed823eb957b4914c4bb",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "976cfe5dae959437f20f46a4549cb97f720f7ff3238dc9380dab9515f589c656",
+      "source": "https://bluearchive.wiki/wiki/File:Reisa_Lobby_3.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "yuzu",
@@ -926,7 +1014,15 @@
     "totalSize": 110813665,
     "sha256": "827b147a83c1b7d59e373f4e8deb4f8e65b812441e169c329dd3e918ea059b18",
     "resourceRevision": "827b147a83c1b7d59e373f4e8deb4f8e65b812441e169c329dd3e918ea059b18",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "87f493f89224d33c1b35d60a95a8c20de4f5d4ff3c07ad499d934a9294058f39",
+      "source": "https://bluearchive.wiki/wiki/File:Yuzu_Lobby_3.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "toki",
@@ -968,7 +1064,15 @@
     "totalSize": 110813665,
     "sha256": "183995e73947ebd56f30f2cf8a367ef8d7f9564d7034104e1932ba7f6275a373",
     "resourceRevision": "183995e73947ebd56f30f2cf8a367ef8d7f9564d7034104e1932ba7f6275a373",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "ae8273ef86980c9828e7112e40425eca424bf807cb54cb8c51ef40edeb014eaa",
+      "source": "https://bluearchive.wiki/wiki/File:Toki_Lobby_1.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "asuna",
@@ -1010,7 +1114,15 @@
     "totalSize": 110813665,
     "sha256": "1feab8f91332dc0a178b997baab0f0965b4b613df069c4b99185f0516b5129dc",
     "resourceRevision": "1feab8f91332dc0a178b997baab0f0965b4b613df069c4b99185f0516b5129dc",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "c2937f0577986bc7e39bc2c333f89a9d577a64bd1fa9cd9ac58b395ba5aaeee2",
+      "source": "https://bluearchive.wiki/wiki/File:Asuna_Lobby_2.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "aru",
@@ -1052,7 +1164,15 @@
     "totalSize": 110813665,
     "sha256": "d69cbf6b7c91aeaaa742c4b313489198663084562788d90e7ccd25787adbba63",
     "resourceRevision": "d69cbf6b7c91aeaaa742c4b313489198663084562788d90e7ccd25787adbba63",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "6dd040992fa72365cecc4a68fa2d9e672d1f04d0bb9c73e8e14ca6e59aefbde0",
+      "source": "https://bluearchive.wiki/wiki/File:Aru_Lobby_5.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "kirara",
@@ -1094,7 +1214,15 @@
     "totalSize": 110813665,
     "sha256": "f6e1cd66f26242da263e93bbc0e280151dd9b1ed2c451e5d9bbc652270e80601",
     "resourceRevision": "f6e1cd66f26242da263e93bbc0e280151dd9b1ed2c451e5d9bbc652270e80601",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "47f57c19874209403e98917cc346d4be5cc58d04e3b1459e25f1cd536eb484f8",
+      "source": "https://bluearchive.wiki/wiki/File:Kirara_Lobby_3.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "koyuki",
@@ -1136,7 +1264,15 @@
     "totalSize": 115532257,
     "sha256": "dad207130d7acd347eff3a5002190358cd3c6553d36f8178e1d4f2e4ebb1cda7",
     "resourceRevision": "dad207130d7acd347eff3a5002190358cd3c6553d36f8178e1d4f2e4ebb1cda7",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "3daa64e743d94184bb80d731805dd304a79c9a39a031a8f2a0efdfb4a8623a8c",
+      "source": "https://bluearchive.wiki/wiki/File:Koyuki_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "kayoko",
@@ -1178,7 +1314,15 @@
     "totalSize": 110813665,
     "sha256": "70eeb1e76926e1c193fde0da3cf3dfcd7c28a1ee6a951fc834f9239ea593a72f",
     "resourceRevision": "70eeb1e76926e1c193fde0da3cf3dfcd7c28a1ee6a951fc834f9239ea593a72f",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "8bbceb736fd74764911855e85426fb8b879b45f423bbb0c339a54003a5cad160",
+      "source": "https://bluearchive.wiki/wiki/File:Kayoko_Lobby_2.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "seia",
@@ -1220,7 +1364,15 @@
     "totalSize": 110813665,
     "sha256": "e754de7890a5d9d66cca061caaf3c5c330b3435819d7c6fd6dc1c4778eb52b28",
     "resourceRevision": "e754de7890a5d9d66cca061caaf3c5c330b3435819d7c6fd6dc1c4778eb52b28",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "dd0d4d4a437e8f039099ede97c676c161fd12ce43e53c08a9a1c8abf73862dc9",
+      "source": "https://bluearchive.wiki/wiki/File:Seia_Lobby_2.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "mika",
@@ -1263,7 +1415,15 @@
     "totalSize": 112894433,
     "sha256": "ed88a9717474c866b5f30edae491f33a913ad3443640d079cf55ceb8b41063e4",
     "resourceRevision": "ed88a9717474c866b5f30edae491f33a913ad3443640d079cf55ceb8b41063e4",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "11867d189828c3ead75aaa6bb133dc013e48f567e521a8bd404f5415ae9b6659",
+      "source": "https://bluearchive.wiki/wiki/File:Mika_Lobby_2.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "gojo",
@@ -1308,7 +1468,15 @@
     "totalSize": 115532257,
     "sha256": "d1896506134d26911266c5f23c99697a17d093a062b5caaabd5dbf13eabe8acb",
     "resourceRevision": "d1896506134d26911266c5f23c99697a17d093a062b5caaabd5dbf13eabe8acb",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "62d1ce2bbf36003b98aadc3ab192208dde05eeb61bc8be7d7759418f902dd21e",
+      "source": "https://jujutsuphanpara.jp/",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "sukuna",
@@ -1353,7 +1521,15 @@
     "totalSize": 115532257,
     "sha256": "ae5ba5078720c93c37a17d0168fed24a00d612b2d0c7c66bda697d435a62c3bf",
     "resourceRevision": "ae5ba5078720c93c37a17d0168fed24a00d612b2d0c7c66bda697d435a62c3bf",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": false,
+      "engine": "rvc",
+      "resourceRevision": "",
+      "referenceSha256": "",
+      "source": "",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "geto",
@@ -1398,7 +1574,15 @@
     "totalSize": 115532257,
     "sha256": "60b389b299b2fd43aa44710d58a0cb6abeb8fe7f297424141bffb3eb8ae968ca",
     "resourceRevision": "60b389b299b2fd43aa44710d58a0cb6abeb8fe7f297424141bffb3eb8ae968ca",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": false,
+      "engine": "rvc",
+      "resourceRevision": "",
+      "referenceSha256": "",
+      "source": "",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "toji",
@@ -1443,7 +1627,15 @@
     "totalSize": 115532257,
     "sha256": "b3a86a7cf8df0a496ea02a948beb5354a13eb10de999f0bdbfb3c805e5255a0b",
     "resourceRevision": "b3a86a7cf8df0a496ea02a948beb5354a13eb10de999f0bdbfb3c805e5255a0b",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": false,
+      "engine": "rvc",
+      "resourceRevision": "",
+      "referenceSha256": "",
+      "source": "",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "megumi",
@@ -1488,7 +1680,15 @@
     "totalSize": 115532257,
     "sha256": "33e691f9d79fce4983c4694f8ef1f457a475c61d6e3a4c5af44bbdfabb5e32e9",
     "resourceRevision": "33e691f9d79fce4983c4694f8ef1f457a475c61d6e3a4c5af44bbdfabb5e32e9",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "87441d66b92ab17f64cc2db1c10edf8e2e5338c1b5267bb790181b5931c58d45",
+      "source": "https://jujutsuphanpara.jp/",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "key",
@@ -1534,7 +1734,15 @@
     "totalSize": 110813665,
     "sha256": "a548c6d95a98a26beac11b0fd2cb9d9e4a72505a4f3f7846a67d09d0c686ce4a",
     "resourceRevision": "a548c6d95a98a26beac11b0fd2cb9d9e4a72505a4f3f7846a67d09d0c686ce4a",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "5634f74b67412cb693ffb0211e0c52a2054b35f28f9abeb7b82ed317f3d1dec2",
+      "source": "https://bluearchive.wiki/wiki/File:Kei_Lobby_1_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "nonomi",
@@ -1577,7 +1785,15 @@
     "totalSize": 110813665,
     "sha256": "b47bd717b9e7e34415a34f87d8c0a79295202f6c8d76bb279aa097b7275db6a4",
     "resourceRevision": "b47bd717b9e7e34415a34f87d8c0a79295202f6c8d76bb279aa097b7275db6a4",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "39db730105016088510f08cceeb86c93549291fa095182b4619945de7f1ae1c0",
+      "source": "https://bluearchive.wiki/wiki/File:Nonomi_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "serika",
@@ -1620,7 +1836,15 @@
     "totalSize": 110813665,
     "sha256": "c2aff7b5eb7fc6795e6a3b16c8b7104d0c95a279d039704559f447330737a6e8",
     "resourceRevision": "c2aff7b5eb7fc6795e6a3b16c8b7104d0c95a279d039704559f447330737a6e8",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "b79f8cafab7c7b5ad68c0d76eb6a95d854be72d447463be8a9fbb932b5a58400",
+      "source": "https://bluearchive.wiki/wiki/File:Serika_Lobby_3.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "ayane",
@@ -1663,7 +1887,15 @@
     "totalSize": 110813665,
     "sha256": "162006ad3d8cdf159beca116db16ffb53be51e20d2990d840bf303b4bdebad5a",
     "resourceRevision": "162006ad3d8cdf159beca116db16ffb53be51e20d2990d840bf303b4bdebad5a",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "77ad9538fc5159e86b3b52a65743218b3c99b2644163c3edf8fcf5f82ba26c52",
+      "source": "https://bluearchive.wiki/wiki/File:Ayane_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "maki",
@@ -1708,7 +1940,15 @@
     "totalSize": 110420449,
     "sha256": "c33881471e8660ff4357bea9aa301bd75c0809f0b3b83735c6d1703a0dbfcf07",
     "resourceRevision": "c33881471e8660ff4357bea9aa301bd75c0809f0b3b83735c6d1703a0dbfcf07",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "aed6a7f29464136eb3ad19fbb490447854026fe546f3836ffb0b3b6c95c43bb5",
+      "source": "https://bluearchive.wiki/wiki/File:Maki_Lobby_3.ogg",
+      "hearing": "未听评"
+    }
   },
   {
     "id": "serina",
@@ -1760,7 +2000,15 @@
     },
     "rvcVersion": "v2",
     "qualityValidation": "Full A generated; objective and listening acceptance tracked separately",
-    "excitationContract": "explicit-source-v1"
+    "excitationContract": "explicit-source-v1",
+    "speechProfile": {
+      "enabled": true,
+      "engine": "seed-vc-v2-speech",
+      "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+      "referenceSha256": "39587eff57a93f1f24ba03adf49ddb19c5cdc453dbeea2845e2828baddd5ba52",
+      "source": "https://bluearchive.wiki/wiki/File:Serina_Lobby_4.ogg",
+      "hearing": "未听评"
+    }
   }
 ];
 
@@ -2528,7 +2776,36 @@
     };
   }
 
+  function useNewSpeechEngine(model = getSelectedModel()) {
+    return state.inferenceMode === "official" && state.audioMode === "voice"
+      && document.getElementById("rvc-voice-engine")?.value !== "rvc" && model?.speechProfile?.enabled === true;
+  }
+
+  function syncSpeechControls() {
+    const modern = useNewSpeechEngine();
+    if (modern && state.speechControlsActive !== true) {
+      const tracking = document.getElementById("rvc-rms-mix");
+      if (tracking) tracking.value = "1";
+      const trackingLabel = document.getElementById("rvc-rms-mix-value");
+      if (trackingLabel) trackingLabel.textContent = "1.00";
+    }
+    state.speechControlsActive = modern;
+    const selector = document.getElementById("rvc-voice-engine");
+    if (selector) selector.disabled = state.audioMode !== "voice" || state.inferenceMode !== "official";
+    for (const id of ["rvc-pitch", "rvc-index-rate", "rvc-protect", "rvc-f0-method", "rvc-filter-radius", "rvc-preset-male-female", "rvc-preset-same", "rvc-preset-female-male"]) {
+      const control = document.getElementById(id);
+      if (control) control.disabled = modern;
+    }
+    const hint = document.getElementById("rvc-speech-engine-hint");
+    if (hint) hint.textContent = modern
+      ? "新版角色讲话：100 步生成，使用该角色独立参考，适用于日常语音。纯人声歌曲请选择 RVC 兼容模式；移调、检索和 F0 参数也在兼容模式中调整。"
+      : state.audioMode === "song" ? "歌曲使用保留旋律的 RVC 翻唱链路。"
+      : state.inferenceMode !== "official" ? "设备端使用 RVC 兼容引擎，新版讲话需云端 GPU。"
+      : "当前使用 RVC 兼容模式；没有核实原始参考的角色保留原模型。";
+  }
+
   function syncMixControls() {
+    syncSpeechControls();
     const controls = selectedMixControls();
     const dbText = (value) => `${value > 0 ? "+" : ""}${value} dB`;
     const vocalValue = document.getElementById("rvc-vocal-gain-value");
@@ -2728,6 +3005,7 @@
         state.selectedModelId = m.id;
         applyCharacterPitch(m);
         renderModelGallery();
+        syncSpeechControls();
         updateStatusDisplay();
       });
       grid.appendChild(card);
@@ -2864,6 +3142,7 @@
   }
 
   function renderModelGallery() {
+    syncSpeechControls();
     const container = document.getElementById("rvc-model-gallery");
     const trainedContainer = document.getElementById("rvc-trained-model-gallery");
     const trainedSection = document.getElementById("rvc-trained-models-section");
@@ -4031,6 +4310,7 @@
   }
 
   function renderAudioMode() {
+    syncSpeechControls();
     const voiceButton = document.getElementById("rvc-audio-mode-voice");
     const songButton = document.getElementById("rvc-audio-mode-song");
     const hint = document.getElementById("rvc-audio-mode-hint");
@@ -4899,7 +5179,9 @@
     const resultAudio = document.getElementById("rvc-result-audio");
     const resultDownload = document.getElementById("rvc-result-download");
     const resultMeta = document.getElementById("rvc-result-meta");
-    const pitch = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
+    const modernSpeech = useNewSpeechEngine(selectedModel);
+    const voiceEngine = modernSpeech ? "seed-vc-v2-speech" : "rvc";
+    const pitch = modernSpeech ? 0 : parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
     const indexRate = parseFloat(document.getElementById("rvc-index-rate")?.value || "0.3");
     const protect = parseFloat(document.getElementById("rvc-protect")?.value || "0.25");
     const rmsMixRate = selectedRmsMixRate();
@@ -4908,7 +5190,7 @@
     const filterRadius = parseInt(document.getElementById("rvc-filter-radius")?.value || "0", 10);
     // 纠正错误标称的音频容器 (mp4-in-mp3 等), 避免中继放行后 GPU 服务拒收。
     state.audio.file = await fixUploadContainer(state.audio.file);
-    const preparedUpload = prepareCloudUploadAudio(state.audio, state.audioMode);
+    const preparedUpload = modernSpeech ? { file: state.audio.file } : prepareCloudUploadAudio(state.audio, state.audioMode);
     const uploadFile = preparedUpload.file;
     if (!uploadFile || uploadFile.size < 1 || uploadFile.size > MAX_AUDIO_BYTES) {
       showToast(state.audioMode === "song"
@@ -4948,7 +5230,9 @@
         ? endpointCandidates
         : buildRvcEndpointCandidates();
       const requestTimeoutMs = cloudRequestTimeoutMs(uploadFile.size, state.audio.duration, state.audioMode);
-      const jobTimeoutMs = cloudJobTimeoutMs(state.audio.duration, state.audioMode);
+      const jobTimeoutMs = modernSpeech
+        ? Math.max(cloudJobTimeoutMs(state.audio.duration, state.audioMode), 240000 + state.audio.duration * 5000)
+        : cloudJobTimeoutMs(state.audio.duration, state.audioMode);
       const longJob = state.audio.duration >= DURABLE_CLOUD_JOB_SECONDS;
       if (preparedUpload.optimized) {
         updateStatusDisplay(
@@ -4964,6 +5248,8 @@
       const cloudRequestId = createCloudRequestId();
       body.set("modelId", selectedModel.id);
       body.set("model_id", selectedModel.id);
+      body.set("voiceEngine", voiceEngine);
+      body.set("voice_engine", voiceEngine);
       body.set("pitch", String(pitch));
       body.set("indexRate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("index_rate", String(selectedModel.hasIndex !== false ? indexRate : 0));
@@ -5104,10 +5390,12 @@
         ? " [2/3] 混音已接收，云端正在分离人声、变声并回混伴奏…"
         : " [2/3] 音频已接收，云端 GPU 已转入后台推理…");
       const outputResponse = await pollCloudOutput(outputUrl, jobTimeoutMs, longJob);
+      const actualEngine = outputResponse.headers.get("X-RVC-Engine") || "rvc";
+      const actualRevision = outputResponse.headers.get("X-RVC-Engine-Revision") || "";
       const actualF0Method = outputResponse.headers.get("X-RVC-F0-Method") || "";
       const remixAvailable = outputResponse.headers.get("X-RVC-Remix-Available") === "true";
       updateProgressBar(82);
-      updateStatusDisplay(" [3/3] 云端 RVC 推理完成，正在下载高保真变声结果…");
+      updateStatusDisplay(" [3/3] 云端角色推理完成，正在下载变声结果…");
       const rawOutputBlob = await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs);
       const nextResultUrl = URL.createObjectURL(rawOutputBlob);
       const previousResultUrl = state.resultUrl;
@@ -5152,7 +5440,7 @@
           model: selectedModel.name,
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        }) + ` · 云端 PyTorch RVC · F0 ${actualF0Method || (f0Method === "auto" ? "自动（实际算法未返回）" : f0Method.toUpperCase())}${state.audioMode === "song" ? " · PyMSS 人声分离/原伴奏回混" : ""} · ${outputFormat.toUpperCase()}`;
+        }) + ` · ${actualEngine === "seed-vc-v2-speech" ? "新版角色讲话 · 100 步 · FP32" : `云端 PyTorch RVC · F0 ${actualF0Method || (f0Method === "auto" ? "自动（实际算法未返回）" : f0Method.toUpperCase())}`}${state.audioMode === "song" ? " · PyMSS 人声分离/原伴奏回混" : ""}${actualRevision ? ` · ${actualRevision.slice(0, 10)}` : ""} · ${outputFormat.toUpperCase()}`;
         state.resultMetaBase = resultMeta.textContent;
       }
       if (resultSection) {
@@ -5165,7 +5453,7 @@
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
-      if (allowDeviceFallback && state.audioMode === "voice"
+      if (allowDeviceFallback && !modernSpeech && state.audioMode === "voice"
           && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
         updateStatusDisplay(" 云端 RVC 当前不可达，准备切换到用户设备端推理…");
         return { fallback: true, error };

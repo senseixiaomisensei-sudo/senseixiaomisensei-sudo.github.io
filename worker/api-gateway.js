@@ -401,7 +401,7 @@ export default {
       upstreamHeaders.set("X-Content-Type-Options", "nosniff");
       upstreamHeaders.set("Vary", "Origin");
       upstreamHeaders.set("Access-Control-Allow-Origin", origin);
-      upstreamHeaders.set("Access-Control-Expose-Headers", "Retry-After, X-PostPrep-Request-Id, X-RVC-F0-Method, X-RVC-Mix-Revision, X-RVC-Remix-Available");
+      upstreamHeaders.set("Access-Control-Expose-Headers", "Retry-After, X-PostPrep-Request-Id, X-RVC-F0-Method, X-RVC-Mix-Revision, X-RVC-Remix-Available, X-RVC-Engine, X-RVC-Engine-Revision, X-RVC-Reference-Sha256, X-RVC-Backend-Build");
       upstreamHeaders.set("X-PostPrep-Request-Id", requestId);
       return new Response(upstream.body, { status: upstream.status, headers: upstreamHeaders });
     } catch {

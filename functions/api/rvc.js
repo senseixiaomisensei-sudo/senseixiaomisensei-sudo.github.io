@@ -12,6 +12,7 @@ import {
 const MAX_REQUEST_BYTES = 25 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 const ALLOWED_FIELDS = new Set([
+  "voiceEngine", "voice_engine",
   "modelId",
   "model_id",
   "pitch",
@@ -238,6 +239,8 @@ export async function onRequest(context) {
   const filterRadius = valueAsString(formData, "filterRadius");
   const requestedLanguage = valueAsString(formData, "language") === "en" ? "en" : "zh";
   const audioMode = valueAsString(formData, "audioMode") || valueAsString(formData, "audio_mode") || "voice";
+  const voiceEngine = valueAsString(formData, "voiceEngine") || valueAsString(formData, "voice_engine") || "auto";
+  if (!["auto", "rvc", "seed-vc-v2-speech"].includes(voiceEngine)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose a supported voice engine");
   const requestId = valueAsString(formData, "requestId");
   const audio = valueAsFile(formData, "audio");
 
@@ -278,6 +281,7 @@ export async function onRequest(context) {
   upstreamBody.set("filter_radius", filterRadius);
   upstreamBody.set("language", requestedLanguage);
   upstreamBody.set("audio_mode", audioMode);
+  upstreamBody.set("voice_engine", voiceEngine);
   if (requestId) upstreamBody.set("request_id", requestId);
   upstreamBody.set("audio", audio, safeFilename(audio, "input"));
 
