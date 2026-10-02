@@ -1287,7 +1287,7 @@
     "source": "https://huggingface.co/Kuma6/Satoru-Gojo/resolve/main/Gojo.zip",
     "license": "Community model; creator requests credit; character/performer authorization unverified",
     "checkpointSha256": "8a473aaae82a9e7be0bbde859fc3b654c877b340fb002e462bbf5c68b38ab6fa",
-    "indexSha256": "8e643bf9f1ee96e7eb954d9b1dd56cf7fa7bb1c6ec3d02580e394eab2368543",
+    "indexSha256": "8e643bf9f1ee96e7eb954d9b1dd56cf7fa7bb1c6ec3d02580e394eab2368543e",
     "retrieval": "models/characters/gojo/retrieval.bin",
     "chunks": [
       "models/characters/gojo/revisions/d1896506134d2691/chunk_0.bin",
