@@ -1934,7 +1934,10 @@
   const CHARACTER_MODEL_ASSET_VERSION = "20260919-v37";
   const HOSHINO_MODEL_ASSET_VERSION = "43feadde41b72c90c27d0f5b77d1c2d11ad8df6ba9a45c56e64b071cc722b9aa";
 
-  function characterAssetVersion(id) {
+  function characterAssetVersion(id, model) {
+    for (const value of [model?.resourceRevision, model?.sha256]) {
+      if (typeof value === "string" && /^[a-f0-9]{64}$/i.test(value)) return value.toLowerCase();
+    }
     return id === "hoshino" ? HOSHINO_MODEL_ASSET_VERSION : CHARACTER_MODEL_ASSET_VERSION;
   }
 
@@ -1942,17 +1945,21 @@
     const id = String(model?.id || "character");
     return id.startsWith("own:")
       ? `${id}.onnx`
-      : `${id}.${characterAssetVersion(id)}.onnx`;
+      : `${id}.${characterAssetVersion(id, model)}.onnx`;
   }
 
-  function versionCharacterChunkPath(path) {
+  function versionCharacterChunkPath(path, model) {
     const separator = String(path).includes("?") ? "&" : "?";
-    const id = String(path).includes("/hoshino/") ? "hoshino" : "";
-    return `${path}${separator}model=${characterAssetVersion(id)}`;
+    const id = String(model?.id || (String(path).includes("/hoshino/") ? "hoshino" : ""));
+    let revision = characterAssetVersion(id, model);
+    if (model?.retrieval && String(path).split("?")[0] === String(model.retrieval).split("?")[0]) {
+      revision += `.${model.retrievalSha256 || model.indexSha256 || "legacy-index"}`;
+    }
+    return `${path}${separator}model=${encodeURIComponent(revision)}`;
   }
 
   function retrievalCacheKey(model) {
-    return `${model.id}.${characterAssetVersion(model.id)}.retrieval.bin`;
+    return `${model.id}.${characterAssetVersion(model.id, model)}.${model.retrievalSha256 || model.indexSha256 || "legacy-index"}.retrieval.bin`;
   }
 
   function deriveStableNoiseSeed(audio, modelId) {
@@ -2297,7 +2304,7 @@
     if (Array.isArray(chunks) && chunks.length > 0) {
       const isPublishedCharacter = Boolean(modelConfig?.id) && !String(modelConfig.id).startsWith("own:");
       const fetchChunks = isPublishedCharacter
-        ? chunks.map(versionCharacterChunkPath)
+        ? chunks.map((path) => versionCharacterChunkPath(path, modelConfig))
         : chunks;
       return await fetchChunkedModel(fetchChunks, name, displayName || name, mimeType, onProgress, modelConfig);
     }
@@ -3307,12 +3314,16 @@
         await removeCachedItem(`${m.id}.onnx`);
         await removeCachedItem(characterModelCacheKey(m));
         await removeCachedItem(retrievalCacheKey(m));
+        await removeCachedItem(`${m.id}.${characterAssetVersion(m.id)}.onnx`);
+        await removeCachedItem(`${m.id}.${characterAssetVersion(m.id)}.retrieval.bin`);
         if (m.retrieval) {
-          const retrievalPath = versionCharacterChunkPath(m.retrieval);
+          const retrievalPath = versionCharacterChunkPath(m.retrieval, m);
           for (const url of getChunkMirrorUrls(retrievalPath)) await removeCachedItem(url);
+          for (const url of getChunkMirrorUrls(versionCharacterChunkPath(m.retrieval))) await removeCachedItem(url);
         }
         for (const chunkPath of m.chunks || []) {
           await removeCachedItem(`chunk:${chunkPath}`);
+          await removeCachedItem(`chunk:${versionCharacterChunkPath(chunkPath, m)}`);
           await removeCachedItem(`chunk:${versionCharacterChunkPath(chunkPath)}`);
         }
       }
@@ -4693,7 +4704,7 @@
       if (selectedModel.retrieval && indexRateVal > 0) {
         try {
           updateStatusDisplay(` [1/4] 正在加载 ${selectedModel.name} 轻量音色检索码本...`);
-          const retrievalPath = versionCharacterChunkPath(selectedModel.retrieval);
+          const retrievalPath = versionCharacterChunkPath(selectedModel.retrieval, selectedModel);
           retrievalFile = await fetchWithCache(
             getChunkMirrorUrls(retrievalPath),
             retrievalCacheKey(selectedModel),
