@@ -10,7 +10,8 @@ const require=createRequire('E:/大肥鱼/rvc-local/convert/package.json');
 const ort=require('onnxruntime-web');
 const ortPackage=JSON.parse(fs.readFileSync(path.resolve(path.dirname(require.resolve('onnxruntime-web')),'../package.json'),'utf8'));
 const site=fileURLToPath(new URL('../',import.meta.url));
-const [input,output,character='hoshino',candidate,controlledOptions='{}']=process.argv.slice(2);
+const [input,output,character='hoshino',candidateArgument,controlledOptions='{}']=process.argv.slice(2);
+const candidate=candidateArgument && candidateArgument!=='-' ? candidateArgument : null;
 if(!input || !output) throw new Error('input.f32 output-directory character [shared-prior-directory]');
 fs.mkdirSync(output,{recursive:true});
 const catalog=JSON.parse(fs.readFileSync(path.join(site,'assets/rvc-models.json'),'utf8'));
@@ -25,12 +26,13 @@ const source=fs.readFileSync(path.join(site,'assets/rvc-engine/inference.worker.
 // the exact Worker source. The ORT Web package supplies the Node WASM loader.
 vm.runInThisContext(source.replaceAll('import.meta.url',JSON.stringify(new URL('../assets/rvc-engine/inference.worker.js',import.meta.url).href)),{filename:'actual-inference.worker.js'});
 vm.runInThisContext('Te=ortEvidence.Tensor;qu=ortEvidence.InferenceSession;ne=ortEvidence.env;');
-const encoder=entry.contentEncoder?.featureDimension===256 || entry.version==='v1' || character==='hoshino'
+const encoder=entry.contentEncoder?.featureDimension===256 || entry.version==='v1'
   ? catalog.baseModels.hubertV1 : catalog.baseModels.hubert;
 const files={model:new File([candidate?fs.readFileSync(path.join(candidate,'decoder.onnx')):assemble(entry.chunks)],'model.onnx'),
   contentVec:new File([assemble(encoder.chunks)],'hubert.onnx'),
   rmvpe:new File([assemble(catalog.baseModels.rmvpe.chunks)],'rmvpe.onnx')};
 if(candidate) files.prior=new File([fs.readFileSync(path.join(candidate,'prior.onnx'))],'prior.onnx');
+if(entry.retrieval) files.index=new File([fs.readFileSync(path.join(site,entry.retrieval))],'retrieval.bin');
 const inputBuffer=fs.readFileSync(input);
 const audio=new Float32Array(inputBuffer.buffer.slice(inputBuffer.byteOffset,inputBuffer.byteOffset+inputBuffer.length));
 const events=[];const started=Date.now();

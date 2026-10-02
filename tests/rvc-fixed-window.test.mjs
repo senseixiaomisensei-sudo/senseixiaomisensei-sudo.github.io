@@ -73,6 +73,18 @@ test('content analysis rejects a half-grid context instead of silently shifting 
     async()=>{throw new Error('must fail before inference');}),/aligned content analysis/);
 });
 
+test('whole short recording content analysis can exceed six seconds without changing its absolute grid',async()=>{
+  const resolve=Function('processAudioInFixedFrameWindows',`return (${extractFunction('resolveContentTimeline')});`)(processFixedWindows);
+  const starts=[];
+  const timeline=await resolve(new Float32Array(144150),{contentAnalysisFrames:936,inputSampleRate:16000,lookAheadDuration:.04},
+    async data=>{const frames=Math.floor(data.length/160);return {hiddenStates:new Float32Array(frames).fill(7),
+      featureSize:1,frameCount:frames/2,upsampledFrameCount:frames};},row=>starts.push(row.analysisStartSample));
+  assert.equal(starts.length,1);
+  assert.equal(Math.abs(starts[0]%320),0);
+  assert.equal(timeline.upsampledFrameCount,902);
+  assert.ok([...timeline.hiddenStates].every(value=>value===7));
+});
+
 test("overlap octave disagreement never creates a fabricated slide", () => {
   const features = { hiddenStates: new Float32Array(200), featureSize: 2, upsampledFrameCount: 100 };
   const previous = { f0: new Float32Array(100).fill(220) };

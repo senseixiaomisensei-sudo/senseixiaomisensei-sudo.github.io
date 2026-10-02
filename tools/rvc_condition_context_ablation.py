@@ -6,12 +6,19 @@ import numpy as np,soundfile as sf
 p=argparse.ArgumentParser();p.add_argument('reference',type=Path);p.add_argument('output',type=Path)
 p.add_argument('--factor',choices=['prior-context','content-context'],required=True)
 p.add_argument('--maximum-frames',type=int,default=4000)
+p.add_argument('--device',choices=['auto','cpu'],default='auto')
+p.add_argument('--features-from',type=Path,help='Reuse an independently verified content-context run; only the prior context changes')
 a=p.parse_args();a.reference=a.reference.resolve();a.output.mkdir(parents=True,exist_ok=True)
 site=Path(__file__).resolve().parents[1]
 os.environ.update(RVC_OFFICIAL_ROOT=r'D:\数据\rvc-runtime\official-rvc',RVC_MODELS_DIR=r'E:\大肥鱼\rvc-local\models',
     RVC_CUDA_GRAPH='0',CUBLAS_WORKSPACE_CONFIG=':4096:8',RVC_WORK_ROOT=str(a.output/'work'),RVC_OUTPUT_ROOT=str(a.output/'outputs'))
 sys.path.insert(0,str(site/'rvc-service'))
 from app import main as service
+if a.device=='cpu':
+    import torch
+    from app import official_runtime
+    torch.set_num_threads(4)
+    official_runtime._select_device=lambda: ('cpu',False)
 from app.analysis_timeline import AnalysisTimeline,frame_spans,prepare_priors,condition_seam_metrics
 from app.timeline_rendering import render_window
 from app.analysis_timeline import join_timeline
@@ -30,6 +37,21 @@ import torch
 source=a.reference/'diagnostic-stages/timeline'
 raw,sr=sf.read(a.reference/'model-input-16k.wav',dtype='float64');assert sr==16000 and raw.ndim==1
 z=np.load(source/'f0.npz');f0=z['corrected'].copy();features=np.load(source/'features.npy')
+if a.features_from:
+    if a.factor!='prior-context':
+        raise ValueError('External features are only valid for a prior-only comparison')
+    record=json.loads((a.features_from/'report.json').read_text(encoding='utf8'))
+    if (record['checkpointSha256']!=stamp['checkpointSha256'] or
+        record['sourceSha256']!=stamp['sourceSha256'] or
+        record['f0FrozenSha256']!=hashlib.sha256(f0.tobytes()).hexdigest()):
+        raise ValueError('External analysis belongs to another source, checkpoint or pitch track')
+    feature_file=a.features_from/'diagnostic-stages/timeline/features.npy'
+    if sha(feature_file)!=record['candidateFeaturesSha256']:
+        raise ValueError('External content features failed hash verification')
+    candidate=np.load(feature_file)
+    if candidate.shape!=features.shape or not np.isfinite(candidate).all():
+        raise ValueError('External content feature timeline is invalid')
+    features=candidate
 spans=frame_spans(len(raw));frames=len(f0)-600
 gain=json.loads((source/'analysis.json').read_text())['inputGain']
 audio=np.pad(filtfilt(bh,ah,raw*gain),(48000,(frames+302)*160-len(raw)),mode='reflect')
@@ -70,5 +92,7 @@ report=dict(factor=a.factor,analysisMaximumFrames=a.maximum_frames,analysisSpans
     seed=20260823,noiseScale=model.noise_scale,runtime=model.last_run_metadata,
     originalOwnershipCuts=rows,outputSha256=sha(result),fullSourceConverted=True,
     listening='unverified',elapsedSeconds=time.monotonic()-started)
+report['reusedContentAnalysis']=str(a.features_from.resolve()) if a.features_from else None
+report['deviceRequested']=a.device
 (a.output/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
 print(json.dumps(dict(output=str(result),factor=a.factor,changedF0Frames=0,fullSourceConverted=True)),flush=True)

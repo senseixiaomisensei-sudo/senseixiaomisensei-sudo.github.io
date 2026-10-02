@@ -8669,7 +8669,7 @@ async function resolveContentTimeline(audio, config, extract, onWindow) {
   // on HuBERT's 320-sample grid, including controlled context ablations.
   const analysisFrames=config.contentAnalysisFrames??100;
   const analysisContext=config.contentAnalysisContext??.16;
-  if(!Number.isInteger(analysisFrames) || analysisFrames<100 || analysisFrames>600
+  if(!Number.isInteger(analysisFrames) || analysisFrames<100 || analysisFrames>4096
     || analysisFrames%2 || !Number.isFinite(analysisContext)
     || !Number.isInteger(analysisContext*100) || Math.round(analysisContext*100)%2 || analysisContext<.16
     || analysisContext*200+4>=analysisFrames) throw new Error('Invalid aligned content analysis window');
@@ -14096,6 +14096,13 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     emitStage(PIPELINE_STAGES[2]);
     const sharedFrames=options.sharedSynthesisFrames??100;
     const sharedContext=options.sharedSynthesisContext??.16;
+    // Diagnostic single-factor comparisons need identical decoder geometry
+    // while choosing local versus shared content. No UI changes this option.
+    const windowContext = options.windowContextDuration;
+    if (windowContext !== undefined && (!Number.isFinite(windowContext) || windowContext < 0
+      || windowContext > .4 || !Number.isInteger(windowContext * 100))) {
+      throw new Error('Invalid fixed decoder context duration');
+    }
     if(priorSession && (!Number.isInteger(sharedFrames) || sharedFrames<100 || sharedFrames>600
       || !Number.isFinite(sharedContext) || sharedContext<.16 || sharedContext*200+5>=sharedFrames)) {
       throw new Error('Invalid shared-prior decoder window');
@@ -14109,8 +14116,8 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
       // audio, reserve 150 ms on both sides as analysis context and crop it
       // after synthesis. This mirrors official RVC's pad -> infer -> crop path
       // and prevents the vocoder from restarting directly on every syllable.
-      contextDuration: priorSession?sharedContext:options.sharedContentTimeline === true ? .16
-        : audio.length > (options.inputSampleRate ?? 16e3) * 20 ? 0.15 : 0,
+      contextDuration: priorSession?sharedContext:windowContext ?? (options.sharedContentTimeline === true ? .16
+        : audio.length > (options.inputSampleRate ?? 16e3) * 20 ? 0.15 : 0),
       lookAheadDuration: 0.04,
       contentAnalysisFrames:options.contentAnalysisFrames,
       contentAnalysisContext:options.contentAnalysisContext
@@ -14194,6 +14201,12 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
           options.indexRate ?? 0,
           options.protect ?? 0.33
         );
+        callbacks.onDiagnostic?.({ stage: `window-${chunk.index}-conditions`,
+          analysisStartSample: chunk.analysisStartSample, inputSampleRate: chunkingConfig.inputSampleRate,
+          coreStartSeconds: chunk.startTime, coreEndSeconds: chunk.endTime,
+          featureSize: retrievedFeatures.featureSize, features: retrievedFeatures.hiddenStates,
+          rawFeatures: rawFeatures.hiddenStates, f0: pitch.f0,
+          sharedContent: !!contentTimeline, sharedPrior: !!priorTimeline });
         callbacks.onEvent?.({ type: "chunk_step", step: "synth", current: currentChunk, total: totalChunks });
         const noiseFrameOffset = Math.round(
           (chunk.analysisStartSample ?? 0) * 100 / chunkingConfig.inputSampleRate
@@ -14218,6 +14231,10 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
         if (synthesized.sampleRate && !detectedSampleRate) {
           detectedSampleRate = synthesized.sampleRate;
         }
+        callbacks.onDiagnostic?.({ stage: `window-${chunk.index}-synthesis`,
+          analysisStartSample: chunk.analysisStartSample, inputSampleRate: chunkingConfig.inputSampleRate,
+          sampleRate: synthesized.sampleRate || chunkingConfig.outputSampleRate,
+          contextDuration: chunkingConfig.contextDuration, audio: synthesized.audio });
         callbacks.onEvent?.({ type: "chunk_step", step: "done", current: currentChunk, total: totalChunks });
         return synthesized.audio;
       },
