@@ -2546,22 +2546,26 @@
       || state.inferenceMode !== "official" || !state.latestSongJob?.remixAvailable;
   }
 
-  // Character models retain a suggested cross-range pitch, but selecting a
-  // character must never change the user's current pitch. Official RVC starts
-  // at 0 semitones; forcing +8..+12 on every model is a shared source of
-  // metallic/chipmunk artefacts, especially for already-high input voices.
+  // Neutral selection and an explicit cross-range preset are different
+  // actions. defaultPitch=0 preserves song melody on character selection;
+  // it must not turn the user's "male -> female (+12)" action into a no-op.
+  function maleToFemalePresetPitch() {
+    return 12;
+  }
+
   function applyCharacterPitch(model) {
-    if (!model || typeof model.defaultPitch !== "number") return;
+    if (!model) return;
+    const crossRangePitch = maleToFemalePresetPitch();
     const fmt = (v) => (v > 0 ? "+" : "") + v;
     const pitchInput = document.getElementById("rvc-pitch");
     const pitchTip = document.getElementById("rvc-pitch-tip");
     if (pitchTip && pitchInput && Number(pitchInput.value) === 0) {
-      pitchTip.textContent = `当前保持 0 半音，不会因切换角色自动变调。若是低音男声输入，可手动试听「${model.name}」建议值 ${fmt(model.defaultPitch)}。`;
+      pitchTip.textContent = `当前保持 0 半音，切换角色不会自动变调。低音讲话转换高音角色时，原调可能产生沙哑或电音，可试听跨音域预设 ${fmt(crossRangePitch)}；歌曲先保留原调。`;
     }
     const presetBtn = document.getElementById("rvc-preset-male-female");
     const presetLabel = presetBtn?.querySelector("span");
     if (presetLabel) {
-      presetLabel.textContent = `男声变女角色 (${fmt(model.defaultPitch)})`;
+      presetLabel.textContent = `男声变女角色 (${fmt(crossRangePitch)})`;
     }
   }
 
@@ -5703,12 +5707,12 @@
     if (btnPresetMaleFemale) {
       btnPresetMaleFemale.addEventListener("click", () => {
         const model = getSelectedModel();
-        const pitch = model && typeof model.defaultPitch === "number" ? model.defaultPitch : 12;
+        const pitch = maleToFemalePresetPitch();
         const fmt = (v) => (v > 0 ? "+" : "") + v;
         setPitchMode(
           pitch,
           model
-            ? `已为「${model.name}」设置跨音域建议值 ${fmt(pitch)} 半音。若出现电音或过尖，请向 0 逐步回调。`
+            ? `已设置 +12 半音跨音域预设，用于低音讲话转换「${model.name}」等高音声线。高音输入或歌曲请先用原调，再按试听结果调整。`
             : ` 当前已设为 ${fmt(pitch)} 半音：男声变女角色推荐音高。`,
           btnPresetMaleFemale
         );
@@ -5717,7 +5721,7 @@
 
     if (btnPresetSame) {
       btnPresetSame.addEventListener("click", () => {
-        setPitchMode(0, "当前已设为 0 半音：保留输入的自然音高，也是 RVC 的安全默认值。", btnPresetSame);
+        setPitchMode(0, "当前已设为 0 半音：保留自然音高；若低音讲话转换高音角色后出现沙哑，可试听跨音域预设。", btnPresetSame);
       });
     }
 

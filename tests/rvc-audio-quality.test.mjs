@@ -198,7 +198,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr, burstDiagnostics\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20260930-fractional-r42/u);
+  assert.match(page, /assets\/rvc\.js\?v=20261002-voice-range-r43/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -259,7 +259,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /await attachResultAudio\(resultAudio, mediaUrl \|\| nextResultUrl, Boolean\(mediaUrl\)\)/u);
   assert.match(page, /media-src[^;"]*https:\/\/postprep-ae6\.pages\.dev/u);
   assert.match(client, /characterModelCacheKey\(selectedModel\)/u);
-  assert.match(client, /chunks\.map\(versionCharacterChunkPath\)/u);
+  assert.match(client, /chunks\.map\(\(path\) => versionCharacterChunkPath\(path, modelConfig\)\)/u);
   assert.match(page, /id="rvc-index-rate"[^>]*value="0\.3"/u);
   assert.doesNotMatch(page, /<div hidden>[\s\S]{0,240}?id="rvc-index-rate"/u);
   assert.match(client, /deriveStableNoiseSeed\(freshAudioInput, selectedModel\.id\)/u);
