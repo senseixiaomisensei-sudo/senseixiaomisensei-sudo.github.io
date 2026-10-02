@@ -4,7 +4,7 @@ import test from 'node:test';
 const source = await readFile(new URL('../assets/rvc.js', import.meta.url), 'utf8');
 const catalog = JSON.parse(await readFile(new URL('../assets/rvc-models.json', import.meta.url), 'utf8')).models;
 function extract(name) {
-  const start = source.indexOf(`function ${name}(`), body = source.indexOf('{', start);
+  const start = source.indexOf(`function ${name}(`), body = source.indexOf(') {', start) + 2;
   let depth = 0;
   for (let i = body; i < source.length; i++) {
     if (source[i] === '{') depth++;
