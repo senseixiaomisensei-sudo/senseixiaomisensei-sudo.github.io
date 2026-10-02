@@ -33,12 +33,41 @@ class SourceActivityTests(unittest.TestCase):
         self.assertEqual(len(result), len(synth))
         self.assertTrue(details["applied"])
         self.assertGreater(details["states"]["weak"], 0)
+        self.assertLess(np.max(np.abs(result[:int(.12 * output_rate)])), 2e-7)
+        self.assertLess(np.max(np.abs(result[-int(.12 * output_rate):])), 2e-7)
         self.assertLess(np.max(np.abs(result[int(.3 * output_rate):int(.7 * output_rate)])), 2e-7)
         self.assertLess(np.max(np.abs(result[int(3.3 * output_rate):int(3.7 * output_rate)])), 2e-7)
         np.testing.assert_allclose(result[int(1.1 * output_rate):int(1.4 * output_rate)],
                                    synth[int(1.1 * output_rate):int(1.4 * output_rate)], atol=1e-7)
         np.testing.assert_allclose(result[int(2 * output_rate):int(2.5 * output_rate)],
                                    synth[int(2 * output_rate):int(2.5 * output_rate)], atol=1e-7)
+
+    def test_all_silence_does_not_resurrect_tone_after_last_envelope_frame(self):
+        source_rate, output_rate = 16000, 40000
+        source = np.zeros(16592, dtype="float32")
+        count = round(len(source) * output_rate / source_rate)
+        synth = np.full(count, .003, dtype="float32")
+        with tempfile.TemporaryDirectory() as temp:
+            src, out = Path(temp) / "source.wav", Path(temp) / "synth.wav"
+            sf.write(src, source, source_rate, subtype="FLOAT")
+            sf.write(out, synth, output_rate, subtype="FLOAT")
+            suppress_silent_synthesis(out, src)
+            result, rate = sf.read(out, dtype="float32")
+        self.assertEqual((len(result), rate), (count, output_rate))
+        np.testing.assert_array_equal(result, np.zeros_like(synth))
+
+    def test_weak_voice_at_recording_edges_remains_unchanged(self):
+        rate = 16000
+        t = np.arange(16592) / rate
+        source = (.0002 * np.sin(2 * np.pi * 220 * t)).astype("float32")
+        synth = (.01 * np.sin(2 * np.pi * 330 * t)).astype("float32")
+        with tempfile.TemporaryDirectory() as temp:
+            src, out = Path(temp) / "source.wav", Path(temp) / "synth.wav"
+            sf.write(src, source, rate, subtype="FLOAT")
+            sf.write(out, synth, rate, subtype="FLOAT")
+            suppress_silent_synthesis(out, src)
+            result, _ = sf.read(out, dtype="float32")
+        np.testing.assert_array_equal(result, synth)
 
 
 if __name__ == "__main__":

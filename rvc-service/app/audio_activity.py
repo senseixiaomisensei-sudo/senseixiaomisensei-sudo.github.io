@@ -46,8 +46,10 @@ def classify_activity(source: np.ndarray, rate: int) -> tuple[np.ndarray, np.nda
     states[definite_silence] = "silence"
     # A 180 ms margin sits *inside* the source silence on both sides of every
     # phrase. Gaussian smoothing affects only this already-silent margin.
-    core = (np.ones_like(definite_silence, dtype=bool) if np.all(definite_silence)
-            else binary_erosion(definite_silence, iterations=18, border_value=0))
+    # There is no neighbouring phrase outside the file. Protect real phrase
+    # boundaries inside the source, but do not preserve a synthetic tone at
+    # the beginning/end of a source-confirmed silent recording boundary.
+    core = binary_erosion(definite_silence, iterations=18, border_value=1)
     attenuation = gaussian_filter1d(core.astype(np.float64), sigma=3)
     gains = np.clip(1 - attenuation, 0, 1)
     details = {
@@ -56,7 +58,7 @@ def classify_activity(source: np.ndarray, rate: int) -> tuple[np.ndarray, np.nda
         "frameHopSeconds": round(float(times[1] - times[0]), 6) if len(times) > 1 else 0,
         "silenceCoreSeconds": round(float(np.count_nonzero(core)) * .01, 3),
         "applied": bool(np.any(core)),
-        "rule": "Only source RMS <= 1e-6 for a sustained core, with 180 ms protected edges",
+        "rule": "Only source RMS <= 1e-6 for a sustained core; protect 180 ms at internal phrase edges, retain silence at file edges",
     }
     return times, gains, details
 
@@ -83,7 +85,10 @@ def suppress_silent_synthesis(converted_path: Path, source_path: Path) -> dict:
                     if not np.isfinite(block).all():
                         raise ValueError("Non-finite synthesized vocal")
                     sample_times = (position + np.arange(len(block))) / converted.samplerate
-                    local_gain = np.interp(sample_times, times, gains, left=1, right=1)
+                    # The last envelope frame can precede EOF by almost a
+                    # hop. Restoring unity there resurrects noise in the tail.
+                    local_gain = np.interp(sample_times, times, gains,
+                                           left=float(gains[0]), right=float(gains[-1]))
                     target.write(block * local_gain[:, None])
                     position += len(block)
             # Windows keeps the original WAV locked until its reader closes.
