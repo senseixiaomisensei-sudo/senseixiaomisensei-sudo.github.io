@@ -50,10 +50,12 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
   function render(base,job,converted=false){
     tracks.querySelectorAll('audio').forEach(a=>{a.pause();a.removeAttribute('src');a.load();});
     tracks.replaceChildren();
-    if(!converted)params=job.tracks.map(t=>({trackId:t.trackId,modelId:state.selectedModelId,pitch:0,indexRate:.3,protect:.25,rmsMixRate:1,f0Method:'rmvpe',gainDb:0,mute:false}));
+    if(!converted)params=job.tracks.map(t=>({trackId:t.trackId,modelId:state.selectedModelId,pitch:12,indexRate:.3,protect:.25,rmsMixRate:1,f0Method:'rmvpe',gainDb:0,mute:false}));
     for(const [i,t] of job.tracks.entries()){
       const card=document.createElement('article');card.className='chorus-track';
-      const title=document.createElement('h4');title.textContent=`声部 ${t.trackId}`;
+      const title=document.createElement('h4');
+      const updatePitchLabel=()=>{title.textContent=`声部 ${t.trackId} · ${params[i].pitch>0?'+':''}${params[i].pitch} 半音`;};
+      updatePitchLabel();
       const audio=document.createElement('audio');audio.controls=true;audio.preload='none';audio.crossOrigin='anonymous';
       audio.setAttribute('aria-label',`${converted?'转换后':'分离后'}声部 ${t.trackId} 预听`);
       audio.src=`${base}/${job.jobId}/stem/${t.trackId}?token=${encodeURIComponent(job.downloadToken)}`;
@@ -66,7 +68,7 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
         const wrap=document.createElement('label');wrap.className='chorus-control';const name=document.createElement('span');name.textContent=label;
         const control=document.createElement('input');Object.assign(control,{type:'range',min,max,step,value:params[i][key]});
         const out=document.createElement('output');out.textContent=control.value;
-        control.addEventListener('input',()=>{params[i][key]=Number(control.value);out.textContent=control.value;});
+        control.addEventListener('input',()=>{params[i][key]=Number(control.value);out.textContent=control.value;if(key==='pitch')updatePitchLabel();});
         wrap.append(name,control,out);details.append(wrap);
       }
       const muteLabel=document.createElement('label');muteLabel.className='chorus-control';muteLabel.textContent='单独静音';const mute=document.createElement('input');mute.type='checkbox';mute.checked=params[i].mute;
