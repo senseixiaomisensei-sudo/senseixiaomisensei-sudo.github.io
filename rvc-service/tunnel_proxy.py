@@ -71,7 +71,8 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def log_message(self, fmt: str, *args) -> None:  # pragma: no cover - operational logging
         # Never log query strings because output URLs contain one-time tokens.
-        sys.stderr.write("rvc-proxy: " + (fmt % args) + "\n")
+        message = re.sub(r'\?[^\s"]+', '?[redacted]', fmt % args)
+        sys.stderr.write("rvc-proxy: " + message + "\n")
 
     def _json_error(self, status: int, code: str) -> None:
         body = (f'{{"code":"{code}","details":{{}}}}').encode("utf-8")
@@ -186,7 +187,10 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         }
         if self.command == "POST":
             content_type = self.headers.get("Content-Type", "")
-            expected_type = "application/json" if urlsplit(self.path).path == "/v1/tts" else "multipart/form-data"
+            path = urlsplit(self.path).path
+            json_action = (path == "/v1/tts" or REMIX_JOB_RE.fullmatch(path)
+                           or CHORUS_RE.fullmatch(path) and path.endswith("/convert"))
+            expected_type = "application/json" if json_action else "multipart/form-data"
             if not content_type.lower().startswith(expected_type):
                 self._json_error(415, "UNSUPPORTED_MEDIA_TYPE")
                 return
@@ -195,6 +199,8 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         request_id = self.headers.get("X-PostPrep-Request-Id", "")
         if request_id and len(request_id) <= 96:
             headers["X-PostPrep-Request-Id"] = request_id
+        if self.command == "GET" and self.headers.get("Range"):
+            headers["Range"] = self.headers["Range"]
 
         connection = http.client.HTTPConnection(UPSTREAM_HOST, UPSTREAM_PORT, timeout=190)
         try:
@@ -203,7 +209,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             self.close_connection = True
             self.send_response(response.status, response.reason)
             content_length = response.getheader("Content-Length")
-            for key in ("Content-Type", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After", "X-RVC-F0-Method", "X-RVC-Mix-Revision", "X-RVC-Remix-Available"):
+            for key in ("Content-Type", "Content-Range", "Accept-Ranges", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After", "X-RVC-F0-Method", "X-RVC-Mix-Revision", "X-RVC-Remix-Available"):
                 value = response.getheader(key)
                 if value:
                     self.send_header(key, value)

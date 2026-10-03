@@ -168,8 +168,11 @@ if (-not $tunnelAlive) {
     Start-Sleep -Seconds 2
   }
   $quickArgs = @('--quick-service', 'http://127.0.0.1:8091')
-  # Start cloudflared with quick registration bridge
-  Start-Process -FilePath $CfBin -ArgumentList (@("tunnel","--url","http://127.0.0.1:$ProxyPort","--no-autoupdate","--protocol","auto") + $quickArgs) -RedirectStandardOutput $TunnelLog -RedirectStandardError "$TunnelLog.err" -WindowStyle Hidden
+  # Large real uploads stalled on this host's QUIC connection while HTTP/2
+  # completed the identical upload. Preserve an explicit operator override.
+  $tunnelProtocol = if ($env:RVC_TUNNEL_PROTOCOL) { $env:RVC_TUNNEL_PROTOCOL } else { "http2" }
+  if ($tunnelProtocol -notin @("http2", "quic", "auto")) { throw "Invalid RVC_TUNNEL_PROTOCOL" }
+  Start-Process -FilePath $CfBin -ArgumentList (@("tunnel","--url","http://127.0.0.1:$ProxyPort","--no-autoupdate","--protocol",$tunnelProtocol) + $quickArgs) -RedirectStandardOutput $TunnelLog -RedirectStandardError "$TunnelLog.err" -WindowStyle Hidden
   $TunnelUrl = ""
   for ($i = 0; $i -lt 40 -and -not $TunnelUrl; $i++) {
     Start-Sleep -Seconds 1
