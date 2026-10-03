@@ -1,5 +1,5 @@
 import { Spring, rangeFraction } from './classic-glass/motion.js';
-import { initCharacterModes } from './classic-glass/characters.js';
+import { initCharacterModes } from './classic-glass/characters.js?v=20261003-fluid-1';
 
 // Presentation only: no writes to inference parameters, uploads or audio processing.
 const root = document.documentElement;

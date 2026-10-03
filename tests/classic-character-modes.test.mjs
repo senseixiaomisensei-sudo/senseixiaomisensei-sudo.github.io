@@ -6,7 +6,7 @@ import { initCharacterModes } from '../assets/classic-glass/characters.js';
 class Node {
   constructor(tag='div') {
     this.tag=tag; this.children=[]; this.dataset={}; this.attrs=new Map(); this.events={}; this.inert=false;
-    this.classes=new Set(); this.classList={add:x=>this.classes.add(x),remove:x=>this.classes.delete(x)};
+    this.classes=new Set(); this.classList={add:x=>this.classes.add(x),remove:x=>this.classes.delete(x),contains:x=>this.classes.has(x)};
     this.values={}; this.style={setProperty:(k,v)=>this.values[k]=v,removeProperty:k=>{delete this.values[k]; delete this.style[k];}};
   }
   append(...nodes) { for(const node of nodes) { node.parent=this; this.children.push(node); } }
@@ -23,8 +23,9 @@ class Node {
   querySelectorAll() { return this.children.flatMap(child=>[...(child.dataset.modelId?[child]:[]),...child.querySelectorAll()]); }
   focus() { this.focused=true; }
   setPointerCapture() {}
+  releasePointerCapture() {}
 }
-function fixture({stored='default', trained=false, brokenStorage=false}={}) {
+function fixture({stored='default', trained=false, brokenStorage=false, reduced=false, Resize}={}) {
   const parent=new Node(), gallery=new Node(), extra=trained?new Node():null;
   parent.append(gallery); if(extra) parent.append(extra);
   let selected='id-0', time=0, next=0;
@@ -37,13 +38,15 @@ function fixture({stored='default', trained=false, brokenStorage=false}={}) {
     }
   }
   populate(gallery); if(extra) populate(extra,2);
-  const document={hidden:false,getElementById:id=>id==='rvc-model-gallery'?gallery:id==='rvc-trained-model-gallery'?extra:null,createElement:tag=>new Node(tag),addEventListener:(name,fn)=>{events[name]=fn;}};
-  const refresh=initCharacterModes({root,document,isClassic:()=>root.dataset.ui==='classic',text:zh=>zh,reduced:{matches:false},
+  const document={hidden:false,documentElement:{clientHeight:600},getElementById:id=>id==='rvc-model-gallery'?gallery:id==='rvc-trained-model-gallery'?extra:null,createElement:tag=>new Node(tag),addEventListener:(name,fn)=>{events[name]=fn;}};
+  const refresh=initCharacterModes({root,document,isClassic:()=>root.dataset.ui==='classic',text:zh=>zh,reduced:{matches:reduced},
+    Resize,
     storage:{getItem(){if(brokenStorage)throw Error('blocked');return stored;},setItem(k,v){written.push([k,v]);if(brokenStorage)throw Error('blocked');}},
     Observer:class{constructor(fn){observers.push(fn);}observe(){}},raf:fn=>(frames.set(++next,fn),next),caf:id=>frames.delete(id),now:()=>time});
-  function settle(){ for(let i=0;i<180&&frames.size;i++){time+=16;const batch=[...frames.values()];frames.clear();batch.forEach(fn=>fn(time));} }
+  function tick(){time+=16;const batch=[...frames.values()];frames.clear();batch.forEach(fn=>fn(time));}
+  function settle(){for(let i=0;i<180&&frames.size;i++)tick();}
   const toolbar=parent.children[0], toggle=toolbar.children[1], modeButtons=toggle.children.slice(1);
-  return {parent,gallery,extra,root,document,frames,observers,events,written,refresh,settle,modeButtons,
+  return {parent,gallery,extra,root,document,frames,observers,events,written,refresh,settle,tick,modeButtons,
     cards:()=>gallery.querySelectorAll(),nav:()=>parent.children[parent.children.indexOf(gallery)+1],selected:()=>selected};
 }
 test('default keeps native options; stack previews every filtered ID and original click selects it',()=>{
@@ -99,4 +102,101 @@ test('keyboard and dragging browse without hijacking taps or vertical scrolling'
 test('blocked preference storage does not disable either presentation mode',()=>{
   const ui=fixture({brokenStorage:true});ui.modeButtons[1].fire('click');ui.settle();
   assert.equal(ui.gallery.classes.has('is-character-stack'),true);
+});
+
+const pointer=(id,x,y)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch'});
+test('held card follows each event immediately; large up/left/right pulls expand before release',()=>{
+  for(const [x,y,layout] of [[100,-70,'vertical'],[-70,100,'horizontal'],[270,100,'horizontal']]){
+    const ui=fixture({stored:'stack'});ui.settle();const original=ui.cards(),card=original[0];
+    const start=card.style.transform;
+    ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,x,y));
+    assert.equal(ui.gallery.dataset.stackLayout,layout);
+    assert.equal(ui.gallery.dataset.dragging,'true');assert.equal(card.dataset.stackHeld,'true');
+    assert.notEqual(card.style.transform,start);assert.doesNotMatch(card.style.transform,/scale/);
+    assert.deepEqual(ui.cards(),original); // No card replacement during any gesture.
+    ui.gallery.fire('pointerup',pointer(1,x,y));ui.settle();
+    assert.equal(ui.gallery.dataset.stackLayout,layout);assert.equal(ui.cards().filter(c=>!c.inert).length,6);
+    assert.equal(ui.selected(),'id-0');
+  }
+});
+
+test('same gesture switches axis with hysteresis and pulls back into the original deck',()=>{
+  const ui=fixture({stored:'stack'});ui.settle();
+  ui.gallery.fire('pointerdown',pointer(1,100,200));ui.gallery.fire('pointermove',pointer(1,100,30));
+  assert.equal(ui.gallery.dataset.stackLayout,'vertical');
+  ui.gallery.fire('pointermove',pointer(1,260,50)); // Nearly diagonal; retain vertical.
+  assert.equal(ui.gallery.dataset.stackLayout,'vertical');
+  ui.gallery.fire('pointermove',pointer(1,330,100));assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
+  ui.gallery.fire('pointermove',pointer(1,120,195));assert.equal(ui.gallery.dataset.stackLayout,'stack');
+  ui.gallery.fire('pointerup',pointer(1,120,195));ui.settle();
+  assert.equal(ui.cards().filter(c=>!c.inert).length,1);assert.equal(ui.selected(),'id-0');
+});
+
+test('cancellation, lost capture and a second pointer do not leave a stuck drag or select a role',()=>{
+  for(const action of ['pointercancel','lostpointercapture']){
+    const ui=fixture({stored:'stack'});ui.settle();
+    ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,280,100));
+    ui.gallery.fire('pointerdown',pointer(2,100,100));ui.gallery.fire('pointermove',pointer(2,100,-100));
+    assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
+    ui.gallery.fire(action,pointer(1,280,100));ui.settle();
+    assert.equal(ui.gallery.dataset.stackLayout,'stack');assert.equal(ui.gallery.dataset.dragging,undefined);
+    assert.ok(ui.cards().every(c=>c.dataset.stackHeld===undefined));
+    ui.gallery.fire('pointerdown',pointer(3,100,100));ui.gallery.fire('pointermove',pointer(3,100,-100));
+    assert.equal(ui.gallery.dataset.stackLayout,'vertical');assert.equal(ui.selected(),'id-0');
+  }
+});
+
+test('layout changes preserve a reordered identity, original selection and actual position count',()=>{
+  const ui=fixture({stored:'stack'});ui.settle();
+  ui.gallery.fire('keydown',{key:'End',preventDefault(){}});ui.settle();
+  ui.nav().children[3].children[1].fire('click');ui.settle();
+  assert.match(ui.nav().children[1].textContent,/^1 \/ 6/);assert.equal(ui.selected(),'id-0');
+  const chosen=ui.cards()[5];ui.gallery.fire('pointerdown',{...pointer(1,100,100),target:{closest:()=>chosen}});
+  ui.gallery.fire('pointerup',pointer(1,100,100));assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
+  chosen.fire('click');ui.settle();assert.equal(ui.selected(),'id-5');assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
+  ui.gallery.scrollLeft=318;ui.gallery.fire('scroll');assert.match(ui.nav().children[1].textContent,/^2 \/ 6/);
+  ui.nav().children[3].children[2].fire('click');ui.settle();
+  ui.cards().forEach((card,i)=>card.getBoundingClientRect=()=>({top:(i-3)*200+120,bottom:(i-3)*200+304,height:184}));
+  ui.events.scroll();assert.match(ui.nav().children[1].textContent,/^5 \/ 6/); // ID 3 follows ID 5 in this order.
+});
+
+test('interrupted collapse reserves current card bounds and a new grab continues from its visible position',()=>{
+  const ui=fixture({stored:'stack'});ui.settle();
+  ui.nav().children[3].children[2].fire('click');ui.settle();
+  ui.nav().children[3].children[0].fire('click');ui.tick();
+  assert.ok(parseFloat(ui.gallery.style.height)>1000); // It must not jump straight to 246px.
+  const before=ui.cards()[0].style.transform;
+  ui.gallery.fire('pointerdown',pointer(1,100,100));assert.equal(ui.cards()[0].style.transform,before);
+  ui.gallery.fire('pointermove',pointer(1,130,100));
+  assert.equal(ui.cards()[0].dataset.stackHeld,'true');assert.notEqual(ui.cards()[0].style.transform,before);
+  ui.gallery.fire('pointercancel',pointer(1,130,100));ui.settle();assert.equal(ui.frames.size,0);
+});
+
+test('reduced motion retains button and drag operations; leaving first UI clears all layout styles',()=>{
+  const ui=fixture({stored:'stack',reduced:true});ui.settle();
+  ui.nav().children[3].children[1].fire('click');ui.settle();assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
+  ui.gallery.fire('keydown',{key:'Escape',preventDefault(){}});ui.settle();
+  ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,100,-80));
+  ui.gallery.fire('pointerup',pointer(1,100,-80));ui.settle();assert.equal(ui.gallery.dataset.stackLayout,'vertical');
+  ui.root.dataset.ui='glass';ui.refresh();assert.equal(ui.frames.size,0);assert.equal(ui.gallery.style.height,undefined);
+  assert.equal(ui.gallery.dataset.stackLayout,undefined);assert.ok(ui.cards().every(c=>c.style.width===undefined&&!c.inert));
+});
+
+test('a drop onto another expanded card re-stacks around it without changing the chosen voice',()=>{
+  const ui=fixture({stored:'stack'});ui.settle();ui.nav().children[3].children[1].fire('click');ui.settle();
+  const target=ui.cards()[2];target.getBoundingClientRect=()=>({left:200,right:400,top:100,bottom:300});
+  ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,280,150));
+  ui.gallery.fire('pointerup',pointer(1,280,150));ui.settle();
+  assert.equal(ui.gallery.dataset.stackLayout,'stack');assert.equal(ui.cards().find(c=>!c.inert),target);
+  assert.equal(ui.selected(),'id-0');
+});
+
+test('self-driven height changes do not cancel a held card; actual width changes cancel safely',()=>{
+  let resize;const ui=fixture({stored:'stack',Resize:class{constructor(fn){resize=fn;}observe(){}}});ui.settle();
+  ui.gallery.getBoundingClientRect=()=>({width:332,height:500});
+  ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,280,100));
+  resize();assert.equal(ui.gallery.dataset.dragging,'true');
+  ui.gallery.getBoundingClientRect=()=>({width:280,height:500});resize();ui.settle();
+  assert.equal(ui.gallery.dataset.dragging,undefined);assert.equal(ui.gallery.dataset.stackLayout,'stack');
+  assert.equal(ui.cards()[0].style.width,'248px');
 });
