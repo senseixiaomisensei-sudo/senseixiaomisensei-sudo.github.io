@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="assets/postprep-motion.css?v=20260925-rvcfix">
   <link rel="stylesheet" href="assets/liquid-ui.css?v=20260925-rvcfix">
   <link rel="stylesheet" href="assets/rvc.css?v=20260926-mixguard1">
+  <link rel="stylesheet" href="assets/rvc-chorus.css?v=20261003-1">
   <script src="assets/liquid-ui.js?v=20260925-rvcfix"></script>
   <link rel="stylesheet" href="assets/classic-glass.css?v=20261001-4">
   <script type="module" src="assets/classic-glass.js?v=20261001-4"></script>
@@ -240,6 +241,19 @@
               </button>
             </div>
             <p id="rvc-audio-mode-hint" class="mt-2 text-xs leading-5 text-muted">纯人声模式不会启动伴奏分离，原功能与音质参数保持不变。</p>
+            <section id="rvc-chorus" aria-label="多人合唱工作台">
+              <label class="chorus-heading"><input type="checkbox" data-enable>多人合唱 · 最多四路声线</label>
+              <div data-workspace hidden>
+                <div class="chorus-options">
+                  <label>歌手数量<select data-count><option value="auto">智能识别</option><option value="2">两人</option><option value="3">三人</option><option value="4">四人</option></select></label>
+                  <label>输入<select data-kind><option value="mix">歌曲含伴奏</option><option value="vocals">已分离的合唱人声</option></select></label>
+                  <button type="button" data-analyze>识别与提取人声</button>
+                </div>
+                <p data-status role="status" aria-live="polite">先提取歌手，逐路预听、分配角色和独立调音，再点击「开始变声」。此功能使用云端引擎。</p>
+                <div data-tracks></div>
+                <button type="button" data-update hidden>应用设置并更新合唱</button>
+              </div>
+            </section>
           </div>
 
           <div id="rvc-upload-wrap" class="mt-5">
@@ -461,6 +475,6 @@
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
   <script src="assets/postprep.js?v=20260924-workspace"></script>
   <script src="assets/rvc-schools.js?v=20260919-odyssey"></script>
-  <script src="assets/rvc.js?v=20261002-speech-r44"></script>
+  <script src="assets/rvc.js?v=20261003-chorus-2"></script>
 </body>
 </html>

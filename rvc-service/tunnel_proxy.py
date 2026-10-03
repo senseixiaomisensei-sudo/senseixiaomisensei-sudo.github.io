@@ -37,6 +37,7 @@ TRAIN_UPLOAD_RE = re.compile(
     re.I,
 )
 OUTPUT_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
+CHORUS_RE = re.compile(r"^/v1/chorus/[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}(?:/convert|/stem/[1-4])?$", re.I)
 
 
 def _read_chunked(reader, max_bytes: int = MAX_BODY_BYTES) -> bytes:
@@ -91,6 +92,16 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def _target(self) -> str | None:
         parsed = urlsplit(self.path)
+        if parsed.path in {'/v1/chorus/status','/v1/chorus/analyze'}:
+            method = 'GET' if parsed.path.endswith('/status') else 'POST'
+            return parsed.path if self.command == method and not parsed.query else None
+        if CHORUS_RE.fullmatch(parsed.path):
+            method = 'POST' if parsed.path.endswith('/convert') else 'GET'
+            values = parse_qs(parsed.query, keep_blank_values=True)
+            tokens = values.get('token', [])
+            if self.command == method and set(values) == {'token'} and len(tokens) == 1 and OUTPUT_TOKEN_RE.fullmatch(tokens[0]):
+                return f'{parsed.path}?token={tokens[0]}'
+            return None
         if parsed.path == "/healthz":
             if not parsed.query:
                 return parsed.path
@@ -131,7 +142,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
     def _body(self) -> bytes:
         path = urlsplit(self.path).path
         max_bytes = (MAX_TTS_BODY_BYTES if path == "/v1/tts" else
-                     64 * 1024 if REMIX_JOB_RE.fullmatch(path) else MAX_BODY_BYTES)
+                     64 * 1024 if REMIX_JOB_RE.fullmatch(path) or CHORUS_RE.fullmatch(path) else MAX_BODY_BYTES)
         transfer_encoding = self.headers.get("Transfer-Encoding", "").lower()
         if "chunked" in transfer_encoding:
             return _read_chunked(self.rfile, max_bytes)

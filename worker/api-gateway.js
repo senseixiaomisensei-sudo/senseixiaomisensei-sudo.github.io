@@ -98,6 +98,22 @@ function requestRoute(request) {
     return { error: { status: 400, code: "INVALID_REQUEST_URL", message: "Invalid request URL" } };
   }
   const path = url.pathname.replace(/\/+$/u, "") || "/";
+  const chorus = path.match(/^\/rvc\/chorus\/(status|analyze|[a-f0-9-]{36}(?:\/convert|\/stem\/[1-4])?)$/iu);
+  if (chorus) {
+    const suffix = chorus[1], jobId = suffix.split("/")[0];
+    const token = url.searchParams.get("token") || "";
+    if (!["status", "analyze"].includes(suffix) && (!isOutputJobId(jobId) || !isOutputToken(token))) {
+      return { error: { status: 400, code: "INVALID_RVC_OUTPUT_TOKEN", message: "Invalid chorus session" } };
+    }
+    const post = suffix === "analyze" || suffix.endsWith("/convert");
+    return { id: "rvc-chorus", upstreamBinding: "POSTPREP_RVC_UPSTREAM_URL",
+      method: post ? "POST" : "GET", rateBinding: post ? RVC_RATE_LIMITER_BINDING : TEXT_RATE_LIMITER_BINDING,
+      ratePrefix: post ? "rvc-chorus" : "rvc-chorus-status",
+      skipRateLimit: !post && suffix !== 'status',
+      maxBytes: suffix === "analyze" ? MAX_RVC_UPLOAD_BYTES + 1024 * 1024 : 64 * 1024,
+      directPath: `/v1/chorus/${suffix}`, chorusSuffix: suffix, token,
+      message: "Use the chorus route's supported method" };
+  }
   if (path === "/" || path === "/api/text" || path === "/text") {
     return {
       id: "text",
@@ -297,6 +313,7 @@ function resolvedDirectRvcUrl(route, env) {
     url.search = "";
     url.hash = "";
     if ((route.id === "rvc-output" || route.id === "rvc-output-remix")
+        || route.id === "rvc-chorus" && route.token
         || route.id.startsWith("rvc-train-") && route.token) {
       url.searchParams.set("token", route.token);
     }
@@ -317,6 +334,11 @@ function resolvedUpstreamUrl(route, env) {
   try {
     const url = new URL(configured);
     if (url.protocol !== "https:") return "";
+    if (route.id === "rvc-chorus") {
+      url.pathname = `/api/rvc-chorus/${route.chorusSuffix}`;
+      url.search = "";
+      if (route.token) url.searchParams.set("token", route.token);
+    }
     if (route.id === "rvc-output" || route.id === "rvc-output-remix") {
       url.searchParams.set("job", route.jobId);
       url.searchParams.set("token", route.token);
@@ -384,6 +406,9 @@ export default {
     const origin = request.headers.get("Origin");
     const visitorIp = request.headers.get("CF-Connecting-IP");
     if (contentType && route.method === "POST") headers.set("Content-Type", contentType);
+    if (route.id === "rvc-chorus" && route.method === "GET" && request.headers.get("Range")) {
+      headers.set("Range", request.headers.get("Range"));
+    }
     headers.set("X-PostPrep-Request-Id", requestId);
     if (origin) headers.set("Origin", origin);
     if (visitorIp) headers.set("CF-Connecting-IP", visitorIp);

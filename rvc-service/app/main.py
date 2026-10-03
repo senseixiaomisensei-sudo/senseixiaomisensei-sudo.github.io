@@ -95,7 +95,8 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "audio_repair.py", "separation_runtime.py", "official_runtime.py",
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
-                  "timeline_synthesis.py", "timeline_rendering.py", "speech_runtime.py", "speech_worker.py")
+                  "timeline_synthesis.py", "timeline_rendering.py", "speech_runtime.py", "speech_worker.py",
+                  "chorus_api.py", "chorus_runtime.py", "chorus_worker.py")
 
 
 def source_revision() -> str:
@@ -452,6 +453,9 @@ async def cleanup_expired_outputs() -> None:
             old_mix.unlink(missing_ok=True)
         for stem in remix_stem_paths(job_id):
             stem.unlink(missing_ok=True)
+        # Chorus folders are keyed only by validated UUIDs inside OUTPUT_ROOT.
+        if re_full_uuid(job_id):
+            shutil.rmtree(OUTPUT_ROOT / 'chorus' / job_id, ignore_errors=True)
 
 
 def training_job_root(job_id: str) -> Path:
@@ -1410,6 +1414,7 @@ async def healthz(request: Request) -> dict[str, object]:
         "backendBuildSha": BACKEND_BUILD_SHA,
         "pipelineRevision": PIPELINE_REVISION,
         "speechEngine": await asyncio.to_thread(speech_status),
+        "chorusEngine": await asyncio.to_thread(__import__('app.chorus_runtime',fromlist=['chorus_status']).chorus_status),
         "modelHashes": model_hashes,
         "timelineInference": os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1",
         "pitchConsensus": (os.getenv("RVC_TIMELINE_INFERENCE", "0") == "1"
@@ -2705,3 +2710,7 @@ def re_full_uuid(value: str) -> bool:
         return str(uuid.UUID(value)) == value.lower()
     except (ValueError, AttributeError):
         return False
+
+
+from app.chorus_api import install_chorus_routes
+install_chorus_routes(app, os.sys.modules[__name__])

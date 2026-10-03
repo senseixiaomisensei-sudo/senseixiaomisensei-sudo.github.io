@@ -1,5 +1,6 @@
 (() => {
   "use strict";
+  let chorusController = null;
 
   const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
   const MIN_AUDIO_SECONDS = 0.5;
@@ -4310,6 +4311,7 @@
   }
 
   function renderAudioMode() {
+    chorusController?.refresh();
     syncSpeechControls();
     const voiceButton = document.getElementById("rvc-audio-mode-voice");
     const songButton = document.getElementById("rvc-audio-mode-song");
@@ -5539,6 +5541,7 @@
   }
 
   async function runRvcInference() {
+    if (chorusController?.isEnabled()) return chorusController.convert();
     const localButton = document.getElementById("rvc-song-local-fallback");
     if (localButton) localButton.hidden = false;
     const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
@@ -6339,6 +6342,20 @@
     setupEventListeners();
     applyRvcLanguage();
     await initCatalog();
+    const { initChorus } = await import('./rvc-chorus.js?v=20261003-2');
+    chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
+      setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
+      setBusy: (value) => { state.busy = value; const button = document.getElementById('rvc-convert'); if (button) button.disabled = value; syncMixControls(); },
+      onResult: async (blob, job) => {
+        const next = URL.createObjectURL(blob);
+        if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
+        state.resultUrl = next; state.cloudSongJob = null;
+        const audio = document.getElementById('rvc-result-audio'); if (audio) await attachResultAudio(audio, next, false);
+        const download = document.getElementById('rvc-result-download'); if (download) { download.href = next; download.download = `postprep-chorus-${job.jobId}.${job.format === 'mp3' ? 'mp3' : 'wav'}`; }
+        const result = document.getElementById('rvc-result'); if(result){result.hidden=false;result.classList.remove('hidden');}
+        const meta = document.getElementById('rvc-result-meta'); if (meta) meta.textContent = `${job.estimatedCount} 路角色合唱 · 独立转换后混音`;
+      },
+    });
     applyRvcLanguage();
   });
 })();

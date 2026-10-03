@@ -44,6 +44,10 @@ const server = http.createServer((req, res) => {
   }
 
   let reqPath = decodeURIComponent(req.url.split("?")[0]);
+  if (reqPath.startsWith('/rvc/chorus/')) {
+    proxy(req, res, req.url.replace(/^\/rvc\/chorus\//, '/v1/chorus/'), RVC_INFERENCE_TARGET);
+    return;
+  }
 
   // 反向代理：把 /v1/tts* 转发到本机 rvc-service（edge-tts），实现全机免配置共享
   if (reqPath === "/v1/tts" || reqPath === "/v1/tts-health") {
@@ -51,7 +55,7 @@ const server = http.createServer((req, res) => {
     return;
   }
   // 反向代理：把 /rvc, /v1/convert, /v1/models, /v1/output, /healthz 转发到官方 RVC 推理服务
-  if (reqPath === "/rvc" || reqPath === "/healthz" || reqPath.startsWith("/v1/models") || reqPath.startsWith("/v1/convert") || reqPath.startsWith("/v1/output")) {
+  if (reqPath === "/rvc" || reqPath === "/healthz" || reqPath.startsWith("/v1/chorus/") || reqPath.startsWith("/v1/models") || reqPath.startsWith("/v1/convert") || reqPath.startsWith("/v1/output")) {
     proxy(req, res, reqPath === "/rvc" ? "/v1/convert" : reqPath, RVC_INFERENCE_TARGET);
     return;
   }
