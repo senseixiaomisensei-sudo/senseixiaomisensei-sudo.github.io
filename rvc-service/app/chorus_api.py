@@ -61,7 +61,8 @@ def install_chorus_routes(app, core):
         if record.error_code: result['code'] = record.error_code
         if record.state == 'completed':
             result.update({k:info[k] for k in ('tracks','requestedCount','estimatedCount','countNeedsReview',
-                'experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256','parameters','reusedConversion','countPolicyRevision') if k in info})
+                'experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256','parameters','reusedConversion','countPolicyRevision',
+                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','candidateSelection','finalPairDiagnostics') if k in info})
         return result
 
     async def track_task(task):
@@ -105,8 +106,15 @@ def install_chorus_routes(app, core):
             info.update({'duration':duration,'sampleRate':24000,'inputKind':kind,
                 'countPolicyRevision':analysis.get('countPolicyRevision','legacy'),
                 'accompaniment':str(accompaniment.relative_to(work)),
+                'separationStatus':analysis.get('separationStatus','needs-review'),
+                'duplicateMerges':analysis.get('duplicateMerges',[]),
+                'separationDiagnostics':analysis.get('separationDiagnostics',[]),
+                'contextRefinement':analysis.get('contextRefinement',{}),
+                'candidateSelection':analysis.get('candidateSelection',{}),
+                'finalPairDiagnostics':analysis.get('finalPairDiagnostics',[]),
                 'tracks':[{'trackId':i+1,'label':f'声部 {i+1}','frames':analysis['frames'],
-                    'voiceRange':analysis.get('voiceRanges',[{}]*len(analysis['tracks']))[i]} for i in range(len(analysis['tracks']))]})
+                    'sourceSha256':hashlib.sha256(Path(path).read_bytes()).hexdigest(),
+                    'voiceRange':analysis.get('voiceRanges',[{}]*len(analysis['tracks']))[i]} for i,path in enumerate(analysis['tracks'])]})
             save(job_id,info)
             # MP3 audition is streamed on demand on phones. Keep the floating
             # source stems for conversion; preview encoding never replaces them.
@@ -248,7 +256,8 @@ def install_chorus_routes(app, core):
                 'modelRevision':info['modelRevision'],'modelSha256':info['modelSha256'],
                 'parentSessionId':parent,'conversionFingerprint':conversion_key,'reusedConversion':cached is not None,
                 'encoding':encoding,'countPolicyRevision':info.get('countPolicyRevision','legacy'),
-                'countNeedsReview':True,'experimentalRecursive':len(params)>2})
+                'countNeedsReview':True,'experimentalRecursive':len(params)>2,
+                **{k:info[k] for k in ('separationStatus','separationDiagnostics','contextRefinement','duplicateMerges','candidateSelection','finalPairDiagnostics') if k in info}})
             record.engine='rvc-chorus'; record.engine_revision=core.PIPELINE_REVISION
             record.state=record.stage='completed'; core.persist_output_records()
         except (Exception,asyncio.CancelledError) as error: await fail(job_id,error)

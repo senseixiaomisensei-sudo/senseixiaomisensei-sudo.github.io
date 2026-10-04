@@ -96,7 +96,7 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
                   "timeline_synthesis.py", "timeline_rendering.py", "speech_runtime.py", "speech_worker.py",
-                  "chorus_api.py", "chorus_runtime.py", "chorus_worker.py")
+                  "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py")
 
 
 def source_revision() -> str:
