@@ -13,12 +13,14 @@
   <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260815-rvc">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css?v=20260925-rvcfix">
-  <link rel="stylesheet" href="assets/liquid-ui.css?v=20260925-rvcfix">
+  <link rel="stylesheet" href="assets/liquid-ui.css?v=20261004-compact-1">
   <link rel="stylesheet" href="assets/rvc.css?v=20260926-mixguard1">
   <link rel="stylesheet" href="assets/rvc-chorus.css?v=20261004-search-1">
-  <script src="assets/liquid-ui.js?v=20261004-memory-1"></script>
-  <link rel="stylesheet" href="assets/classic-glass.css?v=20261004-fluid-4">
-  <script type="module" src="assets/classic-glass.js?v=20261004-fluid-4"></script>
+  <script src="assets/liquid-ui.js?v=20261004-compact-1"></script>
+  <link rel="stylesheet" href="assets/classic-glass.css?v=20261004-compact-1">
+  <script type="module" src="assets/classic-glass.js?v=20261004-compact-1"></script>
+  <link rel="stylesheet" href="assets/studio-layout.css?v=20261004-compact-1">
+  <script src="assets/studio-layout.js?v=20261004-compact-1"></script>
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="rvc">
   <div id="site-header"></div>
@@ -32,19 +34,20 @@
       <p class="mt-3 max-w-3xl text-base leading-7 text-muted" data-rvc-i18n="intro">选择声线，载入音频，调整音高并转换。</p>
     </header>
 
-    <section class="rvc-notice mt-8 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950 shadow-sm sm:p-5" aria-labelledby="rvc-note-title">
+    <details class="rvc-notice mt-8 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950 shadow-sm sm:p-5" aria-labelledby="rvc-note-title">
+      <summary data-rvc-i18n="noteTitle">使用提示</summary>
       <div class="flex items-start gap-3">
         <i class="fa-solid fa-circle-info mt-1 shrink-0 text-sky-700" aria-hidden="true"></i>
         <div class="min-w-0">
-          <h2 id="rvc-note-title" class="font-black" data-rvc-i18n="noteTitle">使用提示</h2>
+          <h2 id="rvc-note-title" class="sr-only" data-rvc-i18n="noteTitle">使用提示</h2>
           <p class="mt-1" data-rvc-i18n="noteBody">角色音色来自各模型的许可情况，请仅将变声结果用于你有权使用的场景，并为 AI 生成内容做清晰标注。请勿用他人声音冒充本人或用于欺骗。</p>
         </div>
       </div>
-    </section>
+    </details>
 
     <div class="rvc-workspace mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.74fr)]">
       <section class="rvc-workflow rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-7" aria-labelledby="rvc-workflow-heading">
-        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">
+        <div class="studio-workflow-title flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">
           <div>
             <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand" data-rvc-i18n="workflowEyebrow">WORKSPACE / 01</p>
             <h2 id="rvc-workflow-heading" class="mt-2 text-xl font-black" data-rvc-i18n="workflowTitle">声音工作台</h2>
@@ -53,8 +56,8 @@
         </div>
 
         <!-- 双模式：云端 RVC 引擎与浏览器本地兼容推理 -->
-        <div class="rvc-mode-panel mt-6 rounded-xl border border-line bg-zinc-50/60 p-4 sm:p-5">
-          <div class="flex items-center justify-between gap-2">
+        <details class="rvc-mode-panel studio-engine mt-6 rounded-xl border border-line bg-zinc-50/60 p-4 sm:p-5">
+          <summary class="flex items-center justify-between gap-2">
             <div>
               <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">INFERENCE MODE</p>
               <h3 class="mt-1 text-base font-black text-ink" data-rvc-i18n="modeTitle">处理模式</h3>
@@ -62,7 +65,8 @@
             <span id="rvc-mode-badge" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
               <i class="fa-solid fa-circle text-emerald-600"></i><span id="rvc-mode-badge-text">云端</span>
             </span>
-          </div>
+          </summary>
+          <div class="studio-engine-body">
 
           <div class="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="变声引擎模式">
             <!-- 模式 1: 云端 RVC 引擎 -->
@@ -111,7 +115,8 @@
               <span id="rvc-preload-percent-text" class="font-bold text-brand">0%</span>
             </div>
           </div>
-        </div>
+          </div>
+        </details>
 
         <!-- Step 1: 选择角色 -->
         <div class="rvc-step rvc-step-model mt-7">
@@ -122,7 +127,7 @@
             </div>
             <input id="rvc-model-search" type="search" autocomplete="off" spellcheck="false" class="min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand sm:w-56" data-rvc-i18n-placeholder="searchPlaceholder" placeholder="搜索角色…">
           </div>
-          <div class="mt-4 rounded-xl border border-line bg-zinc-50/70 p-3">
+          <div class="studio-collections mt-4 rounded-xl border border-line bg-zinc-50/70 p-3">
             <div class="flex items-center gap-2">
               <div id="rvc-collection-nav" class="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1" role="tablist" aria-label="角色分区"></div>
               <button id="rvc-create-collection" type="button" class="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border border-brand bg-white px-3 py-2 text-xs font-black text-brand shadow-xs transition hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
@@ -141,7 +146,10 @@
           <div id="rvc-school-browser" class="mt-4 rounded-xl border border-line bg-white p-3">
             <label for="rvc-school-filter" class="text-sm font-bold">学院 / School</label>
             <select id="rvc-school-filter" class="mt-2 min-h-10 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm"></select>
-            <div id="rvc-school-roster" class="mt-3 text-xs leading-6 text-muted" aria-live="polite"></div>
+            <details class="studio-fold studio-roster" hidden>
+              <summary data-studio-label="roster">角色目录与来源</summary>
+              <div id="rvc-school-roster" class="mt-3 text-xs leading-6 text-muted" aria-live="polite"></div>
+            </details>
           </div>
           <div id="rvc-model-gallery" class="mt-4 max-h-[32rem] space-y-4 overflow-y-auto pr-1" role="listbox" aria-labelledby="rvc-step-model-label"></div>
           <p id="rvc-model-empty" class="mt-4 hidden rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" data-rvc-i18n="modelEmpty">没有找到匹配的角色。换个关键词试试。</p>
@@ -156,6 +164,8 @@
             <div id="rvc-trained-model-gallery" class="mt-3 max-h-80 space-y-3 overflow-y-auto pr-1" role="listbox" aria-label="训练完成的模型"></div>
           </div>
 
+          <details class="studio-fold studio-model-tools">
+            <summary data-studio-label="tools">导入与训练模型</summary>
           <!-- 导入我的模型（自己训练/转换的 .onnx，仅本机使用） -->
           <div class="mt-4 rounded-xl border border-dashed border-brand/40 bg-teal-50/50 p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -208,13 +218,14 @@
               </div>
             </div>
           </details>
+          </details>
         </div>
 
         <!-- Step 2: 你的声音（三个并列输入源：上传 / 录制 / 文本朗读→角色） -->
         <div class="rvc-step rvc-step-input mt-7 border-t border-line pt-6">
           <p class="text-sm font-bold" id="rvc-step-audio-label" data-rvc-i18n="stepAudio">2. 提供你的声音（任选其一）</p>
           <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepAudioHint">纯人声最长 20 分钟，云端翻唱最长 15 分钟；文件限 25 MB。</p>
-          <div class="mt-3 grid gap-3 sm:grid-cols-3" role="group" aria-labelledby="rvc-step-audio-label">
+          <div class="studio-sources mt-3 grid gap-3 sm:grid-cols-3" role="group" aria-labelledby="rvc-step-audio-label">
             <button id="rvc-source-upload" type="button" class="min-h-24 rounded-lg border border-brand bg-teal-50 p-4 text-left shadow-sm transition focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2" aria-pressed="true">
               <span class="flex items-center gap-3"><i class="fa-solid fa-upload text-brand" aria-hidden="true"></i><span class="font-black" data-rvc-i18n="sourceUpload">上传音频</span></span>
               <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceUploadHint">从设备选择文件。</span>
@@ -228,19 +239,22 @@
               <span class="mt-2 block text-xs leading-5 text-muted" data-rvc-i18n="sourceTtsHint">生成朗读后转换声线。</span>
             </button>
           </div>
-          <div class="mt-4 rounded-xl border border-line bg-zinc-50/70 p-3">
+          <div class="studio-content-type mt-4 rounded-xl border border-line bg-zinc-50/70 p-3">
             <p class="text-xs font-black text-ink" data-rvc-i18n="audioContent">音频内容</p>
             <div class="mt-2 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="音频内容类型">
               <button id="rvc-audio-mode-voice" type="button" role="radio" aria-checked="true" class="min-h-11 rounded-lg border-2 border-brand bg-teal-50 px-3 py-2 text-left text-xs font-bold text-ink shadow-xs">
                 <span class="block" data-rvc-i18n="voiceOnly">纯人声（默认）</span>
-                <span class="mt-1 block font-medium leading-5 text-muted" data-rvc-i18n="voiceOnlyHint">沿用原有稳定链路，上传更省流量。</span>
               </button>
               <button id="rvc-audio-mode-song" type="button" role="radio" aria-checked="false" class="min-h-11 rounded-lg border-2 border-transparent bg-white px-3 py-2 text-left text-xs font-bold text-ink shadow-xs hover:border-brand/40">
                 <span class="block" data-rvc-i18n="songMode">带伴奏翻唱</span>
-                <span class="mt-1 block font-medium leading-5 text-muted" data-rvc-i18n="songModeHint">云端先分离人声，只变人声，再与原伴奏回混。</span>
               </button>
             </div>
-            <p id="rvc-audio-mode-hint" class="mt-2 text-xs leading-5 text-muted">纯人声模式不会启动伴奏分离，原功能与音质参数保持不变。</p>
+            <details class="studio-fold studio-content-notes">
+              <summary data-studio-label="content">音频模式说明</summary>
+              <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="voiceOnlyHint">沿用原有稳定链路，上传更省流量。</p>
+              <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="songModeHint">云端先分离人声，只变人声，再与原伴奏回混。</p>
+              <p id="rvc-audio-mode-hint" class="mt-2 text-xs leading-5 text-muted">纯人声模式不会启动伴奏分离，原功能与音质参数保持不变。</p>
+            </details>
             <section id="rvc-chorus" aria-label="多人合唱工作台">
               <label class="chorus-heading"><input type="checkbox" data-enable>多人合唱 · 最多四路声线</label>
               <div data-workspace hidden>
@@ -310,8 +324,9 @@
         </div>
 
         <!-- Step 3: 简单设置 -->
-        <div class="rvc-step rvc-step-tune mt-7 border-t border-line pt-6">
-          <p class="text-sm font-bold" data-rvc-i18n="stepSettings">3. 调节声音与音调匹配</p>
+        <details class="rvc-step rvc-step-tune studio-fold mt-7 border-t border-line pt-6">
+          <summary><span class="text-sm font-bold" data-rvc-i18n="stepSettings">3. 调节声音与音调匹配</span><span id="rvc-pitch-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0</span></summary>
+          <div class="studio-tune-body">
           <p class="mt-1 text-xs leading-5 text-muted" data-rvc-i18n="stepSettingsHint">默认保持原调；跨音域时逐步调节。</p>
 
           <!-- 一键声音模式预设 -->
@@ -330,7 +345,6 @@
           <div class="mt-4">
             <div class="flex items-center justify-between gap-3">
               <label for="rvc-pitch" class="text-sm font-bold" data-rvc-i18n="pitchLabel">音高调节（半音）</label>
-              <span id="rvc-pitch-value" class="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-black text-brand">0</span>
             </div>
             <input id="rvc-pitch" type="range" min="-12" max="12" step="1" value="0" class="rvc-range mt-3 w-full" aria-describedby="rvc-pitch-hint">
             <div class="mt-1 flex justify-between text-xs text-muted" id="rvc-pitch-hint">
@@ -399,8 +413,11 @@
               </div>
             </div>
           </details>
-        </div>
+          </div>
+        </details>
 
+        <details class="studio-fold studio-mix-fold">
+          <summary data-rvc-i18n="mixTitle">人声与伴奏独立混音</summary>
         <section id="rvc-mix-panel" class="rvc-mix-panel mt-7 rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5" aria-labelledby="rvc-mix-title">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -427,8 +444,9 @@
             <p id="rvc-mix-status" class="text-xs leading-5 text-muted" role="status" aria-live="polite" data-rvc-i18n="mixInitial">调整后点击更新混音，预听与下载会同步更新。短期分轨最多保留约 2 小时。</p>
           </div>
         </section>
+        </details>
 
-        <div class="mt-7 border-t border-line pt-6">
+        <div class="studio-convert mt-7 border-t border-line pt-6">
           <p id="rvc-service-status" class="break-words rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" role="status" aria-live="polite" data-rvc-i18n="checkingService">正在就绪变声引擎；此检查不会上传音频。</p>
           <button id="rvc-song-local-fallback" type="button" class="mt-3 rounded-lg border border-brand px-4 py-3 text-sm text-brand" data-rvc-i18n="localDirectConvert">转为本地直接变声（不分离伴奏）</button>
           <div id="rvc-progress-bar-wrap" class="mt-3 hidden">
@@ -441,6 +459,8 @@
       </section>
 
       <aside class="rvc-inspector space-y-6">
+        <details class="studio-fold studio-help">
+          <summary data-studio-label="help">指南与使用提示</summary>
         <section class="rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-6" aria-labelledby="rvc-howto-title">
           <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">HOW IT WORKS</p>
           <h2 id="rvc-howto-title" class="mt-2 text-xl font-black" data-rvc-i18n="howtoTitle">三步上手</h2>
@@ -461,6 +481,7 @@
           </ul>
         </section>
 
+        </details>
         <section id="rvc-result" class="rounded-xl border border-teal-100 bg-teal-50/70 p-4 shadow-sm sm:p-6" hidden aria-labelledby="rvc-result-title">
           <p class="text-xs font-bold uppercase tracking-[0.14em] text-brand">OUTPUT / AUDIO</p>
           <h2 id="rvc-result-title" class="mt-2 text-xl font-black" data-rvc-i18n="resultTitle">变声结果</h2>

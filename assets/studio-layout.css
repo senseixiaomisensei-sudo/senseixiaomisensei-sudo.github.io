@@ -1,0 +1,123 @@
+/* Compact workspace shared by both themes. All secondary content remains accessible. */
+html[data-ui] body[data-page="rvc"] .rvc-shell { max-width: 1280px; padding-top: 26px; }
+html[data-ui] body[data-page="rvc"] .rvc-page-heading { padding: 0 0 18px; }
+html[data-ui] body[data-page="rvc"] .rvc-page-heading h1 { font-size: clamp(28px, 3vw, 38px); line-height: 1.18; }
+html[data-ui] body[data-page="rvc"] .rvc-page-heading > p:last-child { margin-top: 8px; font-size: 13px; }
+html[data-ui] body[data-page="rvc"] .rvc-notice { margin: 10px 0 0; padding: 0; border: 0; background: transparent; box-shadow: none; border-radius: 0; }
+.rvc-notice > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #52677b; }
+.rvc-notice > summary::after { content: '+'; margin-left: auto; }
+.rvc-notice[open] > summary::after { content: '−'; }
+.rvc-notice > div { padding: 0 0 12px; }
+html[data-ui] body[data-page="rvc"] .rvc-workspace { display: block; margin-top: 14px; }
+html[data-ui] body[data-page="rvc"] .rvc-workflow { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.25fr); column-gap: 28px; padding: 24px; }
+html[data-ui] body[data-page="rvc"] .rvc-workflow > .studio-workflow-title { grid-column: 1 / -1; padding: 0 0 14px; align-items: center; }
+.studio-workflow-title h2 { margin-top: 0; }
+.studio-workflow-title > div > p { display: none; }
+html[data-ui] body[data-page="rvc"] .rvc-workflow > .rvc-step-model { grid-column: 1; grid-row: 3 / span 4; margin: 18px 0 0; padding: 0 24px 0 0; border: 0; border-right: 1px solid #a5b6c433; }
+html[data-ui] body[data-page="rvc"] .rvc-workflow > .rvc-step-input { grid-column: 2; grid-row: 3; margin: 18px 0 0; padding: 0; border: 0; }
+html[data-ui] body[data-page="rvc"] .rvc-workflow > .rvc-step-tune { grid-column: 2; grid-row: 4; margin: 14px 0 0; padding: 0; }
+.studio-tune-body { padding: 0 12px 12px; }
+.rvc-step-tune > summary > span:first-child { font-size: 12px; }
+#rvc-pitch-value { margin-left: auto; font-variant-numeric: tabular-nums; }
+.rvc-step-tune > summary::after { margin-left: 0; }
+html[data-ui] body[data-page="rvc"] .rvc-workflow > .studio-convert { grid-column: 2; grid-row: 6; margin-top: 16px; padding: 16px 0 0; }
+html[data-ui] body[data-page="rvc"] .rvc-workflow > .studio-engine { grid-column: 1 / -1; grid-row: 2; margin: 12px 0 0; padding: 0; border: 1px solid #a5b6c433; background: transparent; box-shadow: none; }
+.studio-engine > summary { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; cursor: pointer; font-size: 13px; }
+.studio-engine > summary::after { content: '+'; margin-left: auto; }
+.studio-engine[open] > summary::after { content: '−'; }
+.studio-engine > summary h3 { margin: 0; font-size: 13px; }
+.studio-engine > summary p { display: none; }
+.studio-engine-body { padding: 0 12px 12px; }
+html[data-ui] body[data-page="rvc"] :is(#rvc-mode-official, #rvc-mode-local) { min-height: 68px; padding: 12px; }
+html[data-ui] body[data-page="rvc"] .rvc-step-model > div:first-child { flex-direction: column; align-items: stretch; }
+html[data-ui] body[data-page="rvc"] #rvc-model-search { width: 100%; min-height: 44px; font-size: 16px; }
+html[data-ui] body[data-page="rvc"] .studio-collections { margin-top: 10px; padding: 0; border: 0; background: none; box-shadow: none; }
+html[data-ui] body[data-page="rvc"] #rvc-create-collection { padding-inline: 9px; font-size: 11px; }
+html[data-ui] body[data-page="rvc"] #rvc-collection-nav button { padding-inline: 10px; font-size: 11px; }
+html[data-ui] body[data-page="rvc"] #rvc-school-browser { margin-top: 10px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+#rvc-school-browser > label { font-size: 12px; }
+html[data-ui] body[data-page="rvc"] #rvc-school-filter { margin-top: 5px; min-height: 44px; font-size: 16px; }
+html[data-ui] body[data-page="rvc"] #rvc-model-gallery:not(.is-character-stack) { max-height: 330px; padding: 2px; margin: 12px 0 0; scrollbar-width: thin; overscroll-behavior-y: contain; }
+#rvc-model-gallery:not(.is-character-stack) > [role="group"] { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+html[data-ui] body[data-page="rvc"] #rvc-model-gallery:not(.is-character-stack) [data-model-id] { min-height: 64px; padding: 10px 12px; border-radius: 12px; }
+#rvc-model-gallery:not(.is-character-stack) p.truncate { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+/* Descriptions are available on selection/focus; stacks keep every card's text. */
+html[data-ui] body[data-page="rvc"] #rvc-model-gallery [data-model-id][aria-selected="true"] > p,
+html[data-ui] body[data-page="rvc"] #rvc-model-gallery [data-model-id]:focus-visible > p,
+html[data-ui] body[data-page="rvc"] #rvc-model-gallery.is-character-stack [data-model-id] > p { display: block; -webkit-line-clamp: unset; overflow: visible; }
+html[data-ui] body[data-page="rvc"] :is(#rvc-source-upload, #rvc-source-record, #rvc-source-tts) { min-height: 58px; padding: 10px; border-radius: 12px; }
+html[data-ui] body[data-page="rvc"] :is(#rvc-source-upload, #rvc-source-record, #rvc-source-tts) > span:last-child { font-size: 10px; margin-top: 2px; line-height: 1.4; }
+html[data-ui] body[data-page="rvc"] .studio-sources { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.studio-sources > button > span:first-child { gap: 7px; font-size: 12px; }
+html[data-ui] body[data-page="rvc"] .studio-content-type { margin-top: 12px; padding: 12px; border-radius: 14px; }
+.studio-content-type > [role="radiogroup"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.studio-content-type [role="radio"] { min-width: 0; padding: 10px; }
+.studio-content-notes { border: 0; margin-top: 4px; }
+.studio-content-notes > summary { padding: 4px 0; min-height: 36px; font-size: 11px; }
+html[data-ui] body[data-page="rvc"] #rvc-upload-wrap { margin-top: 12px; padding: 12px; border-radius: 14px; }
+#rvc-audio-status { font-size: 12px; margin-top: 6px; }
+#rvc-audio-file { font-size: 12px; }
+#rvc-chorus { padding: 8px 0 0; margin-top: 10px; border: 0; border-top: 1px solid var(--chorus-line); background: transparent; box-shadow: none; border-radius: 0; }
+#rvc-chorus [data-tracks] { grid-template-columns: minmax(0, 1fr); }
+#rvc-chorus .chorus-track { padding: 12px; }
+#rvc-chorus .chorus-role-trigger { min-height: 56px; }
+.studio-fold { min-width: 0; border: 1px solid #a5b6c433; border-radius: 12px; }
+.studio-fold > summary { display: flex; align-items: center; min-height: 44px; padding: 10px 12px; cursor: pointer; font-size: 12px; font-weight: 650; gap: 10px; }
+.studio-fold > summary::after { content: '+'; margin-left: auto; font-size: 17px; }
+.studio-fold[open] > summary::after { content: '−'; }
+.studio-fold > summary::-webkit-details-marker, .studio-engine > summary::-webkit-details-marker, .rvc-notice > summary::-webkit-details-marker { display: none; }
+.studio-fold > summary:focus-visible, .studio-engine > summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.studio-model-tools { margin-top: 12px; }
+.studio-model-tools > div, .studio-model-tools > details { margin: 0; border: 0; background: none; }
+.studio-roster { margin-top: 6px; border: 0; }
+.studio-roster > summary { padding: 4px 0; font-size: 11px; }
+.studio-roster #rvc-school-roster { margin-top: 0; padding-bottom: 10px; }
+.studio-mix-fold { grid-column: 2; grid-row: 5; margin-top: 14px; }
+html[data-ui] body[data-page="rvc"] .studio-mix-fold #rvc-mix-panel { margin: 0; padding: 4px 12px 12px; border: 0; box-shadow: none; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.studio-mix-fold #rvc-mix-panel > div:first-child p:first-child, .studio-mix-fold #rvc-mix-title { display: none; }
+html[data-ui] body[data-page="rvc"] .rvc-mix-track { padding: 12px; }
+html[data-ui] body[data-page="rvc"] #rvc-advanced { margin-top: 12px; padding: 0 12px; border-radius: 12px; }
+#rvc-advanced > summary { min-height: 44px; display: flex; align-items: center; font-size: 12px; }
+#rvc-advanced > div { padding-bottom: 12px; }
+html[data-ui] body[data-page="rvc"] #rvc-service-status { font-size: 12px; padding: 10px 12px; border-radius: 12px; }
+html[data-ui] body[data-page="rvc"] #rvc-convert { width: 100%; min-height: 50px; padding-block: 12px; font-size: 15px; border-radius: 12px; }
+html[data-ui] body[data-page="rvc"] .rvc-inspector { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px; position: static; margin-top: 14px; }
+.rvc-inspector > * { margin: 0 !important; min-width: 0; }
+.rvc-inspector > .studio-fold { flex: 1 1 240px; }
+.rvc-inspector .studio-help > section { padding: 16px; background: transparent; border: 0; box-shadow: none; }
+html[data-ui] body[data-page="rvc"] .studio-help [aria-labelledby="rvc-howto-title"] { display: block; }
+.studio-help :is(h2,ol,ul) { margin-top: 12px; }
+html[data-ui] body[data-page="rvc"] #rvc-result { width: 100%; flex: 1 1 100%; padding: 20px; order: -1; }
+.studio-optional > .studio-monitor { width: 100%; max-width: 100%; }
+.studio-optional > .classic-console { padding: 18px; }
+.studio-optional > .studio-monitor .studio-shortcuts { display: none; }
+.classic-character-toolbar { margin-top: 12px; }
+
+/* The first theme follows the source site's paper, ink outlines and blue accents. */
+html[data-ui="classic"] body[data-page="rvc"] .rvc-page-heading h1 { display: inline; background: linear-gradient(transparent 76%, #ade8ff 76%); }
+html[data-ui="classic"] body[data-page="rvc"] .rvc-workflow { border: 2px solid var(--classic-ink); border-radius: 20px; background: #fff; box-shadow: 5px 6px 0 #17293c12; }
+html[data-ui="classic"] body[data-page="rvc"] :is(.studio-engine, .studio-fold) { background: #f6f9fc; border-color: #cfdeea; color: var(--classic-ink); }
+html[data-ui="classic"] body[data-page="rvc"] #rvc-model-gallery:not(.is-character-stack) [data-model-id] { background: #fff; border-color: #cfdeea; box-shadow: 2px 3px 0 #17293c08; }
+html[data-ui="classic"] body[data-page="rvc"] #rvc-model-gallery [data-model-id][aria-selected="true"] { border-color: var(--classic-blue); background: #e4f5ff; }
+html[data-ui="classic"] body[data-page="rvc"] #rvc-convert { background: var(--classic-ink); box-shadow: 3px 3px 0 #67cef2; }
+html[data-ui="classic"] body[data-page="rvc"] #rvc-chorus { background: transparent; }
+html[data-ui="classic"] body[data-page="rvc"] #rvc-chorus .chorus-track { background: #fff; border: 1px solid #cfdeea; box-shadow: 3px 4px 0 #17293c0c; }
+/* The second theme keeps its existing green glass palette and optical edges. */
+html[data-ui="glass"] body[data-page="rvc"] :is(.studio-fold,.studio-engine) { background: #ffffff38; border-color: #ffffffcb; box-shadow: inset 0 1px #ffffffd9; }
+html[data-ui="glass"] body[data-page="rvc"] .rvc-inspector .studio-fold { border-radius: 16px; }
+@media (max-width: 800px) {
+  html[data-ui] body[data-page="rvc"] .rvc-workflow { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  html[data-ui] body[data-page="rvc"] .rvc-workflow > :is(.rvc-step-model,.rvc-step-input,.rvc-step-tune,.studio-convert,.studio-engine,.studio-mix-fold) { grid-column: 1; grid-row: auto; }
+  html[data-ui] body[data-page="rvc"] .rvc-workflow > .rvc-step-model { border-right: 0; padding-right: 0; }
+  html[data-ui] body[data-page="rvc"] .rvc-workflow > .rvc-step-input { border-top: 1px solid #a5b6c433; padding-top: 18px; }
+  html[data-ui] body[data-page="rvc"] #rvc-model-gallery:not(.is-character-stack) { max-height: 240px; }
+  html[data-ui] body[data-page="rvc"] .rvc-shell { padding-top: 20px; }
+  .rvc-inspector > .studio-fold { flex-basis: 100%; }
+  html[data-ui] body[data-page="rvc"] :is(#rvc-model-search,#rvc-school-filter,#rvc-tts-text) { font-size: 16px; }
+}
+@media (max-width: 380px) {
+  .studio-sources > button > span:first-child { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .studio-content-type > [role="radiogroup"] { grid-template-columns: minmax(0, 1fr); }
+  html[data-ui] body[data-page="rvc"] #rvc-create-collection { padding-inline: 7px; }
+}
+@media (prefers-reduced-motion: reduce) { .studio-fold, .studio-engine { scroll-behavior: auto; } }

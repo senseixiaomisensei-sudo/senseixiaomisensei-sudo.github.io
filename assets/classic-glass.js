@@ -165,6 +165,10 @@ function initDeck() {
     if (isClassic() && !document.hidden && !frame) { deck.dataset.animating='true';previous = performance.now(); frame = requestAnimationFrame(paint); }
     if (!isClassic() || document.hidden) { cancelAnimationFrame(frame); frame = 0; delete deck.dataset.animating; }
   }
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => {
+    const next = deck.clientWidth;
+    if (next > 0 && next !== width) { width = next; wake(); }
+  }).observe(deck);
   function select(next) {
     index = (next + cards.length) % cards.length;
     access();
@@ -230,6 +234,7 @@ function initDeck() {
   section.querySelectorAll('[data-jump]').forEach(button => button.addEventListener('click', () => {
     const target = document.getElementById(button.dataset.jump);
     if (!target) return;
+    window.PostPrepStudio?.revealTarget(target);
     target.scrollIntoView({ behavior: reduced.matches ? 'instant' : 'smooth', block: 'center' });
     if (!target.matches('input,button')) target.tabIndex = -1;
     target.focus({ preventScroll: true });

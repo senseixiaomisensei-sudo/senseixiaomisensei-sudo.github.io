@@ -30,9 +30,13 @@ html[data-ui="glass"] :is(input:not([type="range"]):not([type="checkbox"]), text
 html[data-ui="glass"] :is(button, a)[class*="bg-brand"] { background-color: #006d5b; color: #fff; box-shadow: inset 0 1px #ffffff66, 0 5px 14px #006d5b25; }
 html[data-ui="glass"] :is(button, a)[class*="bg-brand"]:hover { background-color: #005849; }
 html[data-ui="glass"] #site-footer > footer { background: #ffffff70; border-color: #ffffffa8; backdrop-filter: blur(14px); }
-html[data-ui="glass"] [data-page="home"] main > section:first-child > div { padding-block: 40px; }
-html[data-ui="glass"] [data-page="home"] h1 { font-size: 40px; line-height: 1.2; }
+html[data-ui="glass"] [data-page="home"] main > section:first-child > div { padding-block: 32px; gap: 28px; }
+html[data-ui="glass"] [data-page="home"] h1 { font-size: clamp(30px,3.5vw,40px); line-height: 1.2; }
 html[data-ui="glass"] [data-page="home"] figure { border-radius: 8px; }
+html[data-ui="glass"] [data-page="home"] figure img { height: clamp(190px,26vw,280px); }
+html[data-ui="glass"] [data-page="home"] main article { min-height: 0; padding: 20px; }
+html[data-ui="glass"] [data-page="home"] main article h3 { margin-top: 16px; }
+html[data-ui="glass"] [data-page="home"] main article a { margin-top: 18px; }
 html[data-ui="glass"] [data-page="rvc"] main { max-width: 1440px; padding-top: 28px; }
 html[data-ui="glass"] [data-page="rvc"] main > header { max-width: none; padding-bottom: 22px; border-bottom: 1px solid var(--glass-line); }
 html[data-ui="glass"] [data-page="rvc"] main > header h1 { font-size: 36px; font-weight: 750; }

@@ -20,7 +20,7 @@
     toggle.innerHTML = '<i class="fa-solid fa-layer-group" aria-hidden="true"></i>';
     function labelToggle() {
       const glass = root.dataset.ui === "glass";
-      const label = glass ? text("切换至经典风格", "Switch to Classic") : text("切换至液态玻璃", "Switch to Liquid Glass");
+      const label = glass ? text("切换至纸面风格", "Switch to Paper") : text("切换至液态玻璃", "Switch to Liquid Glass");
       toggle.setAttribute("aria-label", label);
       toggle.setAttribute("aria-pressed", String(glass));
       toggle.dataset.tooltip = label;
@@ -116,6 +116,7 @@
         dock.style.setProperty("--step", String(activeStep));
         dock.querySelectorAll("button").forEach(item => item.removeAttribute("aria-current"));
         dock.querySelector(`button[data-step="${activeStep}"]`)?.setAttribute("aria-current", "step");
+        window.PostPrepStudio?.revealTarget(target);
         target.scrollIntoView({ behavior: reduced.matches ? "instant" : "smooth", block: "center" });
         if (!target.matches("input")) target.tabIndex = -1;
         target.focus({ preventScroll: true });
@@ -163,7 +164,8 @@
       steps.forEach(([id], index) => {
         if (id === "rvc-result" && document.getElementById(id)?.hidden) return;
         const target = document.getElementById(id);
-        if (target?.getBoundingClientRect().top <= threshold) active = index;
+        const anchor = window.PostPrepStudio?.visibleAnchor(target) || target;
+        if (anchor?.getBoundingClientRect().top <= threshold) active = index;
       });
       dock.style.setProperty("--step", String(active));
       dock.querySelectorAll("button").forEach((button, index) => {
@@ -247,6 +249,7 @@
       button.addEventListener("click", () => {
         const target = document.getElementById(button.dataset.studioTarget);
         if (!target) return;
+        window.PostPrepStudio?.revealTarget(target);
         target.scrollIntoView({ behavior: reduced.matches ? "instant" : "smooth", block: "center" });
         if (!target.matches("button,input")) target.tabIndex = -1;
         target.focus({ preventScroll: true });
