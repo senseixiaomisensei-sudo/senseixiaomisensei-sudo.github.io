@@ -15,6 +15,6 @@ test('English cloud progress keeps resumable polling for songs and long jobs',as
     const poll=Function(...Object.keys(deps),`${source.slice(start,end)};return pollCloudOutput;`)(...Object.values(deps));
     const result=await poll('https://example.invalid/output',30000,longJob);
     assert.equal(result.status,200);assert.equal(calls,2);
-    assert.match(messages[0],/Separating/);assert.doesNotMatch(messages[0],/[\p{Han}]/u);
+    assert.match(messages[0],/Separating/);assert.doesNotMatch(messages[0],/\p{Script=Han}/u);
   }
 });
