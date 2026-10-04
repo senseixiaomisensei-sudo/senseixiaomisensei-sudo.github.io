@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import vm from 'node:vm';
 import test from 'node:test';
 import { Spring, rangeFraction } from '../assets/classic-glass/motion.js';
+import { clamp, dragAxis, expansionThreshold, deckExtent } from '../assets/classic-glass/interaction-core.js';
 
 const file = name => readFile(new URL(`../${name}`, import.meta.url), 'utf8');
 test('stack spring converges at different frame rates and respects reduced motion', () => {
@@ -116,4 +117,61 @@ test('slider feedback follows actual values without changing inference state; th
   assert.ok(frames.size>0);
   root.dataset.ui='glass'; observers.forEach(fn=>fn());
   assert.equal(frames.size,0); assert.equal(wrap.classes.has('is-adjusting'),false); assert.equal(input.value,'-6');
+});
+
+async function deckFixture(){
+  class DeckElement extends Element{
+    constructor(tag){super(tag);this.dataset={};this.inert=false;this.clientWidth=242;}
+    closest(selector){if(selector==='.classic-pane'&&this.tag==='article')return this;
+      if(selector==='button'&&this.tag==='button')return this;
+      if(selector==='a,input,select')return null;
+      return this.parent?.closest(selector)||null;}
+    setPointerCapture(id){this.captured=id;}
+    releasePointerCapture(){this.captured=null;}
+    set innerHTML(value){
+      const deck=new DeckElement('div'),cards=Array.from({length:3},()=>new DeckElement('article'));
+      for(const card of cards){card.parts={h3:new DeckElement('h3'),p:new DeckElement('p'),button:new DeckElement('button')};card.parts.button.dataset.jump='rvc-pitch';card.append(...Object.values(card.parts));}
+      deck.append(...cards);
+      const controls=Array.from({length:4},()=>new DeckElement('button'));
+      this.parts={'.classic-deck':deck,'.classic-console-top span':new DeckElement('span')};
+      this.lists={'.classic-pane':cards,'.classic-deck-controls button':controls,'[data-jump]':cards.map(card=>card.parts.button)};
+    }
+    querySelectorAll(key){return this.lists?.[key]||[];}
+    prepend(item){this.append(item);}
+  }
+  const aside=new DeckElement('aside'),root={dataset:{ui:'classic'},lang:'zh-CN'},frames=new Map(),events={};let next=0,time=0;
+  const document={documentElement:root,readyState:'loading',hidden:false,querySelector:()=>aside,getElementById:()=>null,
+    createElement:tag=>new DeckElement(tag),addEventListener:(name,fn)=>{events[name]=fn;}};
+  const context=vm.createContext({document,Spring,rangeFraction,clamp,dragAxis,expansionThreshold,deckExtent,performance:{now:()=>time},queueMicrotask,
+    matchMedia:()=>({matches:false}),MutationObserver:class{observe(){}},requestAnimationFrame:fn=>(frames.set(++next,fn),next),cancelAnimationFrame:id=>frames.delete(id)});
+  vm.runInContext((await file('assets/classic-glass.js')).replace(/^import[^\n]+\n/gm,''),context);vm.runInContext('initDeck()',context);
+  const section=aside.children[0],deck=section.querySelector('.classic-deck'),cards=section.querySelectorAll('.classic-pane');
+  const settle=()=>{for(let i=0;i<180&&frames.size;i++){time+=16;const batch=[...frames.values()];frames.clear();batch.forEach(fn=>fn(time));}};settle();
+  const fire=(name,id,x,y,target=cards.find(card=>!card.inert))=>deck.fire(name,{target,button:0,pointerId:id,clientX:x,clientY:y,preventDefault(){},stopImmediatePropagation(){}});
+  return {deck,cards,frames,fire,settle,document,events};
+}
+
+test('workspace deck follows the pointer directly, short-swipes, spreads by direction and retracts',async()=>{
+  const ui=await deckFixture(),card=ui.cards[0];
+  await ui.fire('pointerdown',1,100,100);await ui.fire('pointermove',1,124,100);
+  assert.match(card.style.transform,/translate3d\(24px,0px/);assert.notEqual(ui.deck.dataset.stackLayout,'horizontal');
+  await ui.fire('pointerup',1,124,100);ui.settle();assert.equal(ui.cards.find(c=>!c.inert),ui.cards[2]);
+  await ui.fire('pointerdown',2,100,100);await ui.fire('pointermove',2,320,100);
+  assert.equal(ui.deck.dataset.stackLayout,'horizontal');assert.equal(ui.cards.filter(c=>!c.inert).length,3);
+  await ui.fire('pointermove',2,100,350);assert.equal(ui.deck.dataset.stackLayout,'vertical');
+  await ui.fire('pointermove',2,100,125);assert.equal(ui.deck.dataset.stackLayout,'stack');
+  await ui.fire('pointerup',2,100,125);ui.settle();assert.equal(ui.frames.size,0);
+  assert.equal(ui.deck.dataset.animating,undefined);
+});
+
+test('workspace link surface can drag; cancellation releases the pointer and returns to the original layout',async()=>{
+  const ui=await deckFixture(),button=ui.cards[0].querySelector('button');
+  await ui.fire('pointerdown',1,100,100,button);assert.equal(button.captured,1);
+  await ui.fire('pointermove',1,100,330,button);assert.equal(ui.deck.dataset.stackLayout,'vertical');
+  await ui.fire('pointercancel',1,100,330,button);ui.settle();
+  assert.equal(button.captured,null);assert.equal(ui.deck.dataset.stackLayout,'stack');assert.equal(ui.deck.dataset.dragging,undefined);
+  await ui.fire('pointerdown',2,100,100);await ui.fire('pointermove',2,-130,100);await ui.fire('pointerup',2,-130,100);ui.settle();
+  assert.equal(ui.deck.dataset.stackLayout,'horizontal');
+  await ui.fire('pointerdown',3,100,100);await ui.fire('pointermove',3,330,100);await ui.fire('pointermove',3,105,100);await ui.fire('pointerup',3,105,100);ui.settle();
+  assert.equal(ui.deck.dataset.stackLayout,'stack');assert.equal(ui.frames.size,0);
 });

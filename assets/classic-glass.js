@@ -1,5 +1,6 @@
 import { Spring, rangeFraction } from './classic-glass/motion.js';
-import { initCharacterModes } from './classic-glass/characters.js?v=20261004-fluid-2';
+import { initCharacterModes } from './classic-glass/characters.js?v=20261004-fluid-3';
+import { clamp, dragAxis, expansionThreshold, deckExtent } from './classic-glass/interaction-core.js?v=20261003-fluid-1';
 
 // Presentation only: no writes to inference parameters, uploads or audio processing.
 const root = document.documentElement;
@@ -43,6 +44,7 @@ function initReflections() {
   function clear() { cancelAnimationFrame(frame); frame = 0; target = null; }
   document.addEventListener('pointermove', event => {
     if (!isClassic() || reduced.matches || event.pointerType === 'touch') return;
+    if(event.target.closest?.('[data-dragging="true"]')){clear();return;}
     const next = event.target.closest?.('#site-header > header,.classic-pane,[data-model-id]');
     if (!next) { clear(); return; }
     const box = next.getBoundingClientRect();
@@ -125,59 +127,96 @@ function initDeck() {
   const cards = [...section.querySelectorAll('.classic-pane')];
   const controls = [...section.querySelectorAll('.classic-deck-controls button')];
   const springs = cards.map((_, i) => new Spring(i));
-  const pull = new Spring(0);
-  let index = 0, frame = 0, previous = 0, grab = null;
+  const positions=cards.map((_,i)=>({x:new Spring(0),y:new Spring(i*20)}));
+  const spread=new Spring(0),vertical=new Spring(0);
+  let index = 0, frame = 0, previous = 0, grab = null,layout='stack',suppressClick=false,paintedHeight='';
+  let width=deck.clientWidth||242;
+  function access(){cards.forEach((card,i)=>{
+    const rear=layout==='stack'&&i!==index;card.inert=rear;card.setAttribute('aria-hidden',String(rear));
+    controls[i].setAttribute('aria-pressed',String(i===index));
+  });}
+  function paintCard(i){
+    const state=positions[i],rank=Math.max(0,springs[i].value),held=grab?.dragged&&grab.card===cards[i];
+    const x=held?grab.anchorX+grab.dx:state.x.value,y=held?grab.anchorY+grab.dy:state.y.value;
+    cards[i].style.transform=`translate3d(${x}px,${y}px,0)`;
+    cards[i].style.opacity=String(held?1:1-rank*.085);
+    cards[i].style.zIndex=held?'100':String(Math.round((3-rank)*10));
+    cards[i].style.setProperty('--content-opacity',String(held?1:Math.max(0,1-rank*2)));
+    return{id:i,x,y,w:width,h:252};
+  }
   function paint(time) {
     frame = 0;
     const dt = (time - previous) / 1000 || 1 / 60; previous = time;
-    let moving = pull.step(dt, reduced.matches);
+    let moving = spread.step(dt,reduced.matches)|vertical.step(dt,reduced.matches);
+    const q=clamp(spread.value,0,1),v=clamp(vertical.value,0,1),bounds=[];
     springs.forEach((spring, i) => {
+      const rank=(i-index+cards.length)%cards.length,state=positions[i];
+      spring.target=rank*(1-q);
+      state.x.target=rank*(width+16)*q*(1-v);state.y.target=rank*20*(1-q)+rank*268*q*v;
       moving = spring.step(dt, reduced.matches) || moving;
-      const rank = Math.max(0, spring.value);
-      cards[i].style.transform = `translate3d(${i === index ? pull.value : 0}px,${rank * 20}px,0) scale(${1 - rank * .055})`;
-      cards[i].style.filter = rank < .001 ? 'none' : `blur(${rank * 2.8}px)`;
-      cards[i].style.opacity = String(1 - rank * .085);
-      cards[i].style.zIndex = String(Math.round((3 - rank) * 10));
-      cards[i].style.setProperty('--content-opacity', String(Math.max(0, 1 - rank * 2)));
+      moving=state.x.step(dt,reduced.matches)||moving;moving=state.y.step(dt,reduced.matches)||moving;
+      bounds.push(paintCard(i));
     });
+    const h=`${Math.ceil(deckExtent(bounds,{targetHeight:layout==='vertical'?788:292,gap:16,heldId:grab?.dragged?cards.indexOf(grab.card):null}))}px`;
+    if(h!==paintedHeight){deck.style.height=h;paintedHeight=h;}
     if (moving && isClassic() && !document.hidden) frame = requestAnimationFrame(paint);
+    else if(!grab?.dragged)delete deck.dataset.animating;
   }
   function wake() {
-    if (isClassic() && !document.hidden && !frame) { previous = performance.now(); frame = requestAnimationFrame(paint); }
-    if (!isClassic() || document.hidden) { cancelAnimationFrame(frame); frame = 0; }
+    if (isClassic() && !document.hidden && !frame) { deck.dataset.animating='true';previous = performance.now(); frame = requestAnimationFrame(paint); }
+    if (!isClassic() || document.hidden) { cancelAnimationFrame(frame); frame = 0; delete deck.dataset.animating; }
   }
   function select(next) {
-    pull.target = 0;
     index = (next + cards.length) % cards.length;
-    cards.forEach((card, i) => {
-      springs[i].target = (i - index + cards.length) % cards.length;
-      card.inert = i !== index; card.setAttribute('aria-hidden', String(i !== index));
-      controls[i].setAttribute('aria-pressed', String(i === index));
-    });
+    access();
     wake();
   }
+  function setLayout(value){layout=value;deck.dataset.stackLayout=value;spread.target=value==='stack'?0:1;
+    vertical.target=value==='vertical'?1:0;access();wake();}
   controls.forEach((control, i) => control.addEventListener('click', () => select(i < 3 ? i : index + 1)));
   deck.addEventListener('keydown', event => {
-    if (event.target !== deck || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    if (event.target !== deck || !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Escape'].includes(event.key)) return;
     event.preventDefault();
-    select(event.key === 'Home' ? 0 : event.key === 'End' ? 2 : index + (event.key === 'ArrowRight' ? 1 : -1));
+    if(event.key==='Escape'){setLayout('stack');return;}
+    select(event.key === 'Home' ? 0 : event.key === 'End' ? 2 : index + (['ArrowRight','ArrowDown'].includes(event.key) ? 1 : -1));
   });
   deck.addEventListener('pointerdown', event => {
-    if (event.button !== 0 || event.target.closest('button,a,input')) return;
-    grab = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    deck.setPointerCapture(event.pointerId);
+    if (!isClassic()||grab||event.isPrimary===false||event.button !== 0 || event.target.closest('a,input,select')) return;
+    const card=event.target.closest('.classic-pane')||cards[index],i=cards.indexOf(card);
+    if(i<0||card.inert)return;
+    width=deck.clientWidth||242;index=i;suppressClick=false;
+    grab = { id:event.pointerId,card,x:event.clientX,y:event.clientY,dx:0,dy:0,
+      anchorX:positions[i].x.value,anchorY:positions[i].y.value,startLayout:layout,
+      axis:layout==='vertical'?'vertical':'horizontal',threshold:expansionThreshold(width,252,{ratio:.8,min:160,max:220}),dragged:false,expanded:false };
+    grab.capture=event.target.closest('button')||card;
+    try{grab.capture.setPointerCapture(event.pointerId);}catch{}
   });
   deck.addEventListener('pointermove', event => {
     if (!grab || grab.id !== event.pointerId) return;
-    const dx = event.clientX - grab.x, dy = event.clientY - grab.y;
-    if (Math.abs(dx) > Math.abs(dy)) { pull.target = Math.max(-60, Math.min(60, dx * .35)); wake(); }
+    grab.dx=event.clientX-grab.x;grab.dy=event.clientY-grab.y;
+    if(!grab.dragged&&Math.hypot(grab.dx,grab.dy)<=3)return;
+    grab.dragged=true;deck.dataset.dragging='true';event.preventDefault?.();
+    grab.axis=dragAxis(grab.dx,grab.dy,grab.axis);
+    const distance=Math.abs(grab.axis==='vertical'?grab.dy:grab.dx);
+    if(distance>=grab.threshold){grab.expanded=true;if(layout!==grab.axis)setLayout(grab.axis);}
+    else if(grab.expanded&&distance<grab.threshold*.44){grab.expanded=false;setLayout('stack');}
+    paintCard(cards.indexOf(grab.card));wake();
   });
-  deck.addEventListener('pointerup', event => {
+  function release(event,cancelled=false){
     if (!grab || grab.id !== event.pointerId) return;
-    const dx = event.clientX - grab.x, dy = event.clientY - grab.y; grab = null;
-    select(index + (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 1 : -1) : 0));
-  });
-  ['pointercancel','lostpointercapture'].forEach(name => deck.addEventListener(name, () => { grab = null; pull.target = 0; wake(); }));
+    const held=grab,state=positions[cards.indexOf(held.card)];grab=null;delete deck.dataset.dragging;
+    if(held.dragged){state.x.value=held.anchorX+held.dx;state.y.value=held.anchorY+held.dy;state.x.velocity=state.y.velocity=0;}
+    try{held.capture.releasePointerCapture(held.id);}catch{}
+    suppressClick=held.dragged&&!cancelled;
+    if(cancelled){setLayout(held.startLayout);return;}
+    if(!held.dragged)return;
+    if(held.expanded){setLayout(layout);return;}
+    setLayout(layout);
+    if(held.startLayout==='stack'){const delta=held.axis==='vertical'?held.dy:held.dx;if(Math.abs(delta)>=24)select(index+(delta<0?1:-1));}
+  }
+  deck.addEventListener('pointerup',event=>release(event));
+  ['pointercancel','lostpointercapture'].forEach(name => deck.addEventListener(name,event=>release(event,true)));
+  deck.addEventListener('click',event=>{if(suppressClick){event.preventDefault();event.stopImmediatePropagation();suppressClick=false;}},true);
   section.querySelectorAll('[data-jump]').forEach(button => button.addEventListener('click', () => {
     const target = document.getElementById(button.dataset.jump);
     if (!target) return;
@@ -189,7 +228,7 @@ function initDeck() {
     section.hidden = !isClassic();
     section.setAttribute('aria-label', text('叠层声音工作台','Stacked voice workspace'));
     section.querySelector('.classic-console-top span').textContent = text('声音工作台','Voice workspace');
-    deck.setAttribute('aria-label', text('左右滑动或使用方向键切换卡片','Swipe or use arrow keys to switch cards'));
+    deck.setAttribute('aria-label', text('短滑切换卡片，大幅横拖或竖拖摊开，回拉收拢','Short swipe to switch, long horizontal or vertical pull to spread, pull back to stack'));
     const selected = document.querySelector('[data-model-id][aria-selected="true"]');
     const name = selected?.querySelector('p.font-black')?.textContent || text('选择角色','Choose a voice');
     cards[0].querySelector('h3').textContent = name;
@@ -209,7 +248,7 @@ function initDeck() {
   document.getElementById('rvc-audio-file')?.addEventListener('change', refresh);
   document.getElementById('rvc-pitch')?.addEventListener('input', refresh);
   document.addEventListener('click', () => queueMicrotask(refresh));
-  document.addEventListener('visibilitychange', wake);
+  document.addEventListener('visibilitychange',()=>{if(grab&&document.hidden)release({pointerId:grab.id},true);wake();});
   select(0); refresh();
   return refresh;
 }

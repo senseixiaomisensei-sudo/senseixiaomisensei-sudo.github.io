@@ -60,8 +60,9 @@ html[data-ui="classic"] .classic-only { display: block; }
 .classic-console { padding: 22px; overflow: visible; }
 .classic-console-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 11px; letter-spacing: .1em; color: #5b819c; }
 .classic-console-top i { color: #2686ca; font-size: 15px; }
-.classic-deck { position: relative; height: 252px; margin: 20px 0 44px; touch-action: pan-y; }
-html[data-ui="classic"] .classic-pane { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: flex-start; padding: 22px; border-radius: 26px; isolation: isolate; border: 1px solid #ffffffcf; background: #edf7ff8c; box-shadow: inset 0 2px 2px #fff,inset 0 -1px 2px #638da430,0 8px 25px #49759a20; transform-origin: center; transition: none; }
+.classic-deck { position: relative; height: 292px; margin: 20px 0 24px; touch-action: pan-y; overflow-anchor: none; }
+.classic-deck[data-stack-layout="horizontal"] { overflow-x: auto; }
+html[data-ui="classic"] .classic-pane { position: absolute; left: 0; top: 0; width: 100%; height: 252px; display: flex; flex-direction: column; align-items: flex-start; padding: 22px; border-radius: 26px; isolation: isolate; border: 1px solid #ffffffcf; background: #edf7ff8c; box-shadow: inset 0 2px 2px #fff,inset 0 -1px 2px #638da430,0 8px 25px #49759a20; transform-origin: center; transition: none; touch-action: none; user-select: none; -webkit-user-select: none; }
 .classic-pane::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: rgba(247,252,255,.22); backdrop-filter: blur(8px) saturate(1.03); -webkit-backdrop-filter: blur(8px) saturate(1.03); pointer-events: none; }
 .classic-pane > * { opacity: var(--content-opacity,1); }
 .classic-pane-icon { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #fff; border-radius: 14px; background: #ffffff70; color: #287bb8; }
@@ -88,10 +89,10 @@ html[data-ui="classic"] .classic-character-nav:not([hidden]) { display: flex; fl
 .classic-character-nav button { width: 38px; height: 38px; border: 1px solid #ffffffd1; border-radius: 50%; background: #ffffff66; box-shadow: inset 0 1px #fff,0 3px 8px #3e668618; }
 .classic-character-nav button:disabled { opacity: .35; cursor: default; }
 .classic-character-nav span { min-width: 130px; text-align: center; color: #617b8d; font-size: 12px; font-variant-numeric: tabular-nums; }
-html[data-ui="classic"] :is(#rvc-model-gallery,#rvc-trained-model-gallery).is-character-stack { position: relative; overflow: hidden; max-height: none; height: 246px; padding: 0; touch-action: pan-y; isolation: isolate; overflow-anchor: none; border-radius: 30px; }
+html[data-ui="classic"] :is(#rvc-model-gallery,#rvc-trained-model-gallery).is-character-stack { position: relative; overflow: visible; max-height: none; height: 246px; padding: 0; touch-action: pan-y; isolation: isolate; overflow-anchor: none; border-radius: 30px; }
 html[data-ui="classic"] .is-character-stack[data-stack-layout="horizontal"] { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
 html[data-ui="classic"] .is-character-stack > [role="group"] { position: static; height: auto; display: block; }
-html[data-ui="classic"] .is-character-stack [data-model-id] { position: absolute; left: 0; top: 0; min-height: 184px; height: auto; margin: 0; padding: 22px; border-radius: 28px; background: linear-gradient(135deg,#f7fcffe0,#e8f4ffcf 64%,#f8fcffe3); box-shadow: inset 0 2px 2px #fff,inset 0 -1px 2px #638da433,0 12px 26px #40658025; transform-origin: center center; transition: none; touch-action: none; backdrop-filter: blur(8px) saturate(1.03); -webkit-backdrop-filter: blur(8px) saturate(1.03); }
+html[data-ui="classic"] .is-character-stack [data-model-id] { position: absolute; left: 0; top: 0; min-height: 184px; height: auto; margin: 0; padding: 22px; border-radius: 28px; background: linear-gradient(135deg,#f7fcffe0,#e8f4ffcf 64%,#f8fcffe3); box-shadow: inset 0 2px 2px #fff,inset 0 -1px 2px #638da433,0 12px 26px #40658025; transform-origin: center center; transition: none; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; backdrop-filter: blur(8px) saturate(1.03); -webkit-backdrop-filter: blur(8px) saturate(1.03); }
 html[data-ui="classic"] .is-character-stack [data-model-id] .truncate { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 html[data-ui="classic"] .is-character-stack [data-model-id] > * { opacity: var(--character-content,1); }
 html[data-ui="classic"] .is-character-stack [data-model-id][data-stack-rear="true"] { pointer-events: none; }
@@ -109,6 +110,13 @@ html[data-ui="classic"] .is-character-stack[data-dragging="true"] { cursor: grab
   html[data-ui="classic"] .classic-range-feedback { backdrop-filter: url("#classic-refraction"); }
   html[data-ui="classic"] .is-character-stack [data-model-id] { backdrop-filter: url("#classic-refraction") blur(4px); }
 }
+/* Keep edge reflections; do not repeatedly rasterize overlapping SVG lenses in motion. */
+html[data-ui="classic"] .is-character-stack [data-stack-rear="true"],
+html[data-ui="classic"] .is-character-stack[data-animating="true"] [data-model-id],
+html[data-ui="classic"] .classic-deck[data-animating="true"] .classic-pane::before,
+html[data-ui="classic"] .classic-pane[aria-hidden="true"]::before { backdrop-filter: none; -webkit-backdrop-filter: none; }
+html[data-ui="classic"] :is(.classic-deck,.is-character-stack)[data-dragging="true"] { overflow: visible; }
+html[data-ui="classic"] .is-character-stack [data-stack-held="true"] { will-change: transform; }
 .community-toggle { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 38px; width: 38px; height: 40px; border: 1px solid #cbd5d1; border-radius: 10px; background: #ffffffa6; color: #27647f; font-size: 18px; }
 .community-toggle:hover { background: #fff; }
 .community-dialog { padding: 0; width: min(1320px,calc(100vw - 32px)); max-width: none; height: min(900px,calc(100dvh - 40px)); max-height: none; border: 1px solid #fff; border-radius: 28px; overflow: hidden; background: #f5f9fc; box-shadow: 0 30px 100px #1c456340; color: #24516f; }

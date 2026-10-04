@@ -25,7 +25,7 @@ class Node {
   setPointerCapture() {}
   releasePointerCapture() {}
 }
-function fixture({stored='default', trained=false, brokenStorage=false, reduced=false, Resize}={}) {
+function fixture({stored='default', trained=false, brokenStorage=false, reduced=false, Resize,count=6}={}) {
   const parent=new Node(), gallery=new Node(), extra=trained?new Node():null;
   parent.append(gallery); if(extra) parent.append(extra);
   let selected='id-0', time=0, next=0;
@@ -37,7 +37,7 @@ function fixture({stored='default', trained=false, brokenStorage=false, reduced=
       card.addEventListener('click',()=>{selected=card.dataset.modelId; populate(target,count); observers.forEach(fn=>fn());}); grid.append(card);
     }
   }
-  populate(gallery); if(extra) populate(extra,2);
+  populate(gallery,count); if(extra) populate(extra,2);
   const document={hidden:false,documentElement:{clientHeight:600},getElementById:id=>id==='rvc-model-gallery'?gallery:id==='rvc-trained-model-gallery'?extra:null,createElement:tag=>new Node(tag),addEventListener:(name,fn)=>{events[name]=fn;}};
   const refresh=initCharacterModes({root,document,isClassic:()=>root.dataset.ui==='classic',text:zh=>zh,reduced:{matches:reduced},
     Resize,
@@ -79,18 +79,19 @@ test('filter rerender, trained roles, empty results and second UI restore safely
   ui.gallery.children=[];ui.observers.forEach(fn=>fn());ui.settle();
   assert.equal(ui.nav().hidden,true); assert.equal(ui.cards().length,0);
 });
-test('keyboard and dragging browse without hijacking taps or vertical scrolling',()=>{
+test('keyboard and short horizontal/vertical drags browse without selecting a role',()=>{
   const ui=fixture({stored:'stack'});ui.settle(); let prevented=false;
   ui.gallery.fire('keydown',{key:'End',preventDefault(){prevented=true;}});ui.settle();
   assert.equal(prevented,true);assert.equal(ui.cards().find(c=>!c.inert).dataset.modelId,'id-5');
   ui.gallery.fire('pointerdown',{pointerId:1,clientX:100,clientY:100});
   ui.gallery.fire('pointermove',{pointerId:1,clientX:101,clientY:130});
   ui.gallery.fire('pointerup',{pointerId:1,clientX:101,clientY:130});
-  assert.equal(ui.gallery.dataset.dragging,undefined);
+  ui.settle();assert.equal(ui.gallery.dataset.dragging,undefined);
+  assert.equal(ui.cards().find(c=>!c.inert).dataset.modelId,'id-4');
   ui.gallery.fire('pointerdown',{pointerId:2,clientX:100,clientY:100});
   ui.gallery.fire('pointermove',{pointerId:2,clientX:30,clientY:102});
   ui.gallery.fire('pointerup',{pointerId:2,clientX:30,clientY:102});ui.settle();
-  assert.equal(ui.cards().find(c=>!c.inert).dataset.modelId,'id-0');
+  assert.equal(ui.cards().find(c=>!c.inert).dataset.modelId,'id-5');
   let stopped=false;
   ui.gallery.fire('click',{preventDefault(){},stopImmediatePropagation(){stopped=true;}});assert.equal(stopped,true);
   stopped=false;ui.gallery.fire('click',{preventDefault(){},stopImmediatePropagation(){stopped=true;}});assert.equal(stopped,false);
@@ -110,12 +111,12 @@ test('held finger anchor survives page movement during a continuous drag',()=>{
   ui.gallery.getBoundingClientRect=()=>({left:0,top,width:332,height:246});ui.settle();
   ui.gallery.fire('pointerdown',pointer(1,100,250));ui.gallery.fire('pointermove',pointer(1,140,250));
   const card=ui.cards()[0],before=card.style.transform;
-  top=170;ui.gallery.fire('pointermove',pointer(1,140,250));
+  top=170;ui.gallery.fire('pointermove',pointer(1,140,250));ui.tick();
   assert.notEqual(card.style.transform,before);assert.match(card.style.transform,/translate3d\(56px,40px/);
   ui.gallery.fire('pointercancel',pointer(1,140,250));ui.settle();assert.equal(card.dataset.stackHeld,undefined);
 });
-test('held card follows each event immediately; large up/left/right pulls expand before release',()=>{
-  for(const [x,y,layout] of [[100,-70,'vertical'],[-70,100,'horizontal'],[270,100,'horizontal']]){
+test('held card follows each event immediately; large pulls in all four directions expand before release',()=>{
+  for(const [x,y,layout] of [[100,-110,'vertical'],[100,310,'vertical'],[-110,100,'horizontal'],[310,100,'horizontal']]){
     const ui=fixture({stored:'stack'});ui.settle();const original=ui.cards(),card=original[0];
     const start=card.style.transform;
     ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,x,y));
@@ -131,13 +132,13 @@ test('held card follows each event immediately; large up/left/right pulls expand
 
 test('same gesture switches axis with hysteresis and pulls back into the original deck',()=>{
   const ui=fixture({stored:'stack'});ui.settle();
-  ui.gallery.fire('pointerdown',pointer(1,100,200));ui.gallery.fire('pointermove',pointer(1,100,30));
+  ui.gallery.fire('pointerdown',pointer(1,100,240));ui.gallery.fire('pointermove',pointer(1,100,30));
   assert.equal(ui.gallery.dataset.stackLayout,'vertical');
-  ui.gallery.fire('pointermove',pointer(1,260,50)); // Nearly diagonal; retain vertical.
+  ui.gallery.fire('pointermove',pointer(1,300,50)); // Nearly diagonal; retain vertical.
   assert.equal(ui.gallery.dataset.stackLayout,'vertical');
-  ui.gallery.fire('pointermove',pointer(1,330,100));assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
-  ui.gallery.fire('pointermove',pointer(1,120,195));assert.equal(ui.gallery.dataset.stackLayout,'stack');
-  ui.gallery.fire('pointerup',pointer(1,120,195));ui.settle();
+  ui.gallery.fire('pointermove',pointer(1,390,140));assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
+  ui.gallery.fire('pointermove',pointer(1,120,235));assert.equal(ui.gallery.dataset.stackLayout,'stack');
+  ui.gallery.fire('pointerup',pointer(1,120,235));ui.settle();
   assert.equal(ui.cards().filter(c=>!c.inert).length,1);assert.equal(ui.selected(),'id-0');
 });
 
@@ -185,8 +186,8 @@ test('reduced motion retains button and drag operations; leaving first UI clears
   const ui=fixture({stored:'stack',reduced:true});ui.settle();
   ui.nav().children[3].children[1].fire('click');ui.settle();assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
   ui.gallery.fire('keydown',{key:'Escape',preventDefault(){}});ui.settle();
-  ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,100,-80));
-  ui.gallery.fire('pointerup',pointer(1,100,-80));ui.settle();assert.equal(ui.gallery.dataset.stackLayout,'vertical');
+  ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,100,-100));
+  ui.gallery.fire('pointerup',pointer(1,100,-100));ui.settle();assert.equal(ui.gallery.dataset.stackLayout,'vertical');
   ui.root.dataset.ui='glass';ui.refresh();assert.equal(ui.frames.size,0);assert.equal(ui.gallery.style.height,undefined);
   assert.equal(ui.gallery.dataset.stackLayout,undefined);assert.ok(ui.cards().every(c=>c.style.width===undefined&&!c.inert));
 });
@@ -208,4 +209,24 @@ test('self-driven height changes do not cancel a held card; actual width changes
   ui.gallery.getBoundingClientRect=()=>({width:280,height:500});resize();ui.settle();
   assert.equal(ui.gallery.dataset.dragging,undefined);assert.equal(ui.gallery.dataset.stackLayout,'stack');
   assert.equal(ui.cards()[0].style.width,'248px');
+});
+
+test('small mouse/touch swipes browse; medium pulls stay stacked and never rewrite hidden cards',()=>{
+  for(const pointerType of ['mouse','touch']){
+    const ui=fixture({stored:'stack',count:100});ui.settle();let hiddenWrites=0,geometryReads=0,accessWrites=0;
+    ui.gallery.getBoundingClientRect=()=>{geometryReads++;return {left:0,top:0,width:332,height:246};};
+    for(const card of ui.cards().slice(5))card.style=new Proxy(card.style,{set(target,key,value){hiddenWrites++;target[key]=value;return true;}});
+    for(const card of ui.cards()){const original=card.setAttribute.bind(card);card.setAttribute=(k,v)=>{accessWrites++;original(k,v);};}
+    const card=ui.cards()[0];ui.gallery.fire('pointerdown',{...pointer(1,100,100),pointerType});
+    const baseline=accessWrites,reads=geometryReads;
+    for(const distance of [4,8,16,24,60,110])ui.gallery.fire('pointermove',{...pointer(1,100+distance,100),pointerType});
+    assert.equal(ui.gallery.dataset.stackLayout,'stack');assert.match(card.style.transform,/translate3d\(126px,10px/);
+    assert.equal(geometryReads,reads);assert.equal(accessWrites,baseline);ui.tick();
+    assert.equal(geometryReads,reads+1);assert.equal(hiddenWrites,0);
+    ui.gallery.fire('pointerup',pointer(1,210,100));ui.settle();
+    assert.equal(ui.cards().find(c=>!c.inert).dataset.modelId,'id-99');assert.equal(ui.frames.size,0);
+    // A short slide in the opposite direction immediately returns to the next card.
+    ui.gallery.fire('pointerdown',pointer(2,100,100));ui.gallery.fire('pointermove',pointer(2,76,100));
+    ui.gallery.fire('pointerup',pointer(2,76,100));ui.settle();assert.equal(ui.cards().find(c=>!c.inert).dataset.modelId,'id-0');
+  }
 });
