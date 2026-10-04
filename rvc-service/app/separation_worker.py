@@ -93,7 +93,9 @@ def main() -> None:
         "instrumental": str(instrumental_path),
         "sampleRate": sample_rate,
         "device": device,
-    }, ensure_ascii=False))
+    # Parent parses UTF-8 even when Windows stdout uses a legacy code page.
+    # ASCII-escaped JSON keeps actual Unicode filesystem paths lossless.
+    }, ensure_ascii=True))
 
 
 if __name__ == "__main__":

@@ -72,7 +72,8 @@ def install_chorus_routes(app, core):
         record = core.outputs.get(job_id)
         if record:
             record.state = record.stage = 'failed'
-            record.error_code = str(error) if str(error).startswith('CHORUS_') else 'CHORUS_PROCESSING_FAILED'
+            code=getattr(error,'code',str(error))
+            record.error_code = code if code.startswith(('CHORUS_','RVC_SEPARATION_','RVC_SEPARATOR_')) else 'CHORUS_PROCESSING_FAILED'
             core.persist_output_records()
         core.logger.exception('chorus task failed job_id=%s',job_id)
 

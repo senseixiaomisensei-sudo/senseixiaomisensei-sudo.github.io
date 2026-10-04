@@ -87,6 +87,7 @@ def separate_song(source: Path, output_dir: Path) -> SongStems:
             text=True,
             encoding='utf-8',
             errors='replace',
+            env={**os.environ, 'PYTHONUTF8':'1', 'PYTHONIOENCODING':'utf-8'},
             timeout=SEPARATOR_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:

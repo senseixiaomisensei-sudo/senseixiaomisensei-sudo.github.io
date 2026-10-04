@@ -46,7 +46,8 @@ def separate_singers(source: Path, output: Path, count: str):
     if not chorus_status()['ready']: raise ValueError('CHORUS_ENGINE_UNAVAILABLE')
     result = subprocess.run([sys.executable, str(Path(__file__).with_name('chorus_worker.py')),
         '--root', str(ENGINE_ROOT), '--input', str(source), '--output-dir', str(output), '--count', count],
-        capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3600)
+        capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=3600,
+        env={**os.environ, 'PYTHONUTF8':'1', 'PYTHONIOENCODING':'utf-8'})
     if result.returncode: raise RuntimeError('CHORUS_SEPARATION_FAILED')
     payload = json.loads(result.stdout.strip().splitlines()[-1])
     paths = [Path(p).resolve() for p in payload['tracks']]
