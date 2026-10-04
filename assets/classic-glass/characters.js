@@ -49,6 +49,7 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
     }
     function cancelCapture(){
       const held=grab;grab=null;delete gallery.dataset.dragging;
+      delete gallery.dataset.panning;
       if(held){delete held.card.dataset.stackHeld;try{held.capture.releasePointerCapture?.(held.id);}catch{}}
     }
     function restore(){
@@ -107,7 +108,7 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
       card.style.transform=`translate3d(${x}px,${y}px,0) rotate(${angle}deg)`;
       card.style.opacity=String(held?1:Math.max(.62,1-depth*.12));
       card.style.zIndex=held?'100':String(Math.round((4-depth)*10));
-      card.style.setProperty('--character-content',String(held?1:Math.max(0,1-depth*1.6)));card.dataset.stackOff=String(hidden);
+      card.dataset.stackOff=String(hidden);
       return{id:card.dataset.modelId,x,y,w:width,h:height,r:angle,opacity:hidden?0:1};
     }
     function paint(time){
@@ -170,12 +171,19 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
         anchorX:state.x.value,anchorY:state.y.value,
         originX:origin.left||0,originY:origin.top||0,scrollX:gallery.scrollLeft||0,
         threshold:expansionThreshold(width,height,{ratio:.95,min:180,max:240}),startLayout:layout,
-        axis:layout==='vertical'?'vertical':'horizontal',dragged:false,expanded:false};
+        axis:layout==='vertical'?'vertical':'horizontal',kind:layout==='horizontal'?null:'card',pointerType:event.pointerType,
+        dragged:false,expanded:false};
       grab.capture=card.setPointerCapture?card:gallery;
       try{grab.capture.setPointerCapture(event.pointerId);}catch{}
     });
     gallery.addEventListener('pointermove',event=>{
       if(!grab||grab.id!==event.pointerId)return;grab.dx=event.clientX-grab.x;grab.dy=event.clientY-grab.y;
+      if(grab.kind===null&&Math.hypot(grab.dx,grab.dy)>3)grab.kind=Math.abs(grab.dx)>=Math.abs(grab.dy)?'pan':'card';
+      if(grab.kind==='pan'){
+        grab.dragged=true;gallery.dataset.panning='true';
+        if(grab.pointerType!=='touch'){event.preventDefault?.();gallery.scrollLeft=grab.scrollX-grab.dx;}
+        return;
+      }
       if(!grab.dragged&&Math.hypot(grab.dx,grab.dy)>3){grab.dragged=true;gallery.dataset.dragging='true';grab.card.dataset.stackHeld='true';}
       if(!grab.dragged)return;event.preventDefault?.();
       const candidate=dragAxis(grab.dx,grab.dy,grab.axis);
@@ -194,6 +202,10 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
     });
     function release(event,cancelled=false){
       if(!grab||grab.id!==event.pointerId)return;const held=grab,state=motion.get(held.card);
+      if(held.kind==='pan'){
+        cancelCapture();delete gallery.dataset.panning;suppressClick=held.dragged&&!cancelled;
+        frontId=order[clamp(Math.round((gallery.scrollLeft||0)/(width+18)),0,order.length-1)]||frontId;announce();return;
+      }
       // Dropping on another spread card stacks around that identity. The gesture
       // that first opens a deck cannot accidentally hit its original neighbours.
       const destination=!cancelled&&held.dragged&&held.startLayout!=='stack'?cards.find(card=>{
@@ -235,7 +247,7 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
         const nextCards=[...gallery.querySelectorAll('[data-model-id]')];
         if(nextCards.length!==cards.length||nextCards.some((card,i)=>card!==cards[i])){
           const sameIds=nextCards.length===cards.length&&nextCards.every((card,i)=>card.dataset.modelId===cards[i].dataset.modelId);
-          const savedLayout=layout,savedOrder=[...order],savedExpansion=expansion.value,savedVertical=vertical.value;
+          const savedLayout=layout,savedOrder=[...order],savedExpansion=expansion.value,savedVertical=vertical.value,savedScroll=gallery.scrollLeft||0;
           const savedMotion=new Map(cards.map(card=>[card.dataset.modelId,motion.get(card)]));
           restore();cards=nextCards;order=cards.map(card=>card.dataset.modelId);snapshots=new Map();motion=new Map();byId=new Map(cards.map(card=>[card.dataset.modelId,card]));
           if(sameIds){order=savedOrder;layout=savedLayout;expansion.value=expansion.target=layout==='stack'?0:savedExpansion;vertical.value=savedVertical;vertical.target=layout==='vertical'?1:0;}
@@ -246,6 +258,7 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
             const state=sameIds?savedMotion.get(card.dataset.modelId):{x:new Spring((galleryWidth-width)/2),y:new Spring(10+depth*22),depth:new Spring(depth),rotation:new Spring(0)};
             state.position=order.indexOf(card.dataset.modelId);motion.set(card,state);
           });
+          if(sameIds&&layout==='horizontal')gallery.scrollLeft=savedScroll;
         }
         nav.hidden=!active()||!cards.length;
         prev.setAttribute('aria-label',text('上一个角色','Previous voice'));next.setAttribute('aria-label',text('下一个角色','Next voice'));

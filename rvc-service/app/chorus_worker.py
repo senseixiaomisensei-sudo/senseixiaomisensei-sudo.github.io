@@ -102,9 +102,39 @@ def split_evidence(pair: np.ndarray) -> dict:
     ratio = float(min(energy)/max(max(energy), 1e-15))
     correlation = float(abs(np.dot(pair[0].astype(np.float64), pair[1]) /
         max(np.sqrt(np.sum(pair[0].astype(np.float64)**2)*np.sum(pair[1].astype(np.float64)**2)), 1e-15)))
-    # These are separation diagnostics, not a calibrated speaker probability.
+    block=RATE//2
+    frames=len(pair[0])//block
+    simultaneous=0
+    if frames:
+        local=np.mean(pair[:,:frames*block].astype(np.float64).reshape(2,frames,block)**2,axis=2)
+        floor=max(1e-10,float(np.percentile(local.max(axis=0),90))*.005)
+        simultaneous=int(np.count_nonzero((local.min(axis=0)>floor)&
+            (local.min(axis=0)/np.maximum(local.max(axis=0),1e-15)>=.12)))
+    overlap_seconds=simultaneous*.5
+    # A tone change or alternating delivery alone is not evidence of two people.
+    # Conservative overlap evidence is deliberately not a speaker probability.
+    distinct=ratio>=.08 and correlation<.5 and overlap_seconds>=min(1.5,len(pair[0])/RATE*.15) and simultaneous>=2
     return {'secondaryEnergyRatio': ratio, 'waveformCorrelation': correlation,
-            'distinctCandidate': ratio >= .035 and correlation < .65}
+            'simultaneousSeconds':overlap_seconds,'distinctCandidate':distinct}
+
+
+def voice_range(audio: np.ndarray) -> dict:
+    """Bounded voiced-pitch evidence for parameter suggestions, not gender identity."""
+    import librosa
+    window=RATE*2
+    segments=[audio[i:i+window] for i in range(0,len(audio),window) if len(audio[i:i+window])>=RATE//2]
+    segments=sorted(segments,key=lambda x:float(np.mean(x.astype(np.float64)**2)),reverse=True)[:4]
+    pitches=[];confidences=[]
+    for segment in segments:
+        if np.sqrt(np.mean(segment.astype(np.float64)**2))<1e-4:continue
+        f0,voiced,probability=librosa.pyin(segment,sr=RATE,fmin=65,fmax=900,frame_length=1024,hop_length=240)
+        valid=voiced&np.isfinite(f0)&(probability>=.6)
+        pitches.extend(f0[valid].tolist());confidences.extend(probability[valid].tolist())
+    if len(pitches)<20:return {'classification':'uncertain','confidence':0,'method':'pyin-bounded-v1'}
+    median=float(np.median(pitches))
+    return {'medianHz':median,'p10Hz':float(np.percentile(pitches,10)),'p90Hz':float(np.percentile(pitches,90)),
+        'classification':'low' if median<165 else 'high' if median>220 else 'middle',
+        'confidence':float(np.mean(confidences)),'method':'pyin-bounded-v1','voicedFrames':len(pitches)}
 
 
 def main():
@@ -128,8 +158,8 @@ def main():
     tracks, bounds = split_pair(model, audio)
     evidence = [{'parent': 'mix', **split_evidence(tracks), 'boundaries': bounds}]
     wanted = 4 if a.count == 'auto' else int(a.count)
-    leaves = [t for t in tracks]
-    while len(leaves) < wanted:
+    leaves = [t for t in tracks] if a.count!='auto' or evidence[0]['distinctCandidate'] else [audio]
+    while 1<len(leaves)<wanted:
         candidates = []
         for i, leaf in enumerate(leaves):
             pair, boundaries = split_pair(model, leaf)
@@ -150,6 +180,7 @@ def main():
         'adaptedCodeSha256': code_hash, 'sampleRate': RATE, 'frames': len(audio), 'tracks': paths,
         'requestedCount': a.count, 'estimatedCount': len(leaves), 'countNeedsReview': True,
         'experimentalRecursive': len(leaves)>2, 'evidence': evidence,
+        'countPolicyRevision':'conservative-overlap-v1','voiceRanges':[voice_range(track) for track in leaves],
         'reconstructionRms': float(np.sqrt(np.mean((np.sum(leaves, axis=0)-audio).astype(np.float64)**2)))}
     (a.output_dir/'analysis.json').write_text(json.dumps(payload, indent=2), encoding='utf-8')
     print(json.dumps(payload))

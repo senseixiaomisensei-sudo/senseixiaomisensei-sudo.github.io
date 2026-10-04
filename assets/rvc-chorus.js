@@ -34,9 +34,36 @@ export function readChorusTracks(job) {
   return tracks;
 }
 
+export function chorusSuggestedParams(track,model={},reference={}) {
+  const range=track.voiceRange||{},reliable=Number(range.confidence)>=.6&&Number.isFinite(range.medianHz)&&range.medianHz>0;
+  const tags=model.tags||[];
+  let pitch=Number.isInteger(model.defaultPitch)?Math.max(-6,Math.min(6,model.defaultPitch)):0;
+  const matched=reference.characterId===model.id&&reference.checkpointSha256===model.checkpointSha256&&
+    /^[a-f0-9]{64}$/u.test(reference.checkpointSha256||'')&&/^[a-f0-9]{64}$/u.test(reference.referenceSha256||'')&&Number(reference.confidence)>=.6&&
+    Number.isFinite(reference.medianHz)&&reference.medianHz>0;
+  if(reliable&&matched)pitch=Math.max(-6,Math.min(6,Math.round(12*Math.log2(reference.medianHz/range.medianHz))));
+  else if(reliable&&range.classification==='low'&&tags.includes('女声'))pitch=6;
+  else if(reliable&&range.classification==='high'&&tags.includes('男声'))pitch=-6;
+  const index=Number(model.defaultIndexRate);
+  return {trackId:track.trackId,modelId:model.id,pitch,indexRate:Number.isFinite(index)?Math.max(0,Math.min(1,index)):.3,
+    protect:.25,rmsMixRate:1,f0Method:'rmvpe',gainDb:0,mute:false};
+}
+
+export async function publishChorusResult({audio,result,download,meta},next,job,attachAudio) {
+  if(download){download.href=next;download.download=`postprep-chorus-${job.jobId}.${job.format==='mp3'?'mp3':'wav'}`;}
+  if(result){result.hidden=false;result.classList.remove('hidden');result.scrollIntoView({block:'start',behavior:'auto'});}
+  if(meta)meta.textContent=`${job.estimatedCount} 路角色合唱 · 独立转换后混音`;
+  if(audio){audio.hidden=false;
+    try{await attachAudio(audio,next,true);}catch{
+      if(meta)meta.textContent+=' · 播放器加载暂未完成，可直接下载结果或点击播放重试。';
+    }
+  }
+}
+
 export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMode,setBusy,onResult,
   createRequestId=()=>`${Date.now()}-${Math.random().toString(36).slice(2)}`,
-  request=fetchChorusJson,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))}) {
+  request=fetchChorusJson,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms)),
+  loadVoiceRanges=()=>fetchChorusJson('./assets/rvc-voice-ranges.json?v=20261004-4',{},globalThis.fetch,8000)}) {
   const panel=document.getElementById('rvc-chorus');
   if(!panel)return null;
   const enable=panel.querySelector('[data-enable]'), analyzeButton=panel.querySelector('[data-analyze]');
@@ -44,8 +71,12 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
   const convertButton=panel.querySelector('[data-convert]'),resumeButton=panel.querySelector('[data-resume]');
   const status=panel.querySelector('[data-status]'), tracks=panel.querySelector('[data-tracks]');
   let session=null, sourceFile=null, params=[], busy=false, switchingMode=false, pending=null;
+  const autoTracks=new Set();
+  let voiceRanges={};
+  const rangesReady=Promise.resolve().then(loadVoiceRanges).then(value=>{voiceRanges=value?.profiles||{};}).catch(()=>{});
+  const suggest=(track,model)=>chorusSuggestedParams(track,model,voiceRanges[model.id]);
   const message=text=>{status.textContent=text;};
-  function reset(){session=null;pending=null;params=[];updateButton.hidden=true;resumeButton.hidden=true;tracks.querySelectorAll('audio').forEach(a=>{a.pause();a.removeAttribute('src');a.load();});tracks.replaceChildren();}
+  function reset(){session=null;pending=null;params=[];autoTracks.clear();updateButton.hidden=true;resumeButton.hidden=true;tracks.querySelectorAll('audio').forEach(a=>{a.pause();a.removeAttribute('src');a.load();});tracks.replaceChildren();}
   function refresh(){
     if(!switchingMode && enable.checked && (state.inferenceMode!=='official' || state.audioMode!=='song'))enable.checked=false;
     panel.querySelector('[data-workspace]').hidden=!enable.checked;
@@ -73,12 +104,13 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
     }
     throw new Error('等待超时，可点击「继续查看任务」；已接受的任务仍在服务端运行。');
   }
-  function setProcessing(value){busy=value;panel.setAttribute('aria-busy',String(value));setBusy(value);refresh();}
+  function setProcessing(value){busy=value;panel.setAttribute('aria-busy',String(value));convertButton.textContent=value?'正在处理…':'确认声部并开始合唱';setBusy(value);refresh();}
   function render(base,job,converted=false){
     tracks.querySelectorAll('audio').forEach(a=>{a.pause();a.removeAttribute('src');a.load();});
     tracks.replaceChildren();
     const returnedTracks=readChorusTracks(job);
-    if(!converted)params=returnedTracks.map(t=>({trackId:t.trackId,modelId:state.selectedModelId,pitch:12,indexRate:.3,protect:.25,rmsMixRate:1,f0Method:'rmvpe',gainDb:0,mute:false}));
+    if(!converted){params=returnedTracks.map(t=>suggest(t,state.catalog.find(m=>m.id===state.selectedModelId)||{id:state.selectedModelId}));
+      returnedTracks.forEach((_,i)=>autoTracks.add(i));}
     for(const [i,t] of returnedTracks.entries()){
       const card=document.createElement('article');card.className='chorus-track';
       const title=document.createElement('h4');
@@ -94,34 +126,45 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
         card.append(heading,audio);
       }
       card.append(title);
+      const range=t.voiceRange||{},rangeLabel=document.createElement('p');
+      rangeLabel.textContent=range.classification==='low'?'检测为低声区（偏男声）':range.classification==='high'?'检测为高声区（偏女声）':range.classification==='middle'?'检测为中声区':'声区不确定，保持原调';card.append(rangeLabel);
       audition(session,'分离原声 · 先确认是哪位歌手');
       if(converted)audition(job,'转换后 · 所选角色人声');
       const role=document.createElement('select');role.setAttribute('aria-label',`声部 ${t.trackId} 对应角色`);
       state.catalog.filter(m=>!String(m.id).startsWith('own:')).forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name || m.displayName || m.id;role.append(o);});
-      role.value=params[i].modelId;role.addEventListener('change',()=>{params[i].modelId=role.value;});
+      const controls=[];
+      function tune(){
+        const current=params[i],suggested=suggest(t,state.catalog.find(m=>m.id===role.value)||{id:role.value});
+        Object.assign(current,{pitch:suggested.pitch,indexRate:suggested.indexRate,protect:suggested.protect,rmsMixRate:suggested.rmsMixRate,f0Method:suggested.f0Method});
+        controls.forEach(({key,control,out})=>{control.value=current[key];out.textContent=control.value;});f0.value=current.f0Method;updatePitchLabel();autoTracks.add(i);
+      }
+      role.value=params[i].modelId;role.addEventListener('change',()=>{params[i].modelId=role.value;if(autoTracks.has(i))tune();});
+      const autoButton=document.createElement('button');autoButton.type='button';autoButton.textContent='按声区自动调参';autoButton.addEventListener('click',tune);
       const details=document.createElement('details'), summary=document.createElement('summary');summary.textContent='独立调音';details.append(summary);
       for(const [key,label,min,max,step] of [['pitch','音高（半音）',-24,24,1],['indexRate','检索强度',0,1,.01],['protect','辅音保护',0,.5,.01],['rmsMixRate','动态保留',0,1,.01],['gainDb','人声音量（dB）',-24,6,.5]]){
         const wrap=document.createElement('label');wrap.className='chorus-control';const name=document.createElement('span');name.textContent=label;
         const control=document.createElement('input');Object.assign(control,{type:'range',min,max,step,value:params[i][key]});
         const out=document.createElement('output');out.textContent=control.value;
-        control.addEventListener('input',()=>{params[i][key]=Number(control.value);out.textContent=control.value;if(key==='pitch')updatePitchLabel();});
+        controls.push({key,control,out});
+        control.addEventListener('input',()=>{params[i][key]=Number(control.value);out.textContent=control.value;if(key!=='gainDb')autoTracks.delete(i);if(key==='pitch')updatePitchLabel();});
         wrap.append(name,control,out);details.append(wrap);
       }
       const muteLabel=document.createElement('label');muteLabel.className='chorus-control';muteLabel.textContent='单独静音';const mute=document.createElement('input');mute.type='checkbox';mute.checked=params[i].mute;
       mute.addEventListener('change',()=>{params[i].mute=mute.checked;});muteLabel.append(mute);details.append(muteLabel);
       const f0=document.createElement('select');f0.setAttribute('aria-label',`声部 ${t.trackId} 音高算法`);
       for(const method of ['rmvpe','fcpe','auto','pm']){const o=document.createElement('option');o.value=method;o.textContent=method.toUpperCase();f0.append(o);}
-      f0.value=params[i].f0Method;f0.addEventListener('change',()=>{params[i].f0Method=f0.value;});details.append(f0);
-      card.append(role,details);tracks.append(card);
+      f0.value=params[i].f0Method;f0.addEventListener('change',()=>{params[i].f0Method=f0.value;autoTracks.delete(i);});details.append(f0);
+      card.append(role,autoButton,details);tracks.append(card);
     }
   }
   async function finishPending(){
     const current=pending,job=await poll(current.base,current.job);
     if(current.kind==='analysis'){
+      await rangesReady;
       readChorusTracks(job);session={...job,base:current.base};render(current.base,session);
       const count=job.tracks.length;
       const warning=job.requestedCount!=='auto' && Number(job.requestedCount)!==count ? `未能可靠提取请求的 ${job.requestedCount} 路。` : '';
-      message(`${warning}分离完成，已显示 ${count} 张声部卡片。请逐路试听原声、确认歌手并选择角色，再开始合唱。${job.experimentalRecursive?'三／四路为实验分离，请检查串音。':''} 有效至 ${new Date(job.expiresAt).toLocaleString()}。`);
+      message(`${warning}分离完成，已显示 ${count} 张声部卡片，并按声区匹配初始参数。人数采用保守估计；轮唱或音色相近时可手动选择人数。请逐路试听原声、选择角色，再开始合唱。${job.experimentalRecursive?'三／四路为实验分离，请检查串音。':''} 有效至 ${new Date(job.expiresAt).toLocaleString()}。`);
       tracks.scrollIntoView?.({block:'nearest'});
     }else{
       readChorusTracks(job);render(current.base,job,true);
@@ -158,6 +201,7 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
     setProcessing(true);
     try{
       const base=session.base;
+      message('正在提交合唱任务，随后会显示转换进度；完成后直接打开播放与下载结果。');
       pending={base,kind:'conversion',job:await request(`${base}/${session.jobId}/convert?token=${encodeURIComponent(session.downloadToken)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tracks:params,accompanimentGainDb:Number(document.getElementById('rvc-accompaniment-gain')?.value || 0),accompanimentMute:Boolean(document.getElementById('rvc-accompaniment-mute')?.checked),requestId:`chorus-${createRequestId()}`})})};
       await finishPending();
     }catch(e){failure(e,'转换未完成');}finally{setProcessing(false);}

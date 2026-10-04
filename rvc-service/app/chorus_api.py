@@ -61,7 +61,7 @@ def install_chorus_routes(app, core):
         if record.error_code: result['code'] = record.error_code
         if record.state == 'completed':
             result.update({k:info[k] for k in ('tracks','requestedCount','estimatedCount','countNeedsReview',
-                'experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256','parameters','reusedConversion') if k in info})
+                'experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256','parameters','reusedConversion','countPolicyRevision') if k in info})
         return result
 
     async def track_task(task):
@@ -103,8 +103,10 @@ def install_chorus_routes(app, core):
             if kind=='mix': await asyncio.to_thread(discard_temporary,work,source)
             info={k:analysis[k] for k in ('requestedCount','estimatedCount','countNeedsReview','experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256')}
             info.update({'duration':duration,'sampleRate':24000,'inputKind':kind,
+                'countPolicyRevision':analysis.get('countPolicyRevision','legacy'),
                 'accompaniment':str(accompaniment.relative_to(work)),
-                'tracks':[{'trackId':i+1,'label':f'声部 {i+1}','frames':analysis['frames']} for i in range(len(analysis['tracks']))]})
+                'tracks':[{'trackId':i+1,'label':f'声部 {i+1}','frames':analysis['frames'],
+                    'voiceRange':analysis.get('voiceRanges',[{}]*len(analysis['tracks']))[i]} for i in range(len(analysis['tracks']))]})
             save(job_id,info)
             # MP3 audition is streamed on demand on phones. Keep the floating
             # source stems for conversion; preview encoding never replaces them.
@@ -245,7 +247,7 @@ def install_chorus_routes(app, core):
             save(job_id,{'tracks':info['tracks'],'parameters':params,'estimatedCount':len(params),
                 'modelRevision':info['modelRevision'],'modelSha256':info['modelSha256'],
                 'parentSessionId':parent,'conversionFingerprint':conversion_key,'reusedConversion':cached is not None,
-                'encoding':encoding,
+                'encoding':encoding,'countPolicyRevision':info.get('countPolicyRevision','legacy'),
                 'countNeedsReview':True,'experimentalRecursive':len(params)>2})
             record.engine='rvc-chorus'; record.engine_revision=core.PIPELINE_REVISION
             record.state=record.stage='completed'; core.persist_output_records()

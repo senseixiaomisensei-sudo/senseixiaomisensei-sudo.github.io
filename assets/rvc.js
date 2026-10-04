@@ -6372,19 +6372,17 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus } = await import('./rvc-chorus.js?v=20261004-chorus-3');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261004-chorus-4');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,
       setBusy: (value) => { state.busy = value; const button = document.getElementById('rvc-convert'); if (button) button.disabled = value; syncMixControls(); },
       onResult: async (next, job) => {
         const audio = document.getElementById('rvc-result-audio');
-        if(audio){await attachResultAudio(audio,next,true);audio.hidden=false;}
         if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
         state.resultUrl = next; state.latestSongJob = null;
-        const download = document.getElementById('rvc-result-download'); if (download) { download.href = next; download.download = `postprep-chorus-${job.jobId}.${job.format === 'mp3' ? 'mp3' : 'wav'}`; }
-        const result = document.getElementById('rvc-result'); if(result){result.hidden=false;result.classList.remove('hidden');}
-        const meta = document.getElementById('rvc-result-meta'); if (meta) meta.textContent = `${job.estimatedCount} 路角色合唱 · 独立转换后混音`;
+        await publishChorusResult({audio,result:document.getElementById('rvc-result'),
+          download:document.getElementById('rvc-result-download'),meta:document.getElementById('rvc-result-meta')},next,job,attachResultAudio);
       },
     });
     await initCatalog();

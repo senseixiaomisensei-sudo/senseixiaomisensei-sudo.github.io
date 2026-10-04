@@ -1,5 +1,5 @@
 import { Spring, rangeFraction } from './classic-glass/motion.js';
-import { initCharacterModes } from './classic-glass/characters.js?v=20261004-fluid-3';
+import { initCharacterModes } from './classic-glass/characters.js?v=20261004-fluid-4';
 import { clamp, dragAxis, expansionThreshold, deckExtent } from './classic-glass/interaction-core.js?v=20261003-fluid-1';
 
 // Presentation only: no writes to inference parameters, uploads or audio processing.
@@ -141,7 +141,6 @@ function initDeck() {
     cards[i].style.transform=`translate3d(${x}px,${y}px,0)`;
     cards[i].style.opacity=String(held?1:1-rank*.085);
     cards[i].style.zIndex=held?'100':String(Math.round((3-rank)*10));
-    cards[i].style.setProperty('--content-opacity',String(held?1:Math.max(0,1-rank*2)));
     return{id:i,x,y,w:width,h:252};
   }
   function paint(time) {
@@ -187,7 +186,8 @@ function initDeck() {
     width=deck.clientWidth||242;index=i;suppressClick=false;
     grab = { id:event.pointerId,card,x:event.clientX,y:event.clientY,dx:0,dy:0,
       anchorX:positions[i].x.value,anchorY:positions[i].y.value,startLayout:layout,
-      axis:layout==='vertical'?'vertical':'horizontal',threshold:expansionThreshold(width,252,{ratio:.8,min:160,max:220}),dragged:false,expanded:false };
+      axis:layout==='vertical'?'vertical':'horizontal',threshold:expansionThreshold(width,252,{ratio:.8,min:160,max:220}),
+      scrollX:deck.scrollLeft||0,kind:layout==='horizontal'?null:'card',pointerType:event.pointerType,dragged:false,expanded:false };
     grab.capture=event.target.closest('button')||card;
     try{grab.capture.setPointerCapture(event.pointerId);}catch{}
   });
@@ -195,6 +195,12 @@ function initDeck() {
     if (!grab || grab.id !== event.pointerId) return;
     grab.dx=event.clientX-grab.x;grab.dy=event.clientY-grab.y;
     if(!grab.dragged&&Math.hypot(grab.dx,grab.dy)<=3)return;
+    if(grab.kind===null)grab.kind=Math.abs(grab.dx)>=Math.abs(grab.dy)?'pan':'card';
+    if(grab.kind==='pan'){
+      grab.dragged=true;deck.dataset.panning='true';
+      if(grab.pointerType!=='touch'){event.preventDefault?.();deck.scrollLeft=grab.scrollX-grab.dx;}
+      return;
+    }
     grab.dragged=true;deck.dataset.dragging='true';event.preventDefault?.();
     grab.axis=dragAxis(grab.dx,grab.dy,grab.axis);
     const distance=Math.abs(grab.axis==='vertical'?grab.dy:grab.dx);
@@ -205,6 +211,10 @@ function initDeck() {
   function release(event,cancelled=false){
     if (!grab || grab.id !== event.pointerId) return;
     const held=grab,state=positions[cards.indexOf(held.card)];grab=null;delete deck.dataset.dragging;
+    if(held.kind==='pan'){
+      delete deck.dataset.panning;try{held.capture.releasePointerCapture(held.id);}catch{}
+      suppressClick=held.dragged&&!cancelled;return;
+    }
     if(held.dragged){state.x.value=held.anchorX+held.dx;state.y.value=held.anchorY+held.dy;state.x.velocity=state.y.velocity=0;}
     try{held.capture.releasePointerCapture(held.id);}catch{}
     suppressClick=held.dragged&&!cancelled;

@@ -51,13 +51,13 @@ def separate_singers(source: Path, output: Path, count: str):
     if result.returncode: raise RuntimeError('CHORUS_SEPARATION_FAILED')
     payload = json.loads(result.stdout.strip().splitlines()[-1])
     paths = [Path(p).resolve() for p in payload['tracks']]
-    if not 2 <= len(paths) <= 4 or any(output.resolve() not in p.parents or not p.is_file() for p in paths):
+    if not 1 <= len(paths) <= 4 or any(output.resolve() not in p.parents or not p.is_file() for p in paths):
         raise RuntimeError('CHORUS_INVALID_STEMS')
     return payload
 
 
 def validate_tracks(value, count):
-    if not isinstance(value, list) or len(value) != count or not 2 <= count <= 4:
+    if not isinstance(value, list) or len(value) != count or not 1 <= count <= 4:
         raise ValueError('CHORUS_INVALID_TRACKS')
     allowed = {'trackId','modelId','pitch','indexRate','protect','rmsMixRate','f0Method','gainDb','mute'}
     result = []

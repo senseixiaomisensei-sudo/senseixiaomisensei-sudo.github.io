@@ -194,11 +194,25 @@ test('reduced motion retains button and drag operations; leaving first UI clears
 
 test('a drop onto another expanded card re-stacks around it without changing the chosen voice',()=>{
   const ui=fixture({stored:'stack'});ui.settle();ui.nav().children[3].children[1].fire('click');ui.settle();
-  const target=ui.cards()[2];target.getBoundingClientRect=()=>({left:200,right:400,top:100,bottom:300});
-  ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,280,150));
-  ui.gallery.fire('pointerup',pointer(1,280,150));ui.settle();
+  const target=ui.cards()[2];target.getBoundingClientRect=()=>({left:100,right:300,top:300,bottom:500});
+  ui.gallery.fire('pointerdown',pointer(1,100,100));ui.gallery.fire('pointermove',pointer(1,140,320));
+  ui.gallery.fire('pointerup',pointer(1,140,320));ui.settle();
   assert.equal(ui.gallery.dataset.stackLayout,'stack');assert.equal(ui.cards().find(c=>!c.inert),target);
   assert.equal(ui.selected(),'id-0');
+});
+
+test('horizontal UI mouse-pan scrolls the gallery, touch uses native pan, and selecting retains the scroll position',()=>{
+  const ui=fixture({stored:'stack'});ui.settle();ui.nav().children[3].children[1].fire('click');ui.settle();
+  ui.gallery.scrollLeft=318;
+  ui.gallery.fire('pointerdown',{...pointer(1,100,100),pointerType:'mouse'});
+  ui.gallery.fire('pointermove',{...pointer(1,50,100),pointerType:'mouse'});
+  assert.equal(ui.gallery.scrollLeft,368);assert.equal(ui.gallery.dataset.dragging,undefined);
+  ui.gallery.fire('pointerup',pointer(1,50,100));assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
+  ui.gallery.fire('pointerdown',pointer(2,100,100));ui.gallery.fire('pointermove',pointer(2,50,100));
+  assert.equal(ui.gallery.scrollLeft,368);ui.gallery.fire('pointercancel',pointer(2,50,100));
+  const chosen=ui.cards()[2];ui.gallery.fire('pointerdown',{...pointer(3,100,100),target:{closest:()=>chosen}});
+  ui.gallery.fire('pointerup',pointer(3,100,100));chosen.fire('click');ui.settle();
+  assert.equal(ui.selected(),'id-2');assert.equal(ui.gallery.scrollLeft,368);assert.equal(ui.gallery.dataset.stackLayout,'horizontal');
 });
 
 test('self-driven height changes do not cancel a held card; actual width changes cancel safely',()=>{

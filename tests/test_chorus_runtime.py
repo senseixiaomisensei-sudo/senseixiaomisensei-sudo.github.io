@@ -11,6 +11,7 @@ class ChorusContracts(unittest.TestCase):
   p=validate_tracks(self.tracks(),2)
   self.assertEqual([t['gainDb'] for t in p],[0,0])
   self.assertEqual([t['mute'] for t in p],[False,False])
+  self.assertEqual(len(validate_tracks([{'trackId':1,'modelId':'hoshino'}],1)),1)
   self.assertEqual(len(validate_tracks([{'trackId':i+1,'modelId':'hoshino'} for i in range(4)],4)),4)
   with self.assertRaises(ValueError):validate_tracks([{'trackId':i+1,'modelId':'hoshino'} for i in range(5)],5)
  def test_invalid_parameters_and_identity_are_rejected(self):

@@ -172,6 +172,17 @@ test('workspace link surface can drag; cancellation releases the pointer and ret
   assert.equal(button.captured,null);assert.equal(ui.deck.dataset.stackLayout,'stack');assert.equal(ui.deck.dataset.dragging,undefined);
   await ui.fire('pointerdown',2,100,100);await ui.fire('pointermove',2,-130,100);await ui.fire('pointerup',2,-130,100);ui.settle();
   assert.equal(ui.deck.dataset.stackLayout,'horizontal');
-  await ui.fire('pointerdown',3,100,100);await ui.fire('pointermove',3,330,100);await ui.fire('pointermove',3,105,100);await ui.fire('pointerup',3,105,100);ui.settle();
+  await ui.fire('pointerdown',3,100,100);await ui.fire('pointermove',3,100,330);await ui.fire('pointermove',3,105,100);await ui.fire('pointerup',3,105,100);ui.settle();
   assert.equal(ui.deck.dataset.stackLayout,'stack');assert.equal(ui.frames.size,0);
+});
+
+test('expanded workspace UI pans without moving a card and rear content has no opacity mask',async()=>{
+  const ui=await deckFixture();await ui.fire('pointerdown',1,100,100);await ui.fire('pointermove',1,330,100);await ui.fire('pointerup',1,330,100);ui.settle();
+  const card=ui.cards[0],before=card.style.transform;ui.deck.scrollLeft=100;
+  await ui.fire('pointerdown',2,100,100);await ui.fire('pointermove',2,40,100);
+  assert.equal(ui.deck.scrollLeft,160);assert.equal(card.style.transform,before);assert.equal(ui.deck.dataset.dragging,undefined);
+  await ui.fire('pointerup',2,40,100);assert.equal(ui.deck.dataset.stackLayout,'horizontal');
+  const css=await file('assets/classic-glass.css');
+  assert.match(css,/\.classic-pane > \* \{ opacity: 1; \}/);assert.match(css,/\[data-model-id\] > \* \{ opacity: 1; \}/);
+  assert.match(css,/overflow-anchor: none/);assert.match(css,/touch-action: pan-x/);
 });

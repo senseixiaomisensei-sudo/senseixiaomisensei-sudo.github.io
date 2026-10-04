@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="assets/rvc.css?v=20260926-mixguard1">
   <link rel="stylesheet" href="assets/rvc-chorus.css?v=20261004-3">
   <script src="assets/liquid-ui.js?v=20261004-memory-1"></script>
-  <link rel="stylesheet" href="assets/classic-glass.css?v=20261004-fluid-3">
-  <script type="module" src="assets/classic-glass.js?v=20261004-fluid-3"></script>
+  <link rel="stylesheet" href="assets/classic-glass.css?v=20261004-fluid-4">
+  <script type="module" src="assets/classic-glass.js?v=20261004-fluid-4"></script>
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="rvc">
   <div id="site-header"></div>
@@ -249,7 +249,7 @@
                   <label>输入<select data-kind><option value="mix">歌曲含伴奏</option><option value="vocals">已分离的合唱人声</option></select></label>
                   <button type="button" data-analyze>识别与提取人声</button>
                 </div>
-                <p>当前合唱候选默认升一个八度（+12 半音），每路可在「独立调音」中改回原调。三／四路递归分离仍是实验功能，请先预听检查串音。</p>
+                <p>按每路实际声区与目标角色匹配初始参数，声区不确定时保持原调；可自动调参或独立微调。轮唱或相近音色可手动选人数。三／四路仍为实验功能，请预听检查串音。</p>
                 <p data-status role="status" aria-live="polite">先提取歌手，逐路预听、分配角色和独立调音，再点击「开始变声」。此功能使用云端引擎。</p>
                 <div data-tracks></div>
                 <button type="button" data-convert disabled>确认声部并开始合唱</button>
@@ -478,6 +478,6 @@
   <script src="assets/postprep-config.js?v=20260823-v14"></script>
   <script src="assets/postprep.js?v=20261004-storage-1"></script>
   <script src="assets/rvc-schools.js?v=20260919-odyssey"></script>
-  <script src="assets/rvc.js?v=20261004-chorus-3"></script>
+  <script src="assets/rvc.js?v=20261004-chorus-4"></script>
 </body>
 </html>
