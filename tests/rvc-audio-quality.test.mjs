@@ -198,7 +198,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr, burstDiagnostics\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20261003-chorus-2/u);
+  assert.match(page, /assets\/rvc\.js\?v=20261004-chorus-3/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -213,7 +213,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.match(client, /postprep_rvc_last_cloud_submission_v1/u);
   assert.match(client, /persistCloudSubmissionTimestamp\(state\.lastCloudSubmissionAt\)/u);
   assert.match(client, /isDeviceFallbackEligible/u);
-  assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
+  assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: !isAppleMobile\(\) \}\)/u);
   assert.match(client, /runWebRvcInference\(\{ allowLong: true, fallback: true \}\)/u);
   assert.match(client, /const LOCAL_MAX_AUDIO_SECONDS = 20/u);
   assert.match(client, /const MAX_AUDIO_SECONDS = 900/u);

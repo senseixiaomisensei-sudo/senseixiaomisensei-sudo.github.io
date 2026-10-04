@@ -65,7 +65,7 @@ test("long audio uses a separate resilient contract without changing short conve
   ]);
   assert.match(client, /LONG_AUDIO_THRESHOLD_SECONDS = 45/u);
   assert.match(client, /DEVICE_FALLBACK_MAX_AUDIO_SECONDS = 1200/u);
-  assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: true \}\)/u);
+  assert.match(client, /runOfficialRvcInference\(\{ allowDeviceFallback: !isAppleMobile\(\) \}\)/u);
   assert.match(client, /MAX_AUDIO_SECONDS = 900/u);
   assert.match(client, /DURABLE_CLOUD_JOB_SECONDS = 40/u);
   assert.match(client, /if \(Number\(durationSeconds\) >= DURABLE_CLOUD_JOB_SECONDS\) return "mp3"/u);

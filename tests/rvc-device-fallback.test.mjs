@@ -86,9 +86,9 @@ test("song outage keeps song mode and offers an explicit local direct conversion
 test("hybrid dispatcher actually starts local inference after cloud failure", async () => {
   const calls = [];
   const state = { catalog: [{ id: "momoi" }], selectedModelId: "momoi", audioMode: "voice", engineReady: true };
-  const run = Function("state", "document", "OWN_MODEL_PREFIX", "hasDeviceFallbackModel", "setInferenceMode", "runOfficialRvcInference", "runWebRvcInference", "chorusController", `return (${source("runRvcInference")});`)(
+  const run = Function("state", "document", "OWN_MODEL_PREFIX", "hasDeviceFallbackModel", "setInferenceMode", "runOfficialRvcInference", "runWebRvcInference", "chorusController", "isAppleMobile", `return (${source("runRvcInference")});`)(
     state, { getElementById: () => null }, "own:", () => true, () => {},
-    async () => ({ fallback: true }), async options => { calls.push(options); return true; }, null,
+    async () => ({ fallback: true }), async options => { calls.push(options); return true; }, null, () => false,
   );
   assert.equal(await run(), true);
   assert.deepEqual(calls, [{ allowLong: true, fallback: true }]);
