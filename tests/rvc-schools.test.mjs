@@ -46,3 +46,12 @@ test("all five Abydos voices have real browser assets", () => {
     }
   }
 });
+
+test('Trinity retains verified character identities and unavailable rows after catalog sync',()=>{
+  directory.syncCatalog([]);
+  const school=directory.schools.find(item=>item.id==='trinity');
+  assert.equal(school.students.length,26);
+  for(const id of ['nagisa','mika','seia','shimiko','love'])assert.ok(school.students.some(student=>student[0]===id));
+  assert.equal(directory.schoolFor({id:'nozomi'}),'highlander');
+  assert.equal(directory.schoolFor({id:'hikari'}),'highlander');
+});

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {initChorus,readChorusTracks,fetchChorusJson,chorusSuggestedParams,publishChorusResult} from '../assets/rvc-chorus.js';
+import {chorusRoleMatches,createChorusRolePicker} from '../assets/rvc-chorus-picker.js';
 
 // Controller contracts, not a substitute for browser rendering or real audio.
 class Node {
@@ -10,11 +11,13 @@ class Node {
   setAttribute(key,value){this.attrs[key]=String(value);}
   removeAttribute(key){delete this.attrs[key];}
   addEventListener(name,handler){(this.events[name]??=[]).push(handler);}
-  async fire(name){for(const handler of this.events[name]||[])await handler({target:this});}
+  async fire(name,extra={}){for(const handler of this.events[name]||[])await handler({target:this,preventDefault(){},...extra});}
   querySelectorAll(selector){const tags=selector.split(',');return this.children.flatMap(n=>[...(tags.includes(n.tag)?[n]:[]),...n.querySelectorAll(selector)]);}
   pause(){this.paused=true;}
   load(){}
   scrollIntoView(){this.revealed=true;}
+  focus(){this.focused=true;}
+  contains(node){return this===node||this.children.some(child=>child.contains(node));}
 }
 function completed(count=2){return {jobId:'analysis',downloadToken:'token',state:'completed',requestedCount:'auto',estimatedCount:count,
   expiresAt:'2026-10-04T20:00:00Z',tracks:Array.from({length:count},(_,i)=>({trackId:i+1}))};}
@@ -53,9 +56,10 @@ test('successful analysis displays one original audition and independent control
     assert.match(audio.src,new RegExp(`/analysis/stem/${i+1}\\?`));
   }
   const first=ui.tracks.children[0],second=ui.tracks.children[1];
-  const role=first.querySelectorAll('select')[0];role.value='arona';await role.fire('change');
-  const pitch=first.querySelectorAll('input')[0];pitch.value='5';await pitch.fire('input');
-  assert.equal(second.querySelectorAll('input')[0].value,0);
+  const trigger=first.querySelectorAll('button').find(node=>node.className==='chorus-role-trigger');await trigger.fire('click');
+  await first.querySelectorAll('button').find(node=>node.attrs['data-model-id']==='arona').fire('click');
+  const pitch=first.querySelectorAll('input').find(node=>node.type==='range');pitch.value='5';await pitch.fire('input');
+  assert.equal(second.querySelectorAll('input').find(node=>node.type==='range').value,0);
   await ui.nodes.convert.fire('click');
   const sent=JSON.parse(ui.calls.find(call=>call.url.includes('/convert?')).options.body);
   assert.equal(sent.tracks[0].modelId,'arona');assert.equal(sent.tracks[0].pitch,5);assert.equal(sent.tracks[1].pitch,0);
@@ -98,8 +102,9 @@ test('reference pitch comparison requires matching resource identity, uses bound
 test('single-person analysis exposes one usable card and manually tuned pitch survives role changes',async()=>fixture(async ui=>{
   ui.state.audio={file:new File(['source'],'solo.mp3')};await ui.nodes.analyze.fire('click');
   assert.equal(ui.tracks.children.length,1);assert.equal(ui.nodes.convert.disabled,false);
-  const card=ui.tracks.children[0],pitch=card.querySelectorAll('input')[0],role=card.querySelectorAll('select')[0];
-  pitch.value='3';await pitch.fire('input');role.value='arona';await role.fire('change');
+  const card=ui.tracks.children[0],pitch=card.querySelectorAll('input').find(node=>node.type==='range');
+  pitch.value='3';await pitch.fire('input');await card.querySelectorAll('button').find(node=>node.className==='chorus-role-trigger').fire('click');
+  await card.querySelectorAll('button').find(node=>node.attrs['data-model-id']==='arona').fire('click');
   assert.equal(pitch.value,'3');
   await ui.nodes.convert.fire('click');
   assert.equal(JSON.parse(ui.calls.find(c=>c.url.includes('/convert?')).options.body).tracks[0].pitch,3);
@@ -121,4 +126,40 @@ test('Safari-compatible JSON request handles non-JSON errors and enforces timeou
   assert.equal(result.state,'completed');assert.equal(signal.aborted,false);
   await assert.rejects(fetchChorusJson('/job',{},async()=>new Response('<html>bad gateway</html>',{status:502})),/未返回任务状态/);
   await assert.rejects(fetchChorusJson('/job',{},async(url,{signal})=>new Promise((resolve,reject)=>signal.addEventListener('abort',()=>reject(new Error('timeout')))),5),/timeout/);
+});
+
+test('chorus role search matches Chinese, English, school and aliases without fuzzy identity guesses',()=>{
+  const model={id:'hoshino',name:'小鸟游星野 (Hoshino)',avatarText:'星野',tags:['阿拜多斯']};
+  assert.equal(chorusRoleMatches(model,'星野'),true);assert.equal(chorusRoleMatches(model,'HOSHINO'),true);
+  assert.equal(chorusRoleMatches(model,'阿拜多斯 星野'),true);assert.equal(chorusRoleMatches(model,'ホシノ',['ホシノ']),true);
+  assert.equal(chorusRoleMatches(model,'阿罗娜'),false);
+});
+test('search and empty results preserve each voice selection and manual pitch; keyboard selection is sent to conversion',async()=>fixture(async ui=>{
+  ui.state.audio={file:new File(['source'],'duet.mp3')};await ui.nodes.analyze.fire('click');
+  const [first,second]=ui.tracks.children,pitch=first.querySelectorAll('input').find(node=>node.type==='range');
+  pitch.value='4';await pitch.fire('input');
+  await first.querySelectorAll('button').find(node=>node.className==='chorus-role-trigger').fire('click');
+  const search=first.querySelectorAll('input').find(node=>node.type==='search');
+  search.value='不存在的角色';await search.fire('input');
+  assert.equal(first.querySelectorAll('button').filter(node=>node.attrs.role==='option').length,0);
+  assert.equal(first.querySelectorAll('strong')[0].textContent,'星野');
+  search.value='阿罗娜';await search.fire('input');await search.fire('keydown',{key:'Enter'});
+  assert.equal(first.querySelectorAll('strong')[0].textContent,'阿罗娜');assert.equal(second.querySelectorAll('strong')[0].textContent,'星野');
+  assert.equal(pitch.value,'4');assert.equal(search.attrs['aria-expanded'],'false');
+  await ui.nodes.convert.fire('click');
+  const sent=JSON.parse(ui.calls.find(call=>call.url.includes('/convert?')).options.body);
+  assert.equal(sent.tracks[0].modelId,'arona');assert.equal(sent.tracks[0].pitch,4);assert.equal(sent.tracks[1].modelId,'hoshino');
+  assert.equal(ui.tracks.querySelectorAll('audio').length,4);
+}));
+test('picker Escape and IME keep selection; own uploaded models are excluded; keyboard arrows work',()=>{
+  const previous=globalThis.document;globalThis.document={createElement:tag=>new Node(tag)};
+  try{
+    const changed=[],picker=createChorusRolePicker({trackId:4,modelId:'hoshino',catalog:[{id:'hoshino',name:'星野'},{id:'arona',name:'阿罗娜'},{id:'own:custom',name:'私人上传'}],onChange:id=>changed.push(id)});
+    const trigger=picker.element.querySelectorAll('button')[0],search=picker.element.querySelectorAll('input')[0];
+    trigger.fire('click');assert.equal(picker.element.querySelectorAll('button').filter(node=>node.attrs.role==='option').length,2);
+    search.fire('keydown',{key:'Enter',isComposing:true});assert.deepEqual(changed,[]);
+    search.fire('keydown',{key:'Escape'});assert.equal(picker.value,'hoshino');assert.equal(trigger.attrs['aria-expanded'],'false');
+    trigger.fire('click');search.fire('keydown',{key:'ArrowDown'});search.fire('keydown',{key:'Enter'});
+    assert.deepEqual(changed,['arona']);assert.equal(picker.value,'arona');
+  }finally{globalThis.document=previous;}
 });

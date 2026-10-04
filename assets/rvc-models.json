@@ -1,5 +1,5 @@
 {
-  "version": 20,
+  "version": 21,
   "updatedAt": "2026-09-27",
   "_readme": "新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。真纪 V1 使用独立的本地 HuBERT V1 特征模型。",
   "baseModels": {
@@ -1721,6 +1721,1261 @@
         "source": "https://bluearchive.wiki/wiki/File:Serina_Lobby_4.ogg",
         "hearing": "未听评"
       }
+    },
+    {
+      "id": "hifumi",
+      "name": "阿慈谷日富美 (Hifumi)",
+      "avatarText": "富美",
+      "aliases": [
+        "ヒフミ",
+        "Hifumi"
+      ],
+      "description": "三一综合学园 · 社区 RVC v1 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/AjitaniHifumi.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "fecdc8a8a6613a820e616b72d992903ed5bc0c91a79e2346a366b121fae401a4",
+      "indexSha256": "a9298a12b8e2e5f537225612e429d72a3bb4b4b631e720a6677bd5f060945481",
+      "rvcVersion": "v1",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 9,
+        "featureDimension": 256
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/hifumi/revisions/8550c35a71a69895/chunk_0.bin",
+        "models/characters/hifumi/revisions/8550c35a71a69895/chunk_1.bin",
+        "models/characters/hifumi/revisions/8550c35a71a69895/chunk_2.bin",
+        "models/characters/hifumi/revisions/8550c35a71a69895/chunk_3.bin",
+        "models/characters/hifumi/revisions/8550c35a71a69895/chunk_4.bin",
+        "models/characters/hifumi/revisions/8550c35a71a69895/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "d522ec370a7e245d8115a23101d3567fcf85846f782502ad2567cda5297def92",
+        "938f28d3bb835bd77e08328bb15bfc6e0fefda7b70066aeb86a36054718ccbdb",
+        "41b3539bffbbd5b5948626d4f1be31e129fd099a82f3fb29238099d0425384dc",
+        "2c79c42dc1fbd65a2db47451ada246523076ba4531e5640b68264d7a29c86a83",
+        "1a1dd364f81c244d56e57c36a3836813999a794310ffea78e3fca7a911ba01f3",
+        "4a45022a90b86e22b7fa2ffafcf2a42d59443c6caf9b50b2c1473dbc8cb5bc37"
+      ],
+      "totalSize": 110034245,
+      "sha256": "8550c35a71a69895b4fe0f3a4b38a3b1b98cce1c121d35e33921ab09b40d3119",
+      "resourceRevision": "8550c35a71a69895b4fe0f3a4b38a3b1b98cce1c121d35e33921ab09b40d3119",
+      "retrieval": "models/characters/hifumi/revisions/8550c35a71a69895/retrieval.bin",
+      "retrievalSha256": "a712f003514d08b809d2f6208ecbaad5c118fea537d27ba61c6dcc0f96d99b36",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "98a33c826c7f915cfd53b6030c6d949ca9a1928d5cb11b18cd906fb6293a2125",
+        "source": "https://bluearchive.wiki/wiki/File:Hifumi_Lobby_2.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "hasumi",
+      "name": "羽川莲见 (Hasumi)",
+      "avatarText": "莲见",
+      "aliases": [
+        "ハスミ",
+        "Hasumi"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/HanekawaHasumi.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "3c929cc0d6b4fef00bd40f69c335bc2f6a170ee0e5aefbefd4ad9e477952775e",
+      "indexSha256": "ac5a042b8642f240d9f79667b832f9a9006c809e250799d30c7bfeb582b25715",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_0.bin",
+        "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_1.bin",
+        "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_2.bin",
+        "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_3.bin",
+        "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_4.bin",
+        "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "9646e5f0be3259be474d54db3852f9570e8cff9922d199926dc5a75f4ba81030",
+        "b5a5f073e11a3f68d7c6501df0d7e9bef2c4b807eb4599c5c355a861f12e2259",
+        "66f16597f4e578c6d587e9d4bc95c3792b9c9b2b280e52b33bd109a5c2930b57",
+        "e5dfea2d8a10e522560ba457945d32ee791a65b74fc6ba7ccbd201ffb59f64b9",
+        "23717e5ba67e048ec224df80898999028bd69dd52a1962ee3bc2f46f4ef58d87",
+        "1e485c0102df7f6efea5f797102cb7c4487389e01de3c5ffa39c0836b0b1bdc5"
+      ],
+      "totalSize": 110427461,
+      "sha256": "e3fb3a26026c203036769e72c18516f2e4e245bb7447f1d5c6f199c66772fa20",
+      "resourceRevision": "e3fb3a26026c203036769e72c18516f2e4e245bb7447f1d5c6f199c66772fa20",
+      "retrieval": "models/characters/hasumi/revisions/e3fb3a26026c2030/retrieval.bin",
+      "retrievalSha256": "22e2ed758102935a6fd8aa5faf0605f419e852f75987fd267970ad4624b55b53",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "f1fd79f2d3321318eee7c7a38ad67127d84b59995763b12a343c78de717bb30b",
+        "source": "https://bluearchive.wiki/wiki/File:Hasumi_Lobby_4.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "tsurugi",
+      "name": "剑先鹤城 (Tsurugi)",
+      "avatarText": "鹤城",
+      "aliases": [
+        "ツルギ",
+        "Tsurugi"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/KenzakiTsurugi.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "d461fbaf5830e55f5d56f9f5e9188740d65582c8c24e23b8ebd65e49d7e02159",
+      "indexSha256": "6b9487b16eb3e15ab9adaec121775cc0815af68c1dfe99d762f9ba1421f3f45e",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_0.bin",
+        "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_1.bin",
+        "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_2.bin",
+        "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_3.bin",
+        "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_4.bin",
+        "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "fc046985a16c75e78110adda9b875eda254037a380ccd5b7bb12e7fafe10ab01",
+        "e115ce5d65288e07b9ba99dd66630db929e191abb46997a6ec060c745968957f",
+        "5e3a33e4ac131a783c2f97b060668875edfbe8f6d7e6260d97f4707d33aa14f7",
+        "459f1c243fe12a9196dc9e44030d339bfbf539d59b659be00fb286a486856df2",
+        "d720883c3c9200d33d5d83ec1e6964f3480b90641c8ba8a8a48541bb39b64812",
+        "2f9fb3c913dff43db00fc92c2d2a401f40f51225871bcd73c640326c2972509a"
+      ],
+      "totalSize": 110427461,
+      "sha256": "b1a64ad790d1bf9d99ff96ecee903158181f99d97e9b38ea51d4a67b7ce9ef94",
+      "resourceRevision": "b1a64ad790d1bf9d99ff96ecee903158181f99d97e9b38ea51d4a67b7ce9ef94",
+      "retrieval": "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/retrieval.bin",
+      "retrievalSha256": "d0e58c326efbf49640e87404525a9dcc4a25b8ecc6825ab685d4625a099b2bcd",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "ba1d8790497d1dfbb576fb0040db294ae83d0641eb2e504f041955bdc6ca31b7",
+        "source": "https://bluearchive.wiki/wiki/File:Tsurugi_Lobby_4.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "suzumi",
+      "name": "守月铃美 (Suzumi)",
+      "avatarText": "铃美",
+      "aliases": [
+        "スズミ",
+        "Suzumi"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/MorizukiSuzumi.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "340fd406b73a970a089d205de593d85bf2227644f129f6166170658780245dfb",
+      "indexSha256": "5e3f6520bd8e8cc29526780b970945b35e5b5dfafa2e111717790ead4e489e85",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_0.bin",
+        "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_1.bin",
+        "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_2.bin",
+        "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_3.bin",
+        "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_4.bin",
+        "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "6f928d78aff5d5108d76972b44a50200e08e4b5aef8ea4e2e8ec0125e36774e1",
+        "773a096eb8f22d1de42098c25969312369e748a6ffab6b645933a60e686e122b",
+        "559d15b043ddff976cd84f9c4bc26daa90b57fcee1bff34ee5b36a3a7db38f5a",
+        "8ab1f3a75f7ebbad867c766fa4a623f9a869415f13d468bf072c7fd02913ca0c",
+        "98b017f471f5ed4ec9773124363d08f706668c400703cc85e98244c938abcb48",
+        "8293f1b2f0ecd62b01d97aaffd4865dd42c5e94785e8129ed722fcd1240f37ee"
+      ],
+      "totalSize": 110427461,
+      "sha256": "ad6eeafe3d582ea0ac3bd0e11b449a6eceb001362d7ebd3ca90cb83ae341384e",
+      "resourceRevision": "ad6eeafe3d582ea0ac3bd0e11b449a6eceb001362d7ebd3ca90cb83ae341384e",
+      "retrieval": "models/characters/suzumi/revisions/ad6eeafe3d582ea0/retrieval.bin",
+      "retrievalSha256": "eda73e5e8fdc34a55325dc2a495b9c70a0f81f1be7dc600993a294b27bc01237",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "60c359c2a827e75d8bbb535bd853292e5045e87fa1b60a94e1ce6f66e3350d5a",
+        "source": "https://bluearchive.wiki/wiki/File:Suzumi_Lobby_2.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "airi",
+      "name": "栗村爱莉 (Airi)",
+      "avatarText": "爱莉",
+      "aliases": [
+        "アイリ",
+        "Airi"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/KurimuraAiri.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "8e510fd3ae6ed6d6a93ba88456c2f207ce5eec43f2130ecb0063274438ba1d74",
+      "indexSha256": "4b86825fc3dd5b64d2db2c19ee14604ade70ca859e6e1c3f22cc359109f6ffa4",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_0.bin",
+        "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_1.bin",
+        "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_2.bin",
+        "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_3.bin",
+        "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_4.bin",
+        "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "e351b7eff1ed1858711d9cb6f7fa4f61f24d68901c625f27d2770e29512ef1a4",
+        "336d087e2cc047a692bc11413a659158260f4f70c137b834045d0c09fef36b08",
+        "af2d4f6bd46c91c7b0a361c29c93ec285c18f0386532a2e8d0bef2e1adee6dd3",
+        "4d39a6f458548136ec7818524ad7326c54d358e43410cf12ca2183acd7acbc4d",
+        "315cf5f2aa0143fd8a3b66254e9d0050478dc914f269894e81d9568faf12a89d",
+        "ded92dab954b3f8f002cc90de0241e1ec26bb89f923cb6675a02584d172f8068"
+      ],
+      "totalSize": 110427461,
+      "sha256": "d1f6d090b74cb8f88dea67d149cf6e8b67d3f582ede033d2d7c2eada4ffa0c79",
+      "resourceRevision": "d1f6d090b74cb8f88dea67d149cf6e8b67d3f582ede033d2d7c2eada4ffa0c79",
+      "retrieval": "models/characters/airi/revisions/d1f6d090b74cb8f8/retrieval.bin",
+      "retrievalSha256": "856b9624f1a49d73b91145f05ac7be5e82f01c11984f6079c853fc7362d197a4",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "199f514103c75639f5b7622c36d0fa8b826ccdd68079867bfb2dcd989233a543",
+        "source": "https://bluearchive.wiki/wiki/File:Airi_Lobby_5.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "yoshimi",
+      "name": "伊原木好美 (Yoshimi)",
+      "avatarText": "好美",
+      "aliases": [
+        "ヨシミ",
+        "Yoshimi"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/IbaragiYoshimi.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "612addcc7b83ec7385ec04e9ac4061c936cd6374592cf13d35dbc7d7b1b3ef3b",
+      "indexSha256": "729ffacf39c936b807656d1f0902301f42749a98f999b9f33e788184ab21e593",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_0.bin",
+        "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_1.bin",
+        "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_2.bin",
+        "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_3.bin",
+        "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_4.bin",
+        "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "a41a485b426e2e8933fca98461969686154289c4a010db6634a3048024ef1b9d",
+        "a4fabd2f079054aa1fe2637687c0dd18a0d04a65f0d1e0d07a8fcf0073c24bb3",
+        "23c7a5793022d760d58f7e2b4ae6a65579abd21bbb2005c494805a323449913f",
+        "df643c02bc241bdb0c03037aba624f66535f7b64d6d573d91d2f31b248aefa1e",
+        "51415b0ac79c246a2cfd08fcddde6da21eea66ce43eef5931302f9a2fb4020be",
+        "f95635081b335a10cdf5fef90438bfbf7d76e2eaada9fdd5d3d66d363947bd8c"
+      ],
+      "totalSize": 110427461,
+      "sha256": "8d40a20265a3416e48b316290d4478c84d293b91e42114ce4822901a99eef073",
+      "resourceRevision": "8d40a20265a3416e48b316290d4478c84d293b91e42114ce4822901a99eef073",
+      "retrieval": "models/characters/yoshimi/revisions/8d40a20265a3416e/retrieval.bin",
+      "retrievalSha256": "fc99a6d848002a1330a3b09d97a331a5e00623819136c5968dfa2be7255043ac",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "4b64aa4751c4d4412561c012ab96e8946798b7a9379a4006f22ab0f7756dd9a6",
+        "source": "https://bluearchive.wiki/wiki/File:Yoshimi_Lobby_5.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "hanae",
+      "name": "朝颜花江 (Hanae)",
+      "avatarText": "花江",
+      "aliases": [
+        "ハナエ",
+        "Hanae"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/AsagaoHanae.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "94181b0b72e79666de022b051dda23a8671cdae4072704bd56b588ba6d3181ab",
+      "indexSha256": "de50ed0734d9518e897f630cd8c43cc7fd87df772a06e78d46fd62bed622af30",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/hanae/revisions/06564b08a6986f4e/chunk_0.bin",
+        "models/characters/hanae/revisions/06564b08a6986f4e/chunk_1.bin",
+        "models/characters/hanae/revisions/06564b08a6986f4e/chunk_2.bin",
+        "models/characters/hanae/revisions/06564b08a6986f4e/chunk_3.bin",
+        "models/characters/hanae/revisions/06564b08a6986f4e/chunk_4.bin",
+        "models/characters/hanae/revisions/06564b08a6986f4e/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "b4722a8a602ebc9332c5402103ce6ec85ed2046cb08d1210b3341dcafd233616",
+        "a2a295b115536485524fbaa4bfc7f3733e3dd58177d5280a5d5f77ac54167588",
+        "b2e2c6e10f0da632e4972088227480c0859d79f8b6e3d307a11da4856b23e04b",
+        "d6e4edbcc5724abd88df452ab31f208918de629a2eb23063634a2014f32b1082",
+        "38c30e3b0d170dbc139947857e6fa79a231c4e8b967ade69fc54a48fb8038d1a",
+        "688dfd4b2024b8118234294e355dbdb15d7038f3b69d71e4f168eb62cd864a6a"
+      ],
+      "totalSize": 110427461,
+      "sha256": "06564b08a6986f4eb934d534f5940db722890d4cb18bcfdb11483aa75f2e68dd",
+      "resourceRevision": "06564b08a6986f4eb934d534f5940db722890d4cb18bcfdb11483aa75f2e68dd",
+      "retrieval": "models/characters/hanae/revisions/06564b08a6986f4e/retrieval.bin",
+      "retrievalSha256": "afd72c426d9945636bb1b3276416ecd16b9752db4ae5cd0e86a95c47c70a80a7",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "9cc4cf75f5147d39550933d33ae952b88f6fb2a8fa92f42f456999987070e09d",
+        "source": "https://bluearchive.wiki/wiki/File:Hanae_Lobby_3.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "mashiro",
+      "name": "静山真白 (Mashiro)",
+      "avatarText": "真白",
+      "aliases": [
+        "マシロ",
+        "Mashiro"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/ShiyuzamaMashiro.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "dfa5094936ea48ba1af65b8d09021951726ce3c423552a6727cb34077054b2e5",
+      "indexSha256": "07e487a7c5c68decacd95310f717171f2af69a7d7f6b62a8d4fbe8669117968b",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_0.bin",
+        "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_1.bin",
+        "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_2.bin",
+        "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_3.bin",
+        "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_4.bin",
+        "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "64bdc79f72c590b7d703c4a58ea874b4c7264cb6cab7685ee331c0f97980bcf7",
+        "6a6690c2fb041e416933a7254f00b0868b6779c07726592a12374943a98f565d",
+        "f9a73fa8fdcc442f2a7e9b1e49493777c013fa06509d050982ea18f26e92d9f8",
+        "5efc42f8e611be14d083c58d357bc263e5e7e94383e309e47595f6b9cf9fbeff",
+        "49caf3cf03f8b2cf89b534582b6799f31a4804a0e09745bb5433cce0dfc0db6c",
+        "faa4ce3efdf44687e73e2e21fe4a721e980d2262682550b12302c727230b8819"
+      ],
+      "totalSize": 110427461,
+      "sha256": "f65bb6999ed34bd3d116f2a351ae43a2ad5b146bde422235c1fb994c923a1b4e",
+      "resourceRevision": "f65bb6999ed34bd3d116f2a351ae43a2ad5b146bde422235c1fb994c923a1b4e",
+      "retrieval": "models/characters/mashiro/revisions/f65bb6999ed34bd3/retrieval.bin",
+      "retrievalSha256": "a77b37700a095c713c6c96cc4a39488bec3d94e1811dda5c6ba8969784760a0d",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "7c2d425dfa10e496715d805e537fe00e4e66e5aae3cf77f905a444496c5055d0",
+        "source": "https://bluearchive.wiki/wiki/File:Mashiro_Lobby_5.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "azusa",
+      "name": "白洲梓 (Azusa)",
+      "avatarText": "洲梓",
+      "aliases": [
+        "アズサ",
+        "Azusa"
+      ],
+      "description": "三一综合学园 · 社区 RVC v1 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/ShirasuAzusa.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "2a0403b5dbda7e2d3d5eae70627cc0ffab7ffcfe0534ea378b08cb84926d8386",
+      "indexSha256": "a3cd07c4617d8f2d255a32909ca7beb676411fe761be236dc2f43305a4681297",
+      "rvcVersion": "v1",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 9,
+        "featureDimension": 256
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/azusa/revisions/4121f460e157bc95/chunk_0.bin",
+        "models/characters/azusa/revisions/4121f460e157bc95/chunk_1.bin",
+        "models/characters/azusa/revisions/4121f460e157bc95/chunk_2.bin",
+        "models/characters/azusa/revisions/4121f460e157bc95/chunk_3.bin",
+        "models/characters/azusa/revisions/4121f460e157bc95/chunk_4.bin",
+        "models/characters/azusa/revisions/4121f460e157bc95/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "0a1a6fc135a1f267b7e057e58b52497f4b2b45186c059452aeac3555ae5d94ac",
+        "9b559c075fd4c15882bf187307e542a3872c337747f472decd5dd2b1ae251f65",
+        "94442fcb129582b9db4fb4b0be5493c0a464c26957a10a8aa759fc2701a598ab",
+        "d05b9cbfba9ce326fbd3e2865dc245403a6bbb01ef73fa2cce0cb68063921667",
+        "899082e1a91aabcc1db39076d098ea6220c7dda54637e7e1a2b0431d0ee29c41",
+        "4d5c49215c0744149d3d8ce0bf82d0f2f83c6b470541055688f7ae5bf3979a56"
+      ],
+      "totalSize": 110034245,
+      "sha256": "4121f460e157bc9589e9383ad366e143437f74c7c74a7e40f9c826ca896a7f49",
+      "resourceRevision": "4121f460e157bc9589e9383ad366e143437f74c7c74a7e40f9c826ca896a7f49",
+      "retrieval": "models/characters/azusa/revisions/4121f460e157bc95/retrieval.bin",
+      "retrievalSha256": "fa5cf860dd8f6b157873d3f938988c97296e2b005126f2961192ee287cdfd471",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "6be4eb034feb26f50da86b8ce6ab0025908819df2fbda56aee8ecd4541b5d477",
+        "source": "https://bluearchive.wiki/wiki/File:Azusa_Lobby_1.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "hanako",
+      "name": "浦和花子 (Hanako)",
+      "avatarText": "花子",
+      "aliases": [
+        "ハナコ",
+        "Hanako"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/UrawaHanako.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "34361c68a7e0d1fdeef3140a9791b2eb6e82ea0273a4c9e8fef378f74783c6a9",
+      "indexSha256": "87b05ea1128d4d4c4c205bc95241ad764c43186e5ef064fc737c857821245395",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_0.bin",
+        "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_1.bin",
+        "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_2.bin",
+        "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_3.bin",
+        "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_4.bin",
+        "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "8b7243457b96850deb9a1bae7b5a8fad59f363e31f3c698bcdb0b92b23ece639",
+        "944795bc7f8c7cc450bceb1706bf9ebca24ab057401930b53f82481b6bce363e",
+        "a742ea39b4d6a82e49d8f2688de92477de687af8e4db6b3e0a8f529b944a3565",
+        "bb2910b092a143ed3048c78216ee60200aab50766011e5dce3dfdf916006441b",
+        "8aa44237fa87f297a29bb587c39e8aede32737058368a74f1d34014a63008b8c",
+        "91342984326467c84c35bac0020daefaab6d2ff9680c5911f82f2361a4861565"
+      ],
+      "totalSize": 110427461,
+      "sha256": "bf283c2ac261f9da71976305fa3e0eccf7e17974692691756eab0ac49f6c6e50",
+      "resourceRevision": "bf283c2ac261f9da71976305fa3e0eccf7e17974692691756eab0ac49f6c6e50",
+      "retrieval": "models/characters/hanako/revisions/bf283c2ac261f9da/retrieval.bin",
+      "retrievalSha256": "3eade0c494e75bd6e67691b171c3d8ba20b3a9b9162034c295e24b6e972846ea",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "9522e382448445f4895ecd9810bdd18296201bd818da2087ca73898197672beb",
+        "source": "https://bluearchive.wiki/wiki/File:Hanako_Lobby_2.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "natsu",
+      "name": "柚鸟夏 (Natsu)",
+      "avatarText": "鸟夏",
+      "aliases": [
+        "ナツ",
+        "Natsu"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/YutoriNatsu.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "22d7b235a5615441208f17eefefa86abef5f19ce5a47d33372d2eec596dffdf3",
+      "indexSha256": "0c43e5a9f80aee574a600c80678ac0943f06e3eb1ad9a3545dd3e6d34d25dad3",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/natsu/revisions/4520b6e37b196bad/chunk_0.bin",
+        "models/characters/natsu/revisions/4520b6e37b196bad/chunk_1.bin",
+        "models/characters/natsu/revisions/4520b6e37b196bad/chunk_2.bin",
+        "models/characters/natsu/revisions/4520b6e37b196bad/chunk_3.bin",
+        "models/characters/natsu/revisions/4520b6e37b196bad/chunk_4.bin",
+        "models/characters/natsu/revisions/4520b6e37b196bad/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "5d04ac30512e7df8c91f132a80d84a71cc0610353329a8eb06e4bf58898ae87a",
+        "b155a6fdfe32dbad908fb934cba4b27aa5dfc5deeba1d24374a8f12523fff91a",
+        "30068eea24f765b145ad6e1dca6ee172b0bcf7d74efd1bc9e59c9a94d72b456e",
+        "700864a1b7b1310078164ac47fca797b7be1aa3540978397fe36848376ae604d",
+        "7a5d8cf47174a4bca74f305e6784dd73a71cc2737ea5de87a096f4d2627111d6",
+        "05190c8bbcdac5b1d344f4035f3c22767f66caf70970183125c7d3594ec90fca"
+      ],
+      "totalSize": 110427461,
+      "sha256": "4520b6e37b196bad45c77abecbefda7d9577ea984317adf4b1a3e5e3d8b3c096",
+      "resourceRevision": "4520b6e37b196bad45c77abecbefda7d9577ea984317adf4b1a3e5e3d8b3c096",
+      "retrieval": "models/characters/natsu/revisions/4520b6e37b196bad/retrieval.bin",
+      "retrievalSha256": "1c51823fd9d0b9b90e75b601b7d187794ab1339cb0992da8fa2172acf01c5c09",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "364574ab2582c7a82721e185a74d738d2ae51b2237a51c80df2e647271186652",
+        "source": "https://bluearchive.wiki/wiki/File:Natsu_Lobby_5.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "mari",
+      "name": "伊落玛丽 (Mari)",
+      "avatarText": "玛丽",
+      "aliases": [
+        "マリー",
+        "Mari"
+      ],
+      "description": "三一综合学园 · 社区 RVC v1 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/IochiMari.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "f745a4debc4ac2c677c4a5eb514351f4254114e25166c69cbed3cd5e3ca89ae5",
+      "indexSha256": "36ebf259789f6b6b99298dee6867b6e85efc381a271a8b517c7d00d1c51a2291",
+      "rvcVersion": "v1",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 9,
+        "featureDimension": 256
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/mari/revisions/8e046676025edd4e/chunk_0.bin",
+        "models/characters/mari/revisions/8e046676025edd4e/chunk_1.bin",
+        "models/characters/mari/revisions/8e046676025edd4e/chunk_2.bin",
+        "models/characters/mari/revisions/8e046676025edd4e/chunk_3.bin",
+        "models/characters/mari/revisions/8e046676025edd4e/chunk_4.bin",
+        "models/characters/mari/revisions/8e046676025edd4e/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "3475e779fefbfa79e60c4ab49dfd1d65140da43dc2ae2558bc359e5bb4347348",
+        "a2fd351199ee3782091f4e62201ea8ee61a89d552530b9f22eb1dd313c7453ac",
+        "6f15250617d682c50a1d0ea8cc434d4853e71dc6c1eada6bd51f06b4327fbb39",
+        "cb947094836f23e78348ff077b108847df188e832a60ccadcdf9fbb6b201a72b",
+        "e4867ae2aa8a77c308609bf1c9288aa1d2d73078d5477223e386b15af1929e5e",
+        "42e6733c66833d08d8ebfe15f0d5477cb610d1d2bc2523dc04a1dd7ab4310f97"
+      ],
+      "totalSize": 110034245,
+      "sha256": "8e046676025edd4e613c5243e9477fbce0d569bd45cd5d7bb113b641138c298b",
+      "resourceRevision": "8e046676025edd4e613c5243e9477fbce0d569bd45cd5d7bb113b641138c298b",
+      "retrieval": "models/characters/mari/revisions/8e046676025edd4e/retrieval.bin",
+      "retrievalSha256": "9ef404905ec10a0cae812cdd7f34021a8934cc5c28578d623af0f8321f109411",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "cdc9b9861aff83a8b1b4f01aa4f8d49f2c083987f3630aa393ccc6a800127c83",
+        "source": "https://bluearchive.wiki/wiki/File:Mari_Lobby_5.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "kazusa",
+      "name": "杏山和纱 (Kazusa)",
+      "avatarText": "和纱",
+      "aliases": [
+        "カズサ",
+        "Kazusa"
+      ],
+      "description": "三一综合学园 · 社区 RVC v1 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/KyouyamaKazusa.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "eb3e6fbce755e4021de0fbce03d46938116352c3a22ca236fec0a9fe463db200",
+      "indexSha256": "899bd84db01e18c639c093db0b00a73dbd913c766e7d7e04ac8c1bebc10ba8fe",
+      "rvcVersion": "v1",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 9,
+        "featureDimension": 256
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_0.bin",
+        "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_1.bin",
+        "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_2.bin",
+        "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_3.bin",
+        "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_4.bin",
+        "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "45b7ae3ed2f609df98764588f0c80871c07b13ff831abe06242a3ec5f721640b",
+        "da1ab1119c59740d5bcadd71740420999d160c61a02ca7158831bb2a3aa59a8b",
+        "4d264f90203a64ce90a44210aee244c9602d7619c9d3623ed932d2f3b3e2038d",
+        "033be54dbae3d15b2a6fab058ad2752d5824c0d65b8b93ce0dec08e642004608",
+        "c80e5b872551d9668306be394131ce601f4b32036012b4957781221435f7acc6",
+        "56013448569d0bb6a2b67a8d3f4c7f905ca4f206e07eb851384b2c68177ab0f9"
+      ],
+      "totalSize": 110034245,
+      "sha256": "5153a66335fba7d14a53046ecf51564bda050a8e26e7de06c4bf941e42b41e40",
+      "resourceRevision": "5153a66335fba7d14a53046ecf51564bda050a8e26e7de06c4bf941e42b41e40",
+      "retrieval": "models/characters/kazusa/revisions/5153a66335fba7d1/retrieval.bin",
+      "retrievalSha256": "506b8d6785af367b2d32982fe189a02b990ddaf4f9b6714a02643984de2c9f0f",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "452f5e69f169ea25b6ca941140838a105516a76b9f740fbe20a50482365392c5",
+        "source": "https://bluearchive.wiki/wiki/File:Kazusa_Lobby_2.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "ui",
+      "name": "古关忧 (Ui)",
+      "avatarText": "关忧",
+      "aliases": [
+        "ウイ",
+        "Ui"
+      ],
+      "description": "三一综合学园 · 社区 RVC v1 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/KozekiUi.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "4166288175aac905aac331542822bb9a261ca5caa49665e0fa3d03db9a6f0a1a",
+      "indexSha256": "156e61b042830f37fc188aba223592e07920725773749556e1aa3543edaa1840",
+      "rvcVersion": "v1",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 9,
+        "featureDimension": 256
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/ui/revisions/26f6f74ec4097003/chunk_0.bin",
+        "models/characters/ui/revisions/26f6f74ec4097003/chunk_1.bin",
+        "models/characters/ui/revisions/26f6f74ec4097003/chunk_2.bin",
+        "models/characters/ui/revisions/26f6f74ec4097003/chunk_3.bin",
+        "models/characters/ui/revisions/26f6f74ec4097003/chunk_4.bin",
+        "models/characters/ui/revisions/26f6f74ec4097003/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "e95c031fb5d1c4f579cff3585ffe16defa8c8e2602b9dc7a28f1b6244cb6d062",
+        "d899fdd4f6e9379ff14b1a7e0f0fe8c39b2b927a66a68bdf2cd17c6953c98356",
+        "848a14df663efc864ca122e71bea5e93cfabb34831c9bd0f4d0bb7a3bacb1225",
+        "5fe7b7de79aa3013b8a2018f683a0b4bd62b0f85e199761937416747546b59ea",
+        "1128c0d14f7ba8e612ea24a9bd25f4b54fca9c07affe027244a4abbded8ee736",
+        "d0b5e30403da8a1277791eafacb730590e9ca931d6ff028f9852ed254f40b889"
+      ],
+      "totalSize": 110034245,
+      "sha256": "26f6f74ec40970038c10444d9cb2c9a6492b109f0b91c6395efb0d85f2f10bb0",
+      "resourceRevision": "26f6f74ec40970038c10444d9cb2c9a6492b109f0b91c6395efb0d85f2f10bb0",
+      "retrieval": "models/characters/ui/revisions/26f6f74ec4097003/retrieval.bin",
+      "retrievalSha256": "62385a39eb39c6ac6db6e261b2b20602d47ff9a07daaf1dad4deccd267e57e4e",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "82ae013f997ccd55d19b70c052fc2a35c61ade5de24bf8aafed011dcb597959e",
+        "source": "https://bluearchive.wiki/wiki/File:Ui_Lobby_2.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "hinata",
+      "name": "若叶日向 (Hinata)",
+      "avatarText": "日向",
+      "aliases": [
+        "ヒナタ",
+        "Hinata"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/WakabaHinata.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "8095846986775692597af84c3220a134d181d71cb6fa99dadb67c907003b682f",
+      "indexSha256": "21b6d9254d448c114e40676b6a8c98c9178f5ecff7f70c1d7a2fb495aef968ee",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_0.bin",
+        "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_1.bin",
+        "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_2.bin",
+        "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_3.bin",
+        "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_4.bin",
+        "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "f8e6b830d0f9b5d95e2528b7129fe05d59780cfee86cf33ca013ce10433e5022",
+        "0bde4a2193b962c94355dbe88822267fd3575a54a3af27e2da52c3286e15ab64",
+        "6326945209744e46bade265ef012165a2d19cea586ac08108db3e569120054d8",
+        "5ac88f8d2b29fc6814ac5c3fddf16b8919ece43bcfc8ada334ad8e2fe184af4d",
+        "7e31a8ba9e44b626337f1258bae2245d17b4e762f231e792562aeae8676c2613",
+        "1a758a6d23da466fbb1b0d76ab619fa2b07fec4dd037f0fe107b54963dd40640"
+      ],
+      "totalSize": 110427461,
+      "sha256": "3859e24b3241ceb5c8464d77f22017a8899cdd5db4fea52d61bf5c9b6b0d584f",
+      "resourceRevision": "3859e24b3241ceb5c8464d77f22017a8899cdd5db4fea52d61bf5c9b6b0d584f",
+      "retrieval": "models/characters/hinata/revisions/3859e24b3241ceb5/retrieval.bin",
+      "retrievalSha256": "92a2ed5457285c59d774c3f9f04a62121c366cd4c15fe97cbd0167e69a7a753c",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "58a4553fd46487dc1c463580d03b4bdd136b403b9dca262fc01b54de2d3053c4",
+        "source": "https://bluearchive.wiki/wiki/File:Hinata_Lobby_2.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "mine",
+      "name": "苍森美祢 (Mine)",
+      "avatarText": "美祢",
+      "aliases": [
+        "ミネ",
+        "Mine"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/AomoriMine.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "f2fb786db100cd28b7ec654576c875842324986dd013bf890a2579e33075efe4",
+      "indexSha256": "c93f2729387cd4d16a8c31bf45469a3cbf34d4abd079126b19417294ccb0e630",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/mine/revisions/e01fec428821e735/chunk_0.bin",
+        "models/characters/mine/revisions/e01fec428821e735/chunk_1.bin",
+        "models/characters/mine/revisions/e01fec428821e735/chunk_2.bin",
+        "models/characters/mine/revisions/e01fec428821e735/chunk_3.bin",
+        "models/characters/mine/revisions/e01fec428821e735/chunk_4.bin",
+        "models/characters/mine/revisions/e01fec428821e735/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "0e7b6e4c81963ee47736006821fb2366cf641c89444bde0ca0f950e06debace1",
+        "5679918483fc9025375c79fab6a7c496c2a6f58090a760e8b205bfcaca025b21",
+        "baf94c484202b8341376afacd618dffa70221fa405e38e62361b2b5bd16676da",
+        "a5dd97788bfee02f7ca47e01c825de2d2b6bfad7c59a2f079233e557d664c3e8",
+        "b63936770a48379758d81cee31f4c1dad14bff3d8ef590f4e4fe4fe852653442",
+        "d853a9107c89718de7f6a1c87fea157bbb9655aa2ab64a87a027a9f6a84c6f29"
+      ],
+      "totalSize": 110427461,
+      "sha256": "e01fec428821e735439365733bd3dbc70dbd7924000e2adf66ba8cb668235cf8",
+      "resourceRevision": "e01fec428821e735439365733bd3dbc70dbd7924000e2adf66ba8cb668235cf8",
+      "retrieval": "models/characters/mine/revisions/e01fec428821e735/retrieval.bin",
+      "retrievalSha256": "801844dac2fd4cd00aa9b9d285ac482b13afdf1382a0dcbca1a47b7559798d88",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "09e013524f1ef3b847137fe26e33947a54bedb2631bba00e850daa1cd37cdf51",
+        "source": "https://bluearchive.wiki/wiki/File:Mine_Lobby_3.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "sakurako",
+      "name": "歌住樱子 (Sakurako)",
+      "avatarText": "樱子",
+      "aliases": [
+        "サクラコ",
+        "Sakurako"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/UtazumiSakurako.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "ed02c09c4ae397eb70e94a6a4c3fc813df3b0a442e7ddba1aeeedeea9bbcfdf6",
+      "indexSha256": "f4c60400ad6d8d77f95881c428a5fd6e48865e550cfd9594c15cd3130b35fde5",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_0.bin",
+        "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_1.bin",
+        "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_2.bin",
+        "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_3.bin",
+        "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_4.bin",
+        "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "ae2193db9afc7c16a43bf979c366971b8daba645ae9d073c1bcd210a66cc3e1e",
+        "d3bea52810d473880a485b0c10f8d987cbedc142d8d0ef5370dd13b6cf001d54",
+        "ffc7fe9bfc4a6ce47901cf91e6e107998d8b8f034931e8033963c3663fe817e8",
+        "3f581483f9c820f082316c5b7e381442c7e57fe17b4ebf6a15f94d5328d9dc81",
+        "8ba0503e21162c40f4a7ab06aca7d139bfd0cdb07a5a6f6de954aa7e4a36ec38",
+        "09df1e701861e239bb6f6d4559baae0f9d570b228bbd6fc129694cb70e6c68f3"
+      ],
+      "totalSize": 110427461,
+      "sha256": "d3203f7733ccb6a5496c5ecdf9137087416b21de20cf61eba7bbd7c1c0dbc49e",
+      "resourceRevision": "d3203f7733ccb6a5496c5ecdf9137087416b21de20cf61eba7bbd7c1c0dbc49e",
+      "retrieval": "models/characters/sakurako/revisions/d3203f7733ccb6a5/retrieval.bin",
+      "retrievalSha256": "761218d85aab12f05c5a8755a8e5e1e7030e6f51aada6489e17a374a757f9cb1",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "a2090e6ccb2254906b3d3c269629e316c2afb574ae0514acbf9f5e3d49dafb37",
+        "source": "https://bluearchive.wiki/wiki/File:Sakurako_Lobby_4.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "nagisa",
+      "name": "桐藤渚 (Nagisa)",
+      "avatarText": "藤渚",
+      "aliases": [
+        "ナギサ",
+        "Nagisa"
+      ],
+      "description": "三一综合学园 · 社区 RVC v1 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/KirifujiNagisa.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "0be64937d1e9b5d3304257c6be50b626850adedba0ee05deb0502c0227377cb6",
+      "indexSha256": "75a18e76d23494e2c3a051038dec19af359f9d72ad0ab3a7832e1ae539807d53",
+      "rvcVersion": "v1",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 9,
+        "featureDimension": 256
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_0.bin",
+        "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_1.bin",
+        "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_2.bin",
+        "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_3.bin",
+        "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_4.bin",
+        "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "9f80b65ea13d63615ab5155ce9bfeb3aff391df3b040d5bffafc880325eed68c",
+        "7f3da0cf50bb3547913f0afcb663f22ac36caef6cfe05f7db1b56497fa2d7a6a",
+        "ddcdfd2d57f539ef03ecab3e379d6a0047ab9719d34a0846792f784302e0f340",
+        "6143e97ce19d9d37a66342dd9dde2de693d4a6c4160c743ddb71ffbc7627b3ed",
+        "a492991f9f114fcaa2f7dbea75e8c402e248d0b33b61df5b9b726378bef185ff",
+        "b1c6b58f7d0c15978cb440919a06fd14731072c128a1f3ed966257fbd34084d1"
+      ],
+      "totalSize": 110034245,
+      "sha256": "e2a115fe323e6d0506e8535e6ff6e89bf02b8faec05edb50ec5f1a03a7f470e4",
+      "resourceRevision": "e2a115fe323e6d0506e8535e6ff6e89bf02b8faec05edb50ec5f1a03a7f470e4",
+      "retrieval": "models/characters/nagisa/revisions/e2a115fe323e6d05/retrieval.bin",
+      "retrievalSha256": "24a9f39e36175b8af00ab0d20918cfa9445c16e0c156ef8a31a9b143a96c853a",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "856720788cf6963aafbf976fa7471db96d445c02ec25fb739dd948cb59aa9d27",
+        "source": "https://bluearchive.wiki/wiki/File:Nagisa_Lobby_1.ogg",
+        "hearing": "未听评"
+      }
+    },
+    {
+      "id": "ichika",
+      "name": "仲正一花 (Ichika)",
+      "avatarText": "一花",
+      "aliases": [
+        "イチカ",
+        "Ichika"
+      ],
+      "description": "三一综合学园 · 社区 RVC v2 音色",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "三一"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 40000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/NakamasaIchika.zip",
+      "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+      "publisher": "LordDavis778",
+      "license": "openrail (repository metadata)",
+      "checkpointSha256": "01e01097592bcd236e21916507bf51969fe7a740f3bc43aa1a944c3742e5cdf7",
+      "indexSha256": "d84d763b652581408bced82ca43852bcc2577ba7bb7c2c2e93774cf44a66b3f0",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_0.bin",
+        "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_1.bin",
+        "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_2.bin",
+        "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_3.bin",
+        "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_4.bin",
+        "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "c813148da2dd3e64cea6407fbf5ddb95761062b82c09c0d352db074b1af517ad",
+        "423d3c0fa7f52e4941c38a5b9f2b66e1d14b453b37a24feab939488b719d61a7",
+        "32887e7a83828d35d443f25077509f098d9e2ba1ffab0453f82e74678e92c112",
+        "a3163f0a638c6775e332054fabb13f73c78cca36034aeb3f74e848a44bdc2423",
+        "75f6d0ec4836e2cad8a64cd6eb8f681a719dc9df0b029312180bd6e920c5b7e4",
+        "49440d335490b4cf951e849940d8c0b152967c900aca200704b9d984cf22ee3f"
+      ],
+      "totalSize": 110427461,
+      "sha256": "09fb500cfc2cd3d2b787853d9f0bd83ac0cf6381c1f842b84a37854d668f659d",
+      "resourceRevision": "09fb500cfc2cd3d2b787853d9f0bd83ac0cf6381c1f842b84a37854d668f659d",
+      "retrieval": "models/characters/ichika/revisions/09fb500cfc2cd3d2/retrieval.bin",
+      "retrievalSha256": "75d064b431b699ad6e3700705d23dd4d4b189b70f75683d7ed18d6f741953d4d",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": true,
+        "engine": "seed-vc-v2-speech",
+        "resourceRevision": "a36a69f675ba4d0d1f9175e30d0f031e57907625e09de887192020ce9f1eda61",
+        "referenceSha256": "90bd83298eee0cc7da1fb5b6b768f32c294f4e599df7f39a9c03c89906b2f966",
+        "source": "https://bluearchive.wiki/wiki/File:Ichika_Lobby_2.ogg",
+        "hearing": "未听评"
+      }
     }
-  ]
+  ],
+  "updated": "2026-10-04"
 }

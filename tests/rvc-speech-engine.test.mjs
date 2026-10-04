@@ -25,7 +25,7 @@ test('reference speech selects only verified roles in cloud voice mode', () => {
 });
 test('enabled character references are distinct and have actual revisions', () => {
   const refs = catalog.filter(m => m.speechProfile.enabled);
-  assert.equal(refs.length, 28);
+  assert.equal(refs.length, 47);
   assert.equal(new Set(refs.map(m => m.speechProfile.referenceSha256)).size, refs.length);
   for (const m of refs) {
     assert.match(m.speechProfile.referenceSha256, /^[a-f0-9]{64}$/u);

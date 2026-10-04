@@ -1,3 +1,5 @@
+import {createChorusRolePicker} from './rvc-chorus-picker.js?v=20261004-search-1';
+
 export function chorusBase(endpoint) {
   const base=String(endpoint).replace(/\/+$/u,'');
   if (/\/api\/rvc$/u.test(base)) return base.replace(/\/rvc$/u,'/rvc-chorus');
@@ -63,7 +65,7 @@ export async function publishChorusResult({audio,result,download,meta},next,job,
 export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMode,setBusy,onResult,
   createRequestId=()=>`${Date.now()}-${Math.random().toString(36).slice(2)}`,
   request=fetchChorusJson,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms)),
-  loadVoiceRanges=()=>fetchChorusJson('./assets/rvc-voice-ranges.json?v=20261004-4',{},globalThis.fetch,8000)}) {
+  loadVoiceRanges=()=>fetchChorusJson('./assets/rvc-voice-ranges.json?v=20261004-search-1',{},globalThis.fetch,8000)}) {
   const panel=document.getElementById('rvc-chorus');
   if(!panel)return null;
   const enable=panel.querySelector('[data-enable]'), analyzeButton=panel.querySelector('[data-analyze]');
@@ -113,8 +115,12 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
       returnedTracks.forEach((_,i)=>autoTracks.add(i));}
     for(const [i,t] of returnedTracks.entries()){
       const card=document.createElement('article');card.className='chorus-track';
-      const title=document.createElement('h4');
-      const updatePitchLabel=()=>{title.textContent=`声部 ${t.trackId} · ${params[i].pitch>0?'+':''}${params[i].pitch} 半音`;};
+      const header=document.createElement('div');header.className='chorus-track-heading';
+      const number=document.createElement('span');number.className='chorus-track-number';number.textContent=String(t.trackId).padStart(2,'0');
+      const title=document.createElement('h4');title.textContent=`声部 ${t.trackId}`;
+      const pitchLabel=document.createElement('span');pitchLabel.className='chorus-pitch-badge';
+      header.append(number,title,pitchLabel);
+      const updatePitchLabel=()=>{pitchLabel.textContent=`${params[i].pitch>0?'+':''}${params[i].pitch} 半音`;};
       updatePitchLabel();
       function audition(source,label){
         const heading=document.createElement('p');heading.className='chorus-audition-label';heading.textContent=label;
@@ -123,27 +129,27 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
         audio.src=`${base}/${source.jobId}/stem/${t.trackId}?token=${encodeURIComponent(source.downloadToken)}`;
         audio.addEventListener('play',()=>document.querySelectorAll('audio').forEach(a=>{if(a!==audio)a.pause();}));
         audio.addEventListener('error',()=>{heading.textContent=`${label} · 暂时无法载入，请重试；超过有效期需重新提取。`;});
-        card.append(heading,audio);
+        const block=document.createElement('div');block.className='chorus-audition';block.append(heading,audio);card.append(block);
       }
-      card.append(title);
+      card.append(header);
       const range=t.voiceRange||{},rangeLabel=document.createElement('p');
-      rangeLabel.textContent=range.classification==='low'?'检测为低声区（偏男声）':range.classification==='high'?'检测为高声区（偏女声）':range.classification==='middle'?'检测为中声区':'声区不确定，保持原调';card.append(rangeLabel);
+      rangeLabel.className='chorus-range-label';rangeLabel.textContent=range.classification==='low'?'低声区 · 偏男声':range.classification==='high'?'高声区 · 偏女声':range.classification==='middle'?'中声区':'声区不确定 · 保持原调';card.append(rangeLabel);
       audition(session,'分离原声 · 先确认是哪位歌手');
       if(converted)audition(job,'转换后 · 所选角色人声');
-      const role=document.createElement('select');role.setAttribute('aria-label',`声部 ${t.trackId} 对应角色`);
-      state.catalog.filter(m=>!String(m.id).startsWith('own:')).forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name || m.displayName || m.id;role.append(o);});
+      const role=createChorusRolePicker({catalog:state.catalog,modelId:params[i].modelId,trackId:t.trackId,
+        schools:globalThis.PostPrepSchools?.schools||[],onChange:id=>{params[i].modelId=id;if(autoTracks.has(i))tune();}});
       const controls=[];
       function tune(){
         const current=params[i],suggested=suggest(t,state.catalog.find(m=>m.id===role.value)||{id:role.value});
         Object.assign(current,{pitch:suggested.pitch,indexRate:suggested.indexRate,protect:suggested.protect,rmsMixRate:suggested.rmsMixRate,f0Method:suggested.f0Method});
         controls.forEach(({key,control,out})=>{control.value=current[key];out.textContent=control.value;});f0.value=current.f0Method;updatePitchLabel();autoTracks.add(i);
       }
-      role.value=params[i].modelId;role.addEventListener('change',()=>{params[i].modelId=role.value;if(autoTracks.has(i))tune();});
-      const autoButton=document.createElement('button');autoButton.type='button';autoButton.textContent='按声区自动调参';autoButton.addEventListener('click',tune);
+      const autoButton=document.createElement('button');autoButton.type='button';autoButton.className='chorus-auto-tune';autoButton.textContent='按声区自动调参';autoButton.addEventListener('click',tune);
       const details=document.createElement('details'), summary=document.createElement('summary');summary.textContent='独立调音';details.append(summary);
       for(const [key,label,min,max,step] of [['pitch','音高（半音）',-24,24,1],['indexRate','检索强度',0,1,.01],['protect','辅音保护',0,.5,.01],['rmsMixRate','动态保留',0,1,.01],['gainDb','人声音量（dB）',-24,6,.5]]){
         const wrap=document.createElement('label');wrap.className='chorus-control';const name=document.createElement('span');name.textContent=label;
         const control=document.createElement('input');Object.assign(control,{type:'range',min,max,step,value:params[i][key]});
+        control.setAttribute('aria-label',`声部 ${t.trackId} ${label}`);
         const out=document.createElement('output');out.textContent=control.value;
         controls.push({key,control,out});
         control.addEventListener('input',()=>{params[i][key]=Number(control.value);out.textContent=control.value;if(key!=='gainDb')autoTracks.delete(i);if(key==='pitch')updatePitchLabel();});
@@ -154,7 +160,7 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
       const f0=document.createElement('select');f0.setAttribute('aria-label',`声部 ${t.trackId} 音高算法`);
       for(const method of ['rmvpe','fcpe','auto','pm']){const o=document.createElement('option');o.value=method;o.textContent=method.toUpperCase();f0.append(o);}
       f0.value=params[i].f0Method;f0.addEventListener('change',()=>{params[i].f0Method=f0.value;autoTracks.delete(i);});details.append(f0);
-      card.append(role,autoButton,details);tracks.append(card);
+      card.append(role.element,autoButton,details);tracks.append(card);
     }
   }
   async function finishPending(){

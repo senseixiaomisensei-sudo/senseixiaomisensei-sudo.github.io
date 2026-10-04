@@ -1110,5 +1110,233 @@
       "e6e4f13d4a4b4058cd6d38f4dc58ce6cad99a0b3b1dbfe6efa6e10b3eff3563e",
       "cfeebfb7239fa68d5d690e3349297b50e6b73a7bd72f1d9460979c2c6e0c1e95"
     ]
+  },
+  "hifumi.onnx": {
+    "totalSize": 110034245,
+    "sha256": "8550c35a71a69895b4fe0f3a4b38a3b1b98cce1c121d35e33921ab09b40d3119",
+    "chunks": [
+      "models/characters/hifumi/revisions/8550c35a71a69895/chunk_0.bin",
+      "models/characters/hifumi/revisions/8550c35a71a69895/chunk_1.bin",
+      "models/characters/hifumi/revisions/8550c35a71a69895/chunk_2.bin",
+      "models/characters/hifumi/revisions/8550c35a71a69895/chunk_3.bin",
+      "models/characters/hifumi/revisions/8550c35a71a69895/chunk_4.bin",
+      "models/characters/hifumi/revisions/8550c35a71a69895/chunk_5.bin"
+    ]
+  },
+  "hasumi.onnx": {
+    "totalSize": 110427461,
+    "sha256": "e3fb3a26026c203036769e72c18516f2e4e245bb7447f1d5c6f199c66772fa20",
+    "chunks": [
+      "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_0.bin",
+      "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_1.bin",
+      "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_2.bin",
+      "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_3.bin",
+      "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_4.bin",
+      "models/characters/hasumi/revisions/e3fb3a26026c2030/chunk_5.bin"
+    ]
+  },
+  "tsurugi.onnx": {
+    "totalSize": 110427461,
+    "sha256": "b1a64ad790d1bf9d99ff96ecee903158181f99d97e9b38ea51d4a67b7ce9ef94",
+    "chunks": [
+      "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_0.bin",
+      "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_1.bin",
+      "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_2.bin",
+      "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_3.bin",
+      "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_4.bin",
+      "models/characters/tsurugi/revisions/b1a64ad790d1bf9d/chunk_5.bin"
+    ]
+  },
+  "suzumi.onnx": {
+    "totalSize": 110427461,
+    "sha256": "ad6eeafe3d582ea0ac3bd0e11b449a6eceb001362d7ebd3ca90cb83ae341384e",
+    "chunks": [
+      "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_0.bin",
+      "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_1.bin",
+      "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_2.bin",
+      "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_3.bin",
+      "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_4.bin",
+      "models/characters/suzumi/revisions/ad6eeafe3d582ea0/chunk_5.bin"
+    ]
+  },
+  "airi.onnx": {
+    "totalSize": 110427461,
+    "sha256": "d1f6d090b74cb8f88dea67d149cf6e8b67d3f582ede033d2d7c2eada4ffa0c79",
+    "chunks": [
+      "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_0.bin",
+      "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_1.bin",
+      "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_2.bin",
+      "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_3.bin",
+      "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_4.bin",
+      "models/characters/airi/revisions/d1f6d090b74cb8f8/chunk_5.bin"
+    ]
+  },
+  "yoshimi.onnx": {
+    "totalSize": 110427461,
+    "sha256": "8d40a20265a3416e48b316290d4478c84d293b91e42114ce4822901a99eef073",
+    "chunks": [
+      "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_0.bin",
+      "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_1.bin",
+      "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_2.bin",
+      "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_3.bin",
+      "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_4.bin",
+      "models/characters/yoshimi/revisions/8d40a20265a3416e/chunk_5.bin"
+    ]
+  },
+  "hanae.onnx": {
+    "totalSize": 110427461,
+    "sha256": "06564b08a6986f4eb934d534f5940db722890d4cb18bcfdb11483aa75f2e68dd",
+    "chunks": [
+      "models/characters/hanae/revisions/06564b08a6986f4e/chunk_0.bin",
+      "models/characters/hanae/revisions/06564b08a6986f4e/chunk_1.bin",
+      "models/characters/hanae/revisions/06564b08a6986f4e/chunk_2.bin",
+      "models/characters/hanae/revisions/06564b08a6986f4e/chunk_3.bin",
+      "models/characters/hanae/revisions/06564b08a6986f4e/chunk_4.bin",
+      "models/characters/hanae/revisions/06564b08a6986f4e/chunk_5.bin"
+    ]
+  },
+  "mashiro.onnx": {
+    "totalSize": 110427461,
+    "sha256": "f65bb6999ed34bd3d116f2a351ae43a2ad5b146bde422235c1fb994c923a1b4e",
+    "chunks": [
+      "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_0.bin",
+      "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_1.bin",
+      "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_2.bin",
+      "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_3.bin",
+      "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_4.bin",
+      "models/characters/mashiro/revisions/f65bb6999ed34bd3/chunk_5.bin"
+    ]
+  },
+  "azusa.onnx": {
+    "totalSize": 110034245,
+    "sha256": "4121f460e157bc9589e9383ad366e143437f74c7c74a7e40f9c826ca896a7f49",
+    "chunks": [
+      "models/characters/azusa/revisions/4121f460e157bc95/chunk_0.bin",
+      "models/characters/azusa/revisions/4121f460e157bc95/chunk_1.bin",
+      "models/characters/azusa/revisions/4121f460e157bc95/chunk_2.bin",
+      "models/characters/azusa/revisions/4121f460e157bc95/chunk_3.bin",
+      "models/characters/azusa/revisions/4121f460e157bc95/chunk_4.bin",
+      "models/characters/azusa/revisions/4121f460e157bc95/chunk_5.bin"
+    ]
+  },
+  "hanako.onnx": {
+    "totalSize": 110427461,
+    "sha256": "bf283c2ac261f9da71976305fa3e0eccf7e17974692691756eab0ac49f6c6e50",
+    "chunks": [
+      "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_0.bin",
+      "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_1.bin",
+      "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_2.bin",
+      "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_3.bin",
+      "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_4.bin",
+      "models/characters/hanako/revisions/bf283c2ac261f9da/chunk_5.bin"
+    ]
+  },
+  "natsu.onnx": {
+    "totalSize": 110427461,
+    "sha256": "4520b6e37b196bad45c77abecbefda7d9577ea984317adf4b1a3e5e3d8b3c096",
+    "chunks": [
+      "models/characters/natsu/revisions/4520b6e37b196bad/chunk_0.bin",
+      "models/characters/natsu/revisions/4520b6e37b196bad/chunk_1.bin",
+      "models/characters/natsu/revisions/4520b6e37b196bad/chunk_2.bin",
+      "models/characters/natsu/revisions/4520b6e37b196bad/chunk_3.bin",
+      "models/characters/natsu/revisions/4520b6e37b196bad/chunk_4.bin",
+      "models/characters/natsu/revisions/4520b6e37b196bad/chunk_5.bin"
+    ]
+  },
+  "mari.onnx": {
+    "totalSize": 110034245,
+    "sha256": "8e046676025edd4e613c5243e9477fbce0d569bd45cd5d7bb113b641138c298b",
+    "chunks": [
+      "models/characters/mari/revisions/8e046676025edd4e/chunk_0.bin",
+      "models/characters/mari/revisions/8e046676025edd4e/chunk_1.bin",
+      "models/characters/mari/revisions/8e046676025edd4e/chunk_2.bin",
+      "models/characters/mari/revisions/8e046676025edd4e/chunk_3.bin",
+      "models/characters/mari/revisions/8e046676025edd4e/chunk_4.bin",
+      "models/characters/mari/revisions/8e046676025edd4e/chunk_5.bin"
+    ]
+  },
+  "kazusa.onnx": {
+    "totalSize": 110034245,
+    "sha256": "5153a66335fba7d14a53046ecf51564bda050a8e26e7de06c4bf941e42b41e40",
+    "chunks": [
+      "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_0.bin",
+      "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_1.bin",
+      "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_2.bin",
+      "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_3.bin",
+      "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_4.bin",
+      "models/characters/kazusa/revisions/5153a66335fba7d1/chunk_5.bin"
+    ]
+  },
+  "ui.onnx": {
+    "totalSize": 110034245,
+    "sha256": "26f6f74ec40970038c10444d9cb2c9a6492b109f0b91c6395efb0d85f2f10bb0",
+    "chunks": [
+      "models/characters/ui/revisions/26f6f74ec4097003/chunk_0.bin",
+      "models/characters/ui/revisions/26f6f74ec4097003/chunk_1.bin",
+      "models/characters/ui/revisions/26f6f74ec4097003/chunk_2.bin",
+      "models/characters/ui/revisions/26f6f74ec4097003/chunk_3.bin",
+      "models/characters/ui/revisions/26f6f74ec4097003/chunk_4.bin",
+      "models/characters/ui/revisions/26f6f74ec4097003/chunk_5.bin"
+    ]
+  },
+  "hinata.onnx": {
+    "totalSize": 110427461,
+    "sha256": "3859e24b3241ceb5c8464d77f22017a8899cdd5db4fea52d61bf5c9b6b0d584f",
+    "chunks": [
+      "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_0.bin",
+      "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_1.bin",
+      "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_2.bin",
+      "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_3.bin",
+      "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_4.bin",
+      "models/characters/hinata/revisions/3859e24b3241ceb5/chunk_5.bin"
+    ]
+  },
+  "mine.onnx": {
+    "totalSize": 110427461,
+    "sha256": "e01fec428821e735439365733bd3dbc70dbd7924000e2adf66ba8cb668235cf8",
+    "chunks": [
+      "models/characters/mine/revisions/e01fec428821e735/chunk_0.bin",
+      "models/characters/mine/revisions/e01fec428821e735/chunk_1.bin",
+      "models/characters/mine/revisions/e01fec428821e735/chunk_2.bin",
+      "models/characters/mine/revisions/e01fec428821e735/chunk_3.bin",
+      "models/characters/mine/revisions/e01fec428821e735/chunk_4.bin",
+      "models/characters/mine/revisions/e01fec428821e735/chunk_5.bin"
+    ]
+  },
+  "sakurako.onnx": {
+    "totalSize": 110427461,
+    "sha256": "d3203f7733ccb6a5496c5ecdf9137087416b21de20cf61eba7bbd7c1c0dbc49e",
+    "chunks": [
+      "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_0.bin",
+      "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_1.bin",
+      "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_2.bin",
+      "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_3.bin",
+      "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_4.bin",
+      "models/characters/sakurako/revisions/d3203f7733ccb6a5/chunk_5.bin"
+    ]
+  },
+  "nagisa.onnx": {
+    "totalSize": 110034245,
+    "sha256": "e2a115fe323e6d0506e8535e6ff6e89bf02b8faec05edb50ec5f1a03a7f470e4",
+    "chunks": [
+      "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_0.bin",
+      "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_1.bin",
+      "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_2.bin",
+      "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_3.bin",
+      "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_4.bin",
+      "models/characters/nagisa/revisions/e2a115fe323e6d05/chunk_5.bin"
+    ]
+  },
+  "ichika.onnx": {
+    "totalSize": 110427461,
+    "sha256": "09fb500cfc2cd3d2b787853d9f0bd83ac0cf6381c1f842b84a37854d668f659d",
+    "chunks": [
+      "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_0.bin",
+      "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_1.bin",
+      "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_2.bin",
+      "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_3.bin",
+      "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_4.bin",
+      "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_5.bin"
+    ]
   }
 }
