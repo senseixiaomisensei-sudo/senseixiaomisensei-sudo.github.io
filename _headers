@@ -24,3 +24,7 @@
 
 /assets/rvc-schools.js
   Cache-Control: no-store
+
+/models/*
+  Access-Control-Allow-Origin: *
+  Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges

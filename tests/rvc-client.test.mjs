@@ -197,3 +197,13 @@ test("RVC watchdog automatically recovers the local service and public tunnel", 
   assert.match(watchdog, /local service is offline; immediate startup recovery/u);
   assert.match(watchdog, /\$failures = \$FailureThreshold/u);
 });
+
+test("GitHub interface uses the existing model CDN while other hosts keep their own assets", async () => {
+  const client = await readFile(new URL("assets/rvc.js", root), "utf8");
+  const run = new Function("window", `${extractFunction(client, "getChunkMirrorUrls")}; return getChunkMirrorUrls;`);
+  const github = run({location:{href:"https://senseixiaomisensei-sudo.github.io/rvc.html",hostname:"senseixiaomisensei-sudo.github.io"}});
+  assert.equal(github("models/characters/hikari/chunk_0.bin?v=hash")[0], "https://postprep-ae6.pages.dev/models/characters/hikari/chunk_0.bin?v=hash");
+  assert.equal(github("assets/other.bin")[0], "https://senseixiaomisensei-sudo.github.io/assets/other.bin");
+  const local = run({location:{href:"http://localhost:8124/rvc.html",hostname:"localhost"}});
+  assert.equal(local("models/base/chunk_0.bin")[0], "http://localhost:8124/models/base/chunk_0.bin");
+});

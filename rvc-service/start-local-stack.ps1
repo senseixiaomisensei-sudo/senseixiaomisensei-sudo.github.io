@@ -132,7 +132,13 @@ function Find-TunnelUrl([string]$logPath) {
 }
 $TunnelUrl = Find-TunnelUrl $TunnelLog
 $tunnelAlive = $false
-if ($TunnelUrl) {
+. (Join-Path $PSScriptRoot "tunnel_health.ps1")
+if ($TunnelUrl -and (Test-RvcRegisteredTunnel $TunnelLog)) {
+  # A registered connector is not dead just because an operator-side probe
+  # times out. Reuse it and verify end-to-end below before synchronizing Worker.
+  $tunnelAlive = $true
+  Write-Host "现有隧道连接仍已注册，复用连接并验证公网入口"
+} elseif ($TunnelUrl) {
   $tHost = ([Uri]$TunnelUrl).Host
   $tRes = curl.exe -s --max-time 6 --noproxy "*" --resolve "${tHost}:443:172.66.47.151" "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
   if ($tRes -notmatch '"ready":\s*true') {

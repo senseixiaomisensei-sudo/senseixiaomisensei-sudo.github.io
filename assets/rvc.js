@@ -3775,7 +3775,10 @@
     const sameOriginUrl = new URL(cleanPath, window.location.href).href;
     const rawGhUrl = `https://raw.githubusercontent.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io/main/${cleanPath}`;
     return [
-      sameOriginUrl,
+      // Pages publishes the small interface; model blobs keep their paths and
+      // SHA-256 verification on the existing Cloudflare Pages CDN.
+      window.location.hostname === "senseixiaomisensei-sudo.github.io" && cleanPath.startsWith("models/")
+        ? `https://postprep-ae6.pages.dev/${cleanPath}` : sameOriginUrl,
       `https://fastly.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://cdn.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
       `https://gcore.jsdelivr.net/gh/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io@main/${cleanPath}`,
