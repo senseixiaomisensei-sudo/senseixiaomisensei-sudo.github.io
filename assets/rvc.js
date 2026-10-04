@@ -5246,16 +5246,16 @@
           updateProgressBar(55);
           const longStage = String(processing?.stage || "");
           const longStageLabel = {
-            separating: "正在分离人声与伴奏",
-            converting: "正在分段进行角色变声",
-            remixing: "正在回混原伴奏",
-            encoding: "正在编码最终音频",
-          }[longStage] || "正在后台处理长音频";
+            separating: l("正在分离人声与伴奏","Separating vocals and accompaniment"),
+            converting: l("正在分段进行角色变声","Converting character voices in segments"),
+            remixing: l("正在回混原伴奏","Mixing with the original accompaniment"),
+            encoding: l("正在编码最终音频","Encoding the final audio"),
+          }[longStage] || l("正在后台处理长音频","Processing long audio in the background");
           updateStatusDisplay(longJob
-            ? ` [2/3] ${longStageLabel}；任务已保存在服务端，网络波动后会继续查询…`
+            ? l(` [2/3] ${longStageLabel}；任务已保存在服务端，网络波动后会继续查询…`,` [2/3] ${longStageLabel}. The job is saved on the server; polling will resume after connection interruptions…`)
             : state.audioMode === "song"
-              ? " [2/3] 云端正在分离人声、角色变声并回混原伴奏；网络短暂切换不会丢失任务…"
-              : " [2/3] 云端 GPU 正在后台处理；页面会自动查询结果，网络短暂切换不会丢失任务…");
+              ? l(" [2/3] 云端正在分离人声、角色变声并回混原伴奏；网络短暂切换不会丢失任务…"," [2/3] Separating, converting and remixing on the cloud. Brief network changes will not lose the job…")
+              : l(" [2/3] 云端 GPU 正在后台处理；页面会自动查询结果，网络短暂切换不会丢失任务…"," [2/3] Processing on the cloud GPU. Results are checked automatically; brief network changes will not lose the job…"));
           await waitFor(retryAfterSeconds * 1000);
           continue;
         }
@@ -6665,10 +6665,10 @@
       console.error("RVC Inference Error:", err);
       const rawMessage = String(err?.message || err || "");
       const message = /ReshapeHelper|requested_shape_size|cannot be reshaped/iu.test(rawMessage)
-        ? "设备端推理组件仍在使用旧缓存，请刷新页面后重新变声。"
+        ? l("设备端推理组件仍在使用旧缓存，请刷新页面后重新变声。","The on-device engine is using an old cache. Refresh and convert again.")
         : allowLong
-          ? "设备端长音频分段推理失败，请保持页面前台并换一段纯人声重试。"
-          : "本机变声处理失败，请重新选择一段较短的纯人声音频后重试。";
+          ? l("设备端长音频分段推理失败，请保持页面前台并换一段纯人声重试。","On-device segmented inference failed. Keep this page in the foreground and retry with dry vocals.")
+          : l("本机变声处理失败，请重新选择一段较短的纯人声音频后重试。","On-device conversion failed. Retry with a shorter dry-vocal recording.");
       showToast(message);
       updateStatusDisplay(` ${message}`);
       return false;
