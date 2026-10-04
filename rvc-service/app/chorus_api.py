@@ -105,6 +105,11 @@ def install_chorus_routes(app, core):
                 'accompaniment':str(accompaniment.relative_to(work)),
                 'tracks':[{'trackId':i+1,'label':f'声部 {i+1}','frames':analysis['frames']} for i in range(len(analysis['tracks']))]})
             save(job_id,info)
+            # MP3 audition is streamed on demand on phones. Keep the floating
+            # source stems for conversion; preview encoding never replaces them.
+            for i in range(len(analysis['tracks'])):
+                stem=work/'singers'/f'singer-{i+1}.wav'
+                await asyncio.to_thread(encode_mobile_mp3,stem,stem.with_suffix('.mp3'),96,core.encoded_true_peak_dbfs)
             # Completed analysis retains a real source mix, not a pretend cover.
             await asyncio.to_thread(subprocess.run,['ffmpeg','-nostdin','-v','error','-y','-i',str(input_path),
                 '-vn','-c:a','pcm_f32le',str(record.path)],check=True,timeout=180)
@@ -160,7 +165,7 @@ def install_chorus_routes(app, core):
         info=metadata(job_id)
         if record.state!='completed' or not 1<=track_id<=len(info.get('tracks',[])):
             raise core.RvcServiceError(404,'CHORUS_NOT_FOUND')
-        extension='mp3' if record.audio_mode=='chorus' else 'wav'
+        extension='mp3'
         path=folder(job_id)/'singers'/f'singer-{track_id}.{extension}'
         if extension=='mp3' and not path.is_file():
             extension='wav';path=path.with_suffix('.wav')

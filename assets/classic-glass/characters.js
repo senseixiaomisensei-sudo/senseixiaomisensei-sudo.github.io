@@ -79,7 +79,7 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
     }
     function targets(){
       const front=order.indexOf(frontId),q=clamp(expansion.value,0,1),v=clamp(vertical.value,0,1);
-      const center=Math.max(0,(rect().width-width)/2);
+      const center=Math.max(0,(galleryWidth-width)/2);
       order.forEach((id,position)=>{
         const card=cards.find(c=>c.dataset.modelId===id),state=motion.get(card);
         const depth=Math.min(3,(position-front+order.length)%order.length);
@@ -143,7 +143,10 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
       if(!active()||event.button!==0||cards.length<2||grab)return;
       const card=event.target.closest?.('[data-model-id]')||frontCard();if(!card||card.inert)return;
       frontId=card.dataset.modelId;suppressClick=false;access();const state=motion.get(card);
+      const origin=rect();
       grab={id:event.pointerId,card,x:event.clientX,y:event.clientY,dx:0,dy:0,visualX:state.x.value,visualY:state.y.value,
+        anchorX:state.x.value,anchorY:state.y.value,
+        originX:origin.left||0,originY:origin.top||0,scrollX:gallery.scrollLeft||0,
         threshold:expansionThreshold(width,height,{ratio:.72,min:96,max:160}),startLayout:layout,
         axis:layout==='vertical'?'vertical':'horizontal',dragged:false,expanded:false};
     });
@@ -152,6 +155,9 @@ export function initCharacterModes({ root, document, isClassic, text, reduced,
       if(!grab.dragged&&grab.startLayout==='stack'&&grab.dy>10&&grab.dy>Math.abs(grab.dx)){grab=null;return;}
       if(!grab.dragged&&Math.hypot(grab.dx,grab.dy)>8){grab.dragged=true;gallery.setPointerCapture(event.pointerId);gallery.dataset.dragging='true';grab.card.dataset.stackHeld='true';}
       if(!grab.dragged)return;event.preventDefault?.();
+      const current=rect();
+      grab.visualX=grab.anchorX+grab.originX-(current.left||0)+(gallery.scrollLeft||0)-grab.scrollX;
+      grab.visualY=grab.anchorY+grab.originY-(current.top||0);
       const candidate=dragAxis(grab.dx,grab.dy,grab.axis);
       if(candidate!=='vertical'||grab.dy<0||grab.startLayout!=='stack')grab.axis=candidate;
       const pull=grab.axis==='vertical'?Math.max(0,-grab.dy):Math.abs(grab.dx);

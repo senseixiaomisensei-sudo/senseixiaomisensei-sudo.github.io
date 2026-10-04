@@ -105,6 +105,15 @@ test('blocked preference storage does not disable either presentation mode',()=>
 });
 
 const pointer=(id,x,y)=>({pointerId:id,clientX:x,clientY:y,pointerType:'touch'});
+test('held finger anchor survives page movement during a continuous drag',()=>{
+  const ui=fixture({stored:'stack'});let top=200;
+  ui.gallery.getBoundingClientRect=()=>({left:0,top,width:332,height:246});ui.settle();
+  ui.gallery.fire('pointerdown',pointer(1,100,250));ui.gallery.fire('pointermove',pointer(1,140,250));
+  const card=ui.cards()[0],before=card.style.transform;
+  top=170;ui.gallery.fire('pointermove',pointer(1,140,250));
+  assert.notEqual(card.style.transform,before);assert.match(card.style.transform,/translate3d\(56px,40px/);
+  ui.gallery.fire('pointercancel',pointer(1,140,250));ui.settle();assert.equal(card.dataset.stackHeld,undefined);
+});
 test('held card follows each event immediately; large up/left/right pulls expand before release',()=>{
   for(const [x,y,layout] of [[100,-70,'vertical'],[-70,100,'horizontal'],[270,100,'horizontal']]){
     const ui=fixture({stored:'stack'});ui.settle();const original=ui.cards(),card=original[0];

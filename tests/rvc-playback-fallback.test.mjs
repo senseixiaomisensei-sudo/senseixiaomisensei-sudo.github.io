@@ -7,7 +7,8 @@ test("complete browser client parses without duplicate declarations", () => {
 });
 
 test("cloud output retains the server format and raw bytes", () => {
-  assert.match(source, /const nextResultUrl = URL\.createObjectURL\(rawOutputBlob\)/);
+  assert.match(source, /return URL\.createObjectURL\(rawOutputBlob\)/);
+  assert.match(source, /const nextResultUrl = await cloudResultUrl\(outputUrl, outputResponse, outputFormat, jobTimeoutMs\)/);
   assert.match(source, /state\.resultUrl = nextResultUrl/);
   assert.match(source, /if \(previousResultUrl\) URL\.revokeObjectURL\(previousResultUrl\)/);
   assert.match(source, /Date\.now\(\)\}\.\$\{outputFormat\}/);

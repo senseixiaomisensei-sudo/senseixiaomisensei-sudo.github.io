@@ -319,7 +319,9 @@
       objectUrl = URL.createObjectURL(file);
       audio.src = objectUrl;
       // Bound optional visualization memory; never invoke an inference or upload API.
-      if (file.size > 20 * 1024 * 1024) { fileState = "large"; localize(); return; }
+      const appleMobile=/iPhone|iPad|iPod/iu.test(navigator.userAgent)
+        || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+      if (appleMobile || file.size > 20 * 1024 * 1024) { fileState = "large"; localize(); return; }
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       let context;
       try {

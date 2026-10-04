@@ -28,6 +28,11 @@
   // Keep lossless WAV for desktop and request a high-bitrate MP3 only where
   // the browser needs the broadly supported container.
   const MOBILE_AUDIO_USER_AGENT = /Android|iPhone|iPad|iPod|Mobile|MicroMessenger|MQQBrowser|QQBrowser|UCBrowser|Quark|ByteDance|Douyin/iu;
+  function isAppleMobile() {
+    const nav=globalThis.navigator;
+    return /iPhone|iPad|iPod/iu.test(String(nav?.userAgent || ''))
+      || (String(nav?.platform || '')==='MacIntel' && Number(nav?.maxTouchPoints)>1);
+  }
   const OFFICIAL_RVC_ENDPOINT = String(globalThis.POSTPREP_RVC_API_ENDPOINT || "/rvc").trim();
   const OFFICIAL_RVC_STATUS_ENDPOINT = String(globalThis.POSTPREP_RVC_STATUS_ENDPOINT || "/rvc/status").trim();
   const OFFICIAL_RVC_MODELS_ENDPOINT = String(globalThis.POSTPREP_RVC_MODELS_ENDPOINT || "/rvc/models").trim();
@@ -3909,6 +3914,7 @@
   }
 
   function preferredCloudOutputFormat(durationSeconds = 0) {
+    if(isAppleMobile())return 'mp3';
     if (Number(durationSeconds) >= DURABLE_CLOUD_JOB_SECONDS) return "mp3";
     try {
       const ua = String(globalThis.navigator?.userAgent || "");
@@ -3941,6 +3947,17 @@
     // Explicitly attach a browser-recognised MIME type. Some mobile WebViews
     // discard the upstream Content-Type when Response.blob() creates the URL.
     return new Blob([blob], { type: cloudAudioMimeType(format) });
+  }
+
+  async function cloudResultUrl(outputUrl,response,format,timeoutMs) {
+    if(isAppleMobile()) {
+      // The successful poll response already exposed engine/format metadata.
+      // Release its body; native audio and download can request ranges directly.
+      try { await response.body?.cancel(); } catch {}
+      return outputUrl;
+    }
+    const rawOutputBlob=await downloadLongCloudOutput(outputUrl,response,format,timeoutMs);
+    return URL.createObjectURL(rawOutputBlob);
   }
 
   function displayMetadataForRemote(remote) {
@@ -4007,6 +4024,7 @@
   }
 
   function updateStatusDisplay(msg) {
+    chorusController?.refresh();
     const statusEl = document.getElementById("rvc-service-status");
     const convertBtn = document.getElementById("rvc-convert");
     const convertLabel = document.getElementById("rvc-convert-label");
@@ -4567,8 +4585,23 @@
     if (!file) return;
     const statusEl = document.getElementById("rvc-audio-status");
     if (statusEl) statusEl.textContent = t("analyzing");
+    state.audio=null;
+    chorusController?.refresh();
 
     try {
+      // Cloud ffmpeg already validates and decodes this file. Avoid concurrent
+      // full-song WebAudio copies on iOS; local inference decodes lazily below.
+      if(state.inferenceMode==='official' && (isAppleMobile() || state.audioMode==='song')) {
+        const duration=Number(fallbackDuration) || await probeAudioDuration(file);
+        if(duration>audioDurationLimit(state.inferenceMode,state.selectedModelId)) {
+          if(statusEl)statusEl.textContent=t('audioTooLong');updateStatusDisplay();return;
+        }
+        state.audio={file,float32:null,duration,name:file.name};
+        if(statusEl)statusEl.textContent=duration>0
+          ? t('analysisReady',{name:file.name,duration:`${duration.toFixed(1)}s`})
+          : `${file.name} · 时长由云端校验，可直接上传`;
+        updateStatusDisplay();return;
+      }
       const decoded = await decodeAudioFileTo16kMono(file);
       if (decoded.duration > audioDurationLimit(state.inferenceMode, state.selectedModelId)) {
         state.audio = null;
@@ -5398,8 +5431,7 @@
       const remixAvailable = outputResponse.headers.get("X-RVC-Remix-Available") === "true";
       updateProgressBar(82);
       updateStatusDisplay(" [3/3] 云端角色推理完成，正在下载变声结果…");
-      const rawOutputBlob = await downloadLongCloudOutput(outputUrl, outputResponse, outputFormat, jobTimeoutMs);
-      const nextResultUrl = URL.createObjectURL(rawOutputBlob);
+      const nextResultUrl = await cloudResultUrl(outputUrl, outputResponse, outputFormat, jobTimeoutMs);
       const previousResultUrl = state.resultUrl;
       if (resultDownload) {
         resultDownload.href = nextResultUrl;
@@ -5510,10 +5542,9 @@
       const outputUrl = job.routes.outputUrl(job.jobId, job.token);
       const timeout = cloudJobTimeoutMs(job.durationSeconds, "song");
       const outputResponse = await pollCloudOutput(outputUrl, timeout, job.durationSeconds >= DURABLE_CLOUD_JOB_SECONDS);
-      const blob = await downloadLongCloudOutput(outputUrl, outputResponse, job.outputFormat, timeout);
-      const nextUrl = URL.createObjectURL(blob);
+      const nextUrl = await cloudResultUrl(outputUrl, outputResponse, job.outputFormat, timeout);
       try {
-        if (player) await attachResultAudio(player, nextUrl, false);
+        if (player) await attachResultAudio(player, nextUrl, !nextUrl.startsWith('blob:'));
       } catch (error) {
         URL.revokeObjectURL(nextUrl);
         throw error;
@@ -5551,7 +5582,7 @@
     if (state.inferenceMode === "local") {
       return runWebRvcInference({ allowLong: true });
     }
-    if (state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && state.engineReady === false) {
+    if (!isAppleMobile() && state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && state.engineReady === false) {
       const cloudReady = await refreshOfficialService();
       if (cloudReady === false) {
         updateStatusDisplay(" 检测到电脑端云引擎离线，正在使用当前用户设备处理纯人声…");
@@ -5559,7 +5590,7 @@
         return runWebRvcInference({ allowLong: true, fallback: true });
       }
     }
-    const cloudResult = await runOfficialRvcInference({ allowDeviceFallback: true });
+    const cloudResult = await runOfficialRvcInference({ allowDeviceFallback: !isAppleMobile() });
     if (cloudResult?.fallback) {
       setInferenceMode("local");
       return runWebRvcInference({ allowLong: true, fallback: true });
@@ -6341,21 +6372,23 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    await initCatalog();
-    const { initChorus } = await import('./rvc-chorus.js?v=20261003-2');
+    const { initChorus } = await import('./rvc-chorus.js?v=20261004-chorus-3');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
+      createRequestId: createCloudRequestId,
       setBusy: (value) => { state.busy = value; const button = document.getElementById('rvc-convert'); if (button) button.disabled = value; syncMixControls(); },
-      onResult: async (blob, job) => {
-        const next = URL.createObjectURL(blob);
+      onResult: async (next, job) => {
+        const audio = document.getElementById('rvc-result-audio');
+        if(audio){await attachResultAudio(audio,next,true);audio.hidden=false;}
         if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
-        state.resultUrl = next; state.cloudSongJob = null;
-        const audio = document.getElementById('rvc-result-audio'); if (audio) await attachResultAudio(audio, next, false);
+        state.resultUrl = next; state.latestSongJob = null;
         const download = document.getElementById('rvc-result-download'); if (download) { download.href = next; download.download = `postprep-chorus-${job.jobId}.${job.format === 'mp3' ? 'mp3' : 'wav'}`; }
         const result = document.getElementById('rvc-result'); if(result){result.hidden=false;result.classList.remove('hidden');}
         const meta = document.getElementById('rvc-result-meta'); if (meta) meta.textContent = `${job.estimatedCount} 路角色合唱 · 独立转换后混音`;
       },
     });
+    await initCatalog();
+    chorusController.refresh();
     applyRvcLanguage();
   });
 })();

@@ -215,7 +215,8 @@ test("worker preserves the voicing gate without experimental pitch correction", 
 test("cloud voice path conditions uploads and preserves server output", async () => {
   assert.match(clientSource, /const conditioned = conditionCloudUploadAudio\(audio\.float32\);/u);
   assert.doesNotMatch(clientSource, /await polishCloudVoiceAudio\(rawOutputBlob\)/u);
-  assert.match(clientSource, /const nextResultUrl = URL\.createObjectURL\(rawOutputBlob\)/u);
+  assert.match(clientSource, /return URL\.createObjectURL\(rawOutputBlob\)/u);
+  assert.match(clientSource, /const nextResultUrl = await cloudResultUrl\(/u);
   assert.match(clientSource, /state\.resultUrl = nextResultUrl/u);
 
   const conditionInput = evaluateFunction("conditionCloudUploadAudio", [], [], clientSource);
@@ -242,7 +243,7 @@ test("local engine and rvc client cache versions are bumped for the workspace re
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
   assert.match(runtimeSource, /inference\.worker\.js\?v=20260930-fractional-r42/u);
   assert.match(clientSource, /rvc-web-runtime\.js\?v=20260930-fractional-r42/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20261003-chorus-2/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20261004-chorus-3/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {

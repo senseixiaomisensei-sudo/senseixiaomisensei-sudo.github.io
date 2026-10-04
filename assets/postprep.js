@@ -872,7 +872,8 @@
   const POSTPREP_REPOSITORY_URL = "https://github.com/senseixiaomisensei-sudo/senseixiaomisensei-sudo.github.io";
   const MAX_LOCAL_SKILL_BYTES = 96 * 1024;
 
-  let currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "zh";
+  let currentLanguage = "zh";
+  try { currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "zh"; } catch {}
 
   function lookup(object, path) {
     return path.split(".").reduce((value, key) => (value ? value[key] : undefined), object);
@@ -961,7 +962,7 @@
     const main = document.querySelector("main");
     const applyLanguage = () => {
       currentLanguage = currentLanguage === "zh" ? "en" : "zh";
-      localStorage.setItem(LANGUAGE_KEY, currentLanguage);
+      try { localStorage.setItem(LANGUAGE_KEY, currentLanguage); } catch {}
       applyTranslations();
       document.dispatchEvent(new CustomEvent("postprep:languagechange"));
     };
