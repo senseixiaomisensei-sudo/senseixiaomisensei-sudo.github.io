@@ -1338,5 +1338,29 @@
       "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_4.bin",
       "models/characters/ichika/revisions/09fb500cfc2cd3d2/chunk_5.bin"
     ]
+  },
+  "hikari.onnx": {
+    "totalSize": 115146053,
+    "sha256": "60be1c408b2207d11892bce80d52c539e20064cfbec45585eaf48de35e19a486",
+    "chunks": [
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_0.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_1.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_2.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_3.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_4.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_5.bin"
+    ]
+  },
+  "nozomi.onnx": {
+    "totalSize": 115146053,
+    "sha256": "0be4c1458e488ade95fca9b7b9478ad28b3b6a437524fc132f9a8e0b3f16929f",
+    "chunks": [
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_0.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_1.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_2.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_3.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_4.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_5.bin"
+    ]
   }
 }

@@ -50,7 +50,7 @@ test('Japanese ONNX fragments match their immutable content hashes', async () =>
 });
 
 test('download integrity checks reject modified bytes before ONNX parsing', async () => {
-  const verify = Function('crypto', `return (async ${extract('verifyModelBytes')})`)(webcrypto);
+  const verify = Function('crypto', 'l', `return (async ${extract('verifyModelBytes')})`)(webcrypto, zh => zh);
   const bytes = new Uint8Array([12, 34, 56, 78]);
   const hash = createHash('sha256').update(bytes).digest('hex');
   await verify(bytes, hash);

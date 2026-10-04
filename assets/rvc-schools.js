@@ -10,7 +10,7 @@
         ["serika", "黑见芹香", "セリカ", "Serika"],
         ["ayane", "奥空绫音", "アヤネ", "Ayane"],
       ] },
-    { id: "highlander", name: "高地人铁道学院", en: "Highlander Railroad Academy", tag: "高地人",
+    { id: "highlander", name: "铁道学院", en: "Railroad Academy", tag: "铁道", alias: "高地人",
       source: "https://www.tanita.co.jp/content/bluearchive/",
       students: [
         ["hikari", "橘光", "橘ヒカリ", "Hikari"],

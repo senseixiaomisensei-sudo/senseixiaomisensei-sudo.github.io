@@ -4,7 +4,7 @@ import fs from "node:fs";
 const source = fs.readFileSync(new URL("../assets/rvc.js", import.meta.url), "utf8");
 const start = source.indexOf("  async function readCloudAudioBody(");
 const end = source.indexOf("  async function downloadLongCloudOutput(", start);
-const readBody = Function(`${source.slice(start, end)}; return readCloudAudioBody;`)();
+const readBody = Function('l', `${source.slice(start, end)}; return readCloudAudioBody;`)(zh => zh);
 test("cloud audio consumes a complete streaming body", async () => {
   const result = await readBody(new Response(new Uint8Array([1, 2, 3])), 100);
   assert.deepEqual([...new Uint8Array(await result.arrayBuffer())], [1, 2, 3]);

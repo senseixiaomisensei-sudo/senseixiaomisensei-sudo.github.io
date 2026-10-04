@@ -1,5 +1,5 @@
 {
-  "version": 21,
+  "version": 22,
   "updatedAt": "2026-09-27",
   "_readme": "新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。真纪 V1 使用独立的本地 HuBERT V1 特征模型。",
   "baseModels": {
@@ -176,7 +176,9 @@
         "referenceSha256": "0be9ef2dfc003d3c563acac9c5b8d43089d31bf00583d4985c9b98a63756371d",
         "source": "https://bluearchive.wiki/wiki/File:Arona_Work_Talk_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Arona",
+      "descriptionEn": "Federal Student Council / Shittim Chest · bright, light guide voice · public community RVC v2"
     },
     {
       "id": "arisu",
@@ -226,7 +228,9 @@
         "referenceSha256": "021d454ca1a0b16b7eb4140c36df9b2d8d9ce2be19adefd8ad9b753ed3386a92",
         "source": "https://bluearchive.wiki/wiki/File:Arisu_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Arisu",
+      "descriptionEn": "Millennium Game Development Department · clear, mechanical heroic girl voice · public community RVC v2"
     },
     {
       "id": "shiroko",
@@ -276,7 +280,9 @@
         "referenceSha256": "26ab61d6f9626832f97e43dd3950349010208e3cfd81623aa5f85860c168752b",
         "source": "https://bluearchive.wiki/wiki/File:Shiroko_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Shiroko",
+      "descriptionEn": "Abydos Foreclosure Task Force · steady, cool girl voice · public community RVC v2"
     },
     {
       "id": "hoshino",
@@ -334,7 +340,9 @@
         "referenceSha256": "be4d6aeeac5c7e2945550f98035a31fd2bd2f16009878260ba91eddb4a7313e0",
         "source": "https://bluearchive.wiki/wiki/File:Hoshino_Lobby_3.ogg",
         "hearing": "用户确认参考音色正常"
-      }
+      },
+      "nameEn": "Hoshino",
+      "descriptionEn": "Abydos Foreclosure Task Force · same-character Hoshino candidate · RVC v1"
     },
     {
       "id": "yuuka",
@@ -384,7 +392,9 @@
         "referenceSha256": "0a00a256f751ca4e7f34524760fe980621edfa09e5f997b55e478d1501f50872",
         "source": "https://bluearchive.wiki/wiki/File:Yuuka_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Yuuka",
+      "descriptionEn": "Millennium Seminar · clear, rational girl voice · public community RVC v2"
     },
     {
       "id": "hina",
@@ -434,7 +444,9 @@
         "referenceSha256": "d123878f7063e7205f257ff8dbaa0ca9cf43657e72873695bdfc5ecef7a11743",
         "source": "https://bluearchive.wiki/wiki/File:Hina_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Hina",
+      "descriptionEn": "Gehenna Prefect Team · steady, strong girl voice · public community RVC v2"
     },
     {
       "id": "noa",
@@ -484,7 +496,9 @@
         "referenceSha256": "3d8591d9b61e72a547b64873ffc1fa12e632aa8d53cb1e0544d2bea8e269d823",
         "source": "https://bluearchive.wiki/wiki/File:Noa_Lobby_5.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Noa",
+      "descriptionEn": "Millennium Seminar · gentle, composed girl voice · public community RVC v2"
     },
     {
       "id": "koharu",
@@ -534,7 +548,9 @@
         "referenceSha256": "1f0e1d9e87ca466b20554fddd774f593c01ef827badb9a04c6c24d4bece25d4e",
         "source": "https://bluearchive.wiki/wiki/File:Koharu_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Koharu",
+      "descriptionEn": "TrinityRemedial Class · bright, nervous girl voice · public community RVC v2"
     },
     {
       "id": "momoi",
@@ -584,7 +600,9 @@
         "referenceSha256": "f5985cb2b80d5fef14b60cba62ed3c53b57776efa79bcd78206030313daaa844",
         "source": "https://bluearchive.wiki/wiki/File:Momoi_Lobby_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Momoi",
+      "descriptionEn": "Millennium Game Development Department · lively, energetic girl voice · public community RVC v2"
     },
     {
       "id": "midori",
@@ -634,7 +652,9 @@
         "referenceSha256": "f68a32efc50fa90ea42dc3406319c6430151033307567e3d3a792d48ae4bad07",
         "source": "https://bluearchive.wiki/wiki/File:Midori_Lobby_5.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Midori",
+      "descriptionEn": "Millennium Game Development Department · soft, restrained girl voice · public community RVC v2"
     },
     {
       "id": "reisa",
@@ -684,7 +704,9 @@
         "referenceSha256": "976cfe5dae959437f20f46a4549cb97f720f7ff3238dc9380dab9515f589c656",
         "source": "https://bluearchive.wiki/wiki/File:Reisa_Lobby_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Reisa",
+      "descriptionEn": "TrinityJustice Task Force · lively, candid girl voice · public community RVC v2"
     },
     {
       "id": "yuzu",
@@ -734,7 +756,9 @@
         "referenceSha256": "87f493f89224d33c1b35d60a95a8c20de4f5d4ff3c07ad499d934a9294058f39",
         "source": "https://bluearchive.wiki/wiki/File:Yuzu_Lobby_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Yuzu",
+      "descriptionEn": "Millennium Game Development Department · delicate, introverted girl voice · public community RVC v2"
     },
     {
       "id": "toki",
@@ -784,7 +808,9 @@
         "referenceSha256": "ae8273ef86980c9828e7112e40425eca424bf807cb54cb8c51ef40edeb014eaa",
         "source": "https://bluearchive.wiki/wiki/File:Toki_Lobby_1.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Toki",
+      "descriptionEn": "Millennium C&C · calm, crisp girl voice · public community RVC v2"
     },
     {
       "id": "asuna",
@@ -834,7 +860,9 @@
         "referenceSha256": "c2937f0577986bc7e39bc2c333f89a9d577a64bd1fa9cd9ac58b395ba5aaeee2",
         "source": "https://bluearchive.wiki/wiki/File:Asuna_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Asuna",
+      "descriptionEn": "Millennium C&C · cheerful, bright girl voice · public community RVC v2"
     },
     {
       "id": "aru",
@@ -884,7 +912,9 @@
         "referenceSha256": "6dd040992fa72365cecc4a68fa2d9e672d1f04d0bb9c73e8e14ca6e59aefbde0",
         "source": "https://bluearchive.wiki/wiki/File:Aru_Lobby_5.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Aru",
+      "descriptionEn": "Gehenna Problem Solver 68 · confident, bold girl voice · public community RVC v2"
     },
     {
       "id": "kirara",
@@ -934,7 +964,9 @@
         "referenceSha256": "47f57c19874209403e98917cc346d4be5cc58d04e3b1459e25f1cd536eb484f8",
         "source": "https://bluearchive.wiki/wiki/File:Kirara_Lobby_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Kirara",
+      "descriptionEn": "Gehenna · bright, outgoing girl voice · public community RVC v2"
     },
     {
       "id": "koyuki",
@@ -984,7 +1016,9 @@
         "referenceSha256": "3daa64e743d94184bb80d731805dd304a79c9a39a031a8f2a0efdfb4a8623a8c",
         "source": "https://bluearchive.wiki/wiki/File:Koyuki_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Koyuki",
+      "descriptionEn": "Millennium Seminar · playful, energetic girl voice · public community RVC v2"
     },
     {
       "id": "kayoko",
@@ -1034,7 +1068,9 @@
         "referenceSha256": "8bbceb736fd74764911855e85426fb8b879b45f423bbb0c339a54003a5cad160",
         "source": "https://bluearchive.wiki/wiki/File:Kayoko_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Kayoko",
+      "descriptionEn": "Gehenna Problem Solver 68 · low, calm girl voice · public community RVC v2"
     },
     {
       "id": "seia",
@@ -1084,7 +1120,9 @@
         "referenceSha256": "dd0d4d4a437e8f039099ede97c676c161fd12ce43e53c08a9a1c8abf73862dc9",
         "source": "https://bluearchive.wiki/wiki/File:Seia_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Seia",
+      "descriptionEn": "TrinityTea Party · clear, soft, calm girl voice · public community RVC v2"
     },
     {
       "id": "mika",
@@ -1135,7 +1173,9 @@
         "referenceSha256": "11867d189828c3ead75aaa6bb133dc013e48f567e521a8bd404f5415ae9b6659",
         "source": "https://bluearchive.wiki/wiki/File:Mika_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Mika",
+      "descriptionEn": "TrinityTea Party · sweet, bright, strong girl voice · 32k · public community RVC v2"
     },
     {
       "id": "gojo",
@@ -1188,7 +1228,9 @@
         "referenceSha256": "62d1ce2bbf36003b98aadc3ab192208dde05eeb61bc8be7d7759418f902dd21e",
         "source": "https://jujutsuphanpara.jp/",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Satoru Gojo",
+      "descriptionEn": "Jujutsu Kaisen· clear, composed adult male voice · Japanese public community RVC v2 · 48k / 600 epochs"
     },
     {
       "id": "sukuna",
@@ -1241,7 +1283,9 @@
         "referenceSha256": "",
         "source": "",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Ryomen Sukuna",
+      "descriptionEn": "Jujutsu Kaisen· low, forceful adult male voice · Japanese public community RVC v2 · 48k / 600 epochs"
     },
     {
       "id": "geto",
@@ -1294,7 +1338,9 @@
         "referenceSha256": "",
         "source": "",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Suguru Geto",
+      "descriptionEn": "Jujutsu Kaisen· steady, soft adult male voice · Japanese public community RVC v2 · 48k / 600 epochs"
     },
     {
       "id": "toji",
@@ -1347,7 +1393,9 @@
         "referenceSha256": "",
         "source": "",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Toji Fushiguro",
+      "descriptionEn": "Jujutsu Kaisen· rough, strong adult male voice · Japanese public community RVC v2 · 48k / 400 epochs"
     },
     {
       "id": "megumi",
@@ -1400,7 +1448,9 @@
         "referenceSha256": "87441d66b92ab17f64cc2db1c10edf8e2e5338c1b5267bb790181b5931c58d45",
         "source": "https://jujutsuphanpara.jp/",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Megumi Fushiguro",
+      "descriptionEn": "Jujutsu Kaisen· calm, restrained young male voice · Japanese public community RVC v2 · 48k / 400 epochs"
     },
     {
       "id": "key",
@@ -1454,7 +1504,9 @@
         "referenceSha256": "5634f74b67412cb693ffb0211e0c52a2054b35f28f9abeb7b82ed317f3d1dec2",
         "source": "https://bluearchive.wiki/wiki/File:Kei_Lobby_1_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Kei",
+      "descriptionEn": "Millennium Science School · Super Phenomenon Task Force · calm, sharp girl voice · trained on this site RVC v2 · 40k / 80 epochs"
     },
     {
       "id": "nonomi",
@@ -1505,7 +1557,9 @@
         "referenceSha256": "39db730105016088510f08cceeb86c93549291fa095182b4619945de7f1ae1c0",
         "source": "https://bluearchive.wiki/wiki/File:Nonomi_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Nonomi",
+      "descriptionEn": "Abydos Foreclosure Task Force · Japanese community RVC v2 voice"
     },
     {
       "id": "serika",
@@ -1556,7 +1610,9 @@
         "referenceSha256": "b79f8cafab7c7b5ad68c0d76eb6a95d854be72d447463be8a9fbb932b5a58400",
         "source": "https://bluearchive.wiki/wiki/File:Serika_Lobby_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Serika",
+      "descriptionEn": "Abydos Foreclosure Task Force · Japanese community RVC v2 voice"
     },
     {
       "id": "ayane",
@@ -1607,7 +1663,9 @@
         "referenceSha256": "77ad9538fc5159e86b3b52a65743218b3c99b2644163c3edf8fcf5f82ba26c52",
         "source": "https://bluearchive.wiki/wiki/File:Ayane_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Ayane",
+      "descriptionEn": "Abydos Foreclosure Task Force · Japanese community RVC v2 voice"
     },
     {
       "id": "maki",
@@ -1660,7 +1718,9 @@
         "referenceSha256": "aed6a7f29464136eb3ad19fbb490447854026fe546f3836ffb0b3b6c95c43bb5",
         "source": "https://bluearchive.wiki/wiki/File:Maki_Lobby_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Maki",
+      "descriptionEn": "Millennium Science School · on-device and cloud conversion · Japanese community RVC V1 voice"
     },
     {
       "id": "serina",
@@ -1720,7 +1780,9 @@
         "referenceSha256": "39587eff57a93f1f24ba03adf49ddb19c5cdc453dbeea2845e2828baddd5ba52",
         "source": "https://bluearchive.wiki/wiki/File:Serina_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Serina",
+      "descriptionEn": "Trinity General School · Remedial Knights · community RVC v2 voice"
     },
     {
       "id": "hifumi",
@@ -1786,7 +1848,9 @@
         "referenceSha256": "98a33c826c7f915cfd53b6030c6d949ca9a1928d5cb11b18cd906fb6293a2125",
         "source": "https://bluearchive.wiki/wiki/File:Hifumi_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Hifumi",
+      "descriptionEn": "Trinity General School · community RVC v1 voice"
     },
     {
       "id": "hasumi",
@@ -1852,7 +1916,9 @@
         "referenceSha256": "f1fd79f2d3321318eee7c7a38ad67127d84b59995763b12a343c78de717bb30b",
         "source": "https://bluearchive.wiki/wiki/File:Hasumi_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Hasumi",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "tsurugi",
@@ -1918,7 +1984,9 @@
         "referenceSha256": "ba1d8790497d1dfbb576fb0040db294ae83d0641eb2e504f041955bdc6ca31b7",
         "source": "https://bluearchive.wiki/wiki/File:Tsurugi_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Tsurugi",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "suzumi",
@@ -1984,7 +2052,9 @@
         "referenceSha256": "60c359c2a827e75d8bbb535bd853292e5045e87fa1b60a94e1ce6f66e3350d5a",
         "source": "https://bluearchive.wiki/wiki/File:Suzumi_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Suzumi",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "airi",
@@ -2050,7 +2120,9 @@
         "referenceSha256": "199f514103c75639f5b7622c36d0fa8b826ccdd68079867bfb2dcd989233a543",
         "source": "https://bluearchive.wiki/wiki/File:Airi_Lobby_5.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Airi",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "yoshimi",
@@ -2116,7 +2188,9 @@
         "referenceSha256": "4b64aa4751c4d4412561c012ab96e8946798b7a9379a4006f22ab0f7756dd9a6",
         "source": "https://bluearchive.wiki/wiki/File:Yoshimi_Lobby_5.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Yoshimi",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "hanae",
@@ -2182,7 +2256,9 @@
         "referenceSha256": "9cc4cf75f5147d39550933d33ae952b88f6fb2a8fa92f42f456999987070e09d",
         "source": "https://bluearchive.wiki/wiki/File:Hanae_Lobby_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Hanae",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "mashiro",
@@ -2248,7 +2324,9 @@
         "referenceSha256": "7c2d425dfa10e496715d805e537fe00e4e66e5aae3cf77f905a444496c5055d0",
         "source": "https://bluearchive.wiki/wiki/File:Mashiro_Lobby_5.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Mashiro",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "azusa",
@@ -2314,7 +2392,9 @@
         "referenceSha256": "6be4eb034feb26f50da86b8ce6ab0025908819df2fbda56aee8ecd4541b5d477",
         "source": "https://bluearchive.wiki/wiki/File:Azusa_Lobby_1.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Azusa",
+      "descriptionEn": "Trinity General School · community RVC v1 voice"
     },
     {
       "id": "hanako",
@@ -2380,7 +2460,9 @@
         "referenceSha256": "9522e382448445f4895ecd9810bdd18296201bd818da2087ca73898197672beb",
         "source": "https://bluearchive.wiki/wiki/File:Hanako_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Hanako",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "natsu",
@@ -2446,7 +2528,9 @@
         "referenceSha256": "364574ab2582c7a82721e185a74d738d2ae51b2237a51c80df2e647271186652",
         "source": "https://bluearchive.wiki/wiki/File:Natsu_Lobby_5.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Natsu",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "mari",
@@ -2512,7 +2596,9 @@
         "referenceSha256": "cdc9b9861aff83a8b1b4f01aa4f8d49f2c083987f3630aa393ccc6a800127c83",
         "source": "https://bluearchive.wiki/wiki/File:Mari_Lobby_5.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Mari",
+      "descriptionEn": "Trinity General School · community RVC v1 voice"
     },
     {
       "id": "kazusa",
@@ -2578,7 +2664,9 @@
         "referenceSha256": "452f5e69f169ea25b6ca941140838a105516a76b9f740fbe20a50482365392c5",
         "source": "https://bluearchive.wiki/wiki/File:Kazusa_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Kazusa",
+      "descriptionEn": "Trinity General School · community RVC v1 voice"
     },
     {
       "id": "ui",
@@ -2644,7 +2732,9 @@
         "referenceSha256": "82ae013f997ccd55d19b70c052fc2a35c61ade5de24bf8aafed011dcb597959e",
         "source": "https://bluearchive.wiki/wiki/File:Ui_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Ui",
+      "descriptionEn": "Trinity General School · community RVC v1 voice"
     },
     {
       "id": "hinata",
@@ -2710,7 +2800,9 @@
         "referenceSha256": "58a4553fd46487dc1c463580d03b4bdd136b403b9dca262fc01b54de2d3053c4",
         "source": "https://bluearchive.wiki/wiki/File:Hinata_Lobby_2.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Hinata",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "mine",
@@ -2776,7 +2868,9 @@
         "referenceSha256": "09e013524f1ef3b847137fe26e33947a54bedb2631bba00e850daa1cd37cdf51",
         "source": "https://bluearchive.wiki/wiki/File:Mine_Lobby_3.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Mine",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "sakurako",
@@ -2842,7 +2936,9 @@
         "referenceSha256": "a2090e6ccb2254906b3d3c269629e316c2afb574ae0514acbf9f5e3d49dafb37",
         "source": "https://bluearchive.wiki/wiki/File:Sakurako_Lobby_4.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Sakurako",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
     },
     {
       "id": "nagisa",
@@ -2908,7 +3004,9 @@
         "referenceSha256": "856720788cf6963aafbf976fa7471db96d445c02ec25fb739dd948cb59aa9d27",
         "source": "https://bluearchive.wiki/wiki/File:Nagisa_Lobby_1.ogg",
         "hearing": "未听评"
-      }
+      },
+      "nameEn": "Nagisa",
+      "descriptionEn": "Trinity General School · community RVC v1 voice"
     },
     {
       "id": "ichika",
@@ -2974,6 +3072,136 @@
         "referenceSha256": "90bd83298eee0cc7da1fb5b6b768f32c294f4e599df7f39a9c03c89906b2f966",
         "source": "https://bluearchive.wiki/wiki/File:Ichika_Lobby_2.ogg",
         "hearing": "未听评"
+      },
+      "nameEn": "Ichika",
+      "descriptionEn": "Trinity General School · community RVC v2 voice"
+    },
+    {
+      "id": "hikari",
+      "name": "橘光 (Hikari)",
+      "nameEn": "Tachibana Hikari",
+      "avatarText": "橘光",
+      "aliases": [
+        "橘ヒカリ",
+        "Tachibana Hikari"
+      ],
+      "description": "铁道学院 · 社区 RVC v2 音色",
+      "descriptionEn": "Railroad Academy · community RVC v2 voice",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "铁道"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 48000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "assets/rvc-resource-provenance.json",
+      "sourceRevision": "aee8add709626ce5b5fb300f0f718fe9fc3aadaa1d5efbacadd364ec0d2835c4",
+      "publisher": "User supplied; author not recorded in archive",
+      "license": "Not specified in supplied archive",
+      "checkpointSha256": "898f215eab08c0fad2bd37bda09a59afc7b3f4b7cb29b72fa93dd5b0c70934d5",
+      "indexSha256": "e68124aff372ca1f6770738582fff7029963f54905303a39adc8c8c5d7babe38",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/hikari/revisions/60be1c408b2207d1/chunk_0.bin",
+        "models/characters/hikari/revisions/60be1c408b2207d1/chunk_1.bin",
+        "models/characters/hikari/revisions/60be1c408b2207d1/chunk_2.bin",
+        "models/characters/hikari/revisions/60be1c408b2207d1/chunk_3.bin",
+        "models/characters/hikari/revisions/60be1c408b2207d1/chunk_4.bin",
+        "models/characters/hikari/revisions/60be1c408b2207d1/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "be4482050313eaac2b993dc84a85a1d08de545396717b447f40bacb3fc8494d4",
+        "1e538337437e97715dc57a2e2597d60f2284e91b5c780fb1488d90b608636142",
+        "7f660e40846e1eca7919148d9779df0debe299f456970688fa9ae80ba677bcf2",
+        "ef94562dbf73688e9d3e0245608606f0039c05eda87c076e45cf275f9e296dd3",
+        "b03eba85fa86bb5d2081eb89726f7dcb85ad1d91de07aa6d9606a2e15588ff04",
+        "aa6761224867dbac11c618c02d03481e04b7a0f434c467652b590a98e4d9b181"
+      ],
+      "totalSize": 115146053,
+      "sha256": "60be1c408b2207d11892bce80d52c539e20064cfbec45585eaf48de35e19a486",
+      "resourceRevision": "60be1c408b2207d11892bce80d52c539e20064cfbec45585eaf48de35e19a486",
+      "retrieval": "models/characters/hikari/revisions/60be1c408b2207d1/retrieval.bin",
+      "retrievalSha256": "125aa2b4443941587d81d4535da447a048874a8f13f569199e0d62a1a0095257",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": false,
+        "reason": "No verified original character speech reference supplied; use RVC compatibility"
+      }
+    },
+    {
+      "id": "nozomi",
+      "name": "橘望 (Nozomi)",
+      "nameEn": "Tachibana Nozomi",
+      "avatarText": "橘望",
+      "aliases": [
+        "橘ノゾミ",
+        "Tachibana Nozomi"
+      ],
+      "description": "铁道学院 · 社区 RVC v2 音色",
+      "descriptionEn": "Railroad Academy · community RVC v2 voice",
+      "tags": [
+        "女声",
+        "蔚蓝档案",
+        "铁道"
+      ],
+      "collectionId": "blue-archive",
+      "defaultPitch": 0,
+      "pitchNote": "默认保留原调；跨音域请试听后微调",
+      "sampleRate": 48000,
+      "noiseScale": 0.35,
+      "defaultIndexRate": 0.35,
+      "source": "assets/rvc-resource-provenance.json",
+      "sourceRevision": "aee8add709626ce5b5fb300f0f718fe9fc3aadaa1d5efbacadd364ec0d2835c4",
+      "publisher": "User supplied; author not recorded in archive",
+      "license": "Not specified in supplied archive",
+      "checkpointSha256": "16208d778537c88c5a2d548b0888b52aa4abf872176935bf8fbe74223d619cc7",
+      "indexSha256": "204ea7e2af3c780636dfb8e0cb3e22b93656f940858dae4f29229a2221053069",
+      "rvcVersion": "v2",
+      "contentEncoder": {
+        "name": "hubert_base",
+        "outputLayer": 12,
+        "featureDimension": 768
+      },
+      "excitationContract": "explicit-source-v1",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "chunks": [
+        "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_0.bin",
+        "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_1.bin",
+        "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_2.bin",
+        "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_3.bin",
+        "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_4.bin",
+        "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_5.bin"
+      ],
+      "chunkSha256": [
+        "1e4f48c3e17e55e112a3e4247728eb946d065c0a8bf0131887716da5ae14a140",
+        "2ad7ea1e9796604e789d6c32d22559a553f83fc29bc36abcab26b7771a8c2d16",
+        "55aa9b75d4eda14d755d47611eace3238e7f4fc88712d081e1578826369e0afb",
+        "f0cbfe3be57ad936ecccefedf7d6c40b2706157e012b9e850f9c63c746c26b04",
+        "6286b0425653d8f88c84fe43edccf163a32cc490383bee60a69749e31c3e2057",
+        "71d5ea73ba0bc7a5f77ccf28c308cad4f56a523b11184ba63f5a879ba8ecc24e"
+      ],
+      "totalSize": 115146053,
+      "sha256": "0be4c1458e488ade95fca9b7b9478ad28b3b6a437524fc132f9a8e0b3f16929f",
+      "resourceRevision": "0be4c1458e488ade95fca9b7b9478ad28b3b6a437524fc132f9a8e0b3f16929f",
+      "retrieval": "models/characters/nozomi/revisions/0be4c1458e488ade/retrieval.bin",
+      "retrievalSha256": "04224ad79aef2fed6b1d2b4ca5623d6824a83dcfacb247540f05dc93a81209e3",
+      "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+      "speechProfile": {
+        "enabled": false,
+        "reason": "No verified original character speech reference supplied; use RVC compatibility"
       }
     }
   ],

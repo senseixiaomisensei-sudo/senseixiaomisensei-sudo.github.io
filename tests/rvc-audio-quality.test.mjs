@@ -198,7 +198,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
   assert.doesNotMatch(workerSource, /finalAudio = applyHarmonicAirAndWarmth/u);
   assert.match(workerSource, /finalAudio = normalizeOutputPeak\(finalAudio\)/u);
   assert.match(workerSource, /finalAudio = suppressDetectedHarshBursts\(finalAudio, finalSr, burstDiagnostics\)/u);
-  assert.match(page, /assets\/rvc\.js\?v=20261004-search-1/u);
+  assert.match(page, /assets\/rvc\.js\?v=20261004-chorus-2/u);
   assert.match(page, /id="rvc-rms-mix"[^>]*value="0\.5"/u);
   assert.match(client, /rvc-filter-radius"\)\?\.value \|\| "0"/u);
   assert.match(client, /function runOfficialRvcInference\(\{ allowDeviceFallback = false, endpointCandidates \} = \{\}\)/u);
@@ -290,7 +290,7 @@ test("RVC page starts neutral and public voices prefer the cloud engine", async 
 test("all deployed character models expose caller-controlled noise without hidden random operators", async () => {
   const catalog = JSON.parse(await readFile(new URL("assets/rvc-models.json", root), "utf8"));
   const manifest = JSON.parse(await readFile(new URL("models/manifest.json", root), "utf8"));
-  assert.equal(catalog.models.length, 50);
+  assert.equal(catalog.models.length, 52);
   assert.ok(catalog.models.some((model) => model.id === "serina"));
   assert.ok(catalog.models.some((model) => model.id === "momoi"));
   assert.ok(catalog.models.some((model) => model.id === "reisa"));

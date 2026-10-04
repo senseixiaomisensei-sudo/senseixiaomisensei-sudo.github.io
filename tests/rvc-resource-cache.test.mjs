@@ -49,6 +49,7 @@ test("user-requested cache clearing removes current and legacy role cache entrie
   const deletion = [];
   const clearSource = source.match(/  async function clearModelCache\(\) \{[\s\S]*?\n  \}/)[0];
   const context = {
+    l: zh => zh,
     state: { catalog: [{ ...model, chunks: ["models/characters/gojo/chunk_0.bin"] }] },
     removeCachedItem: async (key) => deletion.push(key),
     getChunkMirrorUrls: (path) => [path],

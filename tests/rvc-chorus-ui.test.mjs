@@ -27,8 +27,8 @@ async function fixture(run,{count=2}={}){
   for(const key of ['enable','analyze','update','convert','resume','status','workspace','count','kind']){nodes[key]=new Node(key==='count'||key==='kind'?'select':key==='enable'?'input':'button');panel.append(nodes[key]);}
   nodes.count.value='auto';nodes.kind.value='mix';nodes.tracks=tracks;panel.append(tracks);
   panel.querySelector=selector=>nodes[selector.slice(6,-1)];
-  globalThis.document={getElementById:id=>id==='rvc-chorus'?panel:null,createElement:tag=>new Node(tag),querySelectorAll:selector=>panel.querySelectorAll(selector)};
-  const state={busy:false,inferenceMode:'local',audioMode:'voice',selectedModelId:'hoshino',catalog:[{id:'hoshino',name:'星野'},{id:'arona',name:'阿罗娜'}]};
+  globalThis.document={documentElement:{lang:'zh'},getElementById:id=>id==='rvc-chorus'?panel:null,createElement:tag=>new Node(tag),querySelectorAll:selector=>panel.querySelectorAll(selector)};
+  const state={busy:false,inferenceMode:'local',audioMode:'voice',selectedModelId:'hoshino',catalog:[{id:'hoshino',name:'星野',nameEn:'Hoshino'},{id:'arona',name:'阿罗娜',nameEn:'Arona'}]};
   const calls=[],results=[];let pollFailure=false,controller;
   controller=initChorus({state,getEndpoint:()=>'/rvc-api',wait:async()=>{},loadVoiceRanges:async()=>({profiles:{}}),setBusy:value=>{state.busy=value;},
     setMode:()=>{state.inferenceMode='official';controller.refresh();state.audioMode='song';controller.refresh();},
@@ -79,7 +79,21 @@ test('interrupted accepted analysis resumes the same job without another upload'
 test('only valid returned track identities, up to four, constitute analysis success',()=>{
   assert.equal(readChorusTracks(completed(4)).length,4);
   for(const job of [{},completed(0),completed(5),{tracks:[{trackId:2}]}])assert.throws(()=>readChorusTracks(job),/没有返回有效声部/);
+  assert.throws(()=>readChorusTracks({tracks:[{trackId:1,sourceSha256:'same'},{trackId:2,sourceSha256:'same'}]}),/重复声部/);
 });
+
+test('language changes keep auditions, selection and manually tuned parameters intact',async()=>fixture(async ui=>{
+  ui.state.audio={file:new File(['source'],'duet.mp3')};await ui.nodes.analyze.fire('click');
+  const card=ui.tracks.children[0],audio=card.querySelectorAll('audio')[0],pitch=card.querySelectorAll('input').find(node=>node.type==='range');
+  const src=audio.src;pitch.value='3';await pitch.fire('input');
+  globalThis.document.documentElement.lang='en';ui.controller.refreshLanguage();
+  assert.equal(ui.tracks.children[0],card);assert.equal(card.querySelectorAll('audio')[0],audio);assert.equal(audio.src,src);
+  assert.equal(pitch.value,'3');assert.equal(card.querySelectorAll('strong')[0].textContent,'Hoshino');
+  assert.match(ui.nodes.status.textContent,/Separation complete/);assert.equal(ui.nodes.convert.textContent,'Confirm voices and convert');
+  await ui.nodes.convert.fire('click');
+  const sent=JSON.parse(ui.calls.find(call=>call.url.includes('/convert?')).options.body);
+  assert.equal(sent.tracks[0].pitch,3);assert.equal(sent.tracks[0].modelId,'hoshino');
+}));
 
 test('range suggestions avoid forcing every singer up an octave and preserve model retrieval defaults',()=>{
   const track={trackId:1,voiceRange:{medianHz:125,classification:'low',confidence:.9}};

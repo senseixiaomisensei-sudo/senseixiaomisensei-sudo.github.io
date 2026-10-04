@@ -1,0 +1,45 @@
+{
+  "source": "User supplied rvc.zip",
+  "archiveSha256": "aee8add709626ce5b5fb300f0f718fe9fc3aadaa1d5efbacadd364ec0d2835c4",
+  "roles": [
+    {
+      "characterId": "hikari",
+      "name": "橘光",
+      "japanese": "橘ヒカリ",
+      "archiveWeightPath": "Hikari.pth",
+      "archiveIndexPath": "added_IVF473_Flat_nprobe_1_Hikari_v2.index",
+      "checkpointSha256": "898f215eab08c0fad2bd37bda09a59afc7b3f4b7cb29b72fa93dd5b0c70934d5",
+      "indexSha256": "e68124aff372ca1f6770738582fff7029963f54905303a39adc8c8c5d7babe38",
+      "rvcVersion": "v2",
+      "featureDimension": 768,
+      "sampleRate": "48k",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "indexVectors": 18462,
+      "source": "User supplied rvc.zip",
+      "sourceRevision": "aee8add709626ce5b5fb300f0f718fe9fc3aadaa1d5efbacadd364ec0d2835c4",
+      "publisher": "User supplied; author not recorded in archive",
+      "license": "Not specified in supplied archive"
+    },
+    {
+      "characterId": "nozomi",
+      "name": "橘望",
+      "japanese": "橘ノゾミ",
+      "archiveWeightPath": "Nozomi.pth",
+      "archiveIndexPath": "added_IVF474_Flat_nprobe_1_Nozomi_v2.index",
+      "checkpointSha256": "16208d778537c88c5a2d548b0888b52aa4abf872176935bf8fbe74223d619cc7",
+      "indexSha256": "204ea7e2af3c780636dfb8e0cb3e22b93656f940858dae4f29229a2221053069",
+      "rvcVersion": "v2",
+      "featureDimension": 768,
+      "sampleRate": "48k",
+      "speakerCount": 109,
+      "f0Enabled": true,
+      "indexVectors": 18517,
+      "source": "User supplied rvc.zip",
+      "sourceRevision": "aee8add709626ce5b5fb300f0f718fe9fc3aadaa1d5efbacadd364ec0d2835c4",
+      "publisher": "User supplied; author not recorded in archive",
+      "license": "Not specified in supplied archive"
+    }
+  ],
+  "validation": "Safe checkpoint and paired index structure; real-condition native/ONNX parity verified; character identity and hearing not verified"
+}

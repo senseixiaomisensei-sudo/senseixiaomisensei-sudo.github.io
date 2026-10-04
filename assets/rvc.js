@@ -470,7 +470,9 @@
       "referenceSha256": "0be9ef2dfc003d3c563acac9c5b8d43089d31bf00583d4985c9b98a63756371d",
       "source": "https://bluearchive.wiki/wiki/File:Arona_Work_Talk_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Arona",
+    "descriptionEn": "Federal Student Council / Shittim Chest · bright, light guide voice · public community RVC v2"
   },
   {
     "id": "arisu",
@@ -520,7 +522,9 @@
       "referenceSha256": "021d454ca1a0b16b7eb4140c36df9b2d8d9ce2be19adefd8ad9b753ed3386a92",
       "source": "https://bluearchive.wiki/wiki/File:Arisu_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Arisu",
+    "descriptionEn": "Millennium Game Development Department · clear, mechanical heroic girl voice · public community RVC v2"
   },
   {
     "id": "shiroko",
@@ -570,7 +574,9 @@
       "referenceSha256": "26ab61d6f9626832f97e43dd3950349010208e3cfd81623aa5f85860c168752b",
       "source": "https://bluearchive.wiki/wiki/File:Shiroko_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Shiroko",
+    "descriptionEn": "Abydos Foreclosure Task Force · steady, cool girl voice · public community RVC v2"
   },
   {
     "id": "hoshino",
@@ -628,7 +634,9 @@
       "referenceSha256": "be4d6aeeac5c7e2945550f98035a31fd2bd2f16009878260ba91eddb4a7313e0",
       "source": "https://bluearchive.wiki/wiki/File:Hoshino_Lobby_3.ogg",
       "hearing": "用户确认参考音色正常"
-    }
+    },
+    "nameEn": "Hoshino",
+    "descriptionEn": "Abydos Foreclosure Task Force · same-character Hoshino candidate · RVC v1"
   },
   {
     "id": "yuuka",
@@ -678,7 +686,9 @@
       "referenceSha256": "0a00a256f751ca4e7f34524760fe980621edfa09e5f997b55e478d1501f50872",
       "source": "https://bluearchive.wiki/wiki/File:Yuuka_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Yuuka",
+    "descriptionEn": "Millennium Seminar · clear, rational girl voice · public community RVC v2"
   },
   {
     "id": "hina",
@@ -728,7 +738,9 @@
       "referenceSha256": "d123878f7063e7205f257ff8dbaa0ca9cf43657e72873695bdfc5ecef7a11743",
       "source": "https://bluearchive.wiki/wiki/File:Hina_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Hina",
+    "descriptionEn": "Gehenna Prefect Team · steady, strong girl voice · public community RVC v2"
   },
   {
     "id": "noa",
@@ -778,7 +790,9 @@
       "referenceSha256": "3d8591d9b61e72a547b64873ffc1fa12e632aa8d53cb1e0544d2bea8e269d823",
       "source": "https://bluearchive.wiki/wiki/File:Noa_Lobby_5.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Noa",
+    "descriptionEn": "Millennium Seminar · gentle, composed girl voice · public community RVC v2"
   },
   {
     "id": "koharu",
@@ -828,7 +842,9 @@
       "referenceSha256": "1f0e1d9e87ca466b20554fddd774f593c01ef827badb9a04c6c24d4bece25d4e",
       "source": "https://bluearchive.wiki/wiki/File:Koharu_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Koharu",
+    "descriptionEn": "TrinityRemedial Class · bright, nervous girl voice · public community RVC v2"
   },
   {
     "id": "momoi",
@@ -878,7 +894,9 @@
       "referenceSha256": "f5985cb2b80d5fef14b60cba62ed3c53b57776efa79bcd78206030313daaa844",
       "source": "https://bluearchive.wiki/wiki/File:Momoi_Lobby_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Momoi",
+    "descriptionEn": "Millennium Game Development Department · lively, energetic girl voice · public community RVC v2"
   },
   {
     "id": "midori",
@@ -928,7 +946,9 @@
       "referenceSha256": "f68a32efc50fa90ea42dc3406319c6430151033307567e3d3a792d48ae4bad07",
       "source": "https://bluearchive.wiki/wiki/File:Midori_Lobby_5.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Midori",
+    "descriptionEn": "Millennium Game Development Department · soft, restrained girl voice · public community RVC v2"
   },
   {
     "id": "reisa",
@@ -978,7 +998,9 @@
       "referenceSha256": "976cfe5dae959437f20f46a4549cb97f720f7ff3238dc9380dab9515f589c656",
       "source": "https://bluearchive.wiki/wiki/File:Reisa_Lobby_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Reisa",
+    "descriptionEn": "TrinityJustice Task Force · lively, candid girl voice · public community RVC v2"
   },
   {
     "id": "yuzu",
@@ -1028,7 +1050,9 @@
       "referenceSha256": "87f493f89224d33c1b35d60a95a8c20de4f5d4ff3c07ad499d934a9294058f39",
       "source": "https://bluearchive.wiki/wiki/File:Yuzu_Lobby_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Yuzu",
+    "descriptionEn": "Millennium Game Development Department · delicate, introverted girl voice · public community RVC v2"
   },
   {
     "id": "toki",
@@ -1078,7 +1102,9 @@
       "referenceSha256": "ae8273ef86980c9828e7112e40425eca424bf807cb54cb8c51ef40edeb014eaa",
       "source": "https://bluearchive.wiki/wiki/File:Toki_Lobby_1.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Toki",
+    "descriptionEn": "Millennium C&C · calm, crisp girl voice · public community RVC v2"
   },
   {
     "id": "asuna",
@@ -1128,7 +1154,9 @@
       "referenceSha256": "c2937f0577986bc7e39bc2c333f89a9d577a64bd1fa9cd9ac58b395ba5aaeee2",
       "source": "https://bluearchive.wiki/wiki/File:Asuna_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Asuna",
+    "descriptionEn": "Millennium C&C · cheerful, bright girl voice · public community RVC v2"
   },
   {
     "id": "aru",
@@ -1178,7 +1206,9 @@
       "referenceSha256": "6dd040992fa72365cecc4a68fa2d9e672d1f04d0bb9c73e8e14ca6e59aefbde0",
       "source": "https://bluearchive.wiki/wiki/File:Aru_Lobby_5.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Aru",
+    "descriptionEn": "Gehenna Problem Solver 68 · confident, bold girl voice · public community RVC v2"
   },
   {
     "id": "kirara",
@@ -1228,7 +1258,9 @@
       "referenceSha256": "47f57c19874209403e98917cc346d4be5cc58d04e3b1459e25f1cd536eb484f8",
       "source": "https://bluearchive.wiki/wiki/File:Kirara_Lobby_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Kirara",
+    "descriptionEn": "Gehenna · bright, outgoing girl voice · public community RVC v2"
   },
   {
     "id": "koyuki",
@@ -1278,7 +1310,9 @@
       "referenceSha256": "3daa64e743d94184bb80d731805dd304a79c9a39a031a8f2a0efdfb4a8623a8c",
       "source": "https://bluearchive.wiki/wiki/File:Koyuki_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Koyuki",
+    "descriptionEn": "Millennium Seminar · playful, energetic girl voice · public community RVC v2"
   },
   {
     "id": "kayoko",
@@ -1328,7 +1362,9 @@
       "referenceSha256": "8bbceb736fd74764911855e85426fb8b879b45f423bbb0c339a54003a5cad160",
       "source": "https://bluearchive.wiki/wiki/File:Kayoko_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Kayoko",
+    "descriptionEn": "Gehenna Problem Solver 68 · low, calm girl voice · public community RVC v2"
   },
   {
     "id": "seia",
@@ -1378,7 +1414,9 @@
       "referenceSha256": "dd0d4d4a437e8f039099ede97c676c161fd12ce43e53c08a9a1c8abf73862dc9",
       "source": "https://bluearchive.wiki/wiki/File:Seia_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Seia",
+    "descriptionEn": "TrinityTea Party · clear, soft, calm girl voice · public community RVC v2"
   },
   {
     "id": "mika",
@@ -1429,7 +1467,9 @@
       "referenceSha256": "11867d189828c3ead75aaa6bb133dc013e48f567e521a8bd404f5415ae9b6659",
       "source": "https://bluearchive.wiki/wiki/File:Mika_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Mika",
+    "descriptionEn": "TrinityTea Party · sweet, bright, strong girl voice · 32k · public community RVC v2"
   },
   {
     "id": "gojo",
@@ -1482,7 +1522,9 @@
       "referenceSha256": "62d1ce2bbf36003b98aadc3ab192208dde05eeb61bc8be7d7759418f902dd21e",
       "source": "https://jujutsuphanpara.jp/",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Satoru Gojo",
+    "descriptionEn": "Jujutsu Kaisen· clear, composed adult male voice · Japanese public community RVC v2 · 48k / 600 epochs"
   },
   {
     "id": "sukuna",
@@ -1535,7 +1577,9 @@
       "referenceSha256": "",
       "source": "",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Ryomen Sukuna",
+    "descriptionEn": "Jujutsu Kaisen· low, forceful adult male voice · Japanese public community RVC v2 · 48k / 600 epochs"
   },
   {
     "id": "geto",
@@ -1588,7 +1632,9 @@
       "referenceSha256": "",
       "source": "",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Suguru Geto",
+    "descriptionEn": "Jujutsu Kaisen· steady, soft adult male voice · Japanese public community RVC v2 · 48k / 600 epochs"
   },
   {
     "id": "toji",
@@ -1641,7 +1687,9 @@
       "referenceSha256": "",
       "source": "",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Toji Fushiguro",
+    "descriptionEn": "Jujutsu Kaisen· rough, strong adult male voice · Japanese public community RVC v2 · 48k / 400 epochs"
   },
   {
     "id": "megumi",
@@ -1694,7 +1742,9 @@
       "referenceSha256": "87441d66b92ab17f64cc2db1c10edf8e2e5338c1b5267bb790181b5931c58d45",
       "source": "https://jujutsuphanpara.jp/",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Megumi Fushiguro",
+    "descriptionEn": "Jujutsu Kaisen· calm, restrained young male voice · Japanese public community RVC v2 · 48k / 400 epochs"
   },
   {
     "id": "key",
@@ -1748,7 +1798,9 @@
       "referenceSha256": "5634f74b67412cb693ffb0211e0c52a2054b35f28f9abeb7b82ed317f3d1dec2",
       "source": "https://bluearchive.wiki/wiki/File:Kei_Lobby_1_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Kei",
+    "descriptionEn": "Millennium Science School · Super Phenomenon Task Force · calm, sharp girl voice · trained on this site RVC v2 · 40k / 80 epochs"
   },
   {
     "id": "nonomi",
@@ -1799,7 +1851,9 @@
       "referenceSha256": "39db730105016088510f08cceeb86c93549291fa095182b4619945de7f1ae1c0",
       "source": "https://bluearchive.wiki/wiki/File:Nonomi_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Nonomi",
+    "descriptionEn": "Abydos Foreclosure Task Force · Japanese community RVC v2 voice"
   },
   {
     "id": "serika",
@@ -1850,7 +1904,9 @@
       "referenceSha256": "b79f8cafab7c7b5ad68c0d76eb6a95d854be72d447463be8a9fbb932b5a58400",
       "source": "https://bluearchive.wiki/wiki/File:Serika_Lobby_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Serika",
+    "descriptionEn": "Abydos Foreclosure Task Force · Japanese community RVC v2 voice"
   },
   {
     "id": "ayane",
@@ -1901,7 +1957,9 @@
       "referenceSha256": "77ad9538fc5159e86b3b52a65743218b3c99b2644163c3edf8fcf5f82ba26c52",
       "source": "https://bluearchive.wiki/wiki/File:Ayane_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Ayane",
+    "descriptionEn": "Abydos Foreclosure Task Force · Japanese community RVC v2 voice"
   },
   {
     "id": "maki",
@@ -1954,7 +2012,9 @@
       "referenceSha256": "aed6a7f29464136eb3ad19fbb490447854026fe546f3836ffb0b3b6c95c43bb5",
       "source": "https://bluearchive.wiki/wiki/File:Maki_Lobby_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Maki",
+    "descriptionEn": "Millennium Science School · on-device and cloud conversion · Japanese community RVC V1 voice"
   },
   {
     "id": "serina",
@@ -2014,7 +2074,9 @@
       "referenceSha256": "39587eff57a93f1f24ba03adf49ddb19c5cdc453dbeea2845e2828baddd5ba52",
       "source": "https://bluearchive.wiki/wiki/File:Serina_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Serina",
+    "descriptionEn": "Trinity General School · Remedial Knights · community RVC v2 voice"
   },
   {
     "id": "hifumi",
@@ -2080,7 +2142,9 @@
       "referenceSha256": "98a33c826c7f915cfd53b6030c6d949ca9a1928d5cb11b18cd906fb6293a2125",
       "source": "https://bluearchive.wiki/wiki/File:Hifumi_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Hifumi",
+    "descriptionEn": "Trinity General School · community RVC v1 voice"
   },
   {
     "id": "hasumi",
@@ -2146,7 +2210,9 @@
       "referenceSha256": "f1fd79f2d3321318eee7c7a38ad67127d84b59995763b12a343c78de717bb30b",
       "source": "https://bluearchive.wiki/wiki/File:Hasumi_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Hasumi",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "tsurugi",
@@ -2212,7 +2278,9 @@
       "referenceSha256": "ba1d8790497d1dfbb576fb0040db294ae83d0641eb2e504f041955bdc6ca31b7",
       "source": "https://bluearchive.wiki/wiki/File:Tsurugi_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Tsurugi",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "suzumi",
@@ -2278,7 +2346,9 @@
       "referenceSha256": "60c359c2a827e75d8bbb535bd853292e5045e87fa1b60a94e1ce6f66e3350d5a",
       "source": "https://bluearchive.wiki/wiki/File:Suzumi_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Suzumi",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "airi",
@@ -2344,7 +2414,9 @@
       "referenceSha256": "199f514103c75639f5b7622c36d0fa8b826ccdd68079867bfb2dcd989233a543",
       "source": "https://bluearchive.wiki/wiki/File:Airi_Lobby_5.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Airi",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "yoshimi",
@@ -2410,7 +2482,9 @@
       "referenceSha256": "4b64aa4751c4d4412561c012ab96e8946798b7a9379a4006f22ab0f7756dd9a6",
       "source": "https://bluearchive.wiki/wiki/File:Yoshimi_Lobby_5.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Yoshimi",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "hanae",
@@ -2476,7 +2550,9 @@
       "referenceSha256": "9cc4cf75f5147d39550933d33ae952b88f6fb2a8fa92f42f456999987070e09d",
       "source": "https://bluearchive.wiki/wiki/File:Hanae_Lobby_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Hanae",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "mashiro",
@@ -2542,7 +2618,9 @@
       "referenceSha256": "7c2d425dfa10e496715d805e537fe00e4e66e5aae3cf77f905a444496c5055d0",
       "source": "https://bluearchive.wiki/wiki/File:Mashiro_Lobby_5.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Mashiro",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "azusa",
@@ -2608,7 +2686,9 @@
       "referenceSha256": "6be4eb034feb26f50da86b8ce6ab0025908819df2fbda56aee8ecd4541b5d477",
       "source": "https://bluearchive.wiki/wiki/File:Azusa_Lobby_1.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Azusa",
+    "descriptionEn": "Trinity General School · community RVC v1 voice"
   },
   {
     "id": "hanako",
@@ -2674,7 +2754,9 @@
       "referenceSha256": "9522e382448445f4895ecd9810bdd18296201bd818da2087ca73898197672beb",
       "source": "https://bluearchive.wiki/wiki/File:Hanako_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Hanako",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "natsu",
@@ -2740,7 +2822,9 @@
       "referenceSha256": "364574ab2582c7a82721e185a74d738d2ae51b2237a51c80df2e647271186652",
       "source": "https://bluearchive.wiki/wiki/File:Natsu_Lobby_5.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Natsu",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "mari",
@@ -2806,7 +2890,9 @@
       "referenceSha256": "cdc9b9861aff83a8b1b4f01aa4f8d49f2c083987f3630aa393ccc6a800127c83",
       "source": "https://bluearchive.wiki/wiki/File:Mari_Lobby_5.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Mari",
+    "descriptionEn": "Trinity General School · community RVC v1 voice"
   },
   {
     "id": "kazusa",
@@ -2872,7 +2958,9 @@
       "referenceSha256": "452f5e69f169ea25b6ca941140838a105516a76b9f740fbe20a50482365392c5",
       "source": "https://bluearchive.wiki/wiki/File:Kazusa_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Kazusa",
+    "descriptionEn": "Trinity General School · community RVC v1 voice"
   },
   {
     "id": "ui",
@@ -2938,7 +3026,9 @@
       "referenceSha256": "82ae013f997ccd55d19b70c052fc2a35c61ade5de24bf8aafed011dcb597959e",
       "source": "https://bluearchive.wiki/wiki/File:Ui_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Ui",
+    "descriptionEn": "Trinity General School · community RVC v1 voice"
   },
   {
     "id": "hinata",
@@ -3004,7 +3094,9 @@
       "referenceSha256": "58a4553fd46487dc1c463580d03b4bdd136b403b9dca262fc01b54de2d3053c4",
       "source": "https://bluearchive.wiki/wiki/File:Hinata_Lobby_2.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Hinata",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "mine",
@@ -3070,7 +3162,9 @@
       "referenceSha256": "09e013524f1ef3b847137fe26e33947a54bedb2631bba00e850daa1cd37cdf51",
       "source": "https://bluearchive.wiki/wiki/File:Mine_Lobby_3.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Mine",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "sakurako",
@@ -3136,7 +3230,9 @@
       "referenceSha256": "a2090e6ccb2254906b3d3c269629e316c2afb574ae0514acbf9f5e3d49dafb37",
       "source": "https://bluearchive.wiki/wiki/File:Sakurako_Lobby_4.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Sakurako",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
   },
   {
     "id": "nagisa",
@@ -3202,7 +3298,9 @@
       "referenceSha256": "856720788cf6963aafbf976fa7471db96d445c02ec25fb739dd948cb59aa9d27",
       "source": "https://bluearchive.wiki/wiki/File:Nagisa_Lobby_1.ogg",
       "hearing": "未听评"
-    }
+    },
+    "nameEn": "Nagisa",
+    "descriptionEn": "Trinity General School · community RVC v1 voice"
   },
   {
     "id": "ichika",
@@ -3268,6 +3366,136 @@
       "referenceSha256": "90bd83298eee0cc7da1fb5b6b768f32c294f4e599df7f39a9c03c89906b2f966",
       "source": "https://bluearchive.wiki/wiki/File:Ichika_Lobby_2.ogg",
       "hearing": "未听评"
+    },
+    "nameEn": "Ichika",
+    "descriptionEn": "Trinity General School · community RVC v2 voice"
+  },
+  {
+    "id": "hikari",
+    "name": "橘光 (Hikari)",
+    "nameEn": "Tachibana Hikari",
+    "avatarText": "橘光",
+    "aliases": [
+      "橘ヒカリ",
+      "Tachibana Hikari"
+    ],
+    "description": "铁道学院 · 社区 RVC v2 音色",
+    "descriptionEn": "Railroad Academy · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "铁道"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 48000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "assets/rvc-resource-provenance.json",
+    "sourceRevision": "aee8add709626ce5b5fb300f0f718fe9fc3aadaa1d5efbacadd364ec0d2835c4",
+    "publisher": "User supplied; author not recorded in archive",
+    "license": "Not specified in supplied archive",
+    "checkpointSha256": "898f215eab08c0fad2bd37bda09a59afc7b3f4b7cb29b72fa93dd5b0c70934d5",
+    "indexSha256": "e68124aff372ca1f6770738582fff7029963f54905303a39adc8c8c5d7babe38",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_0.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_1.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_2.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_3.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_4.bin",
+      "models/characters/hikari/revisions/60be1c408b2207d1/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "be4482050313eaac2b993dc84a85a1d08de545396717b447f40bacb3fc8494d4",
+      "1e538337437e97715dc57a2e2597d60f2284e91b5c780fb1488d90b608636142",
+      "7f660e40846e1eca7919148d9779df0debe299f456970688fa9ae80ba677bcf2",
+      "ef94562dbf73688e9d3e0245608606f0039c05eda87c076e45cf275f9e296dd3",
+      "b03eba85fa86bb5d2081eb89726f7dcb85ad1d91de07aa6d9606a2e15588ff04",
+      "aa6761224867dbac11c618c02d03481e04b7a0f434c467652b590a98e4d9b181"
+    ],
+    "totalSize": 115146053,
+    "sha256": "60be1c408b2207d11892bce80d52c539e20064cfbec45585eaf48de35e19a486",
+    "resourceRevision": "60be1c408b2207d11892bce80d52c539e20064cfbec45585eaf48de35e19a486",
+    "retrieval": "models/characters/hikari/revisions/60be1c408b2207d1/retrieval.bin",
+    "retrievalSha256": "125aa2b4443941587d81d4535da447a048874a8f13f569199e0d62a1a0095257",
+    "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified original character speech reference supplied; use RVC compatibility"
+    }
+  },
+  {
+    "id": "nozomi",
+    "name": "橘望 (Nozomi)",
+    "nameEn": "Tachibana Nozomi",
+    "avatarText": "橘望",
+    "aliases": [
+      "橘ノゾミ",
+      "Tachibana Nozomi"
+    ],
+    "description": "铁道学院 · 社区 RVC v2 音色",
+    "descriptionEn": "Railroad Academy · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "铁道"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 48000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "assets/rvc-resource-provenance.json",
+    "sourceRevision": "aee8add709626ce5b5fb300f0f718fe9fc3aadaa1d5efbacadd364ec0d2835c4",
+    "publisher": "User supplied; author not recorded in archive",
+    "license": "Not specified in supplied archive",
+    "checkpointSha256": "16208d778537c88c5a2d548b0888b52aa4abf872176935bf8fbe74223d619cc7",
+    "indexSha256": "204ea7e2af3c780636dfb8e0cb3e22b93656f940858dae4f29229a2221053069",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_0.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_1.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_2.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_3.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_4.bin",
+      "models/characters/nozomi/revisions/0be4c1458e488ade/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "1e4f48c3e17e55e112a3e4247728eb946d065c0a8bf0131887716da5ae14a140",
+      "2ad7ea1e9796604e789d6c32d22559a553f83fc29bc36abcab26b7771a8c2d16",
+      "55aa9b75d4eda14d755d47611eace3238e7f4fc88712d081e1578826369e0afb",
+      "f0cbfe3be57ad936ecccefedf7d6c40b2706157e012b9e850f9c63c746c26b04",
+      "6286b0425653d8f88c84fe43edccf163a32cc490383bee60a69749e31c3e2057",
+      "71d5ea73ba0bc7a5f77ccf28c308cad4f56a523b11184ba63f5a879ba8ecc24e"
+    ],
+    "totalSize": 115146053,
+    "sha256": "0be4c1458e488ade95fca9b7b9478ad28b3b6a437524fc132f9a8e0b3f16929f",
+    "resourceRevision": "0be4c1458e488ade95fca9b7b9478ad28b3b6a437524fc132f9a8e0b3f16929f",
+    "retrieval": "models/characters/nozomi/revisions/0be4c1458e488ade/retrieval.bin",
+    "retrievalSha256": "04224ad79aef2fed6b1d2b4ca5623d6824a83dcfacb247540f05dc93a81209e3",
+    "qualityValidation": "New resource: safe structure/index and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified original character speech reference supplied; use RVC compatibility"
     }
   }
 ];
@@ -3388,7 +3616,7 @@
     const outputLayer = version === "v1" ? 9 : 12;
     if (!["v1", "v2"].includes(version) ||
         (contract?.outputLayer !== undefined && contract.outputLayer !== outputLayer)) {
-      throw new Error("角色的语义特征层尚未验证，无法使用其他模型替代");
+      throw new Error(l("角色的语义特征层尚未验证，无法使用其他模型替代","This character\u2019s semantic feature layer is unverified; another model cannot be substituted."));
     }
     let key;
     if (["hubert_base", "hubert-base", "contentvec"].includes(name)) {
@@ -3396,11 +3624,11 @@
     } else if (name === "hubert-base-japanese" && version === "v2") {
       key = "hubertJapanese";
     } else {
-      throw new Error(`角色需要尚未支持的语义模型：${name}`);
+      throw new Error(l(`角色需要尚未支持的语义模型：${name}`,`This character requires an unsupported semantic model: ${name}`));
     }
     const config = baseModels?.[key] || EMBEDDED_BASE_MODELS[key];
     if (!config?.chunks?.length || (key === "hubertJapanese" && !/^[a-f0-9]{64}$/.test(config.sha256 || ""))) {
-      throw new Error("角色所需的语义模型资源不完整，请刷新资源目录");
+      throw new Error(l("角色所需的语义模型资源不完整，请刷新资源目录","Required semantic model resources are incomplete. Refresh the catalog."));
     }
     const cacheKey = config.sha256
       ? `${config.name.replace(/\.onnx$/, "")}.${config.sha256}.onnx`
@@ -3563,7 +3791,7 @@
     if (!expectedHash) return;
     const digest = await crypto.subtle.digest("SHA-256", buffer);
     const actual = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, "0")).join("");
-    if (actual !== expectedHash) throw new Error("模型资源校验失败，请重新下载");
+    if (actual !== expectedHash) throw new Error(l("模型资源校验失败，请重新下载","Model resource verification failed. Download again."));
   }
 
   async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress, expectedHash) {
@@ -3882,6 +4110,10 @@
     return text;
   }
 
+  const l = (zh,en) => state.lang === "en" ? en : zh;
+  const voiceName = m => window.PostPrepRvcLanguage?.voiceName(m) || m?.name || m?.id || "";
+  const voiceTag = tag => window.PostPrepRvcLanguage?.voiceTag(tag) || tag;
+
   function resolveRvcLanguage() {
     const documentLanguage = String(document.documentElement?.lang || "").toLowerCase();
     if (documentLanguage.startsWith("en")) return "en";
@@ -3917,6 +4149,8 @@
     document.title = state.lang === "en" ? "AI Voice Changer | PostPrep" : "AI 变声器 | PostPrep";
     renderAudioMode();
     renderModelGallery();
+    applyCharacterPitch(getSelectedModel());
+    state.resultMetaRender?.();
     updateStatusDisplay();
   }
 
@@ -4058,10 +4292,10 @@
     }
     const hint = document.getElementById("rvc-speech-engine-hint");
     if (hint) hint.textContent = modern
-      ? "新版角色讲话：100 步生成，使用该角色独立参考，适用于日常语音。纯人声歌曲请选择 RVC 兼容模式；移调、检索和 F0 参数也在兼容模式中调整。"
-      : state.audioMode === "song" ? "歌曲使用保留旋律的 RVC 翻唱链路。"
-      : state.inferenceMode !== "official" ? "设备端使用 RVC 兼容引擎，新版讲话需云端 GPU。"
-      : "当前使用 RVC 兼容模式；没有核实原始参考的角色保留原模型。";
+      ? l("新版角色讲话：100 步生成，使用该角色独立参考，适用于日常语音。纯人声歌曲请选择 RVC 兼容模式；移调、检索和 F0 参数也在兼容模式中调整。","New character speech: 100 steps using this character\u2019s own reference, for everyday speech. For dry-vocal songs, transposition, retrieval and F0 controls, choose RVC compatibility.")
+      : state.audioMode === "song" ? l("歌曲使用保留旋律的 RVC 翻唱链路。","Songs use the melody-preserving RVC cover pipeline.")
+      : state.inferenceMode !== "official" ? l("设备端使用 RVC 兼容引擎，新版讲话需云端 GPU。","On-device mode uses RVC compatibility; new speech requires a cloud GPU.")
+      : l("当前使用 RVC 兼容模式；没有核实原始参考的角色保留原模型。","RVC compatibility is active. Characters without verified original references retain their original model.");
   }
 
   function syncMixControls() {
@@ -4097,12 +4331,12 @@
     const pitchInput = document.getElementById("rvc-pitch");
     const pitchTip = document.getElementById("rvc-pitch-tip");
     if (pitchTip && pitchInput && Number(pitchInput.value) === 0) {
-      pitchTip.textContent = `当前保持 0 半音，切换角色不会自动变调。低音讲话转换高音角色时，原调可能产生沙哑或电音，可试听跨音域预设 ${fmt(crossRangePitch)}；歌曲先保留原调。`;
+      pitchTip.textContent = l(`当前保持 0 半音，切换角色不会自动变调。低音讲话转换高音角色时，原调可能产生沙哑或电音，可试听跨音域预设 ${fmt(crossRangePitch)}；歌曲先保留原调。`, `Pitch remains at 0 when changing characters. Low speech sent to a high voice may sound rough or electronic; audition the ${fmt(crossRangePitch)} cross-register preset. Preserve the original pitch for songs first.`);
     }
     const presetBtn = document.getElementById("rvc-preset-male-female");
     const presetLabel = presetBtn?.querySelector("span");
     if (presetLabel) {
-      presetLabel.textContent = `男声变女角色 (${fmt(crossRangePitch)})`;
+      presetLabel.textContent = l(`男声变女角色 (${fmt(crossRangePitch)})`, `Male to female character (${fmt(crossRangePitch)})`);
     }
   }
 
@@ -4249,9 +4483,9 @@
               ${avatarText}
             </div>
             <div class="min-w-0">
-              <p class="truncate text-sm font-black text-ink">${escapeHtml(m.name)}</p>
+              <p class="truncate text-sm font-black text-ink">${escapeHtml(voiceName(m))}</p>
               <div class="mt-1 flex flex-wrap gap-1">
-                ${(m.tags || []).map((tag) => `<span class="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600">${escapeHtml(tag)}</span>`).join("")}
+                ${(m.tags || []).map((tag) => `<span class="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600">${escapeHtml(voiceTag(tag))}</span>`).join("")}
               </div>
             </div>
           </div>
@@ -4259,7 +4493,7 @@
             ${isSelected ? `<i class="fa-solid fa-circle-check"></i> ${t("modelPick")}` : t("modelInstalled")}
           </span>
         </div>
-        <p class="mt-2 line-clamp-2 text-xs leading-5 text-muted">${escapeHtml(m.description || "")}</p>
+        <p class="mt-2 line-clamp-2 text-xs leading-5 text-muted">${escapeHtml(state.lang === "en" ? m.descriptionEn || m.description || "" : m.description || "")}</p>
       `;
       card.addEventListener("click", () => {
         state.selectedModelId = m.id;
@@ -4298,7 +4532,7 @@
         ["serika", "黑见芹香", "セリカ", "Serika"],
         ["ayane", "奥空绫音", "アヤネ", "Ayane"],
       ] },
-    { id: "highlander", name: "高地人铁道学院", en: "Highlander Railroad Academy", tag: "高地人",
+    { id: "highlander", name: "铁道学院", en: "Railroad Academy", tag: "铁道", alias: "高地人",
       source: "https://www.tanita.co.jp/content/bluearchive/",
       students: [
         ["hikari", "橘光", "橘ヒカリ", "Hikari"],
@@ -4400,7 +4634,7 @@
       (school.students || []).filter(student => !searchVal || student.join(" ").toLowerCase().includes(searchVal)).forEach(student => {
         const row = document.createElement("p");
         const available = state.catalog.some(model => model.id === student[0]);
-        row.textContent = student[1] + " / " + student[3] + " · " + (state.lang === "en"
+        row.textContent = (state.lang === "en" ? student[3] : student[1] + " / " + student[3]) + " · " + (state.lang === "en"
           ? available ? "Voice available" : "Voice not installed"
           : available ? "声线已接入" : "声线待接入");
         roster.appendChild(row);
@@ -4448,7 +4682,10 @@
       if (!searchVal) return true;
       return (
         m.name.toLowerCase().includes(searchVal) ||
+        (m.nameEn || "").toLowerCase().includes(searchVal) ||
+        (m.aliases || []).some(alias => alias.toLowerCase().includes(searchVal)) ||
         (m.description || "").toLowerCase().includes(searchVal) ||
+        (m.descriptionEn || "").toLowerCase().includes(searchVal) ||
         (m.tags || []).some((tag) => tag.toLowerCase().includes(searchVal))
       );
     });
@@ -4847,8 +5084,8 @@
 
       if (progressBar) progressBar.style.width = `100%`;
       if (percentText) percentText.textContent = `100%`;
-      const charMsg = selectedModel ? `、${selectedModel.name}` : "";
-      if (statusText) statusText.textContent = ` 基础模型${charMsg}预热完成！已存入浏览器闪存。`;
+      const charMsg = selectedModel ? l(`、${selectedModel.name}`,` and ${voiceName(selectedModel)}`) : "";
+      if (statusText) statusText.textContent = l(` 基础模型${charMsg}预热完成！已存入浏览器闪存。`,` Base models${charMsg} preloaded in browser storage.`);
 
       showToast(` 预热完成！下次变声将直接从闪存秒级启动。`);
       await checkCacheStatus();
@@ -4857,8 +5094,8 @@
       }, 3000);
     } catch (err) {
       console.error("Prewarm failed:", err);
-      showToast(" 预热失败，请重试");
-      if (statusText) statusText.textContent = ` 预热失败: ${err.message || err}`;
+      showToast(l(" 预热失败，请重试"," Preloading failed. Retry."));
+      if (statusText) statusText.textContent = l(` 预热失败: ${err.message || err}`,` Preloading failed: ${err.message || err}`);
       if (preloadBtn) {
         preloadBtn.disabled = false;
         preloadBtn.innerHTML = `<i class="fa-solid fa-rotate-right mr-1"></i><span>重新预热</span>`;
@@ -4887,11 +5124,11 @@
           await removeCachedItem(`chunk:${versionCharacterChunkPath(chunkPath)}`);
         }
       }
-      showToast(" 本地模型缓存已清理");
+      showToast(l(" 本地模型缓存已清理"," Local model cache cleared."));
       await checkCacheStatus();
     } catch (e) {
       console.warn("Failed to clear cache:", e);
-      showToast("清理缓存失败");
+      showToast(l("清理缓存失败","Failed to clear cache."));
     }
   }
 
@@ -4941,7 +5178,7 @@
           signal: controller.signal,
         });
         if (response.ok) return response;
-        lastError = new Error(`下载音频失败 HTTP ${response.status}`);
+        lastError = new Error(l(`下载音频失败 HTTP ${response.status}`,`Audio download failed: HTTP ${response.status}`));
         lastError.retryable = [408, 429, 500, 502, 503, 504].includes(response.status);
         if (!lastError.retryable || attempt === attempts) throw lastError;
       } catch (error) {
@@ -4952,7 +5189,7 @@
       }
       await waitFor(700 * attempt);
     }
-    throw lastError || new Error("下载音频失败");
+    throw lastError || new Error(l("下载音频失败","Audio download failed."));
   }
 
   function createCloudRequestId() {
@@ -5044,13 +5281,13 @@
         if (error?.requestId) lastRequestId = error.requestId;
         const retryableError = isTransientCloudOutputError(error);
         if (!retryableError || transientFailures >= maxTransientFailures || Date.now() >= deadline) throw error;
-        updateStatusDisplay(` [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`);
+        updateStatusDisplay(l(` [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`,` [2/3] Network interrupted while checking results. Retrying (${transientFailures}/${maxTransientFailures - 1})…`));
         await waitFor(Math.min(longJob ? 15000 : 8000, 1800 * transientFailures));
       } finally {
         clearTimeout(timer);
       }
     }
-    const timeout = new Error("云端后台处理超过等待时限，请重新提交");
+    const timeout = new Error(l("云端后台处理超过等待时限，请重新提交","Cloud processing exceeded the wait limit. Submit again."));
     timeout.code = "RVC_BACKEND_TIMEOUT";
     timeout.requestId = lastRequestId;
     throw timeout;
@@ -5073,7 +5310,7 @@
         })(),
         new Promise((_, reject) => {
           timer = setTimeout(() => {
-            reject(new Error("音频数据传输超时，将重新读取已完成任务"));
+            reject(new Error(l("音频数据传输超时，将重新读取已完成任务","Audio transfer timed out. Retrieving the completed job again.")));
             void reader.cancel().catch(() => {});
           }, timeoutMs);
         }),
@@ -5098,12 +5335,12 @@
       } catch (error) {
         lastError = error;
         if (attempt >= maxAttempts || Date.now() >= deadline) break;
-        updateStatusDisplay(` [3/3] 结果下载中断，正在从已完成任务重新拉取（${attempt}/${maxAttempts - 1}）…`);
+        updateStatusDisplay(l(` [3/3] 结果下载中断，正在从已完成任务重新拉取（${attempt}/${maxAttempts - 1}）…`,` [3/3] Download interrupted. Retrieving the completed result again (${attempt}/${maxAttempts - 1})…`));
         await waitFor(Math.min(12000, attempt * 2000));
         response = null;
       }
     }
-    throw lastError || new Error("长音频结果下载未完成");
+    throw lastError || new Error(l("长音频结果下载未完成","Long audio download is incomplete."));
   }
 
   const CLOUD_RVC_ERROR_MESSAGES = Object.freeze({
@@ -5202,18 +5439,18 @@
 
   async function normalizeCloudAudioBlob(blob, format) {
     if (!blob || !Number.isFinite(blob.size) || blob.size < 44 || blob.size > 100 * 1024 * 1024) {
-      throw new Error("返回音频数据异常");
+      throw new Error(l("返回音频数据异常","Invalid audio data returned."));
     }
     const bytes = new Uint8Array(await blob.slice(0, 16).arrayBuffer());
     const ascii = (from, to) => String.fromCharCode(...bytes.slice(from, to));
     if (format === "wav") {
       if (ascii(0, 4) !== "RIFF" || ascii(8, 12) !== "WAVE") {
-        throw new Error("返回结果不是有效 WAV 音频");
+        throw new Error(l("返回结果不是有效 WAV 音频","The result is not valid WAV audio."));
       }
     } else {
       const hasId3 = ascii(0, 3) === "ID3";
       const hasMpegFrame = bytes.length >= 2 && bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0;
-      if (!hasId3 && !hasMpegFrame) throw new Error("返回结果不是有效 MP3 音频");
+      if (!hasId3 && !hasMpegFrame) throw new Error(l("返回结果不是有效 MP3 音频","The result is not valid MP3 audio."));
     }
     // Explicitly attach a browser-recognised MIME type. Some mobile WebViews
     // discard the upstream Content-Type when Response.blob() creates the URL.
@@ -5365,7 +5602,7 @@
         engineLabel = state.lang === "en" ? " On-device engine is ready" : " 极速免上传引擎已就绪";
       }
       statusEl.textContent = state.lang === "en"
-        ? `${engineLabel} · Voice: ${selectedModel.name} · Audio: ${state.audio.name} (${formatTime(state.audio.duration)})`
+        ? `${engineLabel} · Voice: ${voiceName(selectedModel)} · Audio: ${state.audio.name} (${formatTime(state.audio.duration)})`
         : `${engineLabel} · 已选角色: ${selectedModel.name} · 音频: ${state.audio.name} (${formatTime(state.audio.duration)})`;
     }
     if (convertBtn) convertBtn.disabled = state.busy;
@@ -5513,7 +5750,7 @@
   }
 
   function attachResultAudio(audio, sourceUrl, crossOrigin) {
-    if (!audio || !sourceUrl) return Promise.reject(new Error("播放器地址未就绪"));
+    if (!audio || !sourceUrl) return Promise.reject(new Error(l("播放器地址未就绪","The playback address is not ready.")));
     return new Promise((resolve, reject) => {
       const finish = (error) => {
         clearTimeout(timer);
@@ -5524,10 +5761,10 @@
       };
       const onMetadata = () => {
         if (Number.isFinite(audio.duration) && audio.duration > 0) finish();
-        else finish(new Error("播放器没有读到有效时长"));
+        else finish(new Error(l("播放器没有读到有效时长","The player did not read a valid duration.")));
       };
-      const onError = () => finish(new Error(audio.error?.message || "播放器拒绝加载音频"));
-      const timer = setTimeout(() => finish(new Error("播放器读取音频元数据超时")), 30000);
+      const onError = () => finish(new Error(audio.error?.message || l("播放器拒绝加载音频","The player rejected this audio.")));
+      const timer = setTimeout(() => finish(new Error(l("播放器读取音频元数据超时","Loading audio metadata timed out."))), 30000);
       audio.pause();
       audio.removeAttribute("src");
       if (crossOrigin) audio.crossOrigin = "anonymous";
@@ -5544,7 +5781,7 @@
     if (mode === "local" && state.audioMode === "song") {
       state.audioMode = "voice";
       renderAudioMode();
-      showToast("本地兼容模式已切回纯人声；带伴奏翻唱使用云端 GPU 分离与回混。");
+      showToast(l("本地兼容模式已切回纯人声；带伴奏翻唱使用云端 GPU 分离与回混。","Local compatibility switched to dry vocals. Song covers use cloud GPU separation and remixing."));
     }
     state.inferenceMode = mode === "local" ? "local" : "official";
     try {
@@ -5657,7 +5894,7 @@
     const statusText = document.getElementById("rvc-official-status-text");
 
     if (indicator) indicator.className = "flex h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400";
-    if (statusText) statusText.textContent = "正在检测云端 RVC 引擎…";
+    if (statusText) statusText.textContent = l("正在检测云端 RVC 引擎…","Checking the cloud RVC engine\u2026");
 
     // Try health/status probes with 3500ms timeout
     const candidates = [
@@ -5749,10 +5986,10 @@
   async function importOwnModel(file) {
     try {
       if (!file || !/\.onnx$/i.test(file.name)) {
-        throw new Error("请选择有效的 .onnx 模型文件");
+        throw new Error(l("请选择有效的 .onnx 模型文件","Choose a valid .onnx model file."));
       }
       if (file.size > 200 * 1024 * 1024) {
-        throw new Error("模型文件过大（>200MB），请使用 tools/ 转换脚本分片后再部署");
+        throw new Error(l("模型文件过大（>200MB），请使用 tools/ 转换脚本分片后再部署","The model exceeds 200 MB. Split it with the export tools before publishing."));
       }
       const id = file.name.replace(/\.onnx$/i, "").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 60);
       const cacheKey = `${OWN_MODEL_PREFIX}${id}.onnx`;
@@ -5769,12 +6006,12 @@
 
       const statusEl = document.getElementById("rvc-own-model-status");
       if (statusEl) {
-        statusEl.textContent = ` 已导入「${id}」并设为当前角色（仅本机，可立即变声）。`;
+        statusEl.textContent = l(` 已导入「${id}」并设为当前角色（仅本机，可立即变声）。`,` Imported ${id} as the selected voice (this device only; ready to convert).`);
         statusEl.classList.remove("hidden");
       }
-      showToast(` 导入成功：${id}`);
+      showToast(l(` 导入成功：${id}`,` Imported: ${id}`));
     } catch (err) {
-      showToast(` 导入失败：${err.message}`);
+      showToast(l(` 导入失败：${err.message}`,` Import failed: ${err.message}`));
     }
   }
 
@@ -6062,14 +6299,14 @@
         recordPreview.hidden = true;
       }
       await handleAudioSelected(file, Math.max(0, (Date.now() - state.recordStartAt) / 1000));
-      if (recordHint) recordHint.textContent = `录音已就绪：${file.name} · 点击“开始变声”即可处理。`;
+      if (recordHint) recordHint.textContent = l(`录音已就绪：${file.name} · 点击“开始变声”即可处理。`,`Recording ready: ${file.name}. Select “Convert” to process it.`);
     };
 
     recordBtn.addEventListener("click", async () => {
       if (state.recording) {
         state.recording = false;
         recordBtn.disabled = true;
-        if (recordLabel) recordLabel.textContent = "正在整理录音…";
+        if (recordLabel) recordLabel.textContent = l("正在整理录音…","Preparing recording\u2026");
         if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
           try { state.mediaRecorder.requestData(); } catch {}
           state.mediaRecorder.stop();
@@ -6147,7 +6384,7 @@
         }
         state.recording = true;
         state.recordStartAt = Date.now();
-        if (recordHint) recordHint.textContent = "正在录音；再次点击后会自动整理为可变声的标准音频。";
+        if (recordHint) recordHint.textContent = l("正在录音；再次点击后会自动整理为可变声的标准音频。","Recording. Click again to prepare standard audio for conversion.");
         if (recordLabel) recordLabel.textContent = t("recordStop");
         recordBtn.classList.remove("bg-brand", "hover:bg-brandDark");
         recordBtn.classList.add("bg-red-600", "hover:bg-red-700");
@@ -6176,7 +6413,7 @@
     if (state.busy || !state.audio || !state.selectedModelId) return false;
     const deviceModel = state.catalog.find((model) => model.id === state.selectedModelId);
     if (deviceModel?.supportsDevice === false) {
-      showToast("该声线仅支持服务端转换，请切换到云端模式。");
+      showToast(l("该声线仅支持服务端转换，请切换到云端模式。","This voice only supports server conversion. Switch to cloud mode."));
       return false;
     }
     if (fallback) {
@@ -6230,7 +6467,7 @@
     const startTime = Date.now();
     try {
       // 1. Dynamic import of rvc-web-runtime
-      updateStatusDisplay(" 正在初始化本地推理引擎...");
+      updateStatusDisplay(l(" 正在初始化本地推理引擎..."," Initializing the on-device engine\u2026"));
       const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260930-fractional-r42", window.location.href).href);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
@@ -6252,7 +6489,7 @@
       updateProgressBar(5);
       showProgressBar(true);
 
-      updateStatusDisplay(" [1/4] 正在加载基础语义模型 (HuBERT)...");
+      updateStatusDisplay(l(" [1/4] 正在加载基础语义模型 (HuBERT)..."," [1/4] Loading the semantic model (HuBERT)\u2026"));
       const hubertFile = await loadModelAuto(
         hubertCfg,
         encoder.cacheKey,
@@ -6260,12 +6497,12 @@
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
           updateProgressBar(Math.min(33, Math.round((cur / tot) * 33)));
-          updateStatusDisplay(msg || ` [1/4] 正在加载 HuBERT 语义模型: 分片 ${cur}/${tot}`);
+          updateStatusDisplay(msg || l(` [1/4] 正在加载 HuBERT 语义模型: 分片 ${cur}/${tot}`,` [1/4] Loading HuBERT: chunk ${cur}/${tot}`));
         }
       );
       updateProgressBar(33);
 
-      updateStatusDisplay(" [1/4] 正在加载基础音高模型 (RMVPE)...");
+      updateStatusDisplay(l(" [1/4] 正在加载基础音高模型 (RMVPE)..."," [1/4] Loading the pitch model (RMVPE)\u2026"));
       const rmvpeFile = await loadModelAuto(
         rmvpeCfg,
         "rmvpe.onnx",
@@ -6273,12 +6510,12 @@
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
           updateProgressBar(33 + Math.min(33, Math.round((cur / tot) * 33)));
-          updateStatusDisplay(msg || ` [1/4] 正在加载 RMVPE 音高模型: 分片 ${cur}/${tot}`);
+          updateStatusDisplay(msg || l(` [1/4] 正在加载 RMVPE 音高模型: 分片 ${cur}/${tot}`,` [1/4] Loading RMVPE: chunk ${cur}/${tot}`));
         }
       );
       updateProgressBar(66);
 
-      updateStatusDisplay(` [1/4] 正在加载角色声音模型 (${selectedModel.name})...`);
+      updateStatusDisplay(l(` [1/4] 正在加载角色声音模型 (${selectedModel.name})...`,` [1/4] Loading character voice (${voiceName(selectedModel)})…`));
       const modelFile = await loadModelAuto(
         selectedModel,
         characterModelCacheKey(selectedModel),
@@ -6286,14 +6523,14 @@
         "application/onnx",
         (l, t, cur, tot, fromCache, msg) => {
           updateProgressBar(66 + Math.min(34, Math.round((cur / tot) * 34)));
-          updateStatusDisplay(msg || ` [1/4] 正在加载 ${selectedModel.name} 角色模型: 分片 ${cur}/${tot}`);
+          updateStatusDisplay(msg || l(` [1/4] 正在加载 ${selectedModel.name} 角色模型: 分片 ${cur}/${tot}`,` [1/4] Loading ${voiceName(selectedModel)}: chunk ${cur}/${tot}`));
         }
       );
 
       let retrievalFile;
       if (selectedModel.retrieval && indexRateVal > 0) {
         try {
-          updateStatusDisplay(` [1/4] 正在加载 ${selectedModel.name} 轻量音色检索码本...`);
+          updateStatusDisplay(l(` [1/4] 正在加载 ${selectedModel.name} 轻量音色检索码本...`,` [1/4] Loading the ${voiceName(selectedModel)} retrieval codebook…`));
           const retrievalPath = versionCharacterChunkPath(selectedModel.retrieval, selectedModel);
           retrievalFile = await fetchWithCache(
             getChunkMirrorUrls(retrievalPath),
@@ -6317,7 +6554,7 @@
           const decoded = await decodeAudioFileTo16kMono(state.audio.file);
           state.audio.float32 = decoded.float32;
         } else {
-          throw new Error("音频数据已失效，请重新选择或录制音频");
+          throw new Error(l("音频数据已失效，请重新选择或录制音频","Audio has expired. Select or record it again."));
         }
       }
       const freshAudioInput = new Float32Array(state.audio.float32);
@@ -6363,7 +6600,7 @@
               };
               updateStatusDisplay(` ${stepMap[e.step] || e.step}`);
             } else if (e.type === "chunk") {
-              updateStatusDisplay(` [4/4] 正在合成音频分段: ${e.current} / ${e.total}`);
+              updateStatusDisplay(l(` [4/4] 正在合成音频分段: ${e.current} / ${e.total}`,` [4/4] Rendering audio chunk ${e.current} / ${e.total}`));
             }
           },
         },
@@ -6411,17 +6648,18 @@
       if (previousResultUrl) URL.revokeObjectURL(previousResultUrl);
       if (resultMeta) {
         const localBackendLabel = result.backend === "webgpu" ? "ONNX/WebGPU" : "ONNX/WebAssembly";
-        resultMeta.textContent = state.lang === "en"
-          ? `Voice: ${selectedModel.name} · Pitch: ${pitchVal > 0 ? "+" : ""}${pitchVal} · Time: ${elapsedSec}s · On-device ${localBackendLabel}`
-          : `角色：${selectedModel.name} · 音高变调：${pitchVal > 0 ? "+" : ""}${pitchVal} · 耗时：${elapsedSec}s · 用户设备端 ${localBackendLabel}`;
+        state.resultMetaRender = () => { resultMeta.textContent = state.lang === "en"
+          ? `Voice: ${voiceName(selectedModel)} · Pitch: ${pitchVal > 0 ? "+" : ""}${pitchVal} · Time: ${elapsedSec}s · On-device ${localBackendLabel}`
+          : `角色：${selectedModel.name} · 音高变调：${pitchVal > 0 ? "+" : ""}${pitchVal} · 耗时：${elapsedSec}s · 用户设备端 ${localBackendLabel}`; };
+        state.resultMetaRender();
       }
       if (resultSection) {
         resultSection.hidden = false;
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
 
-      updateStatusDisplay(` 设备端变声成功！用时 ${elapsedSec} 秒，结果已生成在下方。`);
-      showToast(" 设备端变声完成！可在下方试听或下载");
+      updateStatusDisplay(l(` 设备端变声成功！用时 ${elapsedSec} 秒，结果已生成在下方。`,` On-device conversion complete in ${elapsedSec}s. Results appear below.`));
+      showToast(l(" 设备端变声完成！可在下方试听或下载"," On-device conversion complete. Play or download below."));
       return true;
     } catch (err) {
       console.error("RVC Inference Error:", err);
@@ -6506,7 +6744,7 @@
     }
     const extension = String(uploadFile?.name || "").toLowerCase().split(".").pop();
     if (!["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"].includes(extension)) {
-      showToast("云端 RVC 引擎接受 WAV、MP3、M4A、OGG、WebM、FLAC 或 AAC，请先转换格式。");
+      showToast(l("云端 RVC 引擎接受 WAV、MP3、M4A、OGG、WebM、FLAC 或 AAC，请先转换格式。","Cloud RVC accepts WAV, MP3, M4A, OGG, WebM, FLAC or AAC. Convert the input format first."));
       return;
     }
 
@@ -6602,7 +6840,7 @@
 
         xhr.upload.onload = () => {
           updateProgressBar(46);
-          updateStatusDisplay(" [1/3] 音频传输已结束，正在等待云端确认并启动推理…");
+          updateStatusDisplay(l(" [1/3] 音频传输已结束，正在等待云端确认并启动推理…"," [1/3] Upload sent. Waiting for cloud confirmation and inference\u2026"));
           if (ticker) clearInterval(ticker);
           ticker = setInterval(() => {
             const sec = Math.round((Date.now() - startedAt) / 1000);
@@ -6619,7 +6857,7 @@
               const resJson = JSON.parse(xhr.responseText);
               resolve(resJson);
             } catch (err) {
-            reject(new Error("云端服务返回格式解析失败"));
+            reject(new Error(l("云端服务返回格式解析失败","Failed to parse the cloud response.")));
             }
           } else {
             let errMsg = `HTTP ${xhr.status}`;
@@ -6668,7 +6906,7 @@
 
         xhr.ontimeout = () => {
           if (ticker) clearInterval(ticker);
-          const error = new Error(`上传或推理超时 (${Math.round(requestTimeoutMs / 1000)}s)，建议裁短音频后重试`);
+          const error = new Error(l(`上传或推理超时 (${Math.round(requestTimeoutMs / 1000)}s)，建议裁短音频后重试`,`Upload or inference timed out (${Math.round(requestTimeoutMs / 1000)}s). Try a shorter clip.`));
           error.code = "RVC_BACKEND_TIMEOUT";
           error.retryable = false;
           reject(error);
@@ -6687,7 +6925,7 @@
         await waitFor(Math.min(15000, Math.max(1200, (error?.retryAfterSeconds || 0) * 1000)));
       });
       if (!payload || !payload.jobId || !payload.downloadToken) {
-        throw new Error(payload?.message || payload?.code || "未获取到任务标识");
+        throw new Error(payload?.message || payload?.code || l("未获取到任务标识","No job identifier was returned."));
       }
 
       const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
@@ -6701,7 +6939,7 @@
       const actualF0Method = outputResponse.headers.get("X-RVC-F0-Method") || "";
       const remixAvailable = outputResponse.headers.get("X-RVC-Remix-Available") === "true";
       updateProgressBar(82);
-      updateStatusDisplay(" [3/3] 云端角色推理完成，正在下载变声结果…");
+      updateStatusDisplay(l(" [3/3] 云端角色推理完成，正在下载变声结果…"," [3/3] Character inference complete. Downloading the result\u2026"));
       const nextResultUrl = await cloudResultUrl(outputUrl, outputResponse, outputFormat, jobTimeoutMs);
       const previousResultUrl = state.resultUrl;
       if (resultDownload) {
@@ -6741,32 +6979,36 @@
       if (previousResultUrl) URL.revokeObjectURL(previousResultUrl);
       const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
       if (resultMeta) {
-        resultMeta.textContent = t("resultMeta", {
-          model: selectedModel.name,
+        state.resultMetaBaseRender = () => t("resultMeta", {
+          model: voiceName(selectedModel),
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        }) + ` · ${actualEngine === "seed-vc-v2-speech" ? "新版角色讲话 · 100 步 · FP32" : `云端 PyTorch RVC · F0 ${actualF0Method || (f0Method === "auto" ? "自动（实际算法未返回）" : f0Method.toUpperCase())}`}${state.audioMode === "song" ? " · PyMSS 人声分离/原伴奏回混" : ""}${actualRevision ? ` · ${actualRevision.slice(0, 10)}` : ""} · ${outputFormat.toUpperCase()}`;
-        state.resultMetaBase = resultMeta.textContent;
+        }) + ` · ${actualEngine === "seed-vc-v2-speech" ? l("新版角色讲话 · 100 步 · FP32","Character speech · 100 steps · FP32") : `${l("云端","Cloud")} PyTorch RVC · F0 ${actualF0Method || (f0Method === "auto" ? l("自动（实际算法未返回）","Auto (actual method unavailable)") : f0Method.toUpperCase())}`}${state.audioMode === "song" ? l(" · PyMSS 人声分离/原伴奏回混"," · PyMSS separation/original backing remix") : ""}${actualRevision ? ` · ${actualRevision.slice(0, 10)}` : ""} · ${outputFormat.toUpperCase()}`;
+        state.resultMetaRender = () => {
+          state.resultMetaBase = state.resultMetaBaseRender();
+          resultMeta.textContent = state.resultMetaBase;
+        };
+        state.resultMetaRender();
       }
       if (resultSection) {
         resultSection.hidden = false;
         resultSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       updateProgressBar(100);
-      updateStatusDisplay(` 云端 RVC 变声完成！用时 ${elapsed} 秒。${longJob ? "长音频稳定链路已完成可恢复处理与下载。" : ""}可在下方试听或下载。`);
-      showToast(" 云端 RVC 变声完成！可在下方试听或下载");
+      updateStatusDisplay(l(` 云端 RVC 变声完成！用时 ${elapsed} 秒。${longJob ? "长音频稳定链路已完成可恢复处理与下载。" : ""}可在下方试听或下载。`,` Cloud RVC conversion complete in ${elapsed}s. ${longJob ? "Resumable processing and download completed. " : ""}Play or download below.`));
+      showToast(l(" 云端 RVC 变声完成！可在下方试听或下载"," Cloud RVC conversion complete. Play or download below."));
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
       if (allowDeviceFallback && !modernSpeech && state.audioMode === "voice"
           && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
-        updateStatusDisplay(" 云端 RVC 当前不可达，准备切换到用户设备端推理…");
+        updateStatusDisplay(l(" 云端 RVC 当前不可达，准备切换到用户设备端推理…"," Cloud RVC is unreachable. Preparing on-device inference\u2026"));
         return { fallback: true, error };
       }
       const failureMessage = cloudRvcFailureMessage(error);
       const songFallbackHint = state.audioMode === "song" && hasDeviceFallbackModel(selectedModel)
-        ? " · 如接受伴奏也被处理，可自行点击「转为本地直接变声」。" : "";
-      const diagnostic = error?.requestId ? ` · 诊断号 ${error.requestId}` : "";
+        ? l(" · 如接受伴奏也被处理，可自行点击「转为本地直接变声」。"," · To process the backing track too, select “Convert directly on device”.") : "";
+      const diagnostic = error?.requestId ? l(` · 诊断号 ${error.requestId}`,` · Diagnostic ID ${error.requestId}`) : "";
       const deviceHint = !hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)
         ? (state.lang === "en" ? " · This voice is cloud-only; choose an on-device voice to continue locally." : " · 该角色仅支持云端；如需本地接续，请更换支持设备端的角色。") : "";
       updateStatusDisplay(` ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}${deviceHint}${songFallbackHint}`);
@@ -6828,7 +7070,10 @@
         download.download = `postprep-rvc-mix-${job.jobId}-${payload.mixRevision}.${job.outputFormat}`;
       }
       job.mixRevision = Number(payload.mixRevision || job.mixRevision + 1);
-      if (meta) meta.textContent = `${state.resultMetaBase} · Mix ${job.mixRevision} · 人声 ${mix.vocalMute ? "静音" : `${mix.vocalGainDb} dB`} · 伴奏 ${mix.accompanimentMute ? "静音" : `${mix.accompanimentGainDb} dB`}`;
+      if (meta) {
+        state.resultMetaRender = () => { meta.textContent = `${state.resultMetaBaseRender?.() || state.resultMetaBase} · Mix ${job.mixRevision} · ${l("人声","Vocal")} ${mix.vocalMute ? l("静音","Muted") : `${mix.vocalGainDb} dB`} · ${l("伴奏","Backing")} ${mix.accompanimentMute ? l("静音","Muted") : `${mix.accompanimentGainDb} dB`}`; };
+        state.resultMetaRender();
+      }
       if (status) status.textContent = state.lang === "en"
         ? "Mix updated. Preview and download now use the same audio."
         : "混音已更新；预听与下载现在使用同一份音频。";
@@ -6856,7 +7101,7 @@
     if (!isAppleMobile() && state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && state.engineReady === false) {
       const cloudReady = await refreshOfficialService();
       if (cloudReady === false) {
-        updateStatusDisplay(" 检测到电脑端云引擎离线，正在使用当前用户设备处理纯人声…");
+        updateStatusDisplay(l(" 检测到电脑端云引擎离线，正在使用当前用户设备处理纯人声…"," Cloud engine is offline. Processing dry vocals on your device\u2026"));
         setInferenceMode("local");
         return runWebRvcInference({ allowLong: true, fallback: true });
       }
@@ -6873,10 +7118,10 @@
     if (state.busy) return;
     const model = state.catalog.find((model) => model.id === state.selectedModelId);
     if (!hasDeviceFallbackModel(model)) {
-      showToast("请先选择支持设备端的角色。");
+      showToast(l("请先选择支持设备端的角色。","Choose an on-device compatible character first."));
       return;
     }
-    if (state.audioMode === "song") showToast("本地直接变声不分离伴奏，伴奏也会一起变声。");
+    if (state.audioMode === "song") showToast(l("本地直接变声不分离伴奏，伴奏也会一起变声。","Direct local conversion does not separate accompaniment; it will also be converted."));
     setAudioMode("voice");
     setInferenceMode("local");
     runRvcInference();
@@ -6918,7 +7163,7 @@
     };
     const formatTrainingFiles = (files) => {
       const total = files.reduce((sum, file) => sum + file.size, 0);
-      return `${files.length} 段 · ${formatTransferredBytes(total)} · 将逐段上传，单段失败会自动重试`;
+      return l(`${files.length} 段 · ${formatTransferredBytes(total)} · 将逐段上传，单段失败会自动重试`,`${files.length} recordings · ${formatTransferredBytes(total)} · uploaded separately with retries`);
     };
     const readJson = async (response) => {
       const payload = await response.json().catch(() => null);
@@ -6938,7 +7183,7 @@
       xhr.upload.onprogress = (event) => {
         const fraction = event.lengthComputable && event.total > 0 ? event.loaded / event.total : 0;
         const uploadProgress = 2 + ((slot + fraction) / totalFiles) * 18;
-        setTrainingUi(uploadProgress, `正在上传第 ${slot + 1}/${totalFiles} 段：${file.name} · ${Math.round(fraction * 100)}%`);
+        setTrainingUi(uploadProgress, l(`正在上传第 ${slot + 1}/${totalFiles} 段：${file.name} · ${Math.round(fraction * 100)}%`,`Uploading recording ${slot + 1}/${totalFiles}: ${file.name} · ${Math.round(fraction * 100)}%`));
       };
       xhr.onload = () => {
         let payload = null;
@@ -6951,8 +7196,8 @@
           reject(error);
         }
       };
-      xhr.onerror = () => reject(Object.assign(new Error("训练音频上传连接中断"), { code: "RVC_NETWORK_INTERRUPTED" }));
-      xhr.ontimeout = () => reject(Object.assign(new Error("训练音频上传超时"), { code: "RVC_NETWORK_INTERRUPTED" }));
+      xhr.onerror = () => reject(Object.assign(new Error(l("训练音频上传连接中断","Training upload connection interrupted.")), { code: "RVC_NETWORK_INTERRUPTED" }));
+      xhr.ontimeout = () => reject(Object.assign(new Error(l("训练音频上传超时","Training upload timed out.")), { code: "RVC_NETWORK_INTERRUPTED" }));
       xhr.send(body);
     });
     const uploadWithRetry = async (url, file, slot, totalFiles) => {
@@ -6963,7 +7208,7 @@
         } catch (caught) {
           error = caught;
           if (attempt >= 3 || caught?.httpStatus && caught.httpStatus < 500 && caught.httpStatus !== 429) throw caught;
-          setTrainingUi(2 + (slot / totalFiles) * 18, `第 ${slot + 1} 段连接波动，正在重试 ${attempt}/2…`);
+          setTrainingUi(2 + (slot / totalFiles) * 18, l(`第 ${slot + 1} 段连接波动，正在重试 ${attempt}/2…`,`Recording ${slot + 1} connection interrupted. Retrying ${attempt}/2…`));
           await waitFor(attempt * 1500);
         }
       }
@@ -6990,19 +7235,21 @@
             cache: "no-store",
           }));
         } catch (error) {
-          setTrainingUi(state.trainingJob.progress || 20, `训练状态连接波动：${error.message}，8 秒后自动续查…`);
+          setTrainingUi(state.trainingJob.progress || 20, l(`训练状态连接波动：${error.message}，8 秒后自动续查…`,`Training status unavailable: ${error.message}. Checking again in 8s…`));
           await waitFor(8000);
           continue;
         }
         job.progress = Number(payload?.progress) || job.progress || 0;
         saveJob(job);
-        const label = payload?.message || payload?.stage || "训练任务运行中";
+        const stageNames={queued:'Queued',preparing:'Preparing',preprocessing:'Preparing recordings',extracting:'Extracting pitch and features',training:'Training',indexing:'Building index',publishing:'Publishing model',completed:'Completed',failed:'Failed',cancelled:'Cancelled'};
+        job.stage=payload?.stage;
+        const label = state.lang==='en' ? stageNames[payload?.stage] || payload?.stage || 'Training' : payload?.message || payload?.stage || '训练任务运行中';
         if (payload?.state === "completed") {
           setTrainingUi(100, ` ${label}`, false);
           clearStoredJob();
           if (cancelButton) cancelButton.classList.add("hidden");
           await refreshTrainedModel(payload.modelId);
-          showToast(" 新模型训练完成，已加入独立训练模型区");
+          showToast(l(" 新模型训练完成，已加入独立训练模型区"," Model training complete. Added to the trained models collection."));
           return;
         }
         if (payload?.state === "failed" || payload?.state === "cancelled") {
@@ -7016,6 +7263,8 @@
       }
     };
 
+    const localizeFiles=()=>{if(filesStatus) filesStatus.textContent=state.trainingFiles?.length>=2 ? formatTrainingFiles(state.trainingFiles) : l('尚未选择训练音频。','No training recordings selected.');};
+    document.addEventListener('postprep:languagechange',localizeFiles);localizeFiles();
     filesInput.addEventListener("change", () => {
       const files = Array.from(filesInput.files || []);
       const allowed = /\.(wav|mp3|m4a|ogg|webm|flac|aac)$/iu;
@@ -7025,7 +7274,7 @@
       if (filesStatus) {
         filesStatus.textContent = state.trainingFiles.length >= 2
           ? formatTrainingFiles(state.trainingFiles)
-          : "请选择 2–12 段音频；每段不超过 25 MB，总计不超过 96 MB。";
+          : l("请选择 2–12 段音频；每段不超过 25 MB，总计不超过 96 MB。","Choose 2\u201312 recordings; each \u226425 MB, total \u226496 MB.");
       }
     });
 
@@ -7034,22 +7283,22 @@
       const collectionName = cleanCollectionName(collectionInput?.value) || "我的训练模型";
       const files = state.trainingFiles;
       if (!displayName) {
-        showToast("请填写训练模型名称");
+        showToast(l("请填写训练模型名称","Enter a model name."));
         nameInput?.focus();
         return;
       }
       if (!Array.isArray(files) || files.length < 2) {
-        showToast("请至少选择两段纯人声音频");
+        showToast(l("请至少选择两段纯人声音频","Choose at least two dry-vocal recordings."));
         return;
       }
       if (!consentInput?.checked) {
-        showToast("请先确认音频与声音授权");
+        showToast(l("请先确认音频与声音授权","Confirm permission for the recordings and voices first."));
         return;
       }
       const endpoint = getOfficialEndpoint();
       const routes = trainingRoutes(endpoint);
       startButton.disabled = true;
-      setTrainingUi(1, "正在创建隔离训练任务…");
+      setTrainingUi(1, l("正在创建隔离训练任务…","Creating an isolated training job\u2026"));
       try {
         if (!state.customCollections.includes(collectionName)) {
           state.customCollections.push(collectionName);
@@ -7075,14 +7324,14 @@
         for (let slot = 0; slot < files.length; slot += 1) {
           await uploadWithRetry(routes.upload(job.jobId, job.token, slot), files[slot], slot, files.length);
         }
-        setTrainingUi(20, "音频上传完成，正在校验总时长并进入 GPU 队列…");
+        setTrainingUi(20, l("音频上传完成，正在校验总时长并进入 GPU 队列…","Upload complete. Checking duration and joining the GPU queue\u2026"));
         const startBody = new FormData();
         startBody.set("confirm", "true");
         await readJson(await fetch(routes.start(job.jobId, job.token), { method: "POST", body: startBody }));
         pollTraining(job);
       } catch (error) {
         console.error("RVC training start failed:", error);
-        setTrainingUi(0, ` 训练任务启动失败：${error.message}`, false);
+        setTrainingUi(0, l(` 训练任务启动失败：${error.message}`,` Training start failed: ${error.message}`), false);
         clearStoredJob();
         if (cancelButton) cancelButton.classList.add("hidden");
       }
@@ -7096,7 +7345,7 @@
         const body = new FormData();
         body.set("confirm", "true");
         await fetch(trainingRoutes(job.endpoint).cancel(job.jobId, job.token), { method: "POST", body });
-        setTrainingUi(job.progress || 20, "正在安全停止训练任务…");
+        setTrainingUi(job.progress || 20, l("正在安全停止训练任务…","Stopping the training job safely\u2026"));
       } finally {
         cancelButton.disabled = false;
       }
@@ -7106,7 +7355,7 @@
       const stored = JSON.parse(window.localStorage.getItem(storageKey) || "null");
       if (stored?.jobId && stored?.token && stored?.endpoint) {
         state.trainingJob = stored;
-        setTrainingUi(stored.progress || 20, "正在恢复上一次训练任务状态…");
+        setTrainingUi(stored.progress || 20, l("正在恢复上一次训练任务状态…","Restoring the previous training job\u2026"));
         pollTraining(stored);
       }
     } catch {
@@ -7142,7 +7391,7 @@
     const saveCollection = () => {
       const name = cleanCollectionName(createCollectionName?.value);
       if (!name) {
-        showToast("请填写分区名称");
+        showToast(l("请填写分区名称","Enter a collection name."));
         createCollectionName?.focus();
         return;
       }
@@ -7157,7 +7406,7 @@
       if (trainingPanel) trainingPanel.open = true;
       closeCollectionForm();
       renderModelGallery();
-      showToast(`已创建分区“${name}”，训练模型时会自动放入该分区。`);
+      showToast(l(`已创建分区“${name}”，训练模型时会自动放入该分区。`,`Created collection ${name}. Trained models can be saved there.`));
     };
     createCollectionButton?.addEventListener("click", () => {
       createCollectionForm?.classList.toggle("hidden");
@@ -7194,7 +7443,7 @@
           try {
             window.localStorage.setItem(RVC_ENDPOINT_STORAGE_KEY, val);
           } catch (e) {}
-          showToast(` 已保存云端 RVC 服务地址：${val}`);
+          showToast(l(` 已保存云端 RVC 服务地址：${val}`,` Saved cloud RVC address: ${val}`));
           await probeOfficialService(val);
         }
       });
@@ -7305,8 +7554,8 @@
         setPitchMode(
           pitch,
           model
-            ? `已设置 +12 半音跨音域预设，用于低音讲话转换「${model.name}」等高音声线。高音输入或歌曲请先用原调，再按试听结果调整。`
-            : ` 当前已设为 ${fmt(pitch)} 半音：男声变女角色推荐音高。`,
+            ? l(`已设置 +12 半音跨音域预设，用于低音讲话转换「${model.name}」等高音声线。高音输入或歌曲请先用原调，再按试听结果调整。`,`Set +12 semitones to convert low speech to high voices such as ${voiceName(model)}. For high input or songs, preserve the original pitch first.`)
+            : l(` 当前已设为 ${fmt(pitch)} 半音：男声变女角色推荐音高。`,` Set ${fmt(pitch)} semitones for male-to-female speech.`),
           btnPresetMaleFemale
         );
       });
@@ -7336,10 +7585,10 @@
           }
         });
         if (pitchTip) {
-          if (val === 12) pitchTip.textContent = "当前为 +12 半音：仅适合明显跨音域输入；若有金属感，请向 0 回调。";
-          else if (val === 0) pitchTip.textContent = "当前为 0 半音：保留自然原调。";
-          else if (val === -12) pitchTip.textContent = "当前为 -12 半音：仅适合明显跨音域输入；若低沉失真，请向 0 回调。";
-          else pitchTip.textContent = ` 自定义音高偏移: ${(val > 0 ? "+" : "")}${val} 半音。`;
+          if (val === 12) pitchTip.textContent = l("当前为 +12 半音：仅适合明显跨音域输入；若有金属感，请向 0 回调。","Pitch is +12 semitones. Use only for a clear register mismatch; lower toward 0 if metallic.");
+          else if (val === 0) pitchTip.textContent = l("当前为 0 半音：保留自然原调。","Pitch is 0 semitones: preserve the natural pitch.");
+          else if (val === -12) pitchTip.textContent = l("当前为 -12 半音：仅适合明显跨音域输入；若低沉失真，请向 0 回调。","Pitch is \u221212 semitones. Use only for a clear register mismatch; move toward 0 if distorted.");
+          else pitchTip.textContent = l(` 自定义音高偏移: ${(val > 0 ? "+" : "")}${val} 半音。`,` Custom pitch: ${(val > 0 ? "+" : "")}${val} semitones.`);
         }
       });
     }
@@ -7504,7 +7753,7 @@
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const blob = await res.blob();
-        if (!blob.size) throw new Error("空响应");
+        if (!blob.size) throw new Error(l("空响应","Empty response."));
         const file = new File([blob], `tts_${Date.now()}.mp3`, { type: res.headers.get("Content-Type") || "audio/mpeg" });
         return file;
       } catch (err) {
@@ -7643,7 +7892,7 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261004-search-1');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261004-chorus-2');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,
@@ -7651,7 +7900,7 @@
       onResult: async (next, job) => {
         const audio = document.getElementById('rvc-result-audio');
         if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
-        state.resultUrl = next; state.latestSongJob = null;
+        state.resultUrl = next; state.latestSongJob = null; state.resultMetaRender = null; state.resultMetaBaseRender = null;
         await publishChorusResult({audio,result:document.getElementById('rvc-result'),
           download:document.getElementById('rvc-result-download'),meta:document.getElementById('rvc-result-meta')},next,job,attachResultAudio);
       },

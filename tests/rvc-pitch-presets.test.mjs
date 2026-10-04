@@ -22,12 +22,12 @@ function harness(model) {
     setAttribute(k,v){this.attributes[k]=v;},addEventListener(k,fn){this.events[k]=fn;}}]));
   const document={getElementById:id=>elements.get(id)||null};
   const maleToFemalePresetPitch=Function(`return (${extract('maleToFemalePresetPitch')})`)();
-  const setup=Function('document','window','renderAudioMode','setInferenceMode','syncMixControls','setupRecording','setupModelTraining','getSelectedModel',
+  const setup=Function('voiceName','l','document','window','renderAudioMode','setInferenceMode','syncMixControls','setupRecording','setupModelTraining','getSelectedModel',
     'maleToFemalePresetPitch',`return (${extract('setupEventListeners')})`)(
-    document,{localStorage:{getItem:()=>null}},()=>{},()=>{},()=>{},()=>{},()=>{},()=>model,maleToFemalePresetPitch);
+    m=>m?.name||m?.id||'',zh=>zh,document,{localStorage:{getItem:()=>null}},()=>{},()=>{},()=>{},()=>{},()=>{},()=>model,maleToFemalePresetPitch);
   setup();
-  const select=Function('document','maleToFemalePresetPitch',`return (${extract('applyCharacterPitch')})`)(
-    document,maleToFemalePresetPitch);
+  const select=Function('voiceName','l','document','maleToFemalePresetPitch',`return (${extract('applyCharacterPitch')})`)(
+    m=>m?.name||m?.id||'',zh=>zh,document,maleToFemalePresetPitch);
   return {elements,select,click:id=>elements.get(id).events.click()};
 }
 

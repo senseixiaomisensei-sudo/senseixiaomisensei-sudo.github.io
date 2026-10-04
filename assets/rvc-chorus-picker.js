@@ -1,8 +1,10 @@
 // Each voice keeps its own selection; filtering never changes a task parameter.
 const normalized=value=>String(value||'').normalize('NFKC').toLocaleLowerCase().replace(/\s+/gu,'');
+export const chorusText=(zh,en)=>String(globalThis.document?.documentElement?.lang||'zh').startsWith('en')?en:zh;
+const voiceName=model=>globalThis.PostPrepRvcLanguage?.voiceName(model)||chorusText(model?.name||model?.displayName||model?.id||'',model?.nameEn||model?.name?.match(/\(([^)]+)\)/u)?.[1]||model?.name||model?.id||'');
 export function chorusRoleMatches(model,query,aliases=[]) {
   const words=String(query||'').trim().split(/\s+/u).filter(Boolean).map(normalized);
-  const text=normalized([model.id,model.name,model.displayName,model.avatarText,...(model.tags||[]),...(model.aliases||[]),...aliases].join(' '));
+  const text=normalized([model.id,model.name,model.nameEn,model.displayName,model.avatarText,...(model.tags||[]),...(model.aliases||[]),...aliases].join(' '));
   return words.every(word=>text.includes(word));
 }
 
@@ -30,9 +32,10 @@ export function createChorusRolePicker({catalog,modelId,trackId,onChange,schools
   let selected=modelId,visible=[],options=[],active=-1;
   function identity(){
     const current=models.find(model=>model.id===selected);
-    name.textContent=current?.name||current?.displayName||selected;
+    name.textContent=voiceName(current)||selected;
     avatar.textContent=current?.avatarText||name.textContent.slice(0,2);
-    school.textContent=info(current||{})?.name||(current?.tags||[]).filter(tag=>!['男声','女声'].includes(tag)).join(' · ')||'角色音色';
+    const matched=info(current||{});
+    school.textContent=matched?chorusText(matched.name,matched.en):(current?.tags||[]).filter(tag=>!['男声','女声'].includes(tag)).map(tag=>globalThis.PostPrepRvcLanguage?.voiceTag(tag)||tag).join(' · ')||chorusText('角色音色','Character voice');
   }
   function highlight(index){
     active=index;options.forEach((button,i)=>button.setAttribute('data-active',String(i===active)));
@@ -55,11 +58,11 @@ export function createChorusRolePicker({catalog,modelId,trackId,onChange,schools
     visible.forEach(model=>{
       const button=document.createElement('button');button.type='button';button.tabIndex=-1;button.className='chorus-role-option';button.id=`chorus-role-${trackId}-${model.id}`;
       button.setAttribute('role','option');button.setAttribute('aria-selected',String(model.id===selected));button.setAttribute('data-model-id',model.id);
-      const label=document.createElement('span');label.textContent=model.name||model.displayName||model.id;
-      const hint=document.createElement('small');hint.textContent=info(model)?.tag||model.collectionId||'';
+      const label=document.createElement('span');label.textContent=voiceName(model);
+      const matched=info(model),hint=document.createElement('small');hint.textContent=matched?chorusText(matched.tag,matched.en):model.collectionId||'';
       button.append(label,hint);button.addEventListener('click',()=>choose(model));list.append(button);options.push(button);
     });
-    empty.hidden=visible.length>0;count.textContent=`${visible.length} 个可选音色`;
+    empty.hidden=visible.length>0;count.textContent=chorusText(`${visible.length} 个可选音色`,`${visible.length} available voices`);
     const chosen=visible.findIndex(model=>model.id===selected);highlight(chosen>=0?chosen:visible.length?0:-1);
   }
   function open(){if(trigger.disabled)return;search.value='';panel.hidden=false;trigger.setAttribute('aria-expanded','true');search.setAttribute('aria-expanded','true');filter();search.focus?.({preventScroll:true});}
@@ -74,6 +77,14 @@ export function createChorusRolePicker({catalog,modelId,trackId,onChange,schools
   });
   root.addEventListener('focusout',event=>{if(event.relatedTarget&&!root.contains(event.relatedTarget))close();});
   root.addEventListener('keydown',event=>{if(event.key==='Escape'&&!panel.hidden){event.preventDefault();close(true);}});
-  identity();search.setAttribute('aria-expanded','false');
-  return {element:root,get value(){return selected;},close};
+  function refreshLanguage(){
+    trigger.setAttribute('aria-label',chorusText(`声部 ${trackId} 选择角色`,`Choose a character for voice ${trackId}`));
+    search.placeholder=chorusText('搜索角色名 / 学校','Search character / school');
+    search.setAttribute('aria-label',chorusText(`搜索声部 ${trackId} 的角色`,`Search characters for voice ${trackId}`));
+    list.setAttribute('aria-label',chorusText(`声部 ${trackId} 可选角色`,`Available characters for voice ${trackId}`));
+    empty.textContent=chorusText('没有匹配的角色，试试简称或英文名。','No matching character. Try a short or English name.');
+    identity();if(!panel.hidden)filter();
+  }
+  refreshLanguage();search.setAttribute('aria-expanded','false');
+  return {element:root,get value(){return selected;},close,refreshLanguage};
 }

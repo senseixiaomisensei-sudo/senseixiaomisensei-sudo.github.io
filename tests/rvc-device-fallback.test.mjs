@@ -35,6 +35,7 @@ function cloudHarness(mode) {
     send() { uploads++; queueMicrotask(() => this.onload()); }
   }
   const dependencies = {
+    l: zh => zh,
     state, MAX_AUDIO_SECONDS: 600, MAX_AUDIO_BYTES: 25 * 1024 * 1024,
     RVC_SUBMISSION_COOLDOWN_MS: 20000, DURABLE_CLOUD_JOB_SECONDS: 180,
     document: { getElementById: id => id === "rvc-song-local-fallback" ? button : null },
