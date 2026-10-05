@@ -32,7 +32,7 @@ def main(request_path):
         if voice not in speakers: raise ValueError('RVC_TTS_INVALID_VOICE')
         # Native trained emotion vectors; no pitch/EQ/reverb imitation.
         vectors = {'neutral':None,'calm':[0,0,0,0,0,0,0,.5],
-                   'happy':[.6,0,0,0,0,0,0,0],'sad':[0,0,.6,0,0,0,0,0],
+                   'happy':[.45,0,0,0,0,0,0,0],'sad':[0,0,.6,0,0,0,0,0],
                    'surprised':[0,0,0,0,0,0,.5,0]}
         rate, wave = model.infer(spk_audio_prompt=str(root/references[voice]),text=text,
                                 lang=language.upper(),output_path=None,emo_vector=vectors[style],
