@@ -5,10 +5,10 @@ import vm from 'node:vm';
 const source=await readFile(new URL('../assets/rvc.js',import.meta.url),'utf8');
 const start=source.indexOf('    const ttsSynth = document.getElementById("rvc-tts-synth")');
 const end=source.indexOf('    // 一键适配：',start);
-const catalog={defaultModel:'qwen3-06b',models:[
+const catalog={defaultModel:'indextts-25',models:[
   {modelId:'qwen3-06b',ready:true,languages:['zh','en','ja'],styles:['neutral'],voices:['serena','ryan'],installAvailable:true},
-  {modelId:'cosyvoice-instruct',ready:true,languages:['zh','en'],styles:['neutral','gentle','happy'],voices:['中文女','英文女'],installAvailable:true},
-  {modelId:'kokoro',ready:false,state:'not-installed',languages:['zh','en'],styles:['neutral'],voices:[],installAvailable:true}
+  {modelId:'indextts-25',ready:true,languages:['zh','en','ja','es','ar'],styles:['neutral','calm','happy'],voices:['female-soft','male-reference'],installAvailable:true},
+  {modelId:'aishell-legacy',ready:false,state:'not-installed',languages:['zh'],styles:['neutral'],voices:[],installAvailable:true}
 ]};
 function harness(){
   const ids=['synth','convert','ready','status','text','install','engine','language','style','voice','capabilities','preview','result'];
@@ -34,10 +34,12 @@ test('TTS catalog controls actual language, voice and supported tone options',as
   const h=harness();await ready(h);
   assert.equal(h.elements.get('rvc-tts-synth').disabled,false);
   assert.equal(h.elements.get('rvc-tts-style').disabled,true);
-  h.elements.get('rvc-tts-engine').value='cosyvoice-instruct';h.change('engine');for(let i=0;i<10;i++)await Promise.resolve();
+  h.elements.get('rvc-tts-engine').value='indextts-25';h.change('engine');for(let i=0;i<10;i++)await Promise.resolve();
   assert.equal(h.elements.get('rvc-tts-style').disabled,false);
-  assert.ok(h.elements.get('rvc-tts-style').options.some(x=>x.value==='gentle'));
-  h.elements.get('rvc-tts-engine').value='kokoro';h.change('engine');for(let i=0;i<10;i++)await Promise.resolve();
+  assert.ok(h.elements.get('rvc-tts-style').options.some(x=>x.value==='calm'));
+  assert.ok(h.elements.get('rvc-tts-language').options.some(x=>x.value==='ar'));
+  assert.ok(h.elements.get('rvc-tts-voice').options.some(x=>x.value==='female-soft'));
+  h.elements.get('rvc-tts-engine').value='aishell-legacy';h.change('engine');for(let i=0;i<10;i++)await Promise.resolve();
   assert.equal(h.elements.get('rvc-tts-synth').disabled,true);
   assert.equal(h.elements.get('rvc-tts-install').hidden,false);
 });

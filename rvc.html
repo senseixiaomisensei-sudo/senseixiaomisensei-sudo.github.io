@@ -280,9 +280,9 @@
 
           <!-- 文本朗读来源（第三输入源）：输入文字 → 受保护或本机 TTS 合成中性人声 → 自动用当前角色变声 -->
           <div id="rvc-tts-wrap" class="mt-5 hidden">
-            <p class="mb-3 text-xs leading-5 text-muted" data-rvc-label="Three independent TTS engines · each model bundle stays below 3 GB · installed on the service, not your phone.">三套独立 TTS 可选 · 每套完整模型小于 3 GB · 下载到服务端，不占手机存储。</p>
+            <p class="mb-3 text-xs leading-5 text-muted" data-rvc-label="IndexTTS 2.5 · multilingual emotion control · Qwen and compatibility backup retained · installed on the service.">IndexTTS 2.5 · 多语言与原生情绪控制 · 保留千问和兼容备用 · 下载到服务端。</p>
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <label class="col-span-2 text-xs font-bold sm:col-span-1"><span data-rvc-label="TTS engine / quality">TTS 引擎 / 品质</span><select id="rvc-tts-engine" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="qwen3-06b">Qwen3 · 多语自然 · 2.50 GB</option><option value="cosyvoice-instruct">CosyVoice · 语气表达 · 2.30 GB</option><option value="kokoro">Kokoro · 清晰快速 · 365 MB</option><option value="aishell-legacy">旧版 AIShell · 兼容备用</option></select></label>
+              <label class="col-span-2 text-xs font-bold sm:col-span-1"><span data-rvc-label="TTS engine / quality">TTS 引擎 / 品质</span><select id="rvc-tts-engine" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="qwen3-06b">Qwen3 · 多语自然 · 2.50 GB</option><option value="indextts-25">IndexTTS 2.5 · 多语情绪 · 约 5.45 GB</option><option value="aishell-legacy">旧版 AIShell · 兼容备用</option></select></label>
               <label class="text-xs font-bold"><span data-rvc-label="Language">语言</span><select id="rvc-tts-language" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="zh">中文</option></select></label>
               <label class="text-xs font-bold"><span data-rvc-label="Tone">语气</span><select id="rvc-tts-style" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="neutral">自然</option></select></label>
               <label class="col-span-2 text-xs font-bold sm:col-span-1"><span data-rvc-label="Base voice">朗读声线</span><select id="rvc-tts-voice" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="">自动选择</option></select></label>
@@ -513,6 +513,6 @@
   <script src="assets/postprep.js?v=20261004-storage-1"></script>
   <script src="assets/rvc-language.js?v=20261004-chorus-2"></script>
   <script src="assets/rvc-schools.js?v=20261004-chorus-2"></script>
-  <script src="assets/rvc.js?v=20261005-tts-engines-1"></script>
+  <script src="assets/rvc.js?v=20261005-tts-index25-2"></script>
 </body>
 </html>

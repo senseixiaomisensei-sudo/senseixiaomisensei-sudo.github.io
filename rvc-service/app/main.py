@@ -98,7 +98,7 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
                   "timeline_synthesis.py", "timeline_rendering.py", "speech_runtime.py", "speech_worker.py",
                   "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py", "tts_runtime.py",
-                  "tts_engines.py", "tts_models.py", "tts_worker.py", "tts_catalog.json")
+                  "tts_engines.py", "tts_models.py", "tts_worker.py", "tts_pack.py", "tts_catalog.json")
 
 
 def source_revision() -> str:
@@ -1478,7 +1478,9 @@ async def parse_tts_input(request: Request) -> dict:
     model_id=payload.get('modelId',tts_runtime.DEFAULT)
     if not isinstance(model_id,str): raise RvcServiceError(400,'RVC_TTS_INVALID_MODEL')
     options={'model_id':model_id,'language':payload.get('language','zh'),'style':payload.get('style','neutral'),'voice':payload.get('voice','')}
-    try: tts_runtime.validate_options(**options)
+    try:
+        model=tts_runtime.validate_options(**options)
+        if not options['voice'] and model.get('defaultVoice'): options['voice']=model['defaultVoice']
     except ValueError as error: raise RvcServiceError(400,str(error)) from None
     if model_id=='aishell-legacy' and not re.search(r'[\u3400-\u9fff]', text):
         raise RvcServiceError(400, 'RVC_TTS_CHINESE_REQUIRED')
@@ -1493,7 +1495,7 @@ async def synthesize_tts(request: Request) -> Response:
     params=await parse_tts_input(request);params.pop('request_id')
     try:
         async with inference_lock:
-            if params['model_id'] in {'qwen3-06b','cosyvoice-instruct'}: await asyncio.to_thread(release_cached_models)
+            if params['model_id'] in {'qwen3-06b','indextts-25'}: await asyncio.to_thread(release_cached_models)
             audio = await asyncio.to_thread(tts_runtime.synthesize, **params)
     except ValueError as error:
         code = str(error)
@@ -1514,7 +1516,7 @@ async def process_tts_job(job_id,params):
     try:
         async with inference_lock:
             record.state='processing';record.stage='tts-synthesis';persist_output_records()
-            if params['model_id'] in {'qwen3-06b','cosyvoice-instruct'}: await asyncio.to_thread(release_cached_models)
+            if params['model_id'] in {'qwen3-06b','indextts-25'}: await asyncio.to_thread(release_cached_models)
             audio=await asyncio.to_thread(tts_runtime.synthesize,**params)
             if not audio or len(audio)>128*1024*1024: raise ValueError('RVC_TTS_EMPTY_OUTPUT')
             record.path.write_bytes(audio);record.state='completed';record.stage='completed'
@@ -1535,7 +1537,8 @@ async def create_tts_job(request:Request):
     job_id,record,is_new=await reserve_conversion_job(request_id,fingerprint,'wav','voice')
     if is_new:
         model=tts_runtime.spec(params['model_id']);record.state='queued';record.stage='tts-queued'
-        record.engine=f"tts-{params['model_id']}";record.engine_revision=model.get('revision',model.get('archiveSha256','legacy'))
+        record.engine=f"tts-{params['model_id']}";record.engine_revision=model.get('bundleRevision',model.get('revision',model.get('archiveSha256','legacy')))
+        record.reference_sha256=model.get('voiceProfiles',{}).get(params['voice'],{}).get('sha256','')
         record.tts_parameters={k:v for k,v in params.items() if k!='text'}
         task=asyncio.create_task(process_tts_job(job_id,params));job_tasks.add(task);task.add_done_callback(job_tasks.discard);persist_output_records()
     return JSONResponse(output_payload(job_id,record),status_code=202,headers={'Cache-Control':'no-store'})

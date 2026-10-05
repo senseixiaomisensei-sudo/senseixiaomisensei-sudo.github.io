@@ -22,17 +22,22 @@ def main(request_path):
         if voice not in speakers: raise ValueError('RVC_TTS_INVALID_VOICE')
         waves, rate = model.generate_custom_voice(text=text, language=LANGUAGES[language], speaker=voice, instruct='', non_streaming_mode=True, max_new_tokens=4096)
         samples = waves[0]
-    elif model_id == 'cosyvoice-instruct':
-        source = Path(request['cosySource'])
-        sys.path.insert(0, str(source)); sys.path.insert(0, str(source / 'third_party' / 'Matcha-TTS'))
-        from cosyvoice.cli.cosyvoice import CosyVoice
-        model = CosyVoice(str(root), load_jit=False, load_trt=False, fp16=False)
-        speakers = model.list_available_spks()
-        defaults = {'zh':'中文女','en':'英文女','ja':'日语男','ko':'韩语女','yue':'粤语女'}
-        voice = voice or defaults[language]
+    elif model_id == 'indextts-25':
+        sys.path.insert(0,request['indexSource'])
+        from indextts.infer_v2_5 import IndexTTS2
+        model = IndexTTS2(cfg_path=str(root/'config.yaml'),model_dir=str(root),use_bf16=True,device='cuda:0',use_cuda_kernel=False,use_deepspeed=False,use_qwen_emo=False)
+        references={'female-soft':'voices/female-soft.wav','male-reference':'voices/neutral.wav'}
+        speakers = list(references)
+        voice = voice or 'female-soft'
         if voice not in speakers: raise ValueError('RVC_TTS_INVALID_VOICE')
-        outputs = list(model.inference_instruct(text, voice, STYLES[style], stream=False, speed=1., text_frontend=False))
-        samples = torch.cat([item['tts_speech'].cpu() for item in outputs], dim=1).flatten().numpy(); rate = model.sample_rate
+        # Native trained emotion vectors; no pitch/EQ/reverb imitation.
+        vectors = {'neutral':None,'calm':[0,0,0,0,0,0,0,.5],
+                   'happy':[.6,0,0,0,0,0,0,0],'sad':[0,0,.6,0,0,0,0,0],
+                   'surprised':[0,0,0,0,0,0,.5,0]}
+        rate, wave = model.infer(spk_audio_prompt=str(root/references[voice]),text=text,
+                                lang=language.upper(),output_path=None,emo_vector=vectors[style],
+                                use_emo_text=False,use_random=False,text_normalization=True)
+        samples = wave.astype(np.float32).flatten()/32768.
     else: raise ValueError('RVC_TTS_INVALID_MODEL')
     samples = np.asarray(samples, dtype=np.float32)
     if len(samples) < rate // 4 or not np.isfinite(samples).all(): raise ValueError('RVC_TTS_EMPTY_OUTPUT')

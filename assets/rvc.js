@@ -7694,12 +7694,12 @@
     const ttsStyle = document.getElementById('rvc-tts-style');
     const ttsVoice = document.getElementById('rvc-tts-voice');
     const ttsCapabilities = document.getElementById('rvc-tts-capabilities');
-    const ttsLanguages = {zh:['中文','Chinese'],en:['英语','English'],ja:['日语','Japanese'],ko:['韩语','Korean'],de:['德语','German'],fr:['法语','French'],ru:['俄语','Russian'],pt:['葡萄牙语','Portuguese'],es:['西班牙语','Spanish'],it:['意大利语','Italian'],yue:['粤语','Cantonese']};
-    const ttsStyles = {neutral:['自然','Natural'],gentle:['温柔','Gentle'],happy:['开心','Happy'],sad:['低落','Sad'],serious:['认真','Serious']};
-    const ttsModelLabels={'qwen3-06b':['Qwen3 · 多语自然 · 2.50 GB','Qwen3 · natural multilingual · 2.50 GB'],'cosyvoice-instruct':['CosyVoice · 语气表达 · 2.30 GB','CosyVoice · expressive tones · 2.30 GB'],kokoro:['Kokoro · 清晰快速 · 365 MB','Kokoro · clear & fast · 365 MB'],'aishell-legacy':['旧版 AIShell · 兼容备用','Legacy AIShell · compatibility']};
+    const ttsLanguages = {zh:['中文','Chinese'],en:['英语','English'],ja:['日语','Japanese'],ko:['韩语','Korean'],de:['德语','German'],fr:['法语','French'],ru:['俄语','Russian'],pt:['葡萄牙语','Portuguese'],es:['西班牙语','Spanish'],it:['意大利语','Italian'],yue:['粤语','Cantonese'],ar:['阿拉伯语','Arabic']};
+    const ttsStyles = {neutral:['自然','Natural'],gentle:['温柔','Gentle'],happy:['开心','Happy'],sad:['低落','Sad'],serious:['认真','Serious'],calm:['平静','Calm'],surprised:['惊喜','Surprised']};
+    const ttsModelLabels={'qwen3-06b':['Qwen3 · 多语自然 · 2.50 GB','Qwen3 · natural multilingual · 2.50 GB'],'indextts-25':['IndexTTS 2.5 · 多语情绪 · 约 5.45 GB','IndexTTS 2.5 · multilingual emotions · ~5.45 GB'],'aishell-legacy':['旧版 AIShell · 兼容备用','Legacy AIShell · compatibility']};
     if(ttsEngine){
-      state.ttsModelId='qwen3-06b';
-      try { const saved=window.localStorage.getItem('rvcTtsModel');if(['qwen3-06b','cosyvoice-instruct','kokoro','aishell-legacy'].includes(saved))state.ttsModelId=saved;}catch{}
+      state.ttsModelId='indextts-25';
+      try { const saved=window.localStorage.getItem('rvcTtsModel');if(['qwen3-06b','indextts-25','aishell-legacy'].includes(saved))state.ttsModelId=saved;}catch{}
       ttsEngine.value=state.ttsModelId;
     }
     let ttsProbeTimer;
@@ -7714,11 +7714,23 @@
       for(const option of ttsEngine?.options||[]){const label=ttsModelLabels[option.value];if(label)option.textContent=l(label[0],label[1]);}
       fillTtsSelect(ttsLanguage,info.languages||['zh'],ttsLanguages,'zh');
       fillTtsSelect(ttsStyle,info.styles||['neutral'],ttsStyles,'neutral');
-      fillTtsSelect(ttsVoice,['',...(info.voices||[])],{'':['自动选择','Automatic'],'0':['美式英语','US English'],'2':['英式英语','UK English'],'3':['中文女声','Chinese female'],'58':['中文男声','Chinese male'],'中文女':['中文女声','Chinese female'],'中文男':['中文男声','Chinese male'],'英文女':['英语女声','English female'],'英文男':['英语男声','English male'],'日语男':['日语男声','Japanese male'],'韩语女':['韩语女声','Korean female'],'粤语女':['粤语女声','Cantonese female']},'');
+      fillTtsSelect(ttsVoice,['',...(info.voices||[])],{
+        '':info.modelId==='indextts-25'?['自动选择 · 温和女声','Automatic · Gentle female']:['自动选择','Automatic'],
+        'female-soft':['温和女声 · 已试听版本','Gentle female · Previewed version'],
+        'male-reference':['成熟男声参考','Mature male reference'],
+        serena:['Serena · 温和女声','Serena · Gentle female'],
+        vivian:['Vivian · 明亮女声','Vivian · Bright female'],
+        uncle_fu:['Uncle Fu · 成熟男声','Uncle Fu · Mature male'],
+        dylan:['Dylan · 年轻男声（北京）','Dylan · Young male (Beijing)'],
+        eric:['Eric · 男声（四川）','Eric · Male (Sichuan)'],
+        ryan:['Ryan · 英语男声','Ryan · English male'],
+        aiden:['Aiden · 美式男声','Aiden · American male'],
+        ono_anna:['Ono Anna · 日语女声','Ono Anna · Japanese female'],
+        sohee:['Sohee · 韩语女声','Sohee · Korean female']
+      },'');
       if(ttsStyle)ttsStyle.disabled=(info.styles||[]).length<2;
-      if(ttsCapabilities)ttsCapabilities.textContent=info.modelId==='cosyvoice-instruct'?l('原生语气指令 · 可选自然、温柔、开心、低落、认真；模型表现需以试听为准。','Native tone instructions · natural, gentle, happy, sad or serious. Preview the result.'):
+      if(ttsCapabilities)ttsCapabilities.textContent=info.modelId==='indextts-25'?l('2026 年 8 月 10 日发布 · 中、英、日、西、阿五语 · 原生自然、平静、开心、低落、惊喜；试听决定表现。','Released August 10, 2026 · Chinese, English, Japanese, Spanish & Arabic · native natural, calm, happy, sad & surprised tones; preview the result.'):
         info.modelId==='qwen3-06b'?l('十种语言、九种声线 · 此 0.6B 版本支持自然朗读，不支持独立语气指令。','Ten languages, nine voices · this 0.6B model provides natural speech without separate tone instructions.'):
-        info.modelId==='kokoro'?l('中英双语快速朗读 · 采用完整精度模型；支持自然语气。','Fast Chinese / English speech · full precision model, natural tone.'):
         l('旧版仅作兼容备用，建议选择新引擎。','Legacy compatibility engine; a new engine is recommended.');
     };
 

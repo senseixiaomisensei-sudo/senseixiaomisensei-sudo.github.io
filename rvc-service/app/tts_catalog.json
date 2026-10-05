@@ -1,103 +1,8 @@
 {
-  "defaultModel": "qwen3-06b",
-  "maxModelBytes": 3000000000,
+  "defaultModel": "indextts-25",
+  "maxModelBytes": 6000000000,
+  "maxSourceBytes": 8000000000,
   "models": [
-    {
-      "id": "kokoro",
-      "label": "Kokoro · 清晰快速",
-      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_1.tar.bz2",
-      "archiveSha256": "a3f4c73d043860e3fd2e5b06f36795eb81de0fc8e8de6df703245edddd87dbad",
-      "archiveRoot": "kokoro-multi-lang-v1_1",
-      "downloadBytes": 364816464,
-      "languages": [
-        "zh",
-        "en"
-      ],
-      "styles": [
-        "neutral"
-      ],
-      "provider": "sherpa-onnx-cpu",
-      "license": "Apache-2.0"
-    },
-    {
-      "id": "cosyvoice-instruct",
-      "label": "CosyVoice · 语气表达",
-      "repository": "FunAudioLLM/CosyVoice-300M-Instruct",
-      "revision": "706bee1915e9fd1f1214929e2a0509c874cff433",
-      "files": [
-        {
-          "path": "campplus.onnx",
-          "bytes": 28303423,
-          "sha256": "a6ac6a63997761ae2997373e2ee1c47040854b4b759ea41ec48e4e42df0f4d73",
-          "gitBlob": null
-        },
-        {
-          "path": "config.json",
-          "bytes": 2,
-          "sha256": null,
-          "gitBlob": "9e26dfeeb6e641a33dae4961196235bdb965b21b"
-        },
-        {
-          "path": "configuration.json",
-          "bytes": 47,
-          "sha256": null,
-          "gitBlob": "5e812fae901c12933ac69ebf3eb79d0eb49bbab4"
-        },
-        {
-          "path": "cosyvoice.yaml",
-          "bytes": 6421,
-          "sha256": null,
-          "gitBlob": "b52528953ffbf9155bf79b0668f6ab49611bd887"
-        },
-        {
-          "path": "flow.pt",
-          "bytes": 419900943,
-          "sha256": "fd80b089444a95e52956c57cdf177d7f6017a5af13b8a697717628a1d2be6b55",
-          "gitBlob": null
-        },
-        {
-          "path": "hift.pt",
-          "bytes": 81896716,
-          "sha256": "91e679b6ca1eff71187ffb4f3ab0444935594cdcc20a9bd12afad111ef8d6012",
-          "gitBlob": null
-        },
-        {
-          "path": "llm.pt",
-          "bytes": 1242994771,
-          "sha256": "ef23893d68b93406eae04719a3b800488921e08b394624e9a5ba69bea3a59a13",
-          "gitBlob": null
-        },
-        {
-          "path": "speech_tokenizer_v1.onnx",
-          "bytes": 522624269,
-          "sha256": "23b5a723ed9143aebfd9ffda14ac4c21231f31c35ef837b6a13bb9e5488abb1e",
-          "gitBlob": null
-        },
-        {
-          "path": "spk2info.pt",
-          "bytes": 7772,
-          "sha256": "e3b1d62ca87cdcb25a9003fa0c8f2cba5c94f55b0d5f80f0b63ef8c22d919cfc",
-          "gitBlob": null
-        }
-      ],
-      "downloadBytes": 2295734364,
-      "languages": [
-        "zh",
-        "en",
-        "ja",
-        "ko",
-        "yue"
-      ],
-      "styles": [
-        "neutral",
-        "gentle",
-        "happy",
-        "sad",
-        "serious"
-      ],
-      "provider": "isolated-cuda",
-      "license": "Apache-2.0"
-    },
     {
       "id": "qwen3-06b",
       "label": "Qwen3 · 多语自然",
@@ -189,6 +94,212 @@
       ],
       "provider": "isolated-cuda",
       "license": "Apache-2.0"
+    },
+    {
+      "id": "indextts-25",
+      "label": "IndexTTS 2.5 · 多语情绪",
+      "repository": "IndexTeam/IndexTTS-2.5",
+      "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+      "bundleRevision": "c39ce5b-bf16-gpt-v2-serena-36ce8deaf97c",
+      "releasedAt": "2026-08-10",
+      "files": [
+        {
+          "path": "LICENSE",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "LICENSE",
+          "bytes": 10553,
+          "sha256": null,
+          "gitBlob": "b96dffb19fc6e0e048edf010f1cd0d54e8ce103c"
+        },
+        {
+          "path": "config.yaml",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "config.yaml",
+          "bytes": 2860,
+          "sha256": null,
+          "gitBlob": "b3f15b22f394f2327de574e9b5801c1d9654e203"
+        },
+        {
+          "path": "codec.pth",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "codec.pth",
+          "bytes": 607290935,
+          "sha256": "d15cbed16a40f478438c961fb043f68dfa6353bf56c966761315db3433e9722c",
+          "gitBlob": "182ed85fad1ffba7fde3bf0b54e465b07ec16c8d"
+        },
+        {
+          "path": "gpt.pth",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "gpt.pth",
+          "bytes": 1629809847,
+          "sha256": "e4f91b417d41ec471ce69491e1ec42430c402d6d79f18b51bea4f838eb196e8a",
+          "gitBlob": "c888a2647673d320c05d5ef134d84788b0d7b5d0",
+          "sourceBytes": 3259599833,
+          "sourceSha256": "43a8f4c30eccdf201958d3b9713511482c19d56dc20b0b1c4ee1e6b080b19d85",
+          "transform": "bf16-gpt-torch-2.7.1"
+        },
+        {
+          "path": "s2mel.pth",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "s2mel.pth",
+          "bytes": 414908601,
+          "sha256": "9b1b0003fc189c94cc349758d7ebc25f903b7eb2de4602879959cc64ce816456",
+          "gitBlob": "956998bc33bfeba8a0b902272be96e821ad6354d"
+        },
+        {
+          "path": "feat1.pt",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "feat1.pt",
+          "bytes": 57170,
+          "sha256": "f219cb447d80216ba615666da2ff8d63ac544eee26657f3a7b278692bf7a67c4",
+          "gitBlob": "3efb1545f32405073471a40277094678d7ef40ac"
+        },
+        {
+          "path": "feat2.pt",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "feat2.pt",
+          "bytes": 374866,
+          "sha256": "9c4292e96dee535aea9a6206e9a0c856dd578dde9212acdb16dd3ada4d12bf80",
+          "gitBlob": "42b51075f698aea46002f1f503962137b5158130"
+        },
+        {
+          "path": "wav2vec2bert_stats.pt",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "wav2vec2bert_stats.pt",
+          "bytes": 9343,
+          "sha256": "c9c176c2b8850ab2e3ba828bbfa969deaf4566ce55db5f2687b8430b87526ad2",
+          "gitBlob": "1a8ecb924668659f3b1a9c35b02b2f8839fd8c5a"
+        },
+        {
+          "path": "multilingual_zh_ja_yue_char_del.tiktoken",
+          "repository": "IndexTeam/IndexTTS-2.5",
+          "revision": "c39ce5ba981572cb187443877ff559dfb246ce63",
+          "remotePath": "multilingual_zh_ja_yue_char_del.tiktoken",
+          "bytes": 907395,
+          "sha256": null,
+          "gitBlob": "ac47fe685d24565030965a94c0d98e00e0331eaa"
+        },
+        {
+          "path": "hf_cache/w2v-bert-2.0/config.json",
+          "repository": "facebook/w2v-bert-2.0",
+          "revision": "da985ba0987f70aaeb84a80f2851cfac8c697a7b",
+          "remotePath": "config.json",
+          "bytes": 1874,
+          "sha256": null,
+          "gitBlob": "a383a594dac18459628cd2837168cd276342a31a"
+        },
+        {
+          "path": "hf_cache/w2v-bert-2.0/model.safetensors",
+          "repository": "facebook/w2v-bert-2.0",
+          "revision": "da985ba0987f70aaeb84a80f2851cfac8c697a7b",
+          "remotePath": "model.safetensors",
+          "bytes": 2322063736,
+          "sha256": "eb890c9660ed6e3414b6812e27257b8ce5454365d5490d3ad581ea60b93be043",
+          "gitBlob": "cb7c6d08fe4cc20b2748c5525de64964d50190fa"
+        },
+        {
+          "path": "hf_cache/w2v-bert-2.0/preprocessor_config.json",
+          "repository": "facebook/w2v-bert-2.0",
+          "revision": "da985ba0987f70aaeb84a80f2851cfac8c697a7b",
+          "remotePath": "preprocessor_config.json",
+          "bytes": 275,
+          "sha256": null,
+          "gitBlob": "5db61951cdf5edab6337fd84ee619500c27aaa3d"
+        },
+        {
+          "path": "hf_cache/bigvgan/config.json",
+          "repository": "nvidia/bigvgan_v2_22khz_80band_256x",
+          "revision": "633ff708ed5b74903e86ff1298cf4a98e921c513",
+          "remotePath": "config.json",
+          "bytes": 1405,
+          "sha256": null,
+          "gitBlob": "635bd8975629bd6d4b51c409986944a281cfe7be"
+        },
+        {
+          "path": "hf_cache/bigvgan/bigvgan_generator.pt",
+          "repository": "nvidia/bigvgan_v2_22khz_80band_256x",
+          "revision": "633ff708ed5b74903e86ff1298cf4a98e921c513",
+          "remotePath": "bigvgan_generator.pt",
+          "bytes": 449228171,
+          "sha256": "e95ba25972d3de0628d99cd156e9315a9c018899bf739988959ebe3544080ced",
+          "gitBlob": "8d615250f07a44490d74033318fd330be67f4a86"
+        },
+        {
+          "path": "hf_cache/bigvgan/LICENSE",
+          "repository": "nvidia/bigvgan_v2_22khz_80band_256x",
+          "revision": "633ff708ed5b74903e86ff1298cf4a98e921c513",
+          "remotePath": "LICENSE",
+          "bytes": 1076,
+          "sha256": null,
+          "gitBlob": "45b7741b4516c22d7314c5f856b17f713bac91af"
+        },
+        {
+          "path": "hf_cache/campplus_cn_common.bin",
+          "repository": "funasr/campplus",
+          "revision": "e4b6ede7ce16997aff4ae69fbca1f0175e2afede",
+          "remotePath": "campplus_cn_common.bin",
+          "bytes": 28036335,
+          "sha256": "3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8",
+          "gitBlob": "ccc729ec7f373f8d2351be91c9efdc7b21c00384"
+        },
+        {
+          "path": "voices/neutral.wav",
+          "repository": "spaces/IndexTeam/IndexTTS-2-Demo",
+          "revision": "b01840e8e4fd9753743a6d0466cd73ae1d634a68",
+          "remotePath": "examples/voice_01.wav",
+          "bytes": 478050,
+          "sha256": "e33e6ee0107a1dd58e1d66dd90c13df3d55a8683047cc3d7ea206dad84ed3fc8",
+          "gitBlob": "65c02c7b7bd67750102005e16d390c55bd945268"
+        },
+        {
+          "path": "voices/female-soft.wav",
+          "bundledPath": "tts_voices/serena.wav",
+          "bytes": 660560,
+          "sha256": "36ce8deaf97cf941d88e1fb690fd9d36d76885628262d1b16e15e1e0c4369c22"
+        }
+      ],
+      "downloadBytes": 7083633038,
+      "installedBytes": 5453843052,
+      "languages": [
+        "zh",
+        "en",
+        "ja",
+        "es",
+        "ar"
+      ],
+      "styles": [
+        "neutral",
+        "calm",
+        "happy",
+        "sad",
+        "surprised"
+      ],
+      "provider": "isolated-cuda",
+      "license": "bilibili-model-license",
+      "precision": "BF16 GPT; original precision auxiliary models",
+      "emotionMode": "native-vectors",
+      "runtimeCommit": "d9e41aac89fd00b3d71497fddb287b7f24613712",
+      "defaultVoice": "female-soft",
+      "voiceProfiles": {
+        "female-soft": {
+          "path": "voices/female-soft.wav",
+          "sha256": "36ce8deaf97cf941d88e1fb690fd9d36d76885628262d1b16e15e1e0c4369c22",
+          "source": "Qwen3-TTS 0.6B Serena, locally synthesized; preview accepted"
+        },
+        "male-reference": {
+          "path": "voices/neutral.wav",
+          "sha256": "e33e6ee0107a1dd58e1d66dd90c13df3d55a8683047cc3d7ea206dad84ed3fc8",
+          "source": "Official IndexTTS demo voice_01"
+        }
+      }
     }
   ]
 }
