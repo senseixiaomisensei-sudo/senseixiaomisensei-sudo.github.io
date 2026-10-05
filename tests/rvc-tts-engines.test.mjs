@@ -28,18 +28,22 @@ function harness(){
   vm.runInNewContext(source.slice(start,end),context);
   return {elements,state,calls,get input(){return input;},click:id=>elements.get(`rvc-tts-${id}`).events.click(),change:id=>elements.get(`rvc-tts-${id}`).events.change()};
 }
-async function ready(h){h.elements.get('rvc-tts-engine').value='qwen3-06b';h.change('engine');for(let i=0;i<10;i++)await Promise.resolve();}
+async function settleHealth(h){
+  for(let i=0;i<20&&h.state.ttsLoading;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(h.state.ttsLoading,false,'health response must finish before asserting readiness');
+}
+async function ready(h){h.elements.get('rvc-tts-engine').value='qwen3-06b';h.change('engine');await settleHealth(h);}
 
 test('TTS catalog controls actual language, voice and supported tone options',async()=>{
   const h=harness();await ready(h);
   assert.equal(h.elements.get('rvc-tts-synth').disabled,false);
   assert.equal(h.elements.get('rvc-tts-style').disabled,true);
-  h.elements.get('rvc-tts-engine').value='indextts-25';h.change('engine');for(let i=0;i<10;i++)await Promise.resolve();
+  h.elements.get('rvc-tts-engine').value='indextts-25';h.change('engine');await settleHealth(h);
   assert.equal(h.elements.get('rvc-tts-style').disabled,false);
   assert.ok(h.elements.get('rvc-tts-style').options.some(x=>x.value==='calm'));
   assert.ok(h.elements.get('rvc-tts-language').options.some(x=>x.value==='ar'));
   assert.ok(h.elements.get('rvc-tts-voice').options.some(x=>x.value==='female-soft'));
-  h.elements.get('rvc-tts-engine').value='aishell-legacy';h.change('engine');for(let i=0;i<10;i++)await Promise.resolve();
+  h.elements.get('rvc-tts-engine').value='aishell-legacy';h.change('engine');await settleHealth(h);
   assert.equal(h.elements.get('rvc-tts-synth').disabled,true);
   assert.equal(h.elements.get('rvc-tts-install').hidden,false);
 });
