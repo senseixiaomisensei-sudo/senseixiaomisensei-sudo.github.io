@@ -19,10 +19,25 @@ class RegisterAdaptationTests(unittest.TestCase):
         original=self.f0.copy()
         index,protect,pitch,info=register_controls(self.f0,.3,.25,1.)
         self.assertLess(index[100],index[330]);self.assertLess(index[-100],index[330])
-        self.assertGreaterEqual(index.min(),.21-1e-9);self.assertLessEqual(protect.max(),.25)
+        self.assertGreaterEqual(index[:180].min(),.21-1e-9)
+        self.assertGreaterEqual(index.min(),.09-1e-9);self.assertLessEqual(protect.max(),.25)
         self.assertLess(np.max(abs(np.diff(index))),.01)
         np.testing.assert_array_equal(self.f0,original);np.testing.assert_array_equal(pitch,np.zeros(len(self.f0)))
         self.assertTrue(info['originalMelodyPreserved'])
+
+    def test_high_register_is_stronger_while_low_register_keeps_its_original_ceiling(self):
+        index,protect,pitch,info=register_controls(self.f0,.3,.25,1.)
+        self.assertAlmostEqual(index[100],.21)
+        self.assertAlmostEqual(index[-100],.09)
+        self.assertAlmostEqual(protect[-100],.0875)
+        self.assertLess(index[-100],index[100]);self.assertLess(protect[-100],protect[100])
+        self.assertTrue(np.all(pitch==0));self.assertEqual(info['highRetrievalReductionLimit'],.70)
+
+    def test_descending_high_to_low_controls_cannot_add_their_reductions(self):
+        f0=np.r_[np.full(400,240.),np.full(100,1400.),np.full(100,70.)]
+        index,protect,_,_=register_controls(f0,.3,.25,1.)
+        self.assertGreaterEqual(index.min(),.09-1e-9)
+        self.assertGreaterEqual(protect.min(),.0875-1e-9)
 
     def test_optional_compensation_is_bounded_continuous_and_does_not_fill_breaths(self):
         _,_,pitch,info=register_controls(self.f0,.3,.25,.6,1.)

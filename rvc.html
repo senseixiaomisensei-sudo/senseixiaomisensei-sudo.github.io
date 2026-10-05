@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0F766E">
   <title>AI 变声器 | PostPrep</title>
   <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
-  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260815-rvc">
+  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20261005-register-1">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css?v=20260925-rvcfix">
   <link rel="stylesheet" href="assets/liquid-ui.css?v=20261004-compact-1">
@@ -401,7 +401,7 @@
                   <label for="rvc-register-adaptation" class="text-sm font-bold" data-rvc-label="Continuous register protection">连续声区保护</label>
                   <output id="rvc-register-adaptation-value" for="rvc-register-adaptation" class="ml-2 text-xs font-bold text-brand">0%</output>
                   <input id="rvc-register-adaptation" type="range" min="0" max="1" step="0.01" value="0" class="rvc-range mt-3 w-full">
-                  <p class="mt-1 text-xs leading-5 text-muted" data-rvc-label="Cloud RVC: smoothly adapt retrieval and consonant protection across low, middle and high notes. Zero keeps fixed settings.">云端 RVC：低、中、高音间平滑调整检索与辅音保护；0 保持固定参数。</p>
+                  <p class="mt-1 text-xs leading-5 text-muted" data-rvc-label="Cloud RVC: stronger protection and retrieval adaptation on high notes, gentler on low notes. Zero keeps fixed settings; melody stays unchanged.">云端 RVC：高音更积极调整检索与辅音保护，低音保持温和；0 保持固定参数，不改旋律。</p>
                 </div>
                 <div>
                   <label for="rvc-register-pitch" class="text-sm font-bold" data-rvc-label="Register pitch compensation">声区变调补偿</label>
@@ -525,6 +525,6 @@
   <script src="assets/postprep.js?v=20261004-storage-1"></script>
   <script src="assets/rvc-language.js?v=20261004-chorus-2"></script>
   <script src="assets/rvc-schools.js?v=20261004-chorus-2"></script>
-  <script src="assets/rvc.js?v=20261005-tts-controls-speed-2"></script>
+  <script src="assets/rvc.js?v=20261005-tts-controls-speed-3"></script>
 </body>
 </html>
