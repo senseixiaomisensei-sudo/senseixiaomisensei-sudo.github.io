@@ -43,6 +43,8 @@ export async function onRequest(context) {
   const actualF0 = upstream.headers.get("X-RVC-F0-Method") || "";
   if (/^(rmvpe|fcpe|pm)(\+(rmvpe|fcpe|pm))*$/u.test(actualF0)) headers.set("X-RVC-F0-Method", actualF0);
   headers.set("X-RVC-Mix-Revision", upstream.headers.get("X-RVC-Mix-Revision") || "0");
+  const speechSteps = upstream.headers.get("X-RVC-Speech-Steps") || "";
+  if (/^(?:[1-9]\d?|1\d\d|200)$/u.test(speechSteps)) headers.set("X-RVC-Speech-Steps", speechSteps);
   for (const name of ["X-RVC-Engine", "X-RVC-Engine-Revision", "X-RVC-Reference-Sha256", "X-RVC-Backend-Build"]) {
     const value = upstream.headers.get(name) || "";
     if (/^[a-zA-Z0-9_-]{1,80}$/u.test(value)) headers.set(name, value);

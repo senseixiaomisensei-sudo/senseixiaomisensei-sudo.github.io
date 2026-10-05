@@ -4285,6 +4285,11 @@
       && Number(document.getElementById("rvc-register-pitch")?.value || 0) === 0 && model?.speechProfile?.enabled === true;
   }
 
+  function selectedSpeechSteps() {
+    const steps = Number(document.getElementById("rvc-speech-steps")?.value ?? 100);
+    return Number.isInteger(steps) && steps >= 1 && steps <= 200 ? steps : 100;
+  }
+
   function syncSpeechControls() {
     const modern = useNewSpeechEngine();
     if (modern && state.speechControlsActive !== true) {
@@ -4294,6 +4299,12 @@
       if (trackingLabel) trackingLabel.textContent = "1.00";
     }
     state.speechControlsActive = modern;
+    const sampling = document.getElementById("rvc-speech-sampling");
+    if (sampling) sampling.hidden = !modern;
+    for (const id of ["rvc-speech-steps", "rvc-speech-steps-preset"]) {
+      const control = document.getElementById(id);
+      if (control) control.disabled = !modern || Boolean(state.busy);
+    }
     const selector = document.getElementById("rvc-voice-engine");
     if (selector) selector.disabled = state.audioMode !== "voice" || state.inferenceMode !== "official";
     for (const id of ["rvc-pitch", "rvc-index-rate", "rvc-protect", "rvc-f0-method", "rvc-filter-radius", "rvc-preset-male-female", "rvc-preset-same", "rvc-preset-female-male"]) {
@@ -4322,7 +4333,7 @@
       const control = document.getElementById(id);
       if (control) control.disabled = state.inferenceMode !== "official";
       const label = document.getElementById(`${id}-value`);
-      if (label) label.textContent = `${Math.round(Number(control?.value || 0)*100)}%`;
+      if (label) label.textContent = `${(Number(control?.value || 0)*100).toFixed(1)}%`;
     }
     const controls = selectedMixControls();
     const dbText = (value) => `${value > 0 ? "+" : ""}${value} dB`;
@@ -6801,7 +6812,7 @@
         : buildRvcEndpointCandidates();
       const requestTimeoutMs = cloudRequestTimeoutMs(uploadFile.size, state.audio.duration, state.audioMode);
       const jobTimeoutMs = modernSpeech
-        ? Math.max(cloudJobTimeoutMs(state.audio.duration, state.audioMode), 240000 + state.audio.duration * 5000)
+        ? Math.max(cloudJobTimeoutMs(state.audio.duration, state.audioMode), 240000 + state.audio.duration * 5000 * selectedSpeechSteps()/100)
         : cloudJobTimeoutMs(state.audio.duration, state.audioMode);
       const longJob = state.audio.duration >= DURABLE_CLOUD_JOB_SECONDS;
       if (preparedUpload.optimized) {
@@ -6820,6 +6831,10 @@
       body.set("model_id", selectedModel.id);
       body.set("voiceEngine", voiceEngine);
       body.set("voice_engine", voiceEngine);
+      if (modernSpeech) {
+        body.set("speechSteps", String(selectedSpeechSteps()));
+        body.set("speech_steps", String(selectedSpeechSteps()));
+      }
       body.set("pitch", String(pitch));
       body.set("indexRate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("index_rate", String(selectedModel.hasIndex !== false ? indexRate : 0));
@@ -6966,6 +6981,8 @@
       const outputResponse = await pollCloudOutput(outputUrl, jobTimeoutMs, longJob);
       const actualEngine = outputResponse.headers.get("X-RVC-Engine") || "rvc";
       const actualRevision = outputResponse.headers.get("X-RVC-Engine-Revision") || "";
+      const speechStepHeader = outputResponse.headers.get("X-RVC-Speech-Steps") || "";
+      const actualSpeechSteps = /^(?:[1-9]\d?|1\d\d|200)$/u.test(speechStepHeader) ? speechStepHeader : "?";
       const actualF0Method = outputResponse.headers.get("X-RVC-F0-Method") || "";
       const remixAvailable = outputResponse.headers.get("X-RVC-Remix-Available") === "true";
       updateProgressBar(82);
@@ -7013,7 +7030,7 @@
           model: voiceName(selectedModel),
           pitch: `${pitch > 0 ? "+" : ""}${pitch}`,
           elapsed,
-        }) + ` · ${actualEngine === "seed-vc-v2-speech" ? l("新版角色讲话 · 100 步 · FP32","Character speech · 100 steps · FP32") : `${l("云端","Cloud")} PyTorch RVC · F0 ${actualF0Method || (f0Method === "auto" ? l("自动（实际算法未返回）","Auto (actual method unavailable)") : f0Method.toUpperCase())}`}${state.audioMode === "song" ? l(" · PyMSS 人声分离/原伴奏回混"," · PyMSS separation/original backing remix") : ""}${actualRevision ? ` · ${actualRevision.slice(0, 10)}` : ""} · ${outputFormat.toUpperCase()}`;
+        }) + ` · ${actualEngine === "seed-vc-v2-speech" ? l(`新版角色讲话 · ${actualSpeechSteps} 步 · FP32`,`Character speech · ${actualSpeechSteps} steps · FP32`) : `${l("云端","Cloud")} PyTorch RVC · F0 ${actualF0Method || (f0Method === "auto" ? l("自动（实际算法未返回）","Auto (actual method unavailable)") : f0Method.toUpperCase())}`}${state.audioMode === "song" ? l(" · PyMSS 人声分离/原伴奏回混"," · PyMSS separation/original backing remix") : ""}${actualRevision ? ` · ${actualRevision.slice(0, 10)}` : ""} · ${outputFormat.toUpperCase()}`;
         state.resultMetaRender = () => {
           state.resultMetaBase = state.resultMetaBaseRender();
           resultMeta.textContent = state.resultMetaBase;
@@ -7605,6 +7622,20 @@
     }
 
     // Slider pitch feedback
+    const speechSteps = document.getElementById("rvc-speech-steps");
+    const speechPreset = document.getElementById("rvc-speech-steps-preset");
+    speechSteps?.addEventListener("input", () => {
+      const steps = selectedSpeechSteps();
+      const output = document.getElementById("rvc-speech-steps-value");
+      if (output) output.textContent = String(steps);
+      if (speechPreset) speechPreset.value = [30,60,100,200].includes(steps) ? String(steps) : "custom";
+    });
+    speechPreset?.addEventListener("change", () => {
+      if (speechSteps && speechPreset.value !== "custom") {
+        speechSteps.value = speechPreset.value;
+        speechSteps.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
     for (const id of ["rvc-register-adaptation", "rvc-register-pitch"]) {
       document.getElementById(id)?.addEventListener("input", (event) => {
         if (Number(event.target.value)>0) enableSpeechTuning();
@@ -8079,7 +8110,7 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261005-auto-4');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261005-speech-steps-1');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,

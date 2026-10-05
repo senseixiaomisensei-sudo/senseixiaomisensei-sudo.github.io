@@ -43,6 +43,7 @@ from app.audio_dynamics import apply_dynamics, apply_static_gain
 from app.inference_errors import PitchExtractionError
 from app.diagnostics import capture_job, configured_root
 from app.speech_runtime import ENGINE as SPEECH_ENGINE, render_speech, speech_profile, speech_status
+from app.speech_parameters import DEFAULT_STEPS, validate_speech_steps
 from app import tts_engines as tts_runtime, separation_cache
 from app.separation_runtime import (
     SeparationRuntimeError,
@@ -96,7 +97,7 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "audio_repair.py", "separation_runtime.py", "separation_worker.py", "separation_cache.py", "official_runtime.py",
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
-                  "timeline_synthesis.py", "timeline_rendering.py", "register_adaptation.py", "speech_runtime.py", "speech_worker.py",
+                  "timeline_synthesis.py", "timeline_rendering.py", "register_adaptation.py", "speech_runtime.py", "speech_worker.py", "speech_parameters.py",
                   "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py", "tts_runtime.py",
                   "tts_engines.py", "tts_models.py", "tts_worker.py", "tts_pack.py", "tts_catalog.json")
 
@@ -236,6 +237,7 @@ class OutputRecord:
     tts_parameters: dict | None = None
     register_adaptation: float = 0.0
     register_pitch: float = 0.0
+    speech_steps: int = DEFAULT_STEPS
 
 
 @dataclass
@@ -560,6 +562,7 @@ def persist_output_records() -> None:
                 "tts_parameters": record.tts_parameters,
                 "register_adaptation": record.register_adaptation,
                 "register_pitch": record.register_pitch,
+                "speech_steps": record.speech_steps,
                 "expires_at": record.expires_at.isoformat(),
             }
         temporary = OUTPUT_ROOT / "records.json.tmp"
@@ -613,6 +616,7 @@ def load_output_records() -> None:
             tts_parameters=entry.get("tts_parameters"),
             register_adaptation=float(entry.get("register_adaptation", 0.0)),
             register_pitch=float(entry.get("register_pitch", 0.0)),
+            speech_steps=validate_speech_steps(entry.get("speech_steps", DEFAULT_STEPS)),
             stage="completed" if state == "completed" else "failed",
         )
         if entry.get("request_id"):
@@ -1576,6 +1580,8 @@ def output_payload(job_id: str, record: OutputRecord) -> dict[str, object]:
         payload["f0Method"] = record.f0_method
     payload["engine"] = record.engine
     payload["engineRevision"] = record.engine_revision
+    if record.engine == SPEECH_ENGINE:
+        payload["speechSteps"] = record.speech_steps
     payload["referenceSha256"] = record.reference_sha256
     if record.tts_parameters: payload['ttsParameters']=record.tts_parameters
     payload["vocalGainDb"] = record.vocal_gain_db
@@ -2211,6 +2217,7 @@ async def process_conversion_job(
     selected_profile: dict | None = None,
     register_strength: float = 0.,
     register_pitch: float = 0.,
+    speech_steps: int = DEFAULT_STEPS,
 ) -> None:
     diagnostic_dir = job_root / "diagnostic-stages" if diagnostic else None
     used_f0_method = ""
@@ -2308,7 +2315,7 @@ async def process_conversion_job(
                     await asyncio.to_thread(release_cached_models)
                     speech_evidence = await asyncio.to_thread(
                         render_speech, input_wav, output_wav, model_id, selected_profile or {},
-                        job_root / "speech-evidence")
+                        job_root / "speech-evidence", speech_steps)
                 used_f0_method = ""
             else:
                 used_f0_method = await render_duration_safe_conversion_async(
@@ -2476,6 +2483,7 @@ async def create_job(
     protect: str = Form("0.25"),
     register_adaptation: str = Form("0"),
     register_pitch: str = Form("0"),
+    speech_steps: str = Form("100"),
     filter_radius: str = Form("0"),
     resample: str = Form("0"),
     rms_mix_rate: str = Form("1"),
@@ -2569,6 +2577,12 @@ async def create_job(
     if voice_engine == SPEECH_ENGINE and (not profile or pitch_value != 0 or audio_mode != "voice" or adaptive_register):
         raise RvcServiceError(400, "RVC_SPEECH_PARAMETERS_UNSUPPORTED")
     selected_engine = SPEECH_ENGINE if profile and audio_mode == "voice" and pitch_value == 0 and voice_engine != "rvc" and not adaptive_register else "rvc"
+    try:
+        speech_steps_value = validate_speech_steps(speech_steps)
+    except ValueError:
+        raise RvcServiceError(400, "RVC_INVALID_PARAMETER") from None
+    if selected_engine != SPEECH_ENGINE and speech_steps_value != DEFAULT_STEPS:
+        raise RvcServiceError(400, "RVC_SPEECH_PARAMETERS_UNSUPPORTED")
     extension = safe_extension(audio)
     try:
         model_path = find_model_path(model_id)
@@ -2579,6 +2593,7 @@ async def create_job(
         "model": model_id, "pitch": pitch_value, "indexRate": index_rate_value,
         "registerAdaptation": register_strength_value, "registerPitch": register_pitch_value,
         "engine": selected_engine, "pipelineRevision": PIPELINE_REVISION,
+        "speechSteps": speech_steps_value if selected_engine == SPEECH_ENGINE else None,
         "speechRevision": profile.get("engineRevision", "") if selected_engine == SPEECH_ENGINE else "",
         "referenceSha256": profile.get("sha256", "") if selected_engine == SPEECH_ENGINE else "",
         "protect": protect_value, "rmsMixRate": rms_mix_value,
@@ -2608,6 +2623,7 @@ async def create_job(
     record.accompaniment_mute = mix_accompaniment_mute
     record.register_adaptation = register_strength_value
     record.register_pitch = register_pitch_value
+    record.speech_steps = speech_steps_value
     persist_output_records()
     job_root = None
     output_path = record.path
@@ -2668,6 +2684,7 @@ async def create_job(
             selected_profile=profile,
             register_strength=register_strength_value,
             register_pitch=register_pitch_value,
+            speech_steps=speech_steps_value,
         ))
         job_tasks.add(task)
         task.add_done_callback(job_tasks.discard)
@@ -2737,6 +2754,7 @@ async def get_output(request: Request, job_id: str, token: str):
         filename=f"postprep-rvc-audio{record.path.suffix}",
         headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
                  "X-RVC-Engine": record.engine,
+                 "X-RVC-Speech-Steps": str(record.speech_steps) if record.engine == SPEECH_ENGINE else "",
                  "X-RVC-Engine-Revision": record.engine_revision,
                  "X-RVC-Reference-Sha256": record.reference_sha256,
                  "X-RVC-Backend-Build": BACKEND_BUILD_SHA,

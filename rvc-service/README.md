@@ -90,6 +90,17 @@ client-side environment variable.
 
 All endpoints require `Authorization: Bearer <RVC_GATEWAY_TOKEN>`.
 
+Verified-reference speech (`voice_engine=seed-vc-v2-speech`, voice mode,
+zero pitch and register adaptation) accepts native integer `speech_steps`
+from 1 through 200. The unchanged default is 100; the UI offers 30, 60,
+100 and experimental 200 presets plus one-step adjustment. More steps cost
+more inference time and do not establish better sound. The native CFM
+uses one schedule per context window; separate low/middle/high frame
+step counts are unsupported. RVC singing/device synthesis has no diffusion
+step parameter and rejects non-default speech steps. Steps participate in
+the job fingerprint, persistence, diagnostics, JSON result and
+`X-RVC-Speech-Steps` download header. No CFG, solver or model changes are made.
+
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/healthz` | readiness probe |

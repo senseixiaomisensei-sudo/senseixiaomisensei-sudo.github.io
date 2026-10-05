@@ -27,11 +27,13 @@ class ReservationTests(unittest.TestCase):
             await service.release_preparing_job(second[0], "other-request-id-0002")
             third = await service.reserve_conversion_job("third-request-id-0003", "parameters-a", "wav", "song")
             self.assertTrue(third[2])
+            service.outputs[third[0]].speech_steps = 200
             service.persist_output_records()
             service.outputs = {}
             service.request_jobs = {}
             service.load_output_records()
             self.assertEqual(service.outputs[third[0]].state, "failed")
+            self.assertEqual(service.outputs[third[0]].speech_steps, 200)
             recovered = await service.reserve_conversion_job("third-request-id-0003", "parameters-a", "wav", "song")
             self.assertTrue(recovered[2])
             self.assertNotEqual(recovered[0], third[0])

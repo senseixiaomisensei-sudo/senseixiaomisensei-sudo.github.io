@@ -2,6 +2,7 @@
 from __future__ import annotations
 import hashlib,json,os,subprocess,sys
 from pathlib import Path
+from app.speech_parameters import DEFAULT_STEPS, MIN_STEPS, MAX_STEPS, STEP_PRESETS, validate_speech_steps
 
 ENGINE='seed-vc-v2-speech'
 
@@ -31,15 +32,18 @@ def speech_status() -> dict:
         cfg=json.loads((root/'引擎配置.json').read_text(encoding='utf8'))
         refs=json.loads((root/'角色参考清单.json').read_text(encoding='utf8'))
         return dict(ready=True,engine=ENGINE,revision=cfg['revision'],codeCommit=cfg['codeCommit'],
-                    steps=100,contentCfg=0,similarityCfg=.7,precision='fp32',
+                    steps=DEFAULT_STEPS,samplingSteps={'min':MIN_STEPS,'max':MAX_STEPS,'default':DEFAULT_STEPS,
+                        'presets':list(STEP_PRESETS),'perRegister':False},contentCfg=0,similarityCfg=.7,precision='fp32',
                     characters=[cid for cid in refs if speech_profile(cid)],
                     singingSupported=False,deviceSupported=False)
     except (OSError,ValueError,KeyError):
         return dict(ready=False,engine=ENGINE,characters=[])
 
-def render_speech(source: Path, output: Path, character_id: str, profile: dict, diagnostics: Path) -> dict:
+def render_speech(source: Path, output: Path, character_id: str, profile: dict, diagnostics: Path,
+                  steps: int = DEFAULT_STEPS) -> dict:
     # A short-lived process frees its model/CUDA allocations after each job and
     # cannot reuse another character's prompt or a stale reference checkpoint.
+    steps=validate_speech_steps(steps)
     cfg=json.loads((config_root()/'引擎配置.json').read_text(encoding='utf8'))
     current=speech_profile(character_id)
     if not current or current['sha256']!=profile['sha256'] or current['engineRevision']!=profile['engineRevision']:
@@ -47,12 +51,15 @@ def render_speech(source: Path, output: Path, character_id: str, profile: dict, 
     diagnostics.mkdir(parents=True,exist_ok=True)
     command=[cfg.get('python',sys.executable),'-X','utf8',str(Path(__file__).with_name('speech_worker.py')),
              '--config',str(config_root()/'引擎配置.json'),'--source',str(source),
-             '--reference',current['path'],'--output',str(output),'--diagnostics',str(diagnostics)]
+             '--reference',current['path'],'--output',str(output),'--diagnostics',str(diagnostics),
+             '--steps',str(steps)]
     env={**os.environ,'HF_HUB_OFFLINE':'1','TRANSFORMERS_OFFLINE':'1','PYTHONUTF8':'1'}
     with (diagnostics/'worker.log').open('w',encoding='utf8') as log:
         result=subprocess.run(command,env=env,stdout=log,stderr=log,timeout=3600,check=False)
     if result.returncode!=0 or not output.is_file():
         raise RuntimeError('Speech inference failed; see controlled diagnostic log')
     evidence=json.loads((diagnostics/'inference.json').read_text(encoding='utf8'))
+    if evidence.get('parameters',{}).get('diffusionSteps')!=steps:
+        raise RuntimeError('Speech worker did not apply the requested sampling steps')
     return {**evidence,'characterId':character_id,'referenceSha256':current['sha256'],
             'engineRevision':current['engineRevision'],'engine':ENGINE}

@@ -50,3 +50,24 @@ test('new speech preserves original upload and never silently falls back to old 
   assert.match(run, /allowDeviceFallback && !modernSpeech/u);
   assert.match(run, /body\.set\("voice_engine", voiceEngine\)/u);
 });
+test('native speech sampling accepts every integer through 200 and defaults to the verified 100', () => {
+  const slider = { value: '200' };
+  const get = Function('document', `return (${extract('selectedSpeechSteps')})`)({ getElementById: () => slider });
+  for (const value of [1, 30, 60, 100, 137, 200]) {
+    slider.value = String(value); assert.equal(get(), value);
+  }
+  for (const value of ['0', '201', 'NaN', '99.5']) {
+    slider.value = value; assert.equal(get(), 100);
+  }
+  assert.equal(Function('document', `return (${extract('selectedSpeechSteps')})`)({getElementById: () => null})(), 100);
+});
+test('sampling controls are available only for supported modern speech and lock during inference', () => {
+  let modern = true;
+  const state = {audioMode:'voice', inferenceMode:'official', busy:false};
+  const nodes = new Map(['rvc-speech-sampling','rvc-speech-steps','rvc-speech-steps-preset'].map(id => [id, {}]));
+  const sync = Function('state','document','useNewSpeechEngine','l',`return (${extract('syncSpeechControls')})`)(state,{getElementById:id=>nodes.get(id)},()=>modern,zh=>zh);
+  sync(); assert.equal(nodes.get('rvc-speech-sampling').hidden,false); assert.equal(nodes.get('rvc-speech-steps').disabled,false);
+  state.busy=true; sync(); assert.equal(nodes.get('rvc-speech-steps').disabled,true);
+  state.busy=false; modern=false; sync(); assert.equal(nodes.get('rvc-speech-sampling').hidden,true); assert.equal(nodes.get('rvc-speech-steps-preset').disabled,true);
+  assert.match(extract('runOfficialRvcInference'), /if \(modernSpeech\) \{\s*body\.set\("speechSteps", String\(selectedSpeechSteps\(\)\)\);\s*body\.set\("speech_steps", String\(selectedSpeechSteps\(\)\)\);/u);
+});

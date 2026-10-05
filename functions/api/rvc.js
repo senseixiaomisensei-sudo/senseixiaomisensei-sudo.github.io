@@ -13,6 +13,7 @@ const MAX_REQUEST_BYTES = 25 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 const ALLOWED_FIELDS = new Set([
   "voiceEngine", "voice_engine",
+  "speechSteps", "speech_steps",
   "modelId",
   "model_id",
   "pitch",
@@ -125,7 +126,9 @@ function validInferencePayload(payload) {
   const expiry = new Date(expiresAt);
   if (!validOutputJobId(jobId) || !validOutputToken(downloadToken)
     || Number.isNaN(expiry.getTime()) || expiry.getTime() <= Date.now() || expiry.getTime() > Date.now() + 24 * 60 * 60 * 1000) return null;
-  return { jobId, downloadToken, expiresAt: expiry.toISOString(), format };
+  const result = { jobId, downloadToken, expiresAt: expiry.toISOString(), format };
+  if (Number.isInteger(payload.speechSteps) && payload.speechSteps >= 1 && payload.speechSteps <= 200) result.speechSteps = payload.speechSteps;
+  return result;
 }
 
 const UPSTREAM_CODE_PATTERN = /^[A-Z][A-Z0-9_]{2,63}$/u;
@@ -243,6 +246,8 @@ export async function onRequest(context) {
   const requestedLanguage = valueAsString(formData, "language") === "en" ? "en" : "zh";
   const audioMode = valueAsString(formData, "audioMode") || valueAsString(formData, "audio_mode") || "voice";
   const voiceEngine = valueAsString(formData, "voiceEngine") || valueAsString(formData, "voice_engine") || "auto";
+  const speechSteps = valueAsString(formData, "speechSteps") || valueAsString(formData, "speech_steps") || "100";
+  if (!/^(?:[1-9]\d?|1\d\d|200)$/u.test(speechSteps)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Speech sampling steps must be an integer from 1 to 200");
   if (!["auto", "rvc", "seed-vc-v2-speech"].includes(voiceEngine)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Choose a supported voice engine");
   const requestId = valueAsString(formData, "requestId");
   const audio = valueAsFile(formData, "audio");
@@ -271,6 +276,7 @@ export async function onRequest(context) {
 
   const upstreamBody = new FormData();
   upstreamBody.set("model_id", modelId);
+  upstreamBody.set("speech_steps", speechSteps);
   upstreamBody.set("pitch", pitch);
   upstreamBody.set("index_rate", indexRate);
   upstreamBody.set("protect", protect);

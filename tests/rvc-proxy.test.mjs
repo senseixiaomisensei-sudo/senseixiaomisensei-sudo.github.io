@@ -108,6 +108,26 @@ test('continuous register controls are bounded and reach the GPU with their exac
   }finally{globalThis.fetch=original;}
 });
 
+test('native sampling steps reach the GPU exactly and reject non-integers before forwarding',async()=>{
+  const original=globalThis.fetch; let submitted; let calls=0;
+  globalThis.fetch=async(_url,options)=>{
+    calls++; submitted=options.body;
+    return Response.json({jobId:JOB_ID,downloadToken:DOWNLOAD_TOKEN,expiresAt:new Date(Date.now()+3600000).toISOString(),format:'wav',speechSteps:Number(submitted.get('speech_steps'))},{status:202});
+  };
+  try {
+    for (const [fields, expected] of [[{},100],[{speechSteps:'200'},200],[{speech_steps:'137'},137],[{speechSteps:'1'},1]]) {
+      const response=await rvcRequest(context({form:rvcForm({...fields, voiceEngine:'seed-vc-v2-speech',pitch:'0'})}));
+      assert.equal(response.status,200); assert.equal(submitted.get('speech_steps'),String(expected));
+      assert.equal((await response.json()).speechSteps,expected);
+    }
+    const before=calls;
+    for(const value of ['0','201','100.5','NaN','Infinity','100garbage','0200']){
+      const invalid=await rvcRequest(context({form:rvcForm({speechSteps:value})})); assert.equal(invalid.status,400,value);
+    }
+    assert.equal(calls,before);
+  } finally {globalThis.fetch=original;}
+});
+
 test("rvc endpoint rejects a direct browser call before it reads or forwards audio", async () => {
   const mocked = mockRvcFetch();
   try {
@@ -286,6 +306,18 @@ test("rvc output requires an internal gateway and a constrained job token", asyn
   const body = await response.json();
   assert.equal(response.status, 403);
   assert.equal(body.code, "GATEWAY_NOT_ALLOWED");
+});
+
+test('completed speech reports actual worker steps through the browser-visible download header',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async()=>new Response(audioBlob(),{headers:{'Content-Type':'audio/wav','X-RVC-Speech-Steps':'200'}});
+  try{
+    const request=new Request(`https://postprep-ae6.pages.dev/api/rvc-output?job=${JOB_ID}&token=${DOWNLOAD_TOKEN}`,{
+      headers:{Origin:SITE_ORIGIN,'X-PostPrep-Gateway':'gateway-secret'}});
+    const response=await rvcOutputRequest({request,env:BASE_ENV});
+    assert.equal(response.status,200);assert.equal(response.headers.get('X-RVC-Speech-Steps'),'200');
+    assert.match(response.headers.get('Access-Control-Expose-Headers'),/X-RVC-Speech-Steps/u);
+  }finally{globalThis.fetch=original;}
 });
 
 test("remix relay validates independent levels and forwards only a protected saved job", async () => {

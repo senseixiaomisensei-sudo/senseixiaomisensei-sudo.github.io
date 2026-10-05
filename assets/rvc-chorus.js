@@ -155,7 +155,7 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
       }
       const autoButton=bind(document.createElement('button'),'按声区自动调参','Match parameters to register');autoButton.type='button';autoButton.className='chorus-auto-tune';autoButton.addEventListener('click',tune);
       const details=document.createElement('details'), summary=bind(document.createElement('summary'),'独立调音','Individual settings');details.append(summary);
-      for(const [key,zh,en,min,max,step] of [['pitch','音高（半音）','Pitch (semitones)',-24,24,1],['indexRate','检索强度','Retrieval strength',0,1,.01],['protect','辅音保护','Consonant protection',0,.5,.01],['registerAdaptation','连续声区保护','Continuous register protection',0,1,.01],['registerPitch','变调补偿（0 保留旋律）','Pitch compensation (0 preserves melody)',0,1,.01],['rmsMixRate','动态保留','Preserve dynamics',0,1,.01],['gainDb','人声音量（dB）','Vocal gain (dB)',-24,6,.5]]){
+      for(const [key,zh,en,min,max,step] of [['pitch','音高（半音）','Pitch (semitones)',-24,24,1],['indexRate','检索强度','Retrieval strength',0,1,.01],['protect','辅音保护','Consonant protection',0,.5,.01],['registerAdaptation','连续声区保护','Continuous register protection',0,1,.001],['registerPitch','变调补偿（0 保留旋律）','Pitch compensation (0 preserves melody)',0,1,.001],['rmsMixRate','动态保留','Preserve dynamics',0,1,.01],['gainDb','人声音量（dB）','Vocal gain (dB)',-24,6,.5]]){
         const wrap=document.createElement('label');wrap.className='chorus-control';const name=bind(document.createElement('span'),zh,en);
         const control=document.createElement('input');Object.assign(control,{type:'range',min,max,step,value:params[i][key]});
         bind(control,`声部 ${t.trackId} ${zh}`,`Voice ${t.trackId}: ${en}`,'aria-label');

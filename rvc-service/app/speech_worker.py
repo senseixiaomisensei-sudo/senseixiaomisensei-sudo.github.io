@@ -1,4 +1,4 @@
-"""Real V2 timbre path: fp32, content CFG 0, character CFG .7, 100 steps.
+"""Real V2 timbre path: fp32, content CFG 0, character CFG .7, default 100 steps.
 
 No AR, auto-tune, source vocal blend or cosmetic DSP. Raw BigVGAN floats are
 captured before the upstream hard clamp; shared output protection runs later.
@@ -6,6 +6,10 @@ captured before the upstream hard clamp; shared output protection runs later.
 from pathlib import Path
 import argparse,functools,hashlib,importlib,json,os,sys,time
 import numpy as np,soundfile as sf,torch,yaml
+if __package__:
+    from .speech_parameters import DEFAULT_STEPS, validate_speech_steps
+else:
+    from speech_parameters import DEFAULT_STEPS, validate_speech_steps
 
 def instantiate(node):
     if not isinstance(node,dict):return node
@@ -27,6 +31,7 @@ def checked_load(module,state,label,preloaded=()):
     return dict(loadedKeys=len(accepted),unexpectedKeys=sorted(set(state)-set(accepted)))
 
 def run(args):
+    steps=validate_speech_steps(args.steps)
     started=time.monotonic();cfg=json.loads(Path(args.config).read_text(encoding='utf8'))
     for item in cfg['files']:
         p=Path(item['path'])
@@ -85,7 +90,7 @@ def run(args):
         assembled=[];tail=None;position=0;clamp_count=0
         while position<cond.shape[1]:
             end=min(position+window,cond.shape[1]);cat=torch.cat([prompt,cond[:,position:end]],dim=1)
-            mel=cfm.inference(cat,torch.tensor([cat.shape[1]],device=device),ref_mel,style,100,inference_cfg_rate=[0,.7],random_voice=False)
+            mel=cfm.inference(cat,torch.tensor([cat.shape[1]],device=device),ref_mel,style,steps,inference_cfg_rate=[0,.7],random_voice=False)
             mel=mel[:,:,ref_mel.shape[-1]:cat.shape[1]]
             bounded=vocoder(mel.float());raw=raw_capture.pop().squeeze().cpu().numpy()
             np.save(diag/f'mel-{len(chunks):03d}.npy',mel.cpu().numpy())
@@ -103,7 +108,7 @@ def run(args):
     if abs(len(values)-len(source))>=256:raise RuntimeError('Speech timeline drift exceeds one native hop')
     sf.write(args.output,values,22050,subtype='FLOAT')
     report=dict(engine='seed-vc-v2-speech',codeCommit=cfg['codeCommit'],engineRevision=cfg['revision'],
-        parameters=dict(diffusionSteps=100,contentCfg=0,similarityCfg=.7,seed=20260823,precision='fp32',convertStyle=False,arInvoked=False,retrieval=False,f0Method=None),
+        parameters=dict(diffusionSteps=steps,contentCfg=0,similarityCfg=.7,seed=20260823,precision='fp32',convertStyle=False,arInvoked=False,retrieval=False,f0Method=None),
         sourceFrames=len(source),outputFrames=len(values),sampleRate=22050,rawPeak=float(np.max(abs(values))),
         bypassedHardClampSamples=clamp_count,nonFinite=0,chunks=chunks,checkpointLoad=loaded,
         elapsedSeconds=time.monotonic()-started,hearing='未听评')
@@ -113,4 +118,5 @@ def run(args):
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
     for key in ['config','source','reference','output','diagnostics']:parser.add_argument('--'+key,required=True)
+    parser.add_argument('--steps',type=int,default=DEFAULT_STEPS)
     run(parser.parse_args())
