@@ -43,7 +43,7 @@ from app.audio_dynamics import apply_dynamics, apply_static_gain
 from app.inference_errors import PitchExtractionError
 from app.diagnostics import capture_job, configured_root
 from app.speech_runtime import ENGINE as SPEECH_ENGINE, render_speech, speech_profile, speech_status
-from app import tts_runtime
+from app import tts_engines as tts_runtime
 from app.separation_runtime import (
     SeparationRuntimeError,
     calibrate_song_vocals,
@@ -97,7 +97,8 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
                   "timeline_synthesis.py", "timeline_rendering.py", "speech_runtime.py", "speech_worker.py",
-                  "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py", "tts_runtime.py")
+                  "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py", "tts_runtime.py",
+                  "tts_engines.py", "tts_models.py", "tts_worker.py", "tts_catalog.json")
 
 
 def source_revision() -> str:
@@ -232,6 +233,7 @@ class OutputRecord:
     engine: str = "rvc"
     engine_revision: str = ""
     reference_sha256: str = ""
+    tts_parameters: dict | None = None
 
 
 @dataclass
@@ -549,6 +551,7 @@ def persist_output_records() -> None:
                 "engine": record.engine,
                 "engine_revision": record.engine_revision,
                 "reference_sha256": record.reference_sha256,
+                "tts_parameters": record.tts_parameters,
                 "expires_at": record.expires_at.isoformat(),
             }
         temporary = OUTPUT_ROOT / "records.json.tmp"
@@ -599,6 +602,7 @@ def load_output_records() -> None:
             engine=str(entry.get("engine", "rvc")),
             engine_revision=str(entry.get("engine_revision", "")),
             reference_sha256=str(entry.get("reference_sha256", "")),
+            tts_parameters=entry.get("tts_parameters"),
             stage="completed" if state == "completed" else "failed",
         )
         if entry.get("request_id"):
@@ -613,6 +617,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     require_config()
     load_training_records()
     load_output_records()
+    loop = asyncio.get_running_loop()
+    async def validate_tts_model(callback):
+        async with inference_lock:
+            await asyncio.to_thread(release_cached_models)
+            return await asyncio.to_thread(callback)
+    tts_runtime.set_validation_runner(lambda callback: asyncio.run_coroutine_threadsafe(validate_tts_model(callback), loop).result(timeout=1200))
     cleanup_task = asyncio.create_task(cleanup_loop())
     try:
         yield
@@ -1445,30 +1455,46 @@ async def tts_health(request: Request) -> dict:
 @app.post("/v1/tts/install")
 async def install_tts(request: Request) -> dict:
     ensure_authorized(request)
-    if await request.body() not in (b'', b'{}'):
+    try: payload = json.loads(await request.body() or b'{}')
+    except (ValueError,TypeError): raise RvcServiceError(400, "RVC_TTS_INVALID_INPUT") from None
+    if not isinstance(payload,dict) or set(payload)-{'modelId'} or payload.get('modelId') is not None and not isinstance(payload['modelId'],str):
         raise RvcServiceError(400, "RVC_TTS_INVALID_INPUT")
-    try: return await asyncio.to_thread(tts_runtime.install)
-    except ValueError: raise RvcServiceError(503, 'RVC_TTS_RUNTIME_UNAVAILABLE') from None
+    try: return await asyncio.to_thread(tts_runtime.install,payload.get('modelId'))
+    except ValueError as error: raise RvcServiceError(503 if str(error)=='RVC_TTS_RUNTIME_UNAVAILABLE' else 400, str(error)) from None
 
 
-@app.post("/v1/tts")
-async def synthesize_tts(request: Request) -> Response:
-    ensure_authorized(request)
+async def parse_tts_input(request: Request) -> dict:
     try:
         payload = await request.json()
     except (ValueError, TypeError):
         raise RvcServiceError(400, "RVC_TTS_INVALID_INPUT") from None
-    if not isinstance(payload, dict) or not isinstance(payload.get('text'), str):
+    if not isinstance(payload, dict) or not isinstance(payload.get('text'), str) or set(payload)-{'text','modelId','language','style','voice','requestId'}:
         raise RvcServiceError(400, "RVC_TTS_INVALID_INPUT")
     text = payload['text'].strip()
     if not text:
         raise RvcServiceError(400, "RVC_TTS_EMPTY_TEXT")
     if len(text) > TTS_MAX_TEXT_CHARS:
         raise RvcServiceError(413, "RVC_TTS_TEXT_TOO_LONG")
-    if not re.search(r'[\u3400-\u9fff]', text):
+    model_id=payload.get('modelId',tts_runtime.DEFAULT)
+    if not isinstance(model_id,str): raise RvcServiceError(400,'RVC_TTS_INVALID_MODEL')
+    options={'model_id':model_id,'language':payload.get('language','zh'),'style':payload.get('style','neutral'),'voice':payload.get('voice','')}
+    try: tts_runtime.validate_options(**options)
+    except ValueError as error: raise RvcServiceError(400,str(error)) from None
+    if model_id=='aishell-legacy' and not re.search(r'[\u3400-\u9fff]', text):
         raise RvcServiceError(400, 'RVC_TTS_CHINESE_REQUIRED')
+    if 'requestId' in payload and (not isinstance(payload['requestId'],str) or payload['requestId'] and not valid_request_id(payload['requestId'])):
+        raise RvcServiceError(400,'RVC_INVALID_REQUEST_ID')
+    return {'text':text,**options,'request_id':payload.get('requestId','')}
+
+
+@app.post("/v1/tts")
+async def synthesize_tts(request: Request) -> Response:
+    ensure_authorized(request)
+    params=await parse_tts_input(request);params.pop('request_id')
     try:
-        audio = await asyncio.to_thread(tts_runtime.synthesize, text)
+        async with inference_lock:
+            if params['model_id'] in {'qwen3-06b','cosyvoice-instruct'}: await asyncio.to_thread(release_cached_models)
+            audio = await asyncio.to_thread(tts_runtime.synthesize, **params)
     except ValueError as error:
         code = str(error)
         raise RvcServiceError(503 if code in {'RVC_TTS_UNAVAILABLE', 'RVC_TTS_BUSY'} else 502, code) from None
@@ -1481,6 +1507,38 @@ async def synthesize_tts(request: Request) -> Response:
         media_type="audio/wav",
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )
+
+
+async def process_tts_job(job_id,params):
+    record=outputs[job_id]
+    try:
+        async with inference_lock:
+            record.state='processing';record.stage='tts-synthesis';persist_output_records()
+            if params['model_id'] in {'qwen3-06b','cosyvoice-instruct'}: await asyncio.to_thread(release_cached_models)
+            audio=await asyncio.to_thread(tts_runtime.synthesize,**params)
+            if not audio or len(audio)>128*1024*1024: raise ValueError('RVC_TTS_EMPTY_OUTPUT')
+            record.path.write_bytes(audio);record.state='completed';record.stage='completed'
+    except asyncio.CancelledError:
+        record.state='failed';record.error_code='RVC_TTS_INTERRUPTED';raise
+    except Exception as error:
+        record.state='failed';record.stage='failed';record.error_code=str(error) if isinstance(error,ValueError) and str(error).startswith('RVC_TTS_') else 'RVC_TTS_SYNTH_FAILED'
+    finally: persist_output_records()
+
+
+@app.post('/v1/tts/jobs')
+async def create_tts_job(request:Request):
+    ensure_authorized(request)
+    params=await parse_tts_input(request);request_id=params.pop('request_id')
+    if not (await asyncio.to_thread(tts_runtime.status,params['model_id']))['ready']:
+        raise RvcServiceError(503,'RVC_TTS_UNAVAILABLE')
+    fingerprint=hashlib.sha256(json.dumps(params,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+    job_id,record,is_new=await reserve_conversion_job(request_id,fingerprint,'wav','voice')
+    if is_new:
+        model=tts_runtime.spec(params['model_id']);record.state='queued';record.stage='tts-queued'
+        record.engine=f"tts-{params['model_id']}";record.engine_revision=model.get('revision',model.get('archiveSha256','legacy'))
+        record.tts_parameters={k:v for k,v in params.items() if k!='text'}
+        task=asyncio.create_task(process_tts_job(job_id,params));job_tasks.add(task);task.add_done_callback(job_tasks.discard);persist_output_records()
+    return JSONResponse(output_payload(job_id,record),status_code=202,headers={'Cache-Control':'no-store'})
 
 
 def valid_request_id(value: str) -> bool:
@@ -1502,6 +1560,7 @@ def output_payload(job_id: str, record: OutputRecord) -> dict[str, object]:
     payload["engine"] = record.engine
     payload["engineRevision"] = record.engine_revision
     payload["referenceSha256"] = record.reference_sha256
+    if record.tts_parameters: payload['ttsParameters']=record.tts_parameters
     payload["vocalGainDb"] = record.vocal_gain_db
     payload["accompanimentGainDb"] = record.accompaniment_gain_db
     payload["vocalMute"] = record.vocal_mute

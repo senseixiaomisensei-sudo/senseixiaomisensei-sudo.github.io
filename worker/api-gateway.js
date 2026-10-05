@@ -173,6 +173,11 @@ function requestRoute(request) {
       ratePrefix: "rvc-tts-install", maxBytes: 1024, directPath: "/v1/tts/install",
       message: "Use POST to install the optional TTS model"};
   }
+  if (path === "/rvc/tts/jobs") {
+    return {id:"rvc-tts-job",method:"POST",rateBinding:TEXT_RATE_LIMITER_BINDING,
+      ratePrefix:"rvc-tts",maxBytes:MAX_RVC_TTS_BYTES,directPath:"/v1/tts/jobs",
+      message:"Use POST for a background TTS task"};
+  }
   if (path === "/rvc/tts") {
     return {
       id: "rvc-tts",

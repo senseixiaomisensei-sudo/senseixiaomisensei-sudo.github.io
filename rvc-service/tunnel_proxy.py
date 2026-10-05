@@ -113,7 +113,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             return None
         if parsed.path in {"/v1/models", "/v1/tts-health"}:
             return parsed.path if not parsed.query else None
-        if parsed.path in {"/v1/tts", "/v1/tts/install"}:
+        if parsed.path in {"/v1/tts", "/v1/tts/install", "/v1/tts/jobs"}:
             return parsed.path if self.command == "POST" and not parsed.query else None
         if parsed.path == "/v1/convert":
             return parsed.path if self.command == "POST" and not parsed.query else None
@@ -142,7 +142,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
 
     def _body(self) -> bytes:
         path = urlsplit(self.path).path
-        max_bytes = (MAX_TTS_BODY_BYTES if path in {"/v1/tts", "/v1/tts/install"} else
+        max_bytes = (MAX_TTS_BODY_BYTES if path in {"/v1/tts", "/v1/tts/install", "/v1/tts/jobs"} else
                      64 * 1024 if REMIX_JOB_RE.fullmatch(path) or CHORUS_RE.fullmatch(path) else MAX_BODY_BYTES)
         transfer_encoding = self.headers.get("Transfer-Encoding", "").lower()
         if "chunked" in transfer_encoding:
@@ -188,7 +188,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
         if self.command == "POST":
             content_type = self.headers.get("Content-Type", "")
             path = urlsplit(self.path).path
-            json_action = (path in {"/v1/tts", "/v1/tts/install"} or REMIX_JOB_RE.fullmatch(path)
+            json_action = (path in {"/v1/tts", "/v1/tts/install", "/v1/tts/jobs"} or REMIX_JOB_RE.fullmatch(path)
                            or CHORUS_RE.fullmatch(path) and path.endswith("/convert"))
             expected_type = "application/json" if json_action else "multipart/form-data"
             if not content_type.lower().startswith(expected_type):

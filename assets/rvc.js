@@ -58,9 +58,11 @@
     const normalized = String(base || "").replace(/\/+$/u, "");
     if (/\/(?:rvc|rvc-api)$/u.test(normalized)) {
       if (kind === "install") return `${normalized}/tts/install`;
+      if (kind === "jobs") return `${normalized}/tts/jobs`;
       return kind === "health" ? `${normalized}/tts/health` : `${normalized}/tts`;
     }
     if (kind === "install") return `${normalized}/v1/tts/install`;
+    if (kind === "jobs") return `${normalized}/v1/tts/jobs`;
     return kind === "health" ? `${normalized}/v1/tts-health` : `${normalized}/v1/tts`;
   };
   // 候选探测地址（"一键适配"自动尝试）。
@@ -141,7 +143,7 @@
       songMode: "带伴奏翻唱",
       songModeHint: "云端先分离人声，只变人声，再与原伴奏回混。",
       ttsTextPlaceholder: "在这里输入你想让角色朗读的文字…（最多 800 字）",
-      ttsSynth: "合成朗读（中性）",
+      ttsSynth: "合成朗读",
       ttsConvert: "用当前角色朗读",
       ttsIdle: "选角色 → 输文字 → 角色朗读。",
       stepModel: "1. 选择角色声音",
@@ -268,7 +270,7 @@
       songMode: "Song with backing track",
       songModeHint: "The cloud separates vocals, converts only the voice, then remixes the original backing track.",
       ttsTextPlaceholder: "Enter text for the character to read… (up to 800 characters)",
-      ttsSynth: "Generate neutral speech",
+      ttsSynth: "Generate speech",
       ttsConvert: "Read as selected character",
       ttsIdle: "Pick a voice → enter text → generate speech.",
       stepModel: "1. Pick a character voice",
@@ -7687,6 +7689,38 @@
     const ttsStatus = document.getElementById("rvc-tts-status");
     const ttsText = document.getElementById("rvc-tts-text");
     const ttsInstall = document.getElementById("rvc-tts-install");
+    const ttsEngine = document.getElementById('rvc-tts-engine');
+    const ttsLanguage = document.getElementById('rvc-tts-language');
+    const ttsStyle = document.getElementById('rvc-tts-style');
+    const ttsVoice = document.getElementById('rvc-tts-voice');
+    const ttsCapabilities = document.getElementById('rvc-tts-capabilities');
+    const ttsLanguages = {zh:['中文','Chinese'],en:['英语','English'],ja:['日语','Japanese'],ko:['韩语','Korean'],de:['德语','German'],fr:['法语','French'],ru:['俄语','Russian'],pt:['葡萄牙语','Portuguese'],es:['西班牙语','Spanish'],it:['意大利语','Italian'],yue:['粤语','Cantonese']};
+    const ttsStyles = {neutral:['自然','Natural'],gentle:['温柔','Gentle'],happy:['开心','Happy'],sad:['低落','Sad'],serious:['认真','Serious']};
+    const ttsModelLabels={'qwen3-06b':['Qwen3 · 多语自然 · 2.50 GB','Qwen3 · natural multilingual · 2.50 GB'],'cosyvoice-instruct':['CosyVoice · 语气表达 · 2.30 GB','CosyVoice · expressive tones · 2.30 GB'],kokoro:['Kokoro · 清晰快速 · 365 MB','Kokoro · clear & fast · 365 MB'],'aishell-legacy':['旧版 AIShell · 兼容备用','Legacy AIShell · compatibility']};
+    if(ttsEngine){
+      state.ttsModelId='qwen3-06b';
+      try { const saved=window.localStorage.getItem('rvcTtsModel');if(['qwen3-06b','cosyvoice-instruct','kokoro','aishell-legacy'].includes(saved))state.ttsModelId=saved;}catch{}
+      ttsEngine.value=state.ttsModelId;
+    }
+    let ttsProbeTimer;
+    const fillTtsSelect=(element,values,labels,defaultValue)=>{
+      if(!element)return;
+      const previous=element.value;
+      element.replaceChildren(...values.map(value=>{const option=document.createElement('option');option.value=value;const label=labels[value];option.textContent=label?l(label[0],label[1]):value;return option;}));
+      element.value=values.includes(previous)?previous:defaultValue;
+    };
+    const syncTtsOptions=()=>{
+      const info=state.ttsInfo||{};
+      for(const option of ttsEngine?.options||[]){const label=ttsModelLabels[option.value];if(label)option.textContent=l(label[0],label[1]);}
+      fillTtsSelect(ttsLanguage,info.languages||['zh'],ttsLanguages,'zh');
+      fillTtsSelect(ttsStyle,info.styles||['neutral'],ttsStyles,'neutral');
+      fillTtsSelect(ttsVoice,['',...(info.voices||[])],{'':['自动选择','Automatic'],'0':['美式英语','US English'],'2':['英式英语','UK English'],'3':['中文女声','Chinese female'],'58':['中文男声','Chinese male'],'中文女':['中文女声','Chinese female'],'中文男':['中文男声','Chinese male'],'英文女':['英语女声','English female'],'英文男':['英语男声','English male'],'日语男':['日语男声','Japanese male'],'韩语女':['韩语女声','Korean female'],'粤语女':['粤语女声','Cantonese female']},'');
+      if(ttsStyle)ttsStyle.disabled=(info.styles||[]).length<2;
+      if(ttsCapabilities)ttsCapabilities.textContent=info.modelId==='cosyvoice-instruct'?l('原生语气指令 · 可选自然、温柔、开心、低落、认真；模型表现需以试听为准。','Native tone instructions · natural, gentle, happy, sad or serious. Preview the result.'):
+        info.modelId==='qwen3-06b'?l('十种语言、九种声线 · 此 0.6B 版本支持自然朗读，不支持独立语气指令。','Ten languages, nine voices · this 0.6B model provides natural speech without separate tone instructions.'):
+        info.modelId==='kokoro'?l('中英双语快速朗读 · 采用完整精度模型；支持自然语气。','Fast Chinese / English speech · full precision model, natural tone.'):
+        l('旧版仅作兼容备用，建议选择新引擎。','Legacy compatibility engine; a new engine is recommended.');
+    };
 
     const setTtsStatus = (msg, tone) => {
       if (!ttsStatus) return;
@@ -7701,9 +7735,13 @@
       if(ttsSynth)ttsSynth.disabled=!ok || Boolean(state.ttsSynthBusy);
       if(ttsConvert)ttsConvert.disabled=!ok || Boolean(state.ttsSynthBusy);
       if(ttsInstall){ttsInstall.hidden=ok;ttsInstall.disabled=state.ttsInfo?.installAvailable!==true || Boolean(state.ttsInstalling);}
+      if(ttsEngine)ttsEngine.disabled=Boolean(state.ttsInstalling||state.ttsSynthBusy||state.busy);
+      if(ttsLanguage)ttsLanguage.disabled=Boolean(state.ttsSynthBusy||state.busy);
+      if(ttsVoice)ttsVoice.disabled=Boolean(state.ttsSynthBusy||state.busy);
+      if(ttsStyle)ttsStyle.disabled=Boolean(state.ttsSynthBusy||state.busy)||(state.ttsInfo?.styles||[]).length<2;
       if (!ttsReady) return;
       if (ok) {
-        ttsReady.textContent=l('中性 TTS 已验证 · 可角色朗读','Neutral TTS verified · ready to convert');
+        ttsReady.textContent=l('所选 TTS 已合成验证 · 可使用','Selected TTS verified · ready');
         ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700";
       } else {
         ttsReady.textContent=l('TTS 未就绪 · 下载后自动检测','TTS not ready · verified after download');
@@ -7718,7 +7756,7 @@
       try {
         const res = await fetch(ttsEndpoint(base, "health"), { method: "GET", signal: controller.signal }).catch(() => null);
         if (res && res.ok) {
-          try { const info=await res.json();state.ttsInfo=info;return info?.ready === true; } catch { return false; }
+          try { const catalog=await res.json();state.ttsCatalog=catalog;const info=catalog.models?.find(model=>model.modelId===state.ttsModelId)||catalog;state.ttsInfo=info;syncTtsOptions();return info?.ready === true; } catch { return false; }
         }
       } catch (e) {} finally {
         clearTimeout(timer);
@@ -7737,23 +7775,30 @@
         setTtsReady(false);
       } finally {
         state.ttsLoading = false;
+        clearTimeout(ttsProbeTimer);
+        if(['validating','downloading'].includes(state.ttsInfo?.state)&&!state.ttsInstalling)ttsProbeTimer=setTimeout(probeTts,4000);
       }
     };
+    if(ttsEngine)ttsEngine.addEventListener('change',()=>{
+      state.ttsModelId=ttsEngine.value;try{window.localStorage.setItem('rvcTtsModel',state.ttsModelId);}catch{}
+      state.ttsInfo=state.ttsCatalog?.models?.find(model=>model.modelId===state.ttsModelId);syncTtsOptions();setTtsReady(state.ttsInfo?.ready===true);probeTts();
+    });
+    if(ttsEngine)document.addEventListener('postprep:languagechange',()=>{syncTtsOptions();setTtsReady(state.ttsEnabled);});
 
     if(ttsInstall)ttsInstall.addEventListener('click',async()=>{
       if(state.ttsInstalling || state.ttsSynthBusy || state.busy)return;
       state.ttsInstalling=true;setTtsReady(false);
       const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),40000);
       try{
-        const response=await fetch(ttsEndpoint(getTtsBase(),'install'),{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:controller.signal});
+        const response=await fetch(ttsEndpoint(getTtsBase(),'install'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({modelId:state.ttsModelId}),signal:controller.signal});
         if(!response.ok)throw new Error(`HTTP ${response.status}`);
-        const until=Date.now()+5*60*1000;
+        const until=Date.now()+30*60*1000;
         while(Date.now()<until){
           await probeTts();const info=state.ttsInfo||{};
           if(state.ttsEnabled && info.ready){setTtsStatus(l('下载部署完成，真实合成检测通过。','Installed and verified by real synthesis.'),'ok');return;}
           if(info.state==='failed')throw new Error(info.code||'RVC_TTS_INSTALL_FAILED');
           const percent=Math.min(100,Math.round(100*Number(info.downloadedBytes||0)/Number(info.downloadBytes||31559701)));
-          setTtsStatus(info.state==='validating'?l('模型校验与合成检测中…','Checking integrity and synthesis…'):l(`正在下载中性 TTS：${percent}%`,`Downloading neutral TTS: ${percent}%`));
+          setTtsStatus(info.state==='validating'?l('模型校验与真实合成检测中…','Checking integrity and real synthesis…'):l(`正在下载所选 TTS：${percent}%`,`Downloading selected TTS: ${percent}%`));
           await new Promise(resolve=>setTimeout(resolve,4000));
         }
         throw new Error('RVC_TTS_INSTALL_TIMEOUT');
@@ -7774,16 +7819,32 @@
         return null;
       }
       state.ttsSynthBusy=true;setTtsReady(true);
-      setTtsStatus(l("正在合成中性人声…","Generating neutral speech…"), null);
+      setTtsStatus(l("正在合成所选声线…","Generating selected speech…"), null);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 180000);
+      const timer = setTimeout(() => controller.abort(), 20*60*1000);
       try {
-        const res = await fetch(ttsEndpoint(getTtsBase(), "synthesize"), {
+        const base=getTtsBase();
+        let res = await fetch(ttsEndpoint(base, state.ttsCatalog?.models ? "jobs" : "synthesize"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify(state.ttsCatalog?.models ? {text,modelId:state.ttsModelId,language:ttsLanguage?.value||'zh',style:ttsStyle?.value||'neutral',voice:ttsVoice?.value||'',requestId:createCloudRequestId()} : {text}),
           signal: controller.signal,
         });
+        if(res.status===202){
+          const job=await res.json();
+          if(!job.jobId||!job.downloadToken)throw new Error('RVC_TTS_INVALID_JOB');
+          const outputBase=/\/rvc(?:-api)?$/u.test(base.replace(/\/+$/u,''))?base.replace(/\/+$/u,''):`${base.replace(/\/+$/u,'')}/v1`;
+          const outputUrl=`${outputBase}/output/${encodeURIComponent(job.jobId)}?token=${encodeURIComponent(job.downloadToken)}`;
+          let retries=0;
+          for(;;){
+            await new Promise(resolve=>setTimeout(resolve,4000));
+            if(controller.signal.aborted)throw new DOMException('Timed out','AbortError');
+            try{res=await fetch(outputUrl,{signal:controller.signal});}catch(error){if(controller.signal.aborted||++retries>15)throw error;continue;}
+            if(res.status===202){const progress=await res.json();setTtsStatus(progress.state==='queued'?l('TTS 已排队，正在等待计算资源…','TTS queued; waiting for compute…'):l('TTS 正在合成，结果会自动显示…','Generating TTS; the result will appear automatically…'));retries=0;continue;}
+            if([429,502,503,504,520,522,524].includes(res.status)){const error=await res.clone().json().catch(()=>({}));if(error.code?.startsWith('RVC_TTS_'))break;if(++retries<=15)continue;}
+            break;
+          }
+        }
         if (!res.ok) {const error=await res.json().catch(()=>({}));throw new Error(error.code||`HTTP ${res.status}`);}
         const blob = await res.blob();
         if (!blob.size) throw new Error(l("空响应","Empty response."));

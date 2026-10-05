@@ -50,7 +50,7 @@ const server = http.createServer((req, res) => {
   }
 
   // 反向代理：把 /v1/tts* 转发到本机 rvc-service（edge-tts），实现全机免配置共享
-  if (reqPath === "/v1/tts" || reqPath === "/v1/tts-health" || reqPath === "/v1/tts/install") {
+  if (reqPath === "/v1/tts" || reqPath === "/v1/tts-health" || reqPath === "/v1/tts/install" || reqPath === "/v1/tts/jobs") {
     proxy(req, res, reqPath, TTS_PROXY_TARGET);
     return;
   }

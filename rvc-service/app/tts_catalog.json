@@ -1,0 +1,194 @@
+{
+  "defaultModel": "qwen3-06b",
+  "maxModelBytes": 3000000000,
+  "models": [
+    {
+      "id": "kokoro",
+      "label": "Kokoro · 清晰快速",
+      "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_1.tar.bz2",
+      "archiveSha256": "a3f4c73d043860e3fd2e5b06f36795eb81de0fc8e8de6df703245edddd87dbad",
+      "archiveRoot": "kokoro-multi-lang-v1_1",
+      "downloadBytes": 364816464,
+      "languages": [
+        "zh",
+        "en"
+      ],
+      "styles": [
+        "neutral"
+      ],
+      "provider": "sherpa-onnx-cpu",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "cosyvoice-instruct",
+      "label": "CosyVoice · 语气表达",
+      "repository": "FunAudioLLM/CosyVoice-300M-Instruct",
+      "revision": "706bee1915e9fd1f1214929e2a0509c874cff433",
+      "files": [
+        {
+          "path": "campplus.onnx",
+          "bytes": 28303423,
+          "sha256": "a6ac6a63997761ae2997373e2ee1c47040854b4b759ea41ec48e4e42df0f4d73",
+          "gitBlob": null
+        },
+        {
+          "path": "config.json",
+          "bytes": 2,
+          "sha256": null,
+          "gitBlob": "9e26dfeeb6e641a33dae4961196235bdb965b21b"
+        },
+        {
+          "path": "configuration.json",
+          "bytes": 47,
+          "sha256": null,
+          "gitBlob": "5e812fae901c12933ac69ebf3eb79d0eb49bbab4"
+        },
+        {
+          "path": "cosyvoice.yaml",
+          "bytes": 6421,
+          "sha256": null,
+          "gitBlob": "b52528953ffbf9155bf79b0668f6ab49611bd887"
+        },
+        {
+          "path": "flow.pt",
+          "bytes": 419900943,
+          "sha256": "fd80b089444a95e52956c57cdf177d7f6017a5af13b8a697717628a1d2be6b55",
+          "gitBlob": null
+        },
+        {
+          "path": "hift.pt",
+          "bytes": 81896716,
+          "sha256": "91e679b6ca1eff71187ffb4f3ab0444935594cdcc20a9bd12afad111ef8d6012",
+          "gitBlob": null
+        },
+        {
+          "path": "llm.pt",
+          "bytes": 1242994771,
+          "sha256": "ef23893d68b93406eae04719a3b800488921e08b394624e9a5ba69bea3a59a13",
+          "gitBlob": null
+        },
+        {
+          "path": "speech_tokenizer_v1.onnx",
+          "bytes": 522624269,
+          "sha256": "23b5a723ed9143aebfd9ffda14ac4c21231f31c35ef837b6a13bb9e5488abb1e",
+          "gitBlob": null
+        },
+        {
+          "path": "spk2info.pt",
+          "bytes": 7772,
+          "sha256": "e3b1d62ca87cdcb25a9003fa0c8f2cba5c94f55b0d5f80f0b63ef8c22d919cfc",
+          "gitBlob": null
+        }
+      ],
+      "downloadBytes": 2295734364,
+      "languages": [
+        "zh",
+        "en",
+        "ja",
+        "ko",
+        "yue"
+      ],
+      "styles": [
+        "neutral",
+        "gentle",
+        "happy",
+        "sad",
+        "serious"
+      ],
+      "provider": "isolated-cuda",
+      "license": "Apache-2.0"
+    },
+    {
+      "id": "qwen3-06b",
+      "label": "Qwen3 · 多语自然",
+      "repository": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+      "revision": "85e237c12c027371202489a0ec509ded67b5e4b5",
+      "files": [
+        {
+          "path": "config.json",
+          "bytes": 4908,
+          "sha256": null,
+          "gitBlob": "5e8d5fc100536984e3a89bd87ef08e59e322b29b"
+        },
+        {
+          "path": "generation_config.json",
+          "bytes": 245,
+          "sha256": null,
+          "gitBlob": "1872b16d4535564abf2db5d6debe6cddd82b7f2e"
+        },
+        {
+          "path": "merges.txt",
+          "bytes": 1671839,
+          "sha256": null,
+          "gitBlob": "20024bfe7c83998e9aeaf98a0cd6a2ce6306c2f0"
+        },
+        {
+          "path": "model.safetensors",
+          "bytes": 1811626576,
+          "sha256": "bc3c7e785eb961179c25450d1acff03f839e0002f2f3a5aeb67b5735c0fa2adb",
+          "gitBlob": null
+        },
+        {
+          "path": "preprocessor_config.json",
+          "bytes": 127,
+          "sha256": null,
+          "gitBlob": "0525dd953bb9241912f7147666f0d535165d5d4f"
+        },
+        {
+          "path": "speech_tokenizer/config.json",
+          "bytes": 2336,
+          "sha256": null,
+          "gitBlob": "06cc8dc4c5ec8a1929086b71b98c313020d9268b"
+        },
+        {
+          "path": "speech_tokenizer/configuration.json",
+          "bytes": 76,
+          "sha256": null,
+          "gitBlob": "ab58e2eaf53cd14a1a2a7527d9261ceea93a24cd"
+        },
+        {
+          "path": "speech_tokenizer/model.safetensors",
+          "bytes": 682293092,
+          "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258",
+          "gitBlob": null
+        },
+        {
+          "path": "speech_tokenizer/preprocessor_config.json",
+          "bytes": 234,
+          "sha256": null,
+          "gitBlob": "ba40914f4f49ab98a8ca545d4892ef7291a39592"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "bytes": 7344,
+          "sha256": null,
+          "gitBlob": "6ff9fd60cc623bb54bbd603cbd418c97a11528d7"
+        },
+        {
+          "path": "vocab.json",
+          "bytes": 2776833,
+          "sha256": null,
+          "gitBlob": "4783fe10ac3adce15ac8f358ef5462739852c569"
+        }
+      ],
+      "downloadBytes": 2498383610,
+      "languages": [
+        "zh",
+        "en",
+        "ja",
+        "ko",
+        "de",
+        "fr",
+        "ru",
+        "pt",
+        "es",
+        "it"
+      ],
+      "styles": [
+        "neutral"
+      ],
+      "provider": "isolated-cuda",
+      "license": "Apache-2.0"
+    }
+  ]
+}
