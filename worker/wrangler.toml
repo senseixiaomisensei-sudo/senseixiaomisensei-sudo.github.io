@@ -4,6 +4,7 @@ compatibility_date = "2026-08-12"
 workers_dev = true
 
 [vars]
+ALLOWED_ORIGINS = "https://postprep-rvc.senseixx.chatgpt.site"
 POSTPREP_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/text"
 POSTPREP_RVC_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/rvc"
 POSTPREP_RVC_STATUS_UPSTREAM_URL = "https://postprep-ae6.pages.dev/api/rvc-status"

@@ -144,6 +144,19 @@ test("rvc route uses a separate limiter and fixed Pages upstream", async () => {
   }
 });
 
+test("gateway admits only the exact configured GPT Site origin", async () => {
+  const config = await readFile(new URL("../worker/wrangler.toml", import.meta.url), "utf8");
+  const allowed = config.match(/^ALLOWED_ORIGINS\s*=\s*"([^"]+)"/mu)?.[1];
+  assert.equal(allowed, "https://postprep-rvc.senseixx.chatgpt.site");
+  const env = { ...BASE_ENV, ALLOWED_ORIGINS: allowed };
+  const accepted = await gateway.fetch(request({ origin: allowed, method: "OPTIONS" }), env);
+  assert.equal(accepted.status, 204);
+  assert.equal(accepted.headers.get("Access-Control-Allow-Origin"), allowed);
+  const rejected = await gateway.fetch(request({ origin: "https://unrelated.senseixx.chatgpt.site", method: "OPTIONS" }), env);
+  assert.equal(rejected.status, 403);
+  assert.equal(rejected.headers.get("Access-Control-Allow-Origin"), null);
+});
+
 test("rvc limiter allows three submissions per minute and reserves one mobile retry", async () => {
   const config = await readFile(new URL("../worker/wrangler.toml", import.meta.url), "utf8");
   const rvcLimiter = config.split('name = "POSTPREP_RVC_RATE_LIMITER"')[1] || "";
