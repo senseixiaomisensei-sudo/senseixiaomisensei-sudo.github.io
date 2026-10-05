@@ -62,7 +62,7 @@ def install_chorus_routes(app, core):
         if record.state == 'completed':
             result.update({k:info[k] for k in ('tracks','requestedCount','estimatedCount','countNeedsReview',
                 'experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256','parameters','reusedConversion','countPolicyRevision',
-                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','candidateSelection','finalPairDiagnostics') if k in info})
+                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','candidateSelection','finalPairDiagnostics','analysisOnly') if k in info})
         return result
 
     async def track_task(task):
@@ -78,7 +78,7 @@ def install_chorus_routes(app, core):
             core.persist_output_records()
         core.logger.exception('chorus task failed job_id=%s',job_id)
 
-    async def analyze_job(job_id, input_path, count, kind):
+    async def analyze_job(job_id, input_path, count, kind, analysis_only=False):
         record = core.outputs[job_id]
         work = folder(job_id)
         try:
@@ -90,20 +90,34 @@ def install_chorus_routes(app, core):
                     source, accompaniment = stems.vocals, stems.instrumental
                 else:
                     source=input_path; accompaniment=work/'accompaniment.wav'
-                    import soundfile as sf
-                    import numpy as np
-                    x,sr = await asyncio.to_thread(sf.read,source,dtype='float32',always_2d=True)
-                    await asyncio.to_thread(sf.write,accompaniment,np.zeros_like(x),sr,subtype='FLOAT')
                 decoded = work/'vocals-24k.wav'
                 await asyncio.to_thread(subprocess.run,['ffmpeg','-nostdin','-v','error','-y','-i',str(source),
                     '-vn','-ac','1','-ar','24000','-c:a','pcm_f32le',str(decoded)],check=True,timeout=180)
+                if kind != 'mix':
+                    import soundfile as sf
+                    import numpy as np
+                    x,sr=await asyncio.to_thread(sf.read,decoded,dtype='float32',always_2d=True)
+                    await asyncio.to_thread(sf.write,accompaniment,np.zeros_like(x),sr,subtype='FLOAT')
                 record.stage='identifying-singers'
-                analysis=await asyncio.to_thread(separate_singers,decoded,work/'singers',count)
+                if analysis_only:
+                    # Parameter analysis uses the actual vocal source and never invokes
+                    # multi-singer separation or infers how many singers the song has.
+                    from app.chorus_worker import voice_range
+                    import soundfile as sf
+                    x,_=await asyncio.to_thread(sf.read,decoded,dtype='float32')
+                    voice=await asyncio.to_thread(voice_range,x)
+                    destination=work/'singers'/'singer-1.wav'; destination.parent.mkdir()
+                    await asyncio.to_thread(shutil.copyfile,decoded,destination)
+                    analysis={'requestedCount':'analysis','estimatedCount':1,'countNeedsReview':False,
+                        'experimentalRecursive':False,'modelRevision':'source-voice-range-v1','modelSha256':'',
+                        'adaptedCodeSha256':'','tracks':[str(destination)],'voiceRanges':[voice],'frames':len(x)}
+                else:
+                    analysis=await asyncio.to_thread(separate_singers,decoded,work/'singers',count)
             duration=core.probe_duration(decoded)
             await asyncio.to_thread(discard_temporary,work,decoded)
             if kind=='mix': await asyncio.to_thread(discard_temporary,work,source)
             info={k:analysis[k] for k in ('requestedCount','estimatedCount','countNeedsReview','experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256')}
-            info.update({'duration':duration,'sampleRate':24000,'inputKind':kind,
+            info.update({'duration':duration,'sampleRate':24000,'inputKind':kind,'analysisOnly':analysis_only,
                 'countPolicyRevision':analysis.get('countPolicyRevision','legacy'),
                 'accompaniment':str(accompaniment.relative_to(work)),
                 'separationStatus':analysis.get('separationStatus','needs-review'),
@@ -137,16 +151,16 @@ def install_chorus_routes(app, core):
 
     @app.post('/v1/chorus/analyze')
     async def analyze(request: Request, audio: UploadFile=File(...),
-                      singer_count: str=Form('auto'), input_kind: str=Form('mix'), request_id: str=Form('')):
+                      singer_count: str=Form('auto'), input_kind: str=Form('mix'), request_id: str=Form(''), analysis_only: bool=Form(False)):
         core.ensure_authorized(request)
         try:
-            if not chorus_status()['ready']: raise core.RvcServiceError(503,'CHORUS_ENGINE_UNAVAILABLE')
+            if not analysis_only and not chorus_status()['ready']: raise core.RvcServiceError(503,'CHORUS_ENGINE_UNAVAILABLE')
             if singer_count not in {'auto','2','3','4'} or input_kind not in {'mix','vocals'}:
                 raise core.RvcServiceError(400,'CHORUS_INVALID_PARAMETER')
             if request_id and not core.valid_request_id(request_id): raise core.RvcServiceError(400,'RVC_INVALID_REQUEST_ID')
             if core.active_training_job_id: raise core.RvcServiceError(503,'RVC_TRAINING_ACTIVE')
             await core.cleanup_expired_outputs()
-            fingerprint=hashlib.sha256(json.dumps([singer_count,input_kind,audio.filename,audio.content_type,core.PIPELINE_REVISION]).encode()).hexdigest()
+            fingerprint=hashlib.sha256(json.dumps([singer_count,input_kind,analysis_only,audio.filename,audio.content_type,core.PIPELINE_REVISION]).encode()).hexdigest()
             job_id,record,created=await core.reserve_conversion_job(request_id,fingerprint,'wav','chorus-analysis')
             if not created: return response(job_id,record)
             path=folder(job_id)/f'input.{core.safe_extension(audio)}'
@@ -157,7 +171,7 @@ def install_chorus_routes(app, core):
                 if not core.MIN_AUDIO_SECONDS <= seconds <= core.MAX_AUDIO_SECONDS:
                     raise core.RvcServiceError(400,'RVC_AUDIO_TOO_LONG' if seconds>core.MAX_AUDIO_SECONDS else 'RVC_AUDIO_TOO_SHORT')
                 record.state=record.stage='queued'; core.persist_output_records()
-                await track_task(asyncio.create_task(analyze_job(job_id,path,singer_count,input_kind)))
+                await track_task(asyncio.create_task(analyze_job(job_id,path,singer_count,input_kind,analysis_only)))
                 return response(job_id,record)
             except BaseException:
                 await core.release_preparing_job(job_id,request_id)

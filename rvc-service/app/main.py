@@ -1,7 +1,7 @@
 """RVC voice-conversion inference adapter for PostPrep's AI voice changer.
 
 Deliberately not a browser service: it accepts one server-to-server bearer
-token, has no browser CORS, never auto-downloads models, and deletes conversion
+token, has no browser CORS, downloads optional TTS only on explicit request, and deletes conversion
 audio as soon as a request finishes. Explicit training jobs retain only their
 uploaded dataset until completion/cancellation/failure. Generated files receive
 a random download token and are removed after a short retention window.
@@ -43,6 +43,7 @@ from app.audio_dynamics import apply_dynamics, apply_static_gain
 from app.inference_errors import PitchExtractionError
 from app.diagnostics import capture_job, configured_root
 from app.speech_runtime import ENGINE as SPEECH_ENGINE, render_speech, speech_profile, speech_status
+from app import tts_runtime
 from app.separation_runtime import (
     SeparationRuntimeError,
     calibrate_song_vocals,
@@ -96,7 +97,7 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
                   "timeline_synthesis.py", "timeline_rendering.py", "speech_runtime.py", "speech_worker.py",
-                  "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py")
+                  "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py", "tts_runtime.py")
 
 
 def source_revision() -> str:
@@ -1436,38 +1437,48 @@ async def list_models(request: Request) -> dict[str, list[dict]]:
 
 
 @app.get("/v1/tts-health")
-async def tts_health(request: Request) -> dict[str, bool]:
+async def tts_health(request: Request) -> dict:
     ensure_authorized(request)
-    return {"ready": HAS_EDGE_TTS}
+    return await asyncio.to_thread(tts_runtime.status)
+
+
+@app.post("/v1/tts/install")
+async def install_tts(request: Request) -> dict:
+    ensure_authorized(request)
+    if await request.body() not in (b'', b'{}'):
+        raise RvcServiceError(400, "RVC_TTS_INVALID_INPUT")
+    try: return await asyncio.to_thread(tts_runtime.install)
+    except ValueError: raise RvcServiceError(503, 'RVC_TTS_RUNTIME_UNAVAILABLE') from None
 
 
 @app.post("/v1/tts")
 async def synthesize_tts(request: Request) -> Response:
     ensure_authorized(request)
-    if not HAS_EDGE_TTS or Communicate is None:
-        raise RvcServiceError(503, "RVC_TTS_UNAVAILABLE")
     try:
         payload = await request.json()
     except (ValueError, TypeError):
         raise RvcServiceError(400, "RVC_TTS_INVALID_INPUT") from None
-    text = str(payload.get("text") or "").strip()
+    if not isinstance(payload, dict) or not isinstance(payload.get('text'), str):
+        raise RvcServiceError(400, "RVC_TTS_INVALID_INPUT")
+    text = payload['text'].strip()
     if not text:
         raise RvcServiceError(400, "RVC_TTS_EMPTY_TEXT")
     if len(text) > TTS_MAX_TEXT_CHARS:
         raise RvcServiceError(413, "RVC_TTS_TEXT_TOO_LONG")
+    if not re.search(r'[\u3400-\u9fff]', text):
+        raise RvcServiceError(400, 'RVC_TTS_CHINESE_REQUIRED')
     try:
-        communicate = Communicate(text, TTS_DEFAULT_VOICE)
-        audio = bytearray()
-        async for chunk in communicate.stream():
-            if chunk.get("type") == "audio":
-                audio.extend(chunk.get("data") or b"")
-    except Exception:  # edge-tts wraps websocket/network failures in provider-specific exceptions
+        audio = await asyncio.to_thread(tts_runtime.synthesize, text)
+    except ValueError as error:
+        code = str(error)
+        raise RvcServiceError(503 if code in {'RVC_TTS_UNAVAILABLE', 'RVC_TTS_BUSY'} else 502, code) from None
+    except Exception:
         raise RvcServiceError(502, "RVC_TTS_SYNTH_FAILED") from None
     if not audio:
         raise RvcServiceError(502, "RVC_TTS_EMPTY_OUTPUT")
     return Response(
         content=bytes(audio),
-        media_type="audio/mpeg",
+        media_type="audio/wav",
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
     )
 

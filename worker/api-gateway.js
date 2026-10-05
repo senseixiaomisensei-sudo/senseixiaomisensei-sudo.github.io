@@ -163,9 +163,15 @@ function requestRoute(request) {
       method: "GET",
       rateBinding: TEXT_RATE_LIMITER_BINDING,
       ratePrefix: "rvc-tts-health",
+      skipRateLimit: true,
       directPath: "/v1/tts-health",
       message: "Use GET for text-to-speech status",
     };
+  }
+  if (path === "/rvc/tts/install") {
+    return {id: "rvc-tts-install", method: "POST", rateBinding: TEXT_RATE_LIMITER_BINDING,
+      ratePrefix: "rvc-tts-install", maxBytes: 1024, directPath: "/v1/tts/install",
+      message: "Use POST to install the optional TTS model"};
   }
   if (path === "/rvc/tts") {
     return {

@@ -57,8 +57,10 @@
   const ttsEndpoint = (base, kind) => {
     const normalized = String(base || "").replace(/\/+$/u, "");
     if (/\/(?:rvc|rvc-api)$/u.test(normalized)) {
+      if (kind === "install") return `${normalized}/tts/install`;
       return kind === "health" ? `${normalized}/tts/health` : `${normalized}/tts`;
     }
+    if (kind === "install") return `${normalized}/v1/tts/install`;
     return kind === "health" ? `${normalized}/v1/tts-health` : `${normalized}/v1/tts`;
   };
   // 候选探测地址（"一键适配"自动尝试）。
@@ -5536,6 +5538,7 @@
 
   function updateStatusDisplay(msg) {
     chorusController?.refresh();
+    state.autoParameterController?.refresh();
     const statusEl = document.getElementById("rvc-service-status");
     const convertBtn = document.getElementById("rvc-convert");
     const convertLabel = document.getElementById("rvc-convert-label");
@@ -7683,6 +7686,7 @@
     const ttsReady = document.getElementById("rvc-tts-ready");
     const ttsStatus = document.getElementById("rvc-tts-status");
     const ttsText = document.getElementById("rvc-tts-text");
+    const ttsInstall = document.getElementById("rvc-tts-install");
 
     const setTtsStatus = (msg, tone) => {
       if (!ttsStatus) return;
@@ -7694,12 +7698,15 @@
 
     const setTtsReady = (ok) => {
       state.ttsEnabled = ok;
+      if(ttsSynth)ttsSynth.disabled=!ok || Boolean(state.ttsSynthBusy);
+      if(ttsConvert)ttsConvert.disabled=!ok || Boolean(state.ttsSynthBusy);
+      if(ttsInstall){ttsInstall.hidden=ok;ttsInstall.disabled=state.ttsInfo?.installAvailable!==true || Boolean(state.ttsInstalling);}
       if (!ttsReady) return;
       if (ok) {
-        ttsReady.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i>TTS 服务正常 · 可角色朗读';
+        ttsReady.textContent=l('中性 TTS 已验证 · 可角色朗读','Neutral TTS verified · ready to convert');
         ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700";
       } else {
-        ttsReady.innerHTML = '<i class="fa-solid fa-plug-circle-xmark text-red-500"></i>未检测到 TTS 服务 (edge-tts)';
+        ttsReady.textContent=l('TTS 未就绪 · 下载后自动检测','TTS not ready · verified after download');
         ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700";
       }
     };
@@ -7707,11 +7714,11 @@
     // 探测端点是否可达（GET /health 或 OPTIONS），仅用于 UI 状态
     const probeSingleBase = async (base) => {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 2500);
+      const timer = setTimeout(() => controller.abort(), 20000);
       try {
         const res = await fetch(ttsEndpoint(base, "health"), { method: "GET", signal: controller.signal }).catch(() => null);
         if (res && res.ok) {
-          try { return (await res.json())?.ready === true; } catch { return true; }
+          try { const info=await res.json();state.ttsInfo=info;return info?.ready === true; } catch { return false; }
         }
       } catch (e) {} finally {
         clearTimeout(timer);
@@ -7733,20 +7740,43 @@
       }
     };
 
+    if(ttsInstall)ttsInstall.addEventListener('click',async()=>{
+      if(state.ttsInstalling || state.ttsSynthBusy || state.busy)return;
+      state.ttsInstalling=true;setTtsReady(false);
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),40000);
+      try{
+        const response=await fetch(ttsEndpoint(getTtsBase(),'install'),{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:controller.signal});
+        if(!response.ok)throw new Error(`HTTP ${response.status}`);
+        const until=Date.now()+5*60*1000;
+        while(Date.now()<until){
+          await probeTts();const info=state.ttsInfo||{};
+          if(info.ready){setTtsStatus(l('下载部署完成，真实合成检测通过。','Installed and verified by real synthesis.'),'ok');return;}
+          if(info.state==='failed')throw new Error(info.code||'RVC_TTS_INSTALL_FAILED');
+          const percent=Math.min(100,Math.round(100*Number(info.downloadedBytes||0)/Number(info.downloadBytes||31559701)));
+          setTtsStatus(info.state==='validating'?l('模型校验与合成检测中…','Checking integrity and synthesis…'):l(`正在下载中性 TTS：${percent}%`,`Downloading neutral TTS: ${percent}%`));
+          await new Promise(resolve=>setTimeout(resolve,4000));
+        }
+        throw new Error('RVC_TTS_INSTALL_TIMEOUT');
+      }catch(error){setTtsStatus(l('下载或检测未完成，可重新检测或重试。','Download or verification incomplete. Recheck or retry.'),'err');}
+      finally{clearTimeout(timer);state.ttsInstalling=false;setTtsReady(state.ttsEnabled);}
+    });
+
     // 取当前文字，调用本机 /rvc/tts 合成中性人声 WAV，返回 File
     const synthTts = async () => {
+      if(state.ttsSynthBusy || state.busy)return null;
       const text = (ttsText?.value || "").trim();
       if (!text) {
-        setTtsStatus("请输入要朗读的文字。", "err");
+        setTtsStatus(l("请输入要朗读的文字。","Enter text to read."), "err");
         return null;
       }
       if (!state.ttsEnabled) {
-        setTtsStatus("TTS 服务未就绪，请稍后重试或使用一键适配连接本机服务。", "err");
+        setTtsStatus(l("TTS 未就绪，请先下载并检测，或连接已有服务。","Download and verify TTS, or connect an existing service first."), "err");
         return null;
       }
-      setTtsStatus("正在合成中性人声…", null);
+      state.ttsSynthBusy=true;setTtsReady(true);
+      setTtsStatus(l("正在合成中性人声…","Generating neutral speech…"), null);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 45000);
+      const timer = setTimeout(() => controller.abort(), 180000);
       try {
         const res = await fetch(ttsEndpoint(getTtsBase(), "synthesize"), {
           method: "POST",
@@ -7754,31 +7784,36 @@
           body: JSON.stringify({ text }),
           signal: controller.signal,
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {const error=await res.json().catch(()=>({}));throw new Error(error.code||`HTTP ${res.status}`);}
         const blob = await res.blob();
         if (!blob.size) throw new Error(l("空响应","Empty response."));
-        const file = new File([blob], `tts_${Date.now()}.mp3`, { type: res.headers.get("Content-Type") || "audio/mpeg" });
+        const type=res.headers.get('Content-Type')||'audio/wav';
+        const file = new File([blob], `tts_${Date.now()}.${type.includes('mpeg')?'mp3':'wav'}`, { type });
         return file;
       } catch (err) {
-        setTtsStatus(`合成失败：${err.name === "AbortError" ? "等待超时" : err.message}。可稍后重试或用「一键适配」连接本机服务。`, "err");
+        setTtsStatus(err.message==='RVC_TTS_CHINESE_REQUIRED'?l('此小型模型支持中文，请输入中文文本。','This small model supports Chinese. Enter Chinese text.'):
+          l(`合成失败：${err.name === "AbortError" ? "等待超时" : err.message}。请重试。`,`Synthesis failed: ${err.name==='AbortError'?'timed out':err.message}. Retry.`), "err");
         return null;
       } finally {
         clearTimeout(timer);
+        state.ttsSynthBusy=false;setTtsReady(state.ttsEnabled);
       }
     };
 
     // 用 handleAudioSelected 把合成 wav 变成当前输入音频，随后可走下方变声
     const applyTtsAsInput = async (file) => {
       if (!file) return;
+      setAudioMode('voice');
       await handleAudioSelected(file);
       const preview = document.getElementById("rvc-tts-preview");
       if (preview) {
+        if(preview.src?.startsWith('blob:'))URL.revokeObjectURL(preview.src);
         preview.src = URL.createObjectURL(file);
         preview.hidden = false;
       }
       const result = document.getElementById("rvc-tts-result");
       if (result) result.classList.remove("hidden");
-      setTtsStatus(`已合成 ${(file.size / 1024).toFixed(0)} KB，可点击下方「开始变声」用当前角色朗读。`, "ok");
+      setTtsStatus(l(`已合成 ${(file.size / 1024).toFixed(0)} KB，可试听或用当前角色朗读。`,`Generated ${(file.size/1024).toFixed(0)} KB. Preview or convert to the selected character.`), "ok");
     };
 
     if (ttsSynth) {
@@ -7808,6 +7843,7 @@
     // but noisy 404 on every visit and made browser diagnostics differ.
     const ttsBtn = document.getElementById("rvc-source-tts");
     if (ttsBtn) ttsBtn.addEventListener("click", probeTts);
+    if(ttsReady)setTtsReady(false);
 
     // 一键适配：并行快速探测本机/常见地址 → 写入 localStorage（立即生效）→ 下载配置文件
     const adaptBtn = document.getElementById("rvc-tts-adapt");
@@ -7895,7 +7931,7 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261004-chorus-2');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261005-auto-1');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,
@@ -7909,6 +7945,10 @@
       },
     });
     await initCatalog();
+    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-1');
+    state.autoParameterController=initRegularAutoParameters({state,getEndpoint:getOfficialEndpoint,getModel:getSelectedModel,
+      prepareFile:fixUploadContainer,isModernSpeech:useNewSpeechEngine,createRequestId:createCloudRequestId,
+      setBusy:value=>{state.busy=value;updateStatusDisplay();syncMixControls();}});
     chorusController.refresh();
     applyRvcLanguage();
   });

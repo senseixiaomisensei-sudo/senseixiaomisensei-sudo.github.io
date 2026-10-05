@@ -97,9 +97,9 @@ test('language changes keep auditions, selection and manually tuned parameters i
 
 test('range suggestions avoid forcing every singer up an octave and preserve model retrieval defaults',()=>{
   const track={trackId:1,voiceRange:{medianHz:125,classification:'low',confidence:.9}};
-  assert.equal(chorusSuggestedParams(track,{id:'hoshino',tags:['女声'],defaultIndexRate:.35}).pitch,6);
+  assert.equal(chorusSuggestedParams(track,{id:'hoshino',tags:['女声'],defaultIndexRate:.35}).pitch,12);
   assert.equal(chorusSuggestedParams(track,{id:'male',tags:['男声']}).pitch,0);
-  assert.equal(chorusSuggestedParams({trackId:1,voiceRange:{medianHz:280,classification:'high',confidence:.9}},{id:'male',tags:['男声']}).pitch,-6);
+  assert.equal(chorusSuggestedParams({trackId:1,voiceRange:{medianHz:280,classification:'high',confidence:.9}},{id:'male',tags:['男声']}).pitch,-11);
   assert.equal(chorusSuggestedParams({trackId:1},{id:'hoshino',tags:['女声']}).pitch,0);
   assert.equal(chorusSuggestedParams(track,{id:'hoshino',defaultIndexRate:.35}).indexRate,.35);
   assert.equal(readChorusTracks(completed(1)).length,1);
@@ -108,7 +108,7 @@ test('reference pitch comparison requires matching resource identity, uses bound
   const model={id:'hoshino',checkpointSha256:'a'.repeat(64),tags:['女声']};
   const reference={characterId:'hoshino',checkpointSha256:model.checkpointSha256,referenceSha256:'b'.repeat(64),medianHz:300,confidence:.9};
   const track={trackId:1,voiceRange:{medianHz:190,classification:'middle',confidence:.9}};
-  assert.equal(chorusSuggestedParams(track,model,reference).pitch,6);
+  assert.equal(chorusSuggestedParams(track,model,reference).pitch,8);
   assert.equal(chorusSuggestedParams({...track,voiceRange:{...track.voiceRange,medianHz:260}},model,reference).pitch,2);
   assert.equal(chorusSuggestedParams(track,model,{...reference,checkpointSha256:'c'.repeat(64)}).pitch,0);
   assert.equal(chorusSuggestedParams({...track,voiceRange:{...track.voiceRange,confidence:.2}},model,reference).pitch,0);

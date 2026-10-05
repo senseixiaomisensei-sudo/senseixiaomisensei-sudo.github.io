@@ -280,10 +280,12 @@
 
           <!-- 文本朗读来源（第三输入源）：输入文字 → 受保护或本机 TTS 合成中性人声 → 自动用当前角色变声 -->
           <div id="rvc-tts-wrap" class="mt-5 hidden">
+            <p class="mb-3 text-xs leading-5 text-muted" data-rvc-label="Optional neutral Chinese TTS · 31.6 MB download to the service · enabled after a real synthesis check. No download to your phone.">可选中性中文 TTS · 下载约 31.6 MB 到服务端 · 实际合成检测通过后启用，不占手机存储。</p>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <span id="rvc-tts-ready" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-500">
                 <i class="fa-solid fa-plug"></i>检测 TTS 服务…
               </span>
+              <button id="rvc-tts-install" type="button" class="min-h-9 rounded-lg border border-brand bg-white px-3 py-1.5 text-xs font-bold text-brand" data-rvc-label="Download and enable TTS">下载并启用 TTS</button>
               <!-- 一键适配：自动探测本机 rvc-service，写入本地并下载配置文件，免手动改 IP -->
               <button id="rvc-tts-adapt" type="button" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-brand bg-white px-3 py-1.5 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
                 <i class="fa-solid fa-link" aria-hidden="true"></i><span data-rvc-label="Connect automatically">自动连接</span>
@@ -345,6 +347,10 @@
           <div class="mt-4">
             <div class="flex items-center justify-between gap-3">
               <label for="rvc-pitch" class="text-sm font-bold" data-rvc-i18n="pitchLabel">音高调节（半音）</label>
+            </div>
+            <div class="mb-3 flex flex-wrap items-center gap-3">
+              <button id="rvc-auto-parameters" type="button" class="min-h-10 rounded-lg border border-brand bg-teal-50 px-4 py-2 text-xs font-bold text-brand disabled:opacity-50" disabled data-rvc-label="Auto settings">自动调参</button>
+              <p id="rvc-auto-parameters-status" class="text-xs leading-5 text-muted" role="status" aria-live="polite" data-rvc-label="Analyze the source register and match the character. Manual edits take priority; shifting pitch changes the song key.">分析原声声区并匹配角色。手动调整优先；变调会改变歌曲调性。</p>
             </div>
             <input id="rvc-pitch" type="range" min="-12" max="12" step="1" value="0" class="rvc-range mt-3 w-full" aria-describedby="rvc-pitch-hint">
             <div class="mt-1 flex justify-between text-xs text-muted" id="rvc-pitch-hint">
@@ -500,6 +506,6 @@
   <script src="assets/postprep.js?v=20261004-storage-1"></script>
   <script src="assets/rvc-language.js?v=20261004-chorus-2"></script>
   <script src="assets/rvc-schools.js?v=20261004-chorus-2"></script>
-  <script src="assets/rvc.js?v=20261004-chorus-4"></script>
+  <script src="assets/rvc.js?v=20261005-tts-auto-1"></script>
 </body>
 </html>

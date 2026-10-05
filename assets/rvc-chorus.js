@@ -1,4 +1,5 @@
 import {createChorusRolePicker,chorusText as ct} from './rvc-chorus-picker.js?v=20261004-chorus-2';
+import {suggestVoiceParameters} from './rvc-auto-parameters.js?v=20261005-auto-1';
 
 export function chorusBase(endpoint) {
   const base=String(endpoint).replace(/\/+$/u,'');
@@ -39,18 +40,8 @@ export function readChorusTracks(job) {
 }
 
 export function chorusSuggestedParams(track,model={},reference={}) {
-  const range=track.voiceRange||{},reliable=Number(range.confidence)>=.6&&Number.isFinite(range.medianHz)&&range.medianHz>0;
-  const tags=model.tags||[];
-  let pitch=Number.isInteger(model.defaultPitch)?Math.max(-6,Math.min(6,model.defaultPitch)):0;
-  const matched=reference.characterId===model.id&&reference.checkpointSha256===model.checkpointSha256&&
-    /^[a-f0-9]{64}$/u.test(reference.checkpointSha256||'')&&/^[a-f0-9]{64}$/u.test(reference.referenceSha256||'')&&Number(reference.confidence)>=.6&&
-    Number.isFinite(reference.medianHz)&&reference.medianHz>0;
-  if(reliable&&matched)pitch=Math.max(-6,Math.min(6,Math.round(12*Math.log2(reference.medianHz/range.medianHz))));
-  else if(reliable&&range.classification==='low'&&tags.includes('女声'))pitch=6;
-  else if(reliable&&range.classification==='high'&&tags.includes('男声'))pitch=-6;
-  const index=Number(model.defaultIndexRate);
-  return {trackId:track.trackId,modelId:model.id,pitch,indexRate:Number.isFinite(index)?Math.max(0,Math.min(1,index)):.3,
-    protect:.25,rmsMixRate:1,f0Method:'rmvpe',gainDb:0,mute:false};
+  const {pitch,indexRate,protect,rmsMixRate,f0Method}=suggestVoiceParameters(track.voiceRange,model,reference);
+  return {trackId:track.trackId,modelId:model.id,pitch,indexRate,protect,rmsMixRate,f0Method,gainDb:0,mute:false};
 }
 
 export async function publishChorusResult({audio,result,download,meta},next,job,attachAudio) {
