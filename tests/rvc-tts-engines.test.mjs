@@ -10,7 +10,7 @@ const catalog={defaultModel:'indextts-25',models:[
   {modelId:'indextts-25',ready:true,languages:['zh','en','ja','es','ar'],styles:['neutral','calm','happy'],voices:['female-soft','male-reference'],installAvailable:true},
   {modelId:'aishell-legacy',ready:false,state:'not-installed',languages:['zh'],styles:['neutral'],voices:[],installAvailable:true}
 ]};
-function harness(){
+function harness(fetchOverride){
   const ids=['synth','convert','ready','status','text','install','engine','language','style','voice','capabilities','preview','result'];
   const elements=new Map(ids.map(k=>[`rvc-tts-${k}`,{value:'',events:{},hidden:false,disabled:false,classList:{remove(){}},addEventListener(k,fn){this.events[k]=fn;},replaceChildren(...options){this.options=options;}}]));
   const calls=[];let input;const state={busy:false};
@@ -19,8 +19,8 @@ function harness(){
     ttsEndpoint:(base,kind)=>`${base}/tts${kind==='health'?'/health':kind==='jobs'?'/jobs':kind==='install'?'/install':''}`,
     createCloudRequestId:()=> 'request-for-real-tts',setAudioMode(){},handleAudioSelected:async file=>{input=file;},runRvcInference(){},
     AbortController,DOMException,File,URL:{createObjectURL:()=> 'blob:preview',revokeObjectURL(){}},
-    setTimeout:(fn,ms)=>{if(ms===4000)queueMicrotask(fn);return 1;},clearTimeout(){},
-    fetch:async (url,options)=>{calls.push({url,options});if(url.endsWith('/health'))return Response.json(catalog);
+    setTimeout:(fn,ms)=>{if(ms===4000||ms===8000)queueMicrotask(fn);return 1;},clearTimeout(){},
+    fetch:async (url,options)=>{calls.push({url,options});const override=fetchOverride?.(url,options);if(override)return override;if(url.endsWith('/health'))return Response.json(catalog);
       if(url.endsWith('/install'))return Response.json({state:'ready'});
       if(url.endsWith('/jobs'))return Response.json({jobId:'id-for-tts',downloadToken:'private-job-token'},{status:202});
       return new Response(new Uint8Array([1,2,3,4]),{headers:{'Content-Type':'audio/wav'}});}
@@ -46,6 +46,21 @@ test('TTS catalog controls actual language, voice and supported tone options',as
   h.elements.get('rvc-tts-engine').value='aishell-legacy';h.change('engine');await settleHealth(h);
   assert.equal(h.elements.get('rvc-tts-synth').disabled,true);
   assert.equal(h.elements.get('rvc-tts-install').hidden,false);
+});
+test('a full cover queue waits and retries the same TTS request without losing selected parameters',async()=>{
+  let posts=0;
+  const h=harness(url=>url.endsWith('/jobs')&&++posts===1?Response.json({code:'RVC_QUEUE_BUSY'},{status:429}):null);
+  await ready(h);h.elements.get('rvc-tts-text').value='你好。';await h.click('synth');
+  const submissions=h.calls.filter(x=>x.url.endsWith('/jobs'));
+  assert.equal(submissions.length,2);assert.equal(submissions[0].options.body,submissions[1].options.body);
+  assert.equal(h.input.size,4);assert.equal(h.state.ttsSynthBusy,false);
+});
+test('TTS options unlock after a cover finishes and unsupported tone errors explain the remedy',async()=>{
+  const h=harness(url=>url.endsWith('/jobs')?Response.json({code:'RVC_TTS_STYLE_UNSUPPORTED'},{status:400}):null);
+  await ready(h);h.state.busy=true;h.state.syncTtsControls();assert.equal(h.elements.get('rvc-tts-language').disabled,true);
+  h.state.busy=false;h.state.syncTtsControls();assert.equal(h.elements.get('rvc-tts-language').disabled,false);
+  h.elements.get('rvc-tts-text').value='你好。';await h.click('synth');assert.match(h.elements.get('rvc-tts-status').textContent,/does not support that tone/);
+  assert.equal(h.elements.get('rvc-tts-synth').disabled,false);
 });
 
 test('TTS selected parameters reach background submission and completed audio becomes input',async()=>{

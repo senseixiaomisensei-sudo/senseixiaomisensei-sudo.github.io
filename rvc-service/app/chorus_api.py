@@ -84,11 +84,11 @@ def install_chorus_routes(app, core):
         try:
             record.state='processing'; record.stage='separating'
             async with core.inference_lock:
-                await asyncio.to_thread(core.release_cached_models)
                 if kind == 'mix':
-                    stems = await asyncio.to_thread(core.separate_song,input_path,work/'accompaniment-separation')
+                    stems = await asyncio.to_thread(core.separate_song,input_path,work/'accompaniment-separation',core.release_cached_models)
                     source, accompaniment = stems.vocals, stems.instrumental
                 else:
+                    await asyncio.to_thread(core.release_cached_models)
                     source=input_path; accompaniment=work/'accompaniment.wav'
                 decoded = work/'vocals-24k.wav'
                 await asyncio.to_thread(subprocess.run,['ffmpeg','-nostdin','-v','error','-y','-i',str(source),

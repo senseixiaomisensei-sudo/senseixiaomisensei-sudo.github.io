@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import importlib.util
+import importlib.metadata
 import json
+import logging
 import os
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from app import separation_cache
 
 
 SEPARATOR_MODEL = os.getenv(
@@ -44,6 +47,7 @@ class SongStems:
     vocals: Path
     instrumental: Path
     sample_rate: int
+    cache_hit: bool = False
 
 
 def separation_status() -> dict[str, object]:
@@ -60,10 +64,29 @@ def separation_status() -> dict[str, object]:
     }
 
 
-def separate_song(source: Path, output_dir: Path) -> SongStems:
+def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongStems:
     if not separation_status()["ready"]:
         raise SeparationRuntimeError("RVC_SEPARATOR_UNAVAILABLE")
     worker = Path(__file__).with_name("separation_worker.py")
+    key = None
+    if separation_cache.cache_root() is not None:
+        try:
+            runtime = [SEPARATOR_MODEL, SEPARATOR_DEVICE]
+            for package in ('pymss', 'torch', 'torchaudio'):
+                runtime.append(importlib.metadata.version(package))
+            key = separation_cache.cache_key(source, [
+                SEPARATOR_MODELS_DIR / SEPARATOR_MODEL_RELATIVE,
+                SEPARATOR_MODELS_DIR / SEPARATOR_CONFIG_RELATIVE, worker,
+            ], json.dumps(runtime))
+            sample_rate = separation_cache.restore(key, output_dir)
+            if sample_rate is not None:
+                return SongStems(output_dir.resolve() / 'vocals.wav',
+                                 output_dir.resolve() / 'instrumental.wav', sample_rate, True)
+        except (OSError, importlib.metadata.PackageNotFoundError):
+            logging.getLogger(__name__).warning('Separation reuse unavailable; running normal inference')
+            key = None
+    if on_cache_miss is not None:
+        on_cache_miss()
     command = [
         sys.executable,
         str(worker),
@@ -108,6 +131,11 @@ def separate_song(source: Path, output_dir: Path) -> SongStems:
         or not instrumental.is_file()
     ):
         raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
+    if key is not None:
+        try:
+            separation_cache.store(key, vocals, instrumental, sample_rate)
+        except OSError:
+            logging.getLogger(__name__).warning('Cannot retain separation cache; completed stems remain usable')
     return SongStems(vocals=vocals, instrumental=instrumental, sample_rate=sample_rate)
 
 

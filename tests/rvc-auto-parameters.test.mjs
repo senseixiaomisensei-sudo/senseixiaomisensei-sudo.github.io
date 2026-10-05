@@ -5,6 +5,20 @@ import {initRegularAutoParameters} from '../assets/rvc-auto-tune.js';
 import gateway from '../worker/api-gateway.js';
 const model={id:'hoshino',checkpointSha256:'a'.repeat(64),tags:['女声'],defaultIndexRate:.35};
 const reference={characterId:'hoshino',checkpointSha256:model.checkpointSha256,referenceSha256:'b'.repeat(64),medianHz:300,confidence:.9};
+test('wide-register songs preserve their contour instead of raising a low verse and high chorus together',()=>{
+  const wide={medianHz:190,p10Hz:90,p90Hz:800,confidence:.9};
+  const song=suggestVoiceParameters(wide,model,reference,{audioMode:'song'});
+  assert.equal(song.pitch,0);assert.equal(song.pitchPolicy,'wide-song-original-pitch');
+  assert.equal(song.f0Method,'auto');assert.equal(song.filterRadius,0);assert.equal(song.indexRate,.25);
+  assert.equal(suggestVoiceParameters(wide,model,reference).pitch,8,'ordinary speech matching remains available');
+  const high=suggestVoiceParameters({medianHz:190,p10Hz:180,p90Hz:500,confidence:.9},model,reference,{audioMode:'song'});
+  assert.equal(high.pitch,8); // This range still has enough headroom.
+  const highReference={...reference,medianHz:900};
+  const bounded=suggestVoiceParameters({medianHz:500,p10Hz:450,p90Hz:800,confidence:.9},model,highReference,{audioMode:'song'});
+  assert.equal(bounded.pitch,3);assert.ok(800*2**(bounded.pitch/12)<1000);
+  const low=suggestVoiceParameters({medianHz:100,p10Hz:60,p90Hz:140,confidence:.9},model,{...reference,medianHz:50},{audioMode:'song'});
+  assert.equal(low.pitch,-3);assert.ok(60*2**(low.pitch/12)>50);
+});
 test('active matching covers larger register gaps without exceeding an octave or trusting stale resources',()=>{
   assert.equal(suggestVoiceParameters({medianHz:125,classification:'low',confidence:.9},model,reference).pitch,12);
   assert.equal(suggestVoiceParameters({medianHz:190,confidence:.9},model,reference).pitch,8);
@@ -42,9 +56,9 @@ test('interrupted auto analysis resumes the existing job without uploading again
   const ui=fixture(async(url)=>{if(url.includes('voice-ranges'))return {profiles:{}};if(url.endsWith('/analyze')){uploads++;return {...job,state:'queued'};}if(++polls===1)throw new Error('network');return job;});
   try{await ui.nodes.get('rvc-auto-parameters').click();await ui.nodes.get('rvc-auto-parameters').click();assert.equal(uploads,1);assert.equal(ui.state.busy,false);assert.equal(ui.nodes.get('rvc-pitch').value,'12');}finally{ui.close();}
 });
-test('new speech mode keeps disabled RVC settings and the selected engine',async()=>{
+test('explicit automatic tuning applies register settings even when speech was selected',async()=>{
   const ui=fixture(async url=>url.includes('voice-ranges')?{profiles:{}}:job);
-  try{ui.modern(true);ui.nodes.get('rvc-pitch').value='4';await ui.nodes.get('rvc-auto-parameters').click();assert.equal(ui.nodes.get('rvc-pitch').value,'4');assert.equal(ui.nodes.get('rvc-rms-mix').value,'1');}finally{ui.close();}
+  try{ui.modern(true);ui.nodes.get('rvc-pitch').value='4';await ui.nodes.get('rvc-auto-parameters').click();assert.equal(ui.nodes.get('rvc-pitch').value,'12');assert.equal(ui.nodes.get('rvc-rms-mix').value,'1');}finally{ui.close();}
 });
 test('terminal analysis failure starts a new job on retry instead of polling a failed job forever',async()=>{
   let uploads=0;

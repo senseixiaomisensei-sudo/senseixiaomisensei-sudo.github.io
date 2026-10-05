@@ -43,7 +43,7 @@ from app.audio_dynamics import apply_dynamics, apply_static_gain
 from app.inference_errors import PitchExtractionError
 from app.diagnostics import capture_job, configured_root
 from app.speech_runtime import ENGINE as SPEECH_ENGINE, render_speech, speech_profile, speech_status
-from app import tts_engines as tts_runtime
+from app import tts_engines as tts_runtime, separation_cache
 from app.separation_runtime import (
     SeparationRuntimeError,
     calibrate_song_vocals,
@@ -93,7 +93,7 @@ DEFAULT_TRAIN_EPOCHS = max(40, min(int(os.getenv("RVC_TRAIN_EPOCHS", "80")), 200
 TRAIN_PYTHON = Path(os.getenv("RVC_TRAIN_PYTHON", os.sys.executable)).resolve()
 logger = logging.getLogger("postprep.rvc")
 PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_activity.py",
-                  "audio_repair.py", "separation_runtime.py", "official_runtime.py",
+                  "audio_repair.py", "separation_runtime.py", "separation_worker.py", "separation_cache.py", "official_runtime.py",
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
                   "timeline_synthesis.py", "timeline_rendering.py", "speech_runtime.py", "speech_worker.py",
@@ -520,6 +520,10 @@ async def cleanup_loop() -> None:
         await asyncio.sleep(60)
         await cleanup_expired_outputs()
         await cleanup_expired_training_jobs()
+        try:
+            await asyncio.to_thread(separation_cache.cleanup)
+        except OSError:
+            logger.warning('Separation cache cleanup deferred')
 
 
 def persist_output_records() -> None:
@@ -2214,8 +2218,7 @@ async def process_conversion_job(
                     if record:
                         record.state = "processing"
                         record.stage = "separating"
-                await asyncio.to_thread(release_cached_models)
-                stems = await asyncio.to_thread(separate_song, input_raw, job_root / "stems")
+                stems = await asyncio.to_thread(separate_song, input_raw, job_root / "stems", release_cached_models)
             mark_stage("separation")
             async with outputs_lock:
                 record = outputs.get(job_id)
@@ -2434,6 +2437,7 @@ async def process_conversion_job(
                         "runtime": str(runtime_info()),
                         "sourceActivity": activity_details,
                         "stageElapsedSeconds": stage_times,
+                        "separationCacheHit": stems.cache_hit if audio_mode == "song" else False,
                     }
                     await asyncio.to_thread(capture_job, root, job_id, job_root, output_path, metadata)
             except (OSError, RuntimeError, ValueError):

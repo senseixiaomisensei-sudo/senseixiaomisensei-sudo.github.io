@@ -4279,7 +4279,8 @@
 
   function useNewSpeechEngine(model = getSelectedModel()) {
     return state.inferenceMode === "official" && state.audioMode === "voice"
-      && document.getElementById("rvc-voice-engine")?.value !== "rvc" && model?.speechProfile?.enabled === true;
+      && document.getElementById("rvc-voice-engine")?.value !== "rvc"
+      && Number(document.getElementById("rvc-pitch")?.value || 0) === 0 && model?.speechProfile?.enabled === true;
   }
 
   function syncSpeechControls() {
@@ -4295,14 +4296,22 @@
     if (selector) selector.disabled = state.audioMode !== "voice" || state.inferenceMode !== "official";
     for (const id of ["rvc-pitch", "rvc-index-rate", "rvc-protect", "rvc-f0-method", "rvc-filter-radius", "rvc-preset-male-female", "rvc-preset-same", "rvc-preset-female-male"]) {
       const control = document.getElementById(id);
-      if (control) control.disabled = modern;
+      if (control) control.disabled = false;
     }
     const hint = document.getElementById("rvc-speech-engine-hint");
     if (hint) hint.textContent = modern
-      ? l("新版角色讲话：100 步生成，使用该角色独立参考，适用于日常语音。纯人声歌曲请选择 RVC 兼容模式；移调、检索和 F0 参数也在兼容模式中调整。","New character speech: 100 steps using this character\u2019s own reference, for everyday speech. For dry-vocal songs, transposition, retrieval and F0 controls, choose RVC compatibility.")
+      ? l("新版角色讲话使用已验证的角色参考；人声音量与动态跟随可直接调整。调整移调、检索、辅音保护或 F0 时会切换到 RVC 调音模式，使设置实际生效。","New speech uses the verified character reference; vocal level and dynamics are adjustable. Editing pitch, retrieval, consonant protection or F0 selects RVC tuning so those settings take effect.")
       : state.audioMode === "song" ? l("歌曲使用保留旋律的 RVC 翻唱链路。","Songs use the melody-preserving RVC cover pipeline.")
       : state.inferenceMode !== "official" ? l("设备端使用 RVC 兼容引擎，新版讲话需云端 GPU。","On-device mode uses RVC compatibility; new speech requires a cloud GPU.")
       : l("当前使用 RVC 兼容模式；没有核实原始参考的角色保留原模型。","RVC compatibility is active. Characters without verified original references retain their original model.");
+  }
+
+  function enableSpeechTuning() {
+    const selector = document.getElementById("rvc-voice-engine");
+    if (state.inferenceMode !== "official" || state.audioMode !== "voice"
+        || selector?.value === "rvc" || !getSelectedModel()?.speechProfile?.enabled) return;
+    if (selector) selector.value = "rvc";
+    syncSpeechControls();
   }
 
   function syncMixControls() {
@@ -5539,6 +5548,7 @@
   }
 
   function updateStatusDisplay(msg) {
+    state.syncTtsControls?.();
     chorusController?.refresh();
     state.autoParameterController?.refresh();
     const statusEl = document.getElementById("rvc-service-status");
@@ -6733,7 +6743,7 @@
     const resultMeta = document.getElementById("rvc-result-meta");
     const modernSpeech = useNewSpeechEngine(selectedModel);
     const voiceEngine = modernSpeech ? "seed-vc-v2-speech" : "rvc";
-    const pitch = modernSpeech ? 0 : parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
+    const pitch = parseInt(document.getElementById("rvc-pitch")?.value || "0", 10);
     const indexRate = parseFloat(document.getElementById("rvc-index-rate")?.value || "0.3");
     const protect = parseFloat(document.getElementById("rvc-protect")?.value || "0.25");
     const rmsMixRate = selectedRmsMixRate();
@@ -7539,6 +7549,7 @@
     const pitchTip = document.getElementById("rvc-pitch-tip");
 
     const setPitchMode = (pitch, tip, activeBtn) => {
+      if (pitch !== 0) enableSpeechTuning();
       if (pitchInput) pitchInput.value = String(pitch);
       if (pitchVal) pitchVal.textContent = (pitch > 0 ? "+" : "") + pitch;
       if (pitchTip) pitchTip.textContent = tip;
@@ -7582,6 +7593,18 @@
     }
 
     // Slider pitch feedback
+    document.getElementById("rvc-voice-engine")?.addEventListener("change", (event) => {
+      if (event.target.value === "auto") {
+        if (pitchInput) pitchInput.value = "0";
+        if (pitchVal) pitchVal.textContent = "0";
+      }
+      syncSpeechControls();
+    });
+    for (const id of ["rvc-pitch", "rvc-index-rate", "rvc-protect", "rvc-f0-method", "rvc-filter-radius"]) {
+      const control = document.getElementById(id);
+      control?.addEventListener("input", enableSpeechTuning);
+      control?.addEventListener("change", enableSpeechTuning);
+    }
     if (pitchInput && pitchVal) {
       pitchInput.addEventListener("input", (e) => {
         const val = parseInt(e.target.value, 10);
@@ -7744,8 +7767,8 @@
 
     const setTtsReady = (ok) => {
       state.ttsEnabled = ok;
-      if(ttsSynth)ttsSynth.disabled=!ok || Boolean(state.ttsSynthBusy);
-      if(ttsConvert)ttsConvert.disabled=!ok || Boolean(state.ttsSynthBusy);
+      if(ttsSynth)ttsSynth.disabled=!ok || Boolean(state.ttsSynthBusy||state.busy);
+      if(ttsConvert)ttsConvert.disabled=!ok || Boolean(state.ttsSynthBusy||state.busy);
       if(ttsInstall){ttsInstall.hidden=ok;ttsInstall.disabled=state.ttsInfo?.installAvailable!==true || Boolean(state.ttsInstalling);}
       if(ttsEngine)ttsEngine.disabled=Boolean(state.ttsInstalling||state.ttsSynthBusy||state.busy);
       if(ttsLanguage)ttsLanguage.disabled=Boolean(state.ttsSynthBusy||state.busy);
@@ -7760,6 +7783,7 @@
         ttsReady.className = "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700";
       }
     };
+    state.syncTtsControls = () => setTtsReady(state.ttsEnabled);
 
     // 探测端点是否可达（GET /health 或 OPTIONS），仅用于 UI 状态
     const probeSingleBase = async (base) => {
@@ -7836,12 +7860,35 @@
       const timer = setTimeout(() => controller.abort(), 20*60*1000);
       try {
         const base=getTtsBase();
-        let res = await fetch(ttsEndpoint(base, state.ttsCatalog?.models ? "jobs" : "synthesize"), {
+        const background = Boolean(state.ttsCatalog?.models);
+        const submission = {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(state.ttsCatalog?.models ? {text,modelId:state.ttsModelId,language:ttsLanguage?.value||'zh',style:ttsStyle?.value||'neutral',voice:ttsVoice?.value||'',requestId:createCloudRequestId()} : {text}),
+          body: JSON.stringify(background ? {text,modelId:state.ttsModelId,language:ttsLanguage?.value||'zh',style:ttsStyle?.value||'neutral',voice:ttsVoice?.value||'',requestId:createCloudRequestId()} : {text}),
           signal: controller.signal,
-        });
+        };
+        let res, submissionRetries=0;
+        for (;;) {
+          if (controller.signal.aborted) throw new DOMException('Timed out','AbortError');
+          try { res = await fetch(ttsEndpoint(base, background ? "jobs" : "synthesize"), submission); }
+          catch (error) {
+            if (!background || controller.signal.aborted || ++submissionRetries>15) throw error;
+            setTtsStatus(l('连接中断，正在恢复同一个 TTS 请求…','Connection interrupted; recovering the same TTS request…'));
+            await new Promise(resolve=>setTimeout(resolve,4000)); continue;
+          }
+          if (background && !res.ok) {
+            const error = await res.clone().json().catch(()=>({}));
+            if (res.status===429 && error.code==='RVC_QUEUE_BUSY') {
+              setTtsStatus(l('翻唱队列已满，TTS 正在等待空位；无需重复点击。','The cover queue is full. TTS is waiting for a slot; no need to submit again.'));
+              await new Promise(resolve=>setTimeout(resolve,8000)); continue;
+            }
+            if ([502,503,504,520,522,524].includes(res.status) && !error.code?.startsWith('RVC_TTS_') && ++submissionRetries<=15) {
+              setTtsStatus(l('服务暂时未响应，正在恢复同一个 TTS 请求…','Service temporarily unavailable; recovering the same TTS request…'));
+              await new Promise(resolve=>setTimeout(resolve,4000)); continue;
+            }
+          }
+          break;
+        }
         if(res.status===202){
           const job=await res.json();
           if(!job.jobId||!job.downloadToken)throw new Error('RVC_TTS_INVALID_JOB');
@@ -7864,7 +7911,14 @@
         const file = new File([blob], `tts_${Date.now()}.${type.includes('mpeg')?'mp3':'wav'}`, { type });
         return file;
       } catch (err) {
-        setTtsStatus(err.message==='RVC_TTS_CHINESE_REQUIRED'?l('此小型模型支持中文，请输入中文文本。','This small model supports Chinese. Enter Chinese text.'):
+        const errors = {
+          RVC_TTS_UNAVAILABLE: ['所选模型正在检测或尚未就绪，请点击重新检测后再使用。','The selected model is being checked or is not ready. Recheck before using it.'],
+          RVC_TTS_TEXT_TOO_LONG: ['文本过长，请每次输入不超过 800 个字符。','Text is too long. Use no more than 800 characters at a time.'],
+          RVC_TTS_INVALID_VOICE: ['声线与当前模型不匹配，请重新选择声线。','The voice does not match this model. Select a voice again.'],
+          RVC_TTS_STYLE_UNSUPPORTED: ['当前模型不支持该语气，请重新选择。','This model does not support that tone. Select another tone.'],
+          RVC_TTS_SYNTH_FAILED: ['TTS 生成失败；可以重试或切换千问。错误：RVC_TTS_SYNTH_FAILED','TTS generation failed. Retry or choose Qwen. Error: RVC_TTS_SYNTH_FAILED'],
+        };
+        setTtsStatus(errors[err.message]?l(...errors[err.message]):err.message==='RVC_TTS_CHINESE_REQUIRED'?l('此小型模型支持中文，请输入中文文本。','This small model supports Chinese. Enter Chinese text.'):
           l(`合成失败：${err.name === "AbortError" ? "等待超时" : err.message}。请重试。`,`Synthesis failed: ${err.name==='AbortError'?'timed out':err.message}. Retry.`), "err");
         return null;
       } finally {
@@ -8004,11 +8058,11 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261005-auto-1');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261005-auto-3');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,
-      setBusy: (value) => { state.busy = value; const button = document.getElementById('rvc-convert'); if (button) button.disabled = value; syncMixControls(); },
+      setBusy: (value) => { state.busy = value; const button = document.getElementById('rvc-convert'); if (button) button.disabled = value; syncMixControls(); state.syncTtsControls?.(); },
       onResult: async (next, job) => {
         const audio = document.getElementById('rvc-result-audio');
         if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
@@ -8018,7 +8072,7 @@
       },
     });
     await initCatalog();
-    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-2');
+    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-3');
     state.autoParameterController=initRegularAutoParameters({state,getEndpoint:getOfficialEndpoint,getModel:getSelectedModel,
       prepareFile:fixUploadContainer,isModernSpeech:useNewSpeechEngine,createRequestId:createCloudRequestId,
       setBusy:value=>{state.busy=value;updateStatusDisplay();syncMixControls();}});

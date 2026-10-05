@@ -14,14 +14,26 @@ function extract(name) {
 }
 test('reference speech selects only verified roles in cloud voice mode', () => {
   const state = { inferenceMode: 'official', audioMode: 'voice' };
-  const selector = { value: 'auto' }, document = { getElementById: () => selector };
+  const selector = { value: 'auto' }, pitch = {value:'0'}, document = { getElementById: id => id==='rvc-pitch'?pitch:selector };
   const selected = () => catalog.find(m => m.id === 'hoshino');
   const use = Function('state', 'document', 'getSelectedModel', `return (${extract('useNewSpeechEngine')})`)(state, document, selected);
   assert.equal(use(), true);
   assert.equal(use(catalog.find(m => m.id === 'sukuna')), false);
   selector.value = 'rvc'; assert.equal(use(), false);
+  selector.value = 'auto'; pitch.value='6'; assert.equal(use(),false); pitch.value='0';
   selector.value = 'auto'; state.audioMode = 'song'; assert.equal(use(), false);
   state.audioMode = 'voice'; state.inferenceMode = 'local'; assert.equal(use(), false);
+});
+test('dry vocals and TTS controls stay editable; RVC tuning selects an engine that applies them', () => {
+  const state={inferenceMode:'official',audioMode:'voice',speechControlsActive:true};
+  const nodes=new Map(['rvc-voice-engine','rvc-pitch','rvc-index-rate','rvc-protect','rvc-f0-method','rvc-filter-radius','rvc-preset-male-female','rvc-preset-same','rvc-preset-female-male','rvc-speech-engine-hint'].map(id=>[id,{value:id==='rvc-voice-engine'?'auto':'0',disabled:true}]));
+  const document={getElementById:id=>nodes.get(id)}, getSelectedModel=()=>catalog.find(m=>m.id==='hoshino');
+  const use=Function('state','document','getSelectedModel',`return (${extract('useNewSpeechEngine')})`)(state,document,getSelectedModel);
+  const sync=Function('state','document','useNewSpeechEngine','l',`return (${extract('syncSpeechControls')})`)(state,document,use,zh=>zh);
+  const tune=Function('state','document','getSelectedModel','syncSpeechControls',`return (${extract('enableSpeechTuning')})`)(state,document,getSelectedModel,sync);
+  sync(); for(const [id,node] of nodes)if(id!=='rvc-speech-engine-hint')assert.equal(node.disabled,false,id);
+  nodes.get('rvc-pitch').value='6';tune();assert.equal(nodes.get('rvc-voice-engine').value,'rvc');assert.equal(nodes.get('rvc-pitch').value,'6');
+  state.audioMode='song';nodes.get('rvc-voice-engine').value='auto';tune();assert.equal(nodes.get('rvc-voice-engine').value,'auto');
 });
 test('enabled character references are distinct and have actual revisions', () => {
   const refs = catalog.filter(m => m.speechProfile.enabled);

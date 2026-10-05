@@ -1,5 +1,5 @@
-import {suggestVoiceParameters} from './rvc-auto-parameters.js?v=20261005-auto-1';
-import {chorusBase,fetchChorusJson} from './rvc-chorus.js?v=20261005-auto-1';
+import {suggestVoiceParameters} from './rvc-auto-parameters.js?v=20261005-auto-3';
+import {chorusBase,fetchChorusJson} from './rvc-chorus.js?v=20261005-auto-3';
 
 export function initRegularAutoParameters({state,getEndpoint,getModel,prepareFile,setBusy,isModernSpeech,createRequestId,
   request=fetchChorusJson,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))}) {
@@ -12,23 +12,20 @@ export function initRegularAutoParameters({state,getEndpoint,getModel,prepareFil
   function apply(){
     if(!cache || cache.file!==state.audio?.file || cache.mode!==state.audioMode)return;
     const model=getModel();if(!model)return;
-    const settings=suggestVoiceParameters(cache.range,model,profiles[model.id]||{});
+    const settings=suggestVoiceParameters(cache.range,model,profiles[model.id]||{},{audioMode:state.audioMode});
     applying=true;
-    // The newer speech engine retains its own validated conditioning. RVC-only
-    // knobs are disabled there, so do not silently switch engines or claim effect.
-    const modern=isModernSpeech();
+    // Input events select the compatible tuning engine before these RVC
+    // parameters are used. Never leave suggested pitch displayed but ignored.
     const controls={pitch:'rvc-pitch',indexRate:'rvc-index-rate',protect:'rvc-protect',rmsMixRate:'rvc-rms-mix',f0Method:'rvc-f0-method',filterRadius:'rvc-filter-radius'};
     for(const [key,id] of Object.entries(controls)){
-      if(modern && key!=='rmsMixRate')continue;
       const node=document.getElementById(id);if(!node)continue;
       node.value=String(settings[key]);node.dispatchEvent(new Event(key==='f0Method'?'change':'input',{bubbles:true}));
     }
-    applying=false;signature=`${model.id}:${state.audioMode}:${modern}`;
+    applying=false;signature=`${model.id}:${state.audioMode}:${isModernSpeech()}`;
     const range=cache.range,Hz=Number.isFinite(range.medianHz)?range.medianHz.toFixed(0):'?';
-    text(modern?'已匹配新版讲话：保留原调与原语气，使用角色独立参考；RVC 调音仅在兼容引擎生效。':
-      `已按 ${Hz} Hz 声区匹配：${settings.pitch>0?'+':''}${settings.pitch} 半音 · ${settings.f0Method.toUpperCase()} · 辅音保护 ${settings.protect}。${settings.targetEvidence==='register-estimate'?'角色参考不足，使用声区估计。':settings.targetEvidence==='uncertain'?'证据不足，保持原调。':''}可手动修改。`,
-      modern?'Matched to new speech: preserve pitch and delivery using the character reference. RVC controls apply only to compatibility mode.':
-      `Matched ${Hz} Hz register: ${settings.pitch>0?'+':''}${settings.pitch} semitones · ${settings.f0Method.toUpperCase()} · protection ${settings.protect}. ${settings.targetEvidence==='register-estimate'?'Estimated target register. ':settings.targetEvidence==='uncertain'?'Uncertain evidence; pitch preserved. ':''}You can edit manually.`);
+    const guarded=settings.pitchPolicy!=='register-match';
+    text(`已按 ${Hz} Hz 声区匹配：${settings.pitch>0?'+':''}${settings.pitch} 半音 · ${settings.f0Method.toUpperCase()} · 辅音保护 ${settings.protect}。${guarded?'高低音保护：不按中位音高强行跨八度移调。':settings.targetEvidence==='register-estimate'?'角色参考不足，使用声区估计。':settings.targetEvidence==='uncertain'?'证据不足，保持原调。':''}可手动修改。`,
+      `Matched ${Hz} Hz register: ${settings.pitch>0?'+':''}${settings.pitch} semitones · ${settings.f0Method.toUpperCase()} · protection ${settings.protect}. ${guarded?'Wide-register protection: no forced octave shift based on the median. ':settings.targetEvidence==='register-estimate'?'Estimated target register. ':settings.targetEvidence==='uncertain'?'Uncertain evidence; pitch preserved. ':''}You can edit manually.`);
   }
   function refresh(){
     button.disabled=state.busy || !state.audio?.file;

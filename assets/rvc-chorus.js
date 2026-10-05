@@ -1,5 +1,5 @@
 import {createChorusRolePicker,chorusText as ct} from './rvc-chorus-picker.js?v=20261004-chorus-2';
-import {suggestVoiceParameters} from './rvc-auto-parameters.js?v=20261005-auto-1';
+import {suggestVoiceParameters} from './rvc-auto-parameters.js?v=20261005-auto-3';
 
 export function chorusBase(endpoint) {
   const base=String(endpoint).replace(/\/+$/u,'');
@@ -40,7 +40,7 @@ export function readChorusTracks(job) {
 }
 
 export function chorusSuggestedParams(track,model={},reference={}) {
-  const {pitch,indexRate,protect,rmsMixRate,f0Method}=suggestVoiceParameters(track.voiceRange,model,reference);
+  const {pitch,indexRate,protect,rmsMixRate,f0Method}=suggestVoiceParameters(track.voiceRange,model,reference,{audioMode:'song'});
   return {trackId:track.trackId,modelId:model.id,pitch,indexRate,protect,rmsMixRate,f0Method,gainDb:0,mute:false};
 }
 
