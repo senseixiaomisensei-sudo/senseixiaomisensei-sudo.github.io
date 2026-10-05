@@ -1,5 +1,5 @@
-import {suggestVoiceParameters} from './rvc-auto-parameters.js?v=20261005-auto-3';
-import {chorusBase,fetchChorusJson} from './rvc-chorus.js?v=20261005-auto-3';
+import {suggestVoiceParameters} from './rvc-auto-parameters.js?v=20261005-auto-4';
+import {chorusBase,fetchChorusJson} from './rvc-chorus.js?v=20261005-auto-4';
 
 export function initRegularAutoParameters({state,getEndpoint,getModel,prepareFile,setBusy,isModernSpeech,createRequestId,
   request=fetchChorusJson,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))}) {
@@ -16,7 +16,7 @@ export function initRegularAutoParameters({state,getEndpoint,getModel,prepareFil
     applying=true;
     // Input events select the compatible tuning engine before these RVC
     // parameters are used. Never leave suggested pitch displayed but ignored.
-    const controls={pitch:'rvc-pitch',indexRate:'rvc-index-rate',protect:'rvc-protect',rmsMixRate:'rvc-rms-mix',f0Method:'rvc-f0-method',filterRadius:'rvc-filter-radius'};
+    const controls={pitch:'rvc-pitch',indexRate:'rvc-index-rate',protect:'rvc-protect',rmsMixRate:'rvc-rms-mix',f0Method:'rvc-f0-method',filterRadius:'rvc-filter-radius',registerAdaptation:'rvc-register-adaptation',registerPitch:'rvc-register-pitch'};
     for(const [key,id] of Object.entries(controls)){
       const node=document.getElementById(id);if(!node)continue;
       node.value=String(settings[key]);node.dispatchEvent(new Event(key==='f0Method'?'change':'input',{bubbles:true}));

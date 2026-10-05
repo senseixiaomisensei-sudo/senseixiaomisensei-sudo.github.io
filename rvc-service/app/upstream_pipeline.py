@@ -254,7 +254,9 @@ class ServicePipeline(PinnedPipeline):
             from app.pitch_safety import quantize_pitch
             if not if_f0:
                 raise ValueError('Timeline synthesis requires an F0 checkpoint')
-            continuous = np.asarray(context.f0, dtype=np.float64)*2**(f0_up_key/12)
+            offsets = getattr(context, 'pitch_offsets', None)
+            shift = f0_up_key if offsets is None else f0_up_key + offsets
+            continuous = np.asarray(context.f0, dtype=np.float64)*2**(shift/12)
             pitch = torch.as_tensor(quantize_pitch(continuous)[None],device=self.device).long()
             pitchf = torch.as_tensor(continuous[None],device=self.device,dtype=torch.float32)
             speaker = torch.as_tensor([sid],device=self.device).long()

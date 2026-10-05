@@ -93,6 +93,21 @@ function mockRvcFetch() {
   return { calls, restore: () => { globalThis.fetch = originalFetch; } };
 }
 
+test('continuous register controls are bounded and reach the GPU with their exact values',async()=>{
+  const original=globalThis.fetch;let submitted;
+  globalThis.fetch=async(_url,options)=>{
+    submitted=options.body;
+    return Response.json({jobId:JOB_ID,downloadToken:DOWNLOAD_TOKEN,expiresAt:new Date(Date.now()+3600000).toISOString(),format:'wav'},{status:202});
+  };
+  try{
+    const response=await rvcRequest(context({form:rvcForm({registerAdaptation:'0.63',registerPitch:'0.27'})}));
+    assert.equal(response.status,200);assert.equal(submitted.get('register_adaptation'),'0.63');assert.equal(submitted.get('register_pitch'),'0.27');
+    for(const value of ['NaN','Infinity','-0.1','1.01','0.5garbage']){
+      const invalid=await rvcRequest(context({form:rvcForm({registerAdaptation:value})}));assert.equal(invalid.status,400,value);
+    }
+  }finally{globalThis.fetch=original;}
+});
+
 test("rvc endpoint rejects a direct browser call before it reads or forwards audio", async () => {
   const mocked = mockRvcFetch();
   try {

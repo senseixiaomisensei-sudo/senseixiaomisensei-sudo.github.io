@@ -175,7 +175,7 @@
       pitchDefault: "原调 (0)",
       pitchHigh: "女声化 (+12)",
       advancedToggle: "高级参数",
-      safeModeHint: "稳定模式已启用：固定检索和辅音保护参数，不使用逐帧自适应音色处理；没有索引的角色自动关闭检索。",
+      safeModeHint: "稳定模式已启用：默认固定检索与辅音保护；可选连续声区保护，变调补偿默认关闭。没有索引的角色不使用检索。",
       indexRateLabel: "音色相似度",
       indexRateHint: "越高音色越贴近角色，但会增加颗粒风险。建议 0.20–0.40。",
       protectLabel: "辅音与呼吸保护",
@@ -302,7 +302,7 @@
       pitchDefault: "Original (0)",
       pitchHigh: "Female (+12)",
       advancedToggle: "Advanced settings",
-      safeModeHint: "Stable mode is on: retrieval and consonant protection use fixed values. Per-frame adaptive timbre processing is off; voices without an index skip retrieval.",
+      safeModeHint: "Stable mode is on: retrieval and consonant protection are fixed by default. Continuous register protection is optional; pitch compensation defaults to off. Voices without an index skip retrieval.",
       indexRateLabel: "Similarity",
       indexRateHint: "Higher can match the character more closely but may add grain. 0.20–0.40 recommended.",
       protectLabel: "Consonant protection",
@@ -4280,7 +4280,9 @@
   function useNewSpeechEngine(model = getSelectedModel()) {
     return state.inferenceMode === "official" && state.audioMode === "voice"
       && document.getElementById("rvc-voice-engine")?.value !== "rvc"
-      && Number(document.getElementById("rvc-pitch")?.value || 0) === 0 && model?.speechProfile?.enabled === true;
+      && Number(document.getElementById("rvc-pitch")?.value || 0) === 0
+      && Number(document.getElementById("rvc-register-adaptation")?.value || 0) === 0
+      && Number(document.getElementById("rvc-register-pitch")?.value || 0) === 0 && model?.speechProfile?.enabled === true;
   }
 
   function syncSpeechControls() {
@@ -4316,6 +4318,12 @@
 
   function syncMixControls() {
     syncSpeechControls();
+    for (const id of ["rvc-register-adaptation", "rvc-register-pitch"]) {
+      const control = document.getElementById(id);
+      if (control) control.disabled = state.inferenceMode !== "official";
+      const label = document.getElementById(`${id}-value`);
+      if (label) label.textContent = `${Math.round(Number(control?.value || 0)*100)}%`;
+    }
     const controls = selectedMixControls();
     const dbText = (value) => `${value > 0 ? "+" : ""}${value} dB`;
     const vocalValue = document.getElementById("rvc-vocal-gain-value");
@@ -6816,6 +6824,10 @@
       body.set("indexRate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("index_rate", String(selectedModel.hasIndex !== false ? indexRate : 0));
       body.set("protect", String(protect));
+      for (const [id, camel, snake] of [["rvc-register-adaptation", "registerAdaptation", "register_adaptation"], ["rvc-register-pitch", "registerPitch", "register_pitch"]]) {
+        const value = String(Number(document.getElementById(id)?.value || 0));
+        body.set(camel, value); body.set(snake, value);
+      }
       body.set("f0Method", f0Method);
       body.set("f0_method", f0Method);
       const outputFormat = preferredCloudOutputFormat(state.audio.duration);
@@ -7593,12 +7605,21 @@
     }
 
     // Slider pitch feedback
+    for (const id of ["rvc-register-adaptation", "rvc-register-pitch"]) {
+      document.getElementById(id)?.addEventListener("input", (event) => {
+        if (Number(event.target.value)>0) enableSpeechTuning();
+        syncMixControls();
+      });
+    }
     document.getElementById("rvc-voice-engine")?.addEventListener("change", (event) => {
       if (event.target.value === "auto") {
         if (pitchInput) pitchInput.value = "0";
         if (pitchVal) pitchVal.textContent = "0";
+        for (const id of ["rvc-register-adaptation", "rvc-register-pitch"]) {
+          const control = document.getElementById(id); if (control) control.value = "0";
+        }
       }
-      syncSpeechControls();
+      syncMixControls();
     });
     for (const id of ["rvc-pitch", "rvc-index-rate", "rvc-protect", "rvc-f0-method", "rvc-filter-radius"]) {
       const control = document.getElementById(id);
@@ -8058,7 +8079,7 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261005-auto-3');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261005-auto-4');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,
@@ -8072,7 +8093,7 @@
       },
     });
     await initCatalog();
-    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-3');
+    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-4');
     state.autoParameterController=initRegularAutoParameters({state,getEndpoint:getOfficialEndpoint,getModel:getSelectedModel,
       prepareFile:fixUploadContainer,isModernSpeech:useNewSpeechEngine,createRequestId:createCloudRequestId,
       setBusy:value=>{state.busy=value;updateStatusDisplay();syncMixControls();}});

@@ -14,7 +14,7 @@ function extract(name) {
 }
 test('reference speech selects only verified roles in cloud voice mode', () => {
   const state = { inferenceMode: 'official', audioMode: 'voice' };
-  const selector = { value: 'auto' }, pitch = {value:'0'}, document = { getElementById: id => id==='rvc-pitch'?pitch:selector };
+  const selector = { value: 'auto' }, pitch = {value:'0'}, document = { getElementById: id => id==='rvc-pitch'?pitch:id==='rvc-voice-engine'?selector:null };
   const selected = () => catalog.find(m => m.id === 'hoshino');
   const use = Function('state', 'document', 'getSelectedModel', `return (${extract('useNewSpeechEngine')})`)(state, document, selected);
   assert.equal(use(), true);

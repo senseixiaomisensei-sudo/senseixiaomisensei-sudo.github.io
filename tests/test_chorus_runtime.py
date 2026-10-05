@@ -17,7 +17,8 @@ class ChorusContracts(unittest.TestCase):
  def test_invalid_parameters_and_identity_are_rejected(self):
   for key,value in [('trackId',True),('trackId',2),('gainDb',float('nan')),('gainDb',float('inf')),
                     ('gainDb',7),('pitch',.5),('pitch',25),('mute','false'),('indexRate',-1),
-                    ('f0Method','unknown'),('modelId','../hoshino'),('unrecognized',1)]:
+                    ('f0Method','unknown'),('modelId','../hoshino'),('unrecognized',1),
+                    ('registerAdaptation',float('nan')),('registerPitch',1.1),('registerAdaptation',True)]:
    p=self.tracks();p[0][key]=value
    with self.subTest(key=key,value=value),self.assertRaises(ValueError):validate_tracks(p,2)
  def test_user_gains_and_mute_change_actual_mix_without_clipping_stems(self):

@@ -29,6 +29,7 @@ export function suggestVoiceParameters(range={},model={},reference={},options={}
   const index=Number(model.defaultIndexRate);
   return {pitch,indexRate:model.indexAvailable===false ? 0 : Math.round(Math.max(0,Math.min(complex?.25:.45,Number.isFinite(index)?index:.3))*100)/100,
     protect:reliable?.12:.18,rmsMixRate:1,f0Method:complex?'auto':'rmvpe',filterRadius:0,
+    registerAdaptation:options.audioMode==='song'&&complex?.6:0,registerPitch:0,
     revision:AUTO_PARAMETER_REVISION,pitchPolicy,confidence:reliable?Number(range.confidence):0,
     targetEvidence:matched?'verified-reference':targetHz?'register-estimate':'uncertain'};
 }

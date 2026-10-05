@@ -43,6 +43,7 @@ class WindowContext:
     prior_logs: np.ndarray | None = None
     conditioning_features: np.ndarray | None = None
     retrieval: dict | None = None
+    pitch_offsets: np.ndarray | None = None
 
 
 @dataclass
@@ -61,19 +62,25 @@ class AnalysisTimeline:
     conditioning_features: np.ndarray | None = None
     retrieval: dict | None = None
     cut_frames: list | None = None
+    pitch_offsets: np.ndarray | None = None
+    register_controls: dict | None = None
+
+    def shifted_f0(self, shift):
+        return self.f0*2**(shift/12) if self.pitch_offsets is None else self.f0*2**((shift+self.pitch_offsets)/12)
 
     def window(self, index, rate, shift):
         start, end = self.spans[index]
         left, right = start, end+PAD_FRAMES*2
-        scale = 2**(shift/12)
         # Accumulate from the single padded timeline, never from this window.
         # Match the actual float32 NSF condition before integrating its phase.
-        shifted = (self.f0[:left]*scale).astype(np.float32).astype(np.float64)
+        shifted = self.shifted_f0(shift)[:left].astype(np.float32).astype(np.float64)
         phase = float(np.sum(shifted, dtype=np.float64)/100)
         valid_input = min(self.input_samples, end*HOP)-start*HOP
         count = round(valid_input*rate/16000)
         context = WindowContext(self.features[left//2:right//2], self.f0[left:right],
             start-PAD_FRAMES, phase, PAD_FRAMES*rate//100, count)
+        if self.pitch_offsets is not None:
+            context.pitch_offsets=self.pitch_offsets[left:right]
         if self.prior_mean is not None:
             context.prior_mean=self.prior_mean[:,left:right]
             context.prior_logs=self.prior_logs[:,left:right]
@@ -236,7 +243,8 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
                             cut_frames=cuts)
 
 
-def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None,analysis_spans=None):
+def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None,analysis_spans=None,
+                   register_strength=0.,register_pitch=0.):
     """Share the stochastic prior too: enc_p itself contains attention.
 
     Identical HuBERT rows and pitch alone do not guarantee identical means or
@@ -252,6 +260,17 @@ def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None,anal
     dtype=torch.float16 if pipe.is_half else torch.float32
     original=torch.as_tensor(timeline.features[None],device=pipe.device,dtype=dtype)
     features=original
+    adaptive_index=adaptive_protect=None
+    if register_strength or register_pitch:
+        from app.register_adaptation import register_controls
+        adaptive_index,adaptive_protect,offsets,info=register_controls(
+            timeline.f0,index_rate,protect,register_strength,register_pitch)
+        timeline.pitch_offsets=offsets if register_pitch else None
+        timeline.register_controls=info
+        if diagnostics:
+            np.savez_compressed(Path(diagnostics)/'timeline'/'register-controls.npz',
+                index_rate=adaptive_index,protect=adaptive_protect,pitch_offsets=offsets,
+                time_origin_seconds=-3.,frame_rate=100)
     retrieval={'requestedRate':index_rate,'actual':False}
     if index_rate and model._index_path:
         index=faiss.read_index(model._index_path)
@@ -259,15 +278,27 @@ def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None,anal
         validate_index(index,vectors,timeline.features.shape[1])
         distances,neighbors=index.search(timeline.features,8)
         retrieved,stats=stable_retrieval(distances,neighbors,vectors,timeline.features)
-        features=torch.as_tensor(retrieved[None],device=pipe.device,dtype=dtype)*index_rate+(1-index_rate)*original
+        candidate=torch.as_tensor(retrieved[None],device=pipe.device,dtype=dtype)
+        if adaptive_index is None:
+            features=candidate*index_rate+(1-index_rate)*original
+        else:
+            # Use all 100 Hz controls after expanding the 50 Hz content clock.
+            candidate=F.interpolate(candidate.permute(0,2,1),scale_factor=2).permute(0,2,1)
+            initial=F.interpolate(original.permute(0,2,1),scale_factor=2).permute(0,2,1)
+            blend=torch.as_tensor(adaptive_index[None,:,None],device=pipe.device,dtype=torch.float32)
+            features=(candidate*blend+initial*(1-blend)).to(dtype)
         retrieval.update(actual=True,**stats)
         del vectors,index,retrieved
-    features=F.interpolate(features.permute(0,2,1),scale_factor=2).permute(0,2,1)
-    if protect<.5:
+    if adaptive_index is None or not retrieval['actual']:
+        features=F.interpolate(features.permute(0,2,1),scale_factor=2).permute(0,2,1)
+    if protect<.5 or adaptive_protect is not None:
         initial=F.interpolate(original.permute(0,2,1),scale_factor=2).permute(0,2,1)
-        voiced=torch.as_tensor(np.where(timeline.f0>0,1.,protect)[None,:,None],device=pipe.device,dtype=torch.float32)
+        value=protect if adaptive_protect is None else adaptive_protect
+        voiced=torch.as_tensor(np.where(timeline.f0>0,1.,value)[None,:,None],device=pipe.device,dtype=torch.float32)
         features=(features*voiced+initial*(1-voiced)).to(dtype)
-    coarse=quantize_pitch(timeline.f0*2**(pitch/12))
+    coarse=quantize_pitch(timeline.shifted_f0(pitch))
+    if timeline.register_controls is not None:
+        retrieval['registerControls']=timeline.register_controls
     analysis_spans=timeline.spans if analysis_spans is None else analysis_spans
     if not analysis_spans or analysis_spans[0][0]!=0 or analysis_spans[-1][1]!=len(timeline.f0)-2*PAD_FRAMES:
         raise ValueError('Prior analysis must cover the original absolute timeline')
@@ -329,7 +360,7 @@ def prepare_priors(model,timeline,index_rate,protect,pitch,diagnostics=None,anal
             row['meanSharedSeam']=condition_seam_metrics(prior_mean,row['cutFrame'])
             row['logsSharedSeam']=condition_seam_metrics(prior_logs,row['cutFrame'])
         np.savez_compressed(root/'final-pitch.npz',
-            continuous=(timeline.f0*2**(pitch/12)).astype(np.float32),coarse=coarse,
+            continuous=timeline.shifted_f0(pitch).astype(np.float32),coarse=coarse,
             voiced=timeline.f0>0,pitch_shift=pitch,time_origin_seconds=-3.,frame_rate=100)
         (root/'prior.json').write_text(json.dumps(dict(retrieval=retrieval,pitchShift=pitch,
             protect=protect,noiseScale=model.noise_scale,overlaps=overlaps,

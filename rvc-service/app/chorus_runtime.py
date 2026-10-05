@@ -63,7 +63,7 @@ def separate_singers(source: Path, output: Path, count: str):
 def validate_tracks(value, count):
     if not isinstance(value, list) or len(value) != count or not 1 <= count <= 4:
         raise ValueError('CHORUS_INVALID_TRACKS')
-    allowed = {'trackId','modelId','pitch','indexRate','protect','rmsMixRate','f0Method','gainDb','mute'}
+    allowed = {'trackId','modelId','pitch','indexRate','protect','rmsMixRate','f0Method','gainDb','mute','registerAdaptation','registerPitch'}
     result = []
     for i, track in enumerate(value):
         if not isinstance(track, dict) or set(track)-allowed or type(track.get('trackId')) is not int or track['trackId'] != i+1:
@@ -73,7 +73,8 @@ def validate_tracks(value, count):
             raise ValueError('CHORUS_INVALID_MODEL')
         params = {'trackId': i+1, 'modelId': model}
         for key, default, low, high in [('pitch',0,-24,24),('indexRate',.3,0,1),
-            ('protect',.25,0,.5),('rmsMixRate',1,0,1),('gainDb',0,-24,6)]:
+            ('protect',.25,0,.5),('rmsMixRate',1,0,1),('gainDb',0,-24,6),
+            ('registerAdaptation',0,0,1),('registerPitch',0,0,1)]:
             n = track.get(key, default)
             if isinstance(n, bool) or not isinstance(n, (int,float)) or not math.isfinite(n) or not low <= n <= high:
                 raise ValueError('CHORUS_INVALID_PARAMETER')

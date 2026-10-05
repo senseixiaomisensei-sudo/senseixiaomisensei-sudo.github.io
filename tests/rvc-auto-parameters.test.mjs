@@ -10,6 +10,7 @@ test('wide-register songs preserve their contour instead of raising a low verse 
   const song=suggestVoiceParameters(wide,model,reference,{audioMode:'song'});
   assert.equal(song.pitch,0);assert.equal(song.pitchPolicy,'wide-song-original-pitch');
   assert.equal(song.f0Method,'auto');assert.equal(song.filterRadius,0);assert.equal(song.indexRate,.25);
+  assert.equal(song.registerAdaptation,.6);assert.equal(song.registerPitch,0);
   assert.equal(suggestVoiceParameters(wide,model,reference).pitch,8,'ordinary speech matching remains available');
   const high=suggestVoiceParameters({medianHz:190,p10Hz:180,p90Hz:500,confidence:.9},model,reference,{audioMode:'song'});
   assert.equal(high.pitch,8); // This range still has enough headroom.

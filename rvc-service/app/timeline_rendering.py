@@ -10,17 +10,19 @@ import soundfile as sf
 from app.analysis_timeline import prepare_analysis, prepare_priors, join_timeline, PAD_FRAMES, HOP
 
 
-def prepare(model,input_wav,work_root,requested_method,diagnostic_dir,pitch=0,index_rate=.45,protect=.33,filter_radius=0):
+def prepare(model,input_wav,work_root,requested_method,diagnostic_dir,pitch=0,index_rate=.45,protect=.33,filter_radius=0,
+            register_strength=0.,register_pitch=0.):
     method='rmvpe' if requested_method=='auto' else requested_method
     consensus=os.getenv('RVC_TIMELINE_CONSENSUS','1')=='1'
     timeline=prepare_analysis(model,input_wav,method,diagnostic_dir,consensus=consensus,filter_radius=filter_radius)
-    prepare_priors(model,timeline,index_rate,protect,pitch,diagnostic_dir)
+    prepare_priors(model,timeline,index_rate,protect,pitch,diagnostic_dir,
+                   register_strength=register_strength,register_pitch=register_pitch)
     source=Path(work_root)/'source';source.mkdir(parents=True,exist_ok=True)
     manifest=dict(sourceDurationSeconds=timeline.input_samples/16000,
         mode='absolute-analysis-v1',crossfadeSeconds=.5,
         contextSeconds=3.,tailPaddingSamples=0,f0MethodRequested=requested_method,
         f0MethodPreferred=method,f0MethodsUsed=[method]*len(timeline.spans),
-        consensus=consensus and method=='rmvpe',chunks=[],overlaps=[])
+        consensus=consensus and method=='rmvpe',registerControls=timeline.register_controls,chunks=[],overlaps=[])
     for i,(start,end) in enumerate(timeline.spans):
         stop=min(end*HOP,timeline.input_samples)
         wave=timeline.audio[(start+PAD_FRAMES)*HOP:PAD_FRAMES*HOP+stop]

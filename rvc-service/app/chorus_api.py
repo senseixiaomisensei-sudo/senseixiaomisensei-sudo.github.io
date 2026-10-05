@@ -238,7 +238,8 @@ def install_chorus_routes(app, core):
                 diagnostics=work/f'evidence-{i+1}' if os.getenv('RVC_CHORUS_STAGE_EVIDENCE','0')=='1' else None
                 actual_f0=await core.render_duration_safe_conversion_async(model_path,normalized,
                     converted,work/f'chunks-{i+1}',info['duration'],param['pitch'],param['indexRate'],param['protect'],
-                    0,0,param['rmsMixRate'],param['f0Method'],profile,diagnostics)
+                    0,0,param['rmsMixRate'],param['f0Method'],profile,diagnostics,
+                    param['registerAdaptation'],param['registerPitch'])
                 await asyncio.to_thread(core.suppress_silent_synthesis,converted,normalized)
                 await asyncio.to_thread(core.apply_dynamics,converted,normalized,1-param['rmsMixRate'])
                 auto_gain=await asyncio.to_thread(core.calibrate_song_vocals,raw,converted)

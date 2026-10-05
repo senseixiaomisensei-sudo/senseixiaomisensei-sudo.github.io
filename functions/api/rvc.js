@@ -19,6 +19,7 @@ const ALLOWED_FIELDS = new Set([
   "indexRate",
   "index_rate",
   "protect",
+  "registerAdaptation", "register_adaptation", "registerPitch", "register_pitch",
   "f0Method",
   "f0_method",
   "format",
@@ -228,6 +229,8 @@ export async function onRequest(context) {
   const pitch = valueAsString(formData, "pitch");
   const indexRate = valueAsString(formData, "indexRate");
   const protect = valueAsString(formData, "protect");
+  const registerAdaptation = valueAsString(formData, "registerAdaptation") || valueAsString(formData, "register_adaptation") || "0";
+  const registerPitch = valueAsString(formData, "registerPitch") || valueAsString(formData, "register_pitch") || "0";
   const f0Method = valueAsString(formData, "f0Method");
   const format = valueAsString(formData, "format");
   const resample = valueAsString(formData, "resample");
@@ -248,6 +251,7 @@ export async function onRequest(context) {
   if (!validInteger(pitch, -24, 24)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Pitch must be between -24 and 24");
   if (!validDecimal(indexRate, 0, 1)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Similarity must be between 0 and 1");
   if (!validDecimal(protect, 0, 0.5)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Consonant protection must be between 0 and 0.5");
+  if (![registerAdaptation, registerPitch].every(value => /^(?:0(?:\.\d+)?|1(?:\.0+)?)$/u.test(value))) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Register strengths must be finite values between 0 and 1");
   if (!validDecimal(rmsMixRate, 0, 1)) return failure(request, env, 400, "RVC_INVALID_PARAMETER", "Volume tracking must be between 0 and 1");
   if (!validDecimal(vocalGainDb, -24, 6) || !validDecimal(accompanimentGainDb, -24, 6)
     || !["true", "false"].includes(vocalMute) || !["true", "false"].includes(accompanimentMute)
@@ -270,6 +274,8 @@ export async function onRequest(context) {
   upstreamBody.set("pitch", pitch);
   upstreamBody.set("index_rate", indexRate);
   upstreamBody.set("protect", protect);
+  upstreamBody.set("register_adaptation", registerAdaptation);
+  upstreamBody.set("register_pitch", registerPitch);
   upstreamBody.set("f0_method", f0Method);
   upstreamBody.set("format", format);
   upstreamBody.set("resample", resample);
