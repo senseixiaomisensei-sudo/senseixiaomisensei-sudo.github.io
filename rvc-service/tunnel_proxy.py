@@ -209,7 +209,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             self.close_connection = True
             self.send_response(response.status, response.reason)
             content_length = response.getheader("Content-Length")
-            for key in ("Content-Type", "Content-Range", "Accept-Ranges", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After", "X-RVC-F0-Method", "X-RVC-Mix-Revision", "X-RVC-Remix-Available"):
+            for key in ("Content-Type", "Content-Range", "Accept-Ranges", "Cache-Control", "Content-Disposition", "X-Content-Type-Options", "Retry-After", "X-RVC-F0-Method", "X-RVC-Mix-Revision", "X-RVC-Remix-Available", "X-RVC-Engine", "X-RVC-Engine-Revision", "X-RVC-Reference-Sha256", "X-RVC-Backend-Build", "X-RVC-Speech-Steps"):
                 value = response.getheader(key)
                 if value:
                     self.send_header(key, value)

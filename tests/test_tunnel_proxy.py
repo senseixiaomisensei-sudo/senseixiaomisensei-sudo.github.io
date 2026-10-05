@@ -16,6 +16,9 @@ class Echo(http.server.BaseHTTPRequestHandler):
         self.send_header('Content-Length',str(len(payload)))
         self.send_header('Content-Range','bytes 0-1023/4096')
         self.send_header('Accept-Ranges','bytes')
+        self.send_header('X-RVC-Speech-Steps','200')
+        self.send_header('X-RVC-Engine','seed-vc-v2-speech')
+        self.send_header('X-RVC-Backend-Build','a'*40)
         self.end_headers();self.wfile.write(payload)
 
 class ProxyContracts(unittest.TestCase):
@@ -56,5 +59,11 @@ class ProxyContracts(unittest.TestCase):
     def test_json_body_limit_remains_enforced(self):
         status,_,_=self.request('POST',f'/v1/chorus/{self.job}/convert'+self.query,b'x'*65537,{'Content-Type':'application/json'})
         self.assertEqual(status,413)
+    def test_speech_sampling_and_engine_identity_survive_the_narrow_proxy(self):
+        status,headers,_=self.request('GET',f'/v1/output/{self.job}'+self.query)
+        self.assertEqual(status,200)
+        self.assertEqual(headers['X-RVC-Speech-Steps'],'200')
+        self.assertEqual(headers['X-RVC-Engine'],'seed-vc-v2-speech')
+        self.assertEqual(headers['X-RVC-Backend-Build'],'a'*40)
 
 if __name__=='__main__':unittest.main()
