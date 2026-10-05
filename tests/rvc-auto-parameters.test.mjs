@@ -46,6 +46,11 @@ test('new speech mode keeps disabled RVC settings and the selected engine',async
   const ui=fixture(async url=>url.includes('voice-ranges')?{profiles:{}}:job);
   try{ui.modern(true);ui.nodes.get('rvc-pitch').value='4';await ui.nodes.get('rvc-auto-parameters').click();assert.equal(ui.nodes.get('rvc-pitch').value,'4');assert.equal(ui.nodes.get('rvc-rms-mix').value,'1');}finally{ui.close();}
 });
+test('terminal analysis failure starts a new job on retry instead of polling a failed job forever',async()=>{
+  let uploads=0;
+  const ui=fixture(async url=>url.includes('voice-ranges')?{profiles:{}}:++uploads===1?{...job,state:'failed',code:'RVC_SEPARATION_FAILED'}:job);
+  try{await ui.nodes.get('rvc-auto-parameters').click();await ui.nodes.get('rvc-auto-parameters').click();assert.equal(uploads,2);assert.equal(ui.nodes.get('rvc-pitch').value,'12');}finally{ui.close();}
+});
 test('TTS installation is an authenticated bounded route; health polling survives the text limiter',async()=>{
   const old=globalThis.fetch;let received;
   globalThis.fetch=async(url,options)=>{received={url,options};return Response.json({state:'downloading',ready:false});};

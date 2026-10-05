@@ -7750,7 +7750,7 @@
         const until=Date.now()+5*60*1000;
         while(Date.now()<until){
           await probeTts();const info=state.ttsInfo||{};
-          if(info.ready){setTtsStatus(l('下载部署完成，真实合成检测通过。','Installed and verified by real synthesis.'),'ok');return;}
+          if(state.ttsEnabled && info.ready){setTtsStatus(l('下载部署完成，真实合成检测通过。','Installed and verified by real synthesis.'),'ok');return;}
           if(info.state==='failed')throw new Error(info.code||'RVC_TTS_INSTALL_FAILED');
           const percent=Math.min(100,Math.round(100*Number(info.downloadedBytes||0)/Number(info.downloadBytes||31559701)));
           setTtsStatus(info.state==='validating'?l('模型校验与合成检测中…','Checking integrity and synthesis…'):l(`正在下载中性 TTS：${percent}%`,`Downloading neutral TTS: ${percent}%`));
@@ -7945,7 +7945,7 @@
       },
     });
     await initCatalog();
-    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-1');
+    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-2');
     state.autoParameterController=initRegularAutoParameters({state,getEndpoint:getOfficialEndpoint,getModel:getSelectedModel,
       prepareFile:fixUploadContainer,isModernSpeech:useNewSpeechEngine,createRequestId:createCloudRequestId,
       setBusy:value=>{state.busy=value;updateStatusDisplay();syncMixControls();}});

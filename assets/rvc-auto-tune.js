@@ -53,15 +53,19 @@ export function initRegularAutoParameters({state,getEndpoint,getModel,prepareFil
         }
         const until=Date.now()+3600000;let job=pending.job;
         while(job.state!=='completed'){
-          if(job.state==='failed')throw new Error(job.code||'RVC_ANALYSIS_FAILED');
+          if(job.state==='failed')throw Object.assign(new Error(job.code||'RVC_ANALYSIS_FAILED'),{retryable:false});
           if(Date.now()>until)throw new Error('RVC_ANALYSIS_TIMEOUT');
           await wait(4000);job=await request(`${pending.base}/${job.jobId}?token=${encodeURIComponent(job.downloadToken)}`);
         }
-        if(job.analysisOnly!==true || job.tracks?.length!==1)throw new Error('RVC_ANALYSIS_INVALID');
+        if(job.analysisOnly!==true || job.tracks?.length!==1)throw Object.assign(new Error('RVC_ANALYSIS_INVALID'),{retryable:false});
         cache={file,mode,range:job.tracks[0].voiceRange||{}};pending=null;
       }
       if(state.audio?.file===file && state.audioMode===mode){active=true;apply();}
-    }catch(error){text('分析未完成。可点击自动调参继续查询；现有参数保持不变。','Analysis incomplete. Select auto settings to resume; current parameters are unchanged.');}
+    }catch(error){
+      if(error.retryable===false)pending=null;
+      text(pending?'分析未完成。可点击自动调参继续查询；现有参数保持不变。':'分析失败，可点击自动调参重新分析；现有参数保持不变。',
+        pending?'Analysis incomplete. Select auto settings to resume; current parameters are unchanged.':'Analysis failed. Select auto settings to analyze again; current parameters are unchanged.');
+    }
     finally{setBusy(false);refresh();}
   });
   refresh();return {refresh};
