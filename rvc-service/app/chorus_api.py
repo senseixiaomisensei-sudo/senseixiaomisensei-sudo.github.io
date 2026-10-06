@@ -62,7 +62,7 @@ def install_chorus_routes(app, core):
         if record.state == 'completed':
             result.update({k:info[k] for k in ('tracks','requestedCount','estimatedCount','countNeedsReview',
                 'experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256','parameters','reusedConversion','countPolicyRevision',
-                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','candidateSelection','finalPairDiagnostics','analysisOnly','automaticCountLimit','countConfirmation','backendBuildSha','pipelineRevision') if k in info})
+                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','localLeakageRefinement','candidateSelection','finalPairDiagnostics','analysisOnly','automaticCountLimit','countConfirmation','backendBuildSha','pipelineRevision') if k in info})
         return result
 
     async def track_task(task):
@@ -126,6 +126,7 @@ def install_chorus_routes(app, core):
                 'duplicateMerges':analysis.get('duplicateMerges',[]),
                 'separationDiagnostics':analysis.get('separationDiagnostics',[]),
                 'contextRefinement':analysis.get('contextRefinement',{}),
+                'localLeakageRefinement':analysis.get('localLeakageRefinement',{}),
                 'candidateSelection':analysis.get('candidateSelection',{}),
                 'countConfirmation':analysis.get('countConfirmation',{}),
                 'finalPairDiagnostics':analysis.get('finalPairDiagnostics',[]),

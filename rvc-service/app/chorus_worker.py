@@ -14,10 +14,10 @@ import soundfile as sf
 import torch
 from scipy.signal import resample_poly
 try:
-    from app.chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment
+    from app.chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment, refine_local_leakage
     from app.chorus_medley import candidate_available, load_candidate, prefer_candidate
 except ModuleNotFoundError:
-    from chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment
+    from chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment, refine_local_leakage
     from chorus_medley import candidate_available, load_candidate, prefer_candidate
 
 REVISION = '8e750521b5942f4717656cac86a23cf0bd90dea5'
@@ -187,13 +187,18 @@ def main():
     original = split_evidence(tracks)
     candidate_selection = {'attempted':False, 'selected':'unmixx'}
     candidate_manifest = None
+    local_reference = None
+    local_manifest = None
     count_confirmation = {'required':a.count=='auto','confirmed':a.count!='auto'}
-    if (a.count=='auto' or original['crossTalkRisk']) and candidate_available():
+    # Quiet local leakage can evade the global crossTalkRisk flag. Manual
+    # singer counts need the same independent separation check as auto mode.
+    if candidate_available():
         candidate_selection['attempted'] = True
         try:
             alternate, alternate_manifest = load_candidate()
             trial, trial_bounds = split_pair(alternate,audio)
             after = split_evidence(trial)
+            local_reference, local_manifest = trial, alternate_manifest
             agreement=source_agreement(tracks,trial)
             # Waveform-only overlap matching loses identity through solo/quiet
             # sections. Retry permutations using a full-song learned reference.
@@ -222,6 +227,11 @@ def main():
         except (OSError,ValueError,RuntimeError) as error:
             candidate_selection['failure'] = type(error).__name__
     tracks, bounds, context = refine_pair_context(model,audio,tracks,bounds)
+    local_refinement = {'selectedSeconds':0., 'attempted':False}
+    if local_reference is not None and candidate_manifest is None:
+        tracks, local_refinement = refine_local_leakage(tracks,local_reference)
+        local_refinement.update({'attempted':True,'referenceModelSha256':local_manifest['modelSha256'],
+            'referenceCheckpointSha256':local_manifest['checkpointSha256']})
     evidence = [{'parent': 'mix', **split_evidence(tracks), 'boundaries': bounds}]
     # The two-source model is not a trained singer-count classifier.
     # Recursively splitting a clean singer can partition registers/articulation
@@ -247,14 +257,16 @@ def main():
     final_pairs = [split_evidence(np.stack([leaves[i],leaves[j]]))
         for i in range(len(leaves)) for j in range(i+1,len(leaves))]
     separation_status = ('single-or-unresolved' if len(leaves)==1 else
-        'needs-review' if count_confirmation.get('assignmentAssisted') or any(info['crossTalkRisk'] for info in final_pairs) else 'separated')
+        'needs-review' if count_confirmation.get('assignmentAssisted') or local_refinement['selectedSeconds']
+            or any(info['crossTalkRisk'] for info in final_pairs) else 'separated')
     a.output_dir.mkdir(parents=True, exist_ok=True)
     paths = []
     for i, track in enumerate(leaves):
         path = a.output_dir / f'singer-{i+1}.wav'
         sf.write(path, track, RATE, subtype='FLOAT')
         paths.append(str(path.resolve()))
-    payload = {'engine': 'medleyvox-candidate' if candidate_manifest else 'unmixx-recursive',
+    payload = {'engine': 'medleyvox-candidate' if candidate_manifest else
+        'unmixx-medley-local' if local_refinement['selectedSeconds'] else 'unmixx-recursive',
         'modelRevision': candidate_manifest['revision'] if candidate_manifest else REVISION,
         'modelSha256': candidate_manifest['modelSha256'] if candidate_manifest else manifest['files']['ckpt/best.ckpt'],
         'adaptedCodeSha256': candidate_manifest['exportCodeSha256'] if candidate_manifest else code_hash,
@@ -264,6 +276,7 @@ def main():
         'automaticCountLimit':2,'countPolicyRevision':COUNT_POLICY_REVISION,'voiceRanges':[voice_range(track) for track in leaves],
         'separationStatus':separation_status,'duplicateMerges':merged,
         'contextRefinement':context,
+        'localLeakageRefinement':local_refinement,
         'candidateSelection':candidate_selection,'countConfirmation':count_confirmation,
         'finalPairDiagnostics':final_pairs,
         'separationDiagnostics':[{k:v for k,v in info.items() if k not in {'boundaries'}} for info in evidence],

@@ -6,7 +6,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'rvc-service'))
 from app.chorus_worker import RATE, split_evidence
-from app.chorus_quality import accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment
+from app.chorus_quality import accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment, refine_local_leakage
 from app.chorus_medley import prefer_candidate, CandidateAdapter
 
 
@@ -137,6 +137,33 @@ class CountEvidence(unittest.TestCase):
         self.assertFalse(prefer_candidate(leaking,clean,assignment_uncertain=True))
         self.assertFalse(prefer_candidate(leaking,{**clean,'distinctCandidate':False}))
         self.assertFalse(prefer_candidate(leaking,{**leaking,'sharedCoherenceMedian':.80}))
+
+    def test_local_quiet_copy_selects_independent_neural_pair_preserving_mix(self):
+        rng=np.random.default_rng(72)
+        truth=rng.normal(0,.1,(2,RATE*8)).astype(np.float32)
+        truth[1,RATE*3:RATE*5]=0
+        leaking=truth.copy()
+        leaking[1,RATE*3:RATE*5]=truth[0,RATE*3:RATE*5]*.05
+        leaking[0,RATE*3:RATE*5]*=.95
+        clean,info=refine_local_leakage(leaking,truth[::-1])
+        self.assertGreater(info['selectedSeconds'],1)
+        self.assertLess(np.sqrt(np.mean(clean[1,RATE*3+RATE//2:RATE*5-RATE//2]**2)),1e-7)
+        np.testing.assert_allclose(clean.sum(axis=0),leaking.sum(axis=0),atol=5e-8)
+        np.testing.assert_array_equal(clean[:,:RATE*2],leaking[:,:RATE*2])
+
+    def test_genuine_quiet_second_voice_not_selected_by_volume(self):
+        pair=self.tones();pair[1]*=.04
+        alternate=pair.copy();alternate[1]*=.01
+        clean,info=refine_local_leakage(pair,alternate)
+        self.assertEqual(info['selectedSeconds'],0)
+        np.testing.assert_array_equal(clean,pair)
+
+    def test_unrelated_reference_cannot_replace_local_audio(self):
+        pair=self.tones()
+        unrelated=np.random.default_rng(5).normal(0,.1,pair.shape).astype(np.float32)
+        clean,info=refine_local_leakage(pair,unrelated)
+        self.assertEqual(info['selectedSeconds'],0)
+        np.testing.assert_array_equal(clean,pair)
 
 
 if __name__ == '__main__':

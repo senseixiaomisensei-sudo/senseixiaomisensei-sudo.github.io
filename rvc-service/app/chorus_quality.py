@@ -2,9 +2,54 @@
 from __future__ import annotations
 import numpy as np
 from scipy.signal import stft, correlate, correlation_lags
+from scipy.ndimage import uniform_filter1d
 
 RATE = 24000
-COUNT_POLICY_REVISION = 'source-validity-v6-global-assignment'
+COUNT_POLICY_REVISION = 'source-validity-v7-local-neural-selection'
+
+
+def refine_local_leakage(primary: np.ndarray, reference: np.ndarray) -> tuple[np.ndarray, dict]:
+    """Select a cleaner learned pair only for corroborated local leakage.
+
+    Full-song coherence misses quiet copies underneath solo phrases. Require
+    a bijective global correspondence, the same dominant waveform locally,
+    and a correlated quiet copy that the independent separator reduces by
+    >=9 dB. This is not a singer-count classifier or a silence/noise gate.
+    Both output waveforms come from inference; independent weak components
+    remain in the selected pair. Complementary fades preserve the mix.
+    """
+    agreement = source_agreement(primary, reference)
+    evidence = {'selectedSeconds': 0., 'windows': [], 'sourceAgreement': agreement,
+        'method': 'independent-neural-pair-selection-v1'}
+    if not agreement['consistent']:
+        evidence['reason'] = 'inconsistent-source-partitions'
+        return primary, evidence
+    ref = reference[::-1] if agreement['swapped'] else reference
+    selection = np.zeros(primary.shape[1], dtype=np.float32)
+    hop, window = RATE//4, RATE//2
+    for start in range(0, primary.shape[1], hop):
+        stop = min(start+window, primary.shape[1])
+        a, b = primary[:,start:stop].astype(np.float64), ref[:,start:stop].astype(np.float64)
+        pa, pb = np.mean(a*a, axis=1), np.mean(b*b, axis=1)
+        strong, weak = int(np.argmax(pb)), 1-int(np.argmax(pb))
+        if min(pa[strong], pb[strong]) < 1e-10:
+            continue
+        def correlation(x, y):
+            return float(abs(np.dot(x,y))/max(np.linalg.norm(x)*np.linalg.norm(y),1e-15))
+        match, shared = correlation(a[strong],b[strong]), correlation(a[strong],a[weak])
+        ratio, alternate_ratio = float(pa[weak]/pa[strong]), float(pb[weak]/pb[strong])
+        if (strong == int(np.argmax(pa)) and match > .9 and shared > .45
+                and alternate_ratio < .0025 and max(alternate_ratio*8,1e-5) < ratio < .08):
+            selection[start:stop] = 1.
+            evidence['windows'].append({'startSample':start,'endSample':stop,
+                'mainMatch':match,'sharedCorrelation':shared,
+                'primaryEnergyRatio':ratio,'candidateEnergyRatio':alternate_ratio})
+    evidence['selectedSeconds'] = float(selection.sum()/RATE)
+    if not evidence['selectedSeconds']:
+        return primary, evidence
+    # A 200 ms complementary transition between two complete neural pairs.
+    weight = uniform_filter1d(selection, size=RATE//5, mode='nearest')
+    return primary*(1-weight)+ref*weight, evidence
 
 
 def reference_assignment(current: np.ndarray, reference: np.ndarray) -> dict:
