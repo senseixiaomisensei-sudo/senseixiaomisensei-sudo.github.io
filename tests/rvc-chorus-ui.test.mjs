@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initChorus,readChorusTracks,fetchChorusJson,chorusSuggestedParams,publishChorusResult} from '../assets/rvc-chorus.js';
+import {initChorus,readChorusTracks,fetchChorusJson,chorusSuggestedParams,publishChorusResult,chorusAgreementWarning} from '../assets/rvc-chorus.js';
 import {chorusRoleMatches,createChorusRolePicker} from '../assets/rvc-chorus-picker.js';
 
 // Controller contracts, not a substitute for browser rendering or real audio.
@@ -80,6 +80,18 @@ test('only valid returned track identities, up to four, constitute analysis succ
   assert.equal(readChorusTracks(completed(4)).length,4);
   for(const job of [{},completed(0),completed(5),{tracks:[{trackId:2}]}])assert.throws(()=>readChorusTracks(job),/没有返回有效声部/);
   assert.throws(()=>readChorusTracks({tracks:[{trackId:1,sourceSha256:'same'},{trackId:2,sourceSha256:'same'}]}),/重复声部/);
+});
+
+test('disagreeing estimates explicitly remain unresolved in both languages',()=>{
+  const previous=globalThis.document;
+  const job={countConfirmation:{sourceAgreement:{consistent:false}}};
+  try{
+    globalThis.document={documentElement:{lang:'zh'}};
+    assert.match(chorusAgreementWarning(job),/未可靠拆开.*不能判定原曲只有一人/);
+    globalThis.document.documentElement.lang='en';
+    assert.match(chorusAgreementWarning(job),/Separation is unresolved.*does not mean there is only one singer/);
+    assert.equal(chorusAgreementWarning({countConfirmation:{sourceAgreement:{consistent:true}}}),'');
+  }finally{globalThis.document=previous;}
 });
 
 test('language changes keep auditions, selection and manually tuned parameters intact',async()=>fixture(async ui=>{

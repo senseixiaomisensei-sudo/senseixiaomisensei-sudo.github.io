@@ -14,10 +14,10 @@ import soundfile as sf
 import torch
 from scipy.signal import resample_poly
 try:
-    from app.chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves
+    from app.chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement
     from app.chorus_medley import candidate_available, load_candidate, prefer_candidate
 except ModuleNotFoundError:
-    from chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves
+    from chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement
     from chorus_medley import candidate_available, load_candidate, prefer_candidate
 
 REVISION = '8e750521b5942f4717656cac86a23cf0bd90dea5'
@@ -182,9 +182,11 @@ def main():
             alternate, alternate_manifest = load_candidate()
             trial, trial_bounds = split_pair(alternate,audio)
             after = split_evidence(trial)
+            agreement=source_agreement(tracks,trial)
             candidate_selection.update({'original':original,'candidate':after,
                 'revision':alternate_manifest['revision'],'modelSha256':alternate_manifest['modelSha256']})
-            count_confirmation.update({'confirmed':accept_pair(after,False), 'independentEvidence':after})
+            count_confirmation.update({'confirmed':a.count!='auto' or (accept_pair(after,False) and agreement['consistent']),
+                'independentEvidence':after,'sourceAgreement':agreement})
             if prefer_candidate(original,after,any(b['assignmentUncertain'] for b in trial_bounds)):
                 tracks, bounds, model = trial, trial_bounds, alternate
                 candidate_manifest = alternate_manifest

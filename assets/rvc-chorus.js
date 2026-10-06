@@ -39,6 +39,13 @@ export function readChorusTracks(job) {
   return tracks;
 }
 
+export function chorusAgreementWarning(job) {
+  return job.countConfirmation?.sourceAgreement?.consistent===false
+    ? ct('两套模型的声部分配不一致，未可靠拆开；当前保留整段混合人声，不能判定原曲只有一人。',
+      'The models disagree on voice assignments. Separation is unresolved; the full vocal mixture is preserved. This does not mean there is only one singer.')
+    : '';
+}
+
 export function chorusSuggestedParams(track,model={},reference={}) {
   const {pitch,indexRate,protect,rmsMixRate,f0Method,registerAdaptation,registerPitch}=suggestVoiceParameters(track.voiceRange,model,reference,{audioMode:'song'});
   return {trackId:track.trackId,modelId:model.id,pitch,indexRate,protect,rmsMixRate,f0Method,registerAdaptation,registerPitch,gainDb:0,mute:false};
@@ -136,7 +143,7 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
       }
       card.append(header);
       if(job.separationStatus==='needs-review'||job.separationStatus==='single-or-unresolved'){
-        const notice=bind(document.createElement('p'),'候选声部 · 存在串音或人数不确定，请先试听','Candidate voice · possible cross-talk or uncertain count; audition first');
+        const notice=bind(document.createElement('p'),()=>chorusAgreementWarning(job)||ct('候选声部 · 存在串音或人数不确定，请先试听','Candidate voice · possible cross-talk or uncertain count; audition first'),()=>chorusAgreementWarning(job)||ct('候选声部 · 存在串音或人数不确定，请先试听','Candidate voice · possible cross-talk or uncertain count; audition first'));
         notice.className='chorus-range-label';card.append(notice);
       }
       const range=t.voiceRange||{},rangeLabel=document.createElement('p');
@@ -181,8 +188,8 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
       const warning=job.requestedCount!=='auto' && Number(job.requestedCount)!==count ? `未能可靠提取请求的 ${job.requestedCount} 路。` : '';
       const warningEn=warning?`Could not reliably extract the requested ${job.requestedCount} voices. `:'';
       const review=job.countNeedsReview||job.separationStatus==='needs-review'||job.separationStatus==='single-or-unresolved';
-      message(()=>`${warning}${review?'已生成候选，尚未确认成功分开歌手':'分离完成'}，已显示 ${count} 张声部卡片，并按声区匹配初始参数。${review?'人数需要逐路试听确认；一路结果不代表原曲只有一人。':''}${job.duplicateMerges?.length?'重复声部已合并，保留全部时长。':''}请逐路试听原声、选择角色，再开始合唱。${job.requestedCount==='auto'?'自动模式最多确认两路；三／四人请明确选择人数。':''}${job.experimentalRecursive?'三／四路为实验分离，请检查串音。':''} 有效至 ${new Date(job.expiresAt).toLocaleString('zh-CN')}。`,
-        ()=>`${warningEn}${review?'Candidates generated; singers are not confirmed as separated':'Separation complete'}. ${count} voice cards with register-matched parameters. ${review?'Confirm singer identities by audition; a single result does not prove there is only one singer. ':''}${job.duplicateMerges?.length?'Duplicate sources merged; full duration preserved. ':''}Audition each original and assign a character before converting. ${job.requestedCount==='auto'?'Auto mode supports up to two candidates; select three/four singers explicitly. ':''}${job.experimentalRecursive?'Three/four-way separation is experimental; check cross-talk. ':''}Expires ${new Date(job.expiresAt).toLocaleString('en-US')}.`);
+      message(()=>`${chorusAgreementWarning(job)}${warning}${review?'已生成候选，尚未确认成功分开歌手':'分离完成'}，已显示 ${count} 张声部卡片，并按声区匹配初始参数。${review?'人数需要逐路试听确认；一路结果不代表原曲只有一人。':''}${job.duplicateMerges?.length?'重复声部已合并，保留全部时长。':''}请逐路试听原声、选择角色，再开始合唱。${job.requestedCount==='auto'?'自动模式最多确认两路；三／四人请明确选择人数。':''}${job.experimentalRecursive?'三／四路为实验分离，请检查串音。':''} 有效至 ${new Date(job.expiresAt).toLocaleString('zh-CN')}。`,
+        ()=>`${chorusAgreementWarning(job)} ${warningEn}${review?'Candidates generated; singers are not confirmed as separated':'Separation complete'}. ${count} voice cards with register-matched parameters. ${review?'Confirm singer identities by audition; a single result does not prove there is only one singer. ':''}${job.duplicateMerges?.length?'Duplicate sources merged; full duration preserved. ':''}Audition each original and assign a character before converting. ${job.requestedCount==='auto'?'Auto mode supports up to two candidates; select three/four singers explicitly. ':''}${job.experimentalRecursive?'Three/four-way separation is experimental; check cross-talk. ':''}Expires ${new Date(job.expiresAt).toLocaleString('en-US')}.`);
       tracks.scrollIntoView?.({block:'nearest'});
     }else{
       readChorusTracks(job);render(current.base,job,true);

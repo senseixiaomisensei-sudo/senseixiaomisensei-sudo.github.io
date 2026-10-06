@@ -62,7 +62,7 @@ def install_chorus_routes(app, core):
         if record.state == 'completed':
             result.update({k:info[k] for k in ('tracks','requestedCount','estimatedCount','countNeedsReview',
                 'experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256','parameters','reusedConversion','countPolicyRevision',
-                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','candidateSelection','finalPairDiagnostics','analysisOnly','automaticCountLimit','countConfirmation') if k in info})
+                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','candidateSelection','finalPairDiagnostics','analysisOnly','automaticCountLimit','countConfirmation','backendBuildSha','pipelineRevision') if k in info})
         return result
 
     async def track_task(task):
@@ -118,6 +118,7 @@ def install_chorus_routes(app, core):
             if kind=='mix': await asyncio.to_thread(discard_temporary,work,source)
             info={k:analysis[k] for k in ('requestedCount','estimatedCount','countNeedsReview','experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256')}
             info.update({'duration':duration,'sampleRate':24000,'inputKind':kind,'analysisOnly':analysis_only,
+                'backendBuildSha':core.BACKEND_BUILD_SHA,'pipelineRevision':core.PIPELINE_REVISION,
                 'countPolicyRevision':analysis.get('countPolicyRevision','legacy'),
                 'automaticCountLimit':analysis.get('automaticCountLimit',2),
                 'accompaniment':str(accompaniment.relative_to(work)),
@@ -160,14 +161,17 @@ def install_chorus_routes(app, core):
             if singer_count not in {'auto','2','3','4'} or input_kind not in {'mix','vocals'}:
                 raise core.RvcServiceError(400,'CHORUS_INVALID_PARAMETER')
             if request_id and not core.valid_request_id(request_id): raise core.RvcServiceError(400,'RVC_INVALID_REQUEST_ID')
+            # Reject an invalid upload before reserving a queue slot. Errors
+            # outside the preparation try block previously left uploading jobs.
+            extension=core.safe_extension(audio)
             if core.active_training_job_id: raise core.RvcServiceError(503,'RVC_TRAINING_ACTIVE')
             await core.cleanup_expired_outputs()
             fingerprint=hashlib.sha256(json.dumps([singer_count,input_kind,analysis_only,audio.filename,audio.content_type,core.PIPELINE_REVISION]).encode()).hexdigest()
             job_id,record,created=await core.reserve_conversion_job(request_id,fingerprint,'wav','chorus-analysis')
             if not created: return response(job_id,record)
-            path=folder(job_id)/f'input.{core.safe_extension(audio)}'
-            path.parent.mkdir(parents=True,exist_ok=True)
             try:
+                path=folder(job_id)/f'input.{extension}'
+                path.parent.mkdir(parents=True,exist_ok=True)
                 await core.write_upload(audio,path)
                 seconds=await asyncio.to_thread(core.probe_duration,path)
                 if not core.MIN_AUDIO_SECONDS <= seconds <= core.MAX_AUDIO_SECONDS:

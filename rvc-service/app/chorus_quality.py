@@ -4,7 +4,34 @@ import numpy as np
 from scipy.signal import stft, correlate, correlation_lags
 
 RATE = 24000
-COUNT_POLICY_REVISION = 'source-validity-v4-consensus'
+COUNT_POLICY_REVISION = 'source-validity-v5-source-agreement'
+
+def source_agreement(first: np.ndarray, second: np.ndarray) -> dict:
+    """Two valid binary partitions are not independent singer confirmation.
+
+    Require a single bijective source correspondence over the full recording.
+    This is a veto for inconsistent estimates, never proof of human identity.
+    Only compare; do not remix, time-warp or replace either estimate.
+    """
+    if first.shape != second.shape or first.ndim!=2 or first.shape[0]!=2:
+        raise ValueError('CHORUS_INVALID_STEMS')
+    if not np.isfinite(first).all() or not np.isfinite(second).all():
+        raise ValueError('CHORUS_INVALID_STEMS')
+    a,b=first.astype(np.float64),second.astype(np.float64)
+    power_a=np.sum(a*a,axis=1);power_b=np.sum(b*b,axis=1)
+    scores=np.abs(a@b.T)/np.maximum(np.sqrt(power_a[:,None]*power_b[None,:]),1e-15)
+    swapped=bool(scores[0,1]+scores[1,0]>np.trace(scores))
+    order=[1,0] if swapped else [0,1]
+    matched=[float(scores[i,order[i]]) for i in range(2)]
+    margins=[float(scores[i,order[i]]-scores[i,1-order[i]]) for i in range(2)]
+    best_rows=np.argmax(scores,axis=1)
+    best_columns=np.argmax(scores,axis=0)
+    bijective=(len(set(best_rows.tolist()))==2 and len(set(best_columns.tolist()))==2
+        and all(best_rows[i]==order[i] for i in range(2)))
+    confirmed=bool(bijective and min(matched)>=.5 and min(margins)>=.15)
+    return {'consistent':confirmed,'bijective':bool(bijective),'swapped':swapped,
+        'matchedCorrelations':matched,'matchMargins':margins,'correlationMatrix':scores.tolist(),
+        'reason':'source-correspondence' if confirmed else 'inconsistent-source-partitions'}
 
 def aligned_duplicate_evidence(pair: np.ndarray) -> dict:
     """Detect a delayed copy, without warping or aligning the exported stems.

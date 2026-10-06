@@ -8062,7 +8062,7 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261006-count-consensus-1');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261006-source-agreement-2');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,

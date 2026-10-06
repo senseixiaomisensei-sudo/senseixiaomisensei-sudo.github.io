@@ -6,7 +6,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'rvc-service'))
 from app.chorus_worker import RATE, split_evidence
-from app.chorus_quality import accept_pair, merge_duplicate_leaves
+from app.chorus_quality import accept_pair, merge_duplicate_leaves, source_agreement
 from app.chorus_medley import prefer_candidate
 
 
@@ -32,6 +32,25 @@ class CountEvidence(unittest.TestCase):
 
     def test_sustained_independent_overlap_remains_a_candidate(self):
         self.assertTrue(split_evidence(self.tones())['distinctCandidate'])
+
+    def test_consensus_accepts_fixed_permutation_and_different_gains(self):
+        pair=self.tones()
+        evidence=source_agreement(pair,pair[::-1]*np.array([[.7],[1.2]],dtype=np.float32))
+        self.assertTrue(evidence['consistent']);self.assertTrue(evidence['swapped'])
+
+    def test_two_distinct_partitions_of_the_same_mixture_are_not_singer_consensus(self):
+        # Both models return energetic, independent leaves, yet their source
+        # partitions disagree. Count-only consensus would falsely accept them.
+        first=np.random.default_rng(42).normal(0,.1,(2,RATE*6)).astype(np.float32)
+        second=np.stack([first[0]+first[1],first[0]-first[1]])
+        self.assertTrue(split_evidence(first)['distinctCandidate'])
+        self.assertTrue(split_evidence(second)['distinctCandidate'])
+        evidence=source_agreement(first,second)
+        self.assertFalse(evidence['consistent']);self.assertLess(min(evidence['matchMargins']),.15)
+
+    def test_source_mapping_changes_mid_recording_are_not_consensus(self):
+        first=self.tones();second=first.copy();second[:,RATE*2:]=second[::-1,RATE*2:]
+        self.assertFalse(source_agreement(first,second)['consistent'])
 
     def test_manual_count_cannot_force_duplicate_stems(self):
         pair=self.tones();pair[1]=pair[0]*.8
