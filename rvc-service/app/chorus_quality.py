@@ -4,7 +4,28 @@ import numpy as np
 from scipy.signal import stft, correlate, correlation_lags
 
 RATE = 24000
-COUNT_POLICY_REVISION = 'source-validity-v5-source-agreement'
+COUNT_POLICY_REVISION = 'source-validity-v6-global-assignment'
+
+
+def reference_assignment(current: np.ndarray, reference: np.ndarray) -> dict:
+    """Assign learned estimates to full-song components, without changing audio.
+
+    A strong dominant match can identify a solo phrase even when the second
+    component is quiet. This is source tracking, not a human-count classifier.
+    Unrelated/duplicate references cannot dictate a permutation.
+    """
+    if current.shape != reference.shape or current.ndim != 2 or current.shape[0] != 2:
+        raise ValueError('CHORUS_INVALID_STEMS')
+    if not np.isfinite(current).all() or not np.isfinite(reference).all():
+        raise ValueError('CHORUS_INVALID_STEMS')
+    a, b = current.astype(np.float64), reference.astype(np.float64)
+    pa, pb = np.sum(a*a, axis=1), np.sum(b*b, axis=1)
+    scores = np.abs(a@b.T)/np.maximum(np.sqrt(pa[:,None]*pb[None,:]), 1e-15)
+    direct, reverse = float(np.trace(scores)), float(scores[0,1]+scores[1,0])
+    margin = abs(direct-reverse)
+    return {'confident': bool(scores.max() >= .65 and margin >= .15),
+        'swapped': bool(reverse > direct), 'margin': margin,
+        'correlationMatrix': scores.tolist()}
 
 def source_agreement(first: np.ndarray, second: np.ndarray) -> dict:
     """Two valid binary partitions are not independent singer confirmation.

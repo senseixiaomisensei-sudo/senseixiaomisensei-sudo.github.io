@@ -6,8 +6,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'rvc-service'))
 from app.chorus_worker import RATE, split_evidence
-from app.chorus_quality import accept_pair, merge_duplicate_leaves, source_agreement
-from app.chorus_medley import prefer_candidate
+from app.chorus_quality import accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment
+from app.chorus_medley import prefer_candidate, CandidateAdapter
 
 
 class CountEvidence(unittest.TestCase):
@@ -51,6 +51,37 @@ class CountEvidence(unittest.TestCase):
     def test_source_mapping_changes_mid_recording_are_not_consensus(self):
         first=self.tones();second=first.copy();second[:,RATE*2:]=second[::-1,RATE*2:]
         self.assertFalse(source_agreement(first,second)['consistent'])
+
+    def test_full_song_reference_recovers_permutation_after_silent_overlap(self):
+        pair=self.tones()
+        evidence=reference_assignment(pair[::-1],pair)
+        self.assertTrue(evidence['confident']);self.assertTrue(evidence['swapped'])
+        # Quiet overlap has no waveform evidence; the full phrase still does.
+        pair[:,:RATE]=0
+        evidence=reference_assignment(pair[::-1],pair)
+        self.assertTrue(evidence['confident']);self.assertTrue(evidence['swapped'])
+
+    def test_reference_cannot_force_unrelated_or_duplicate_source_assignments(self):
+        current=np.random.default_rng(20).normal(0,.1,(2,RATE*4)).astype(np.float32)
+        unrelated=np.random.default_rng(21).normal(0,.1,current.shape).astype(np.float32)
+        self.assertFalse(reference_assignment(current,unrelated)['confident'])
+        duplicate=np.repeat(current[:1],2,axis=0)
+        self.assertFalse(reference_assignment(current,duplicate)['confident'])
+        self.assertFalse(reference_assignment(current,np.zeros_like(current))['confident'])
+
+    def test_short_tail_meets_real_stft_padding_contract_without_extending_result(self):
+        import torch
+        class StftContract(torch.nn.Module):
+            def forward(self,x):
+                # Real reflect padding raises for <=1024 samples.
+                torch.nn.functional.pad(x,(1024,1024),mode='reflect')
+                return torch.cat([x*.7,x*.3],dim=1)
+        model=CandidateAdapter(StftContract())
+        for frames in (1,959,960,1024,2049):
+            x=torch.ones(1,1,frames)*.1
+            y=model(x)[0]
+            self.assertEqual(y.shape,(1,2,frames))
+            torch.testing.assert_close(y.sum(dim=1,keepdim=True),x)
 
     def test_manual_count_cannot_force_duplicate_stems(self):
         pair=self.tones();pair[1]=pair[0]*.8

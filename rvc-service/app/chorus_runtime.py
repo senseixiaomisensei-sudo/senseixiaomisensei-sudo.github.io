@@ -16,13 +16,16 @@ ENGINE_ROOT = Path(os.getenv('RVC_CHORUS_ENGINE_ROOT',
 
 
 def chorus_status():
-    from app.chorus_medley import candidate_available, REVISION as candidate_revision
+    from app.chorus_medley import candidate_available, REVISION as candidate_revision, ROOT as candidate_root
     from app.chorus_quality import COUNT_POLICY_REVISION
+    candidate = json.loads((candidate_root/'固定资源.json').read_text(encoding='utf8')) if candidate_available() else {}
     return {'ready': all((ENGINE_ROOT/name).is_file() for name in
         ['固定资源.json','ckpt/best.ckpt','look2hear/models/unmixx_model.py']),
         'engine': 'unmixx-recursive', 'maxSingers': 4, 'automaticCountLimit':2, 'recursiveNeedsReview': True,
         'countPolicyRevision':COUNT_POLICY_REVISION,
-        'correlatedCandidateReady':candidate_available(),'correlatedCandidateRevision':candidate_revision}
+        'correlatedCandidateReady':candidate_available(),'correlatedCandidateRevision':candidate_revision,
+        'correlatedCandidateCheckpoint':candidate.get('checkpointPath'),
+        'correlatedCandidateSha256':candidate.get('modelSha256')}
 
 
 def encode_mobile_mp3(source: Path, destination: Path, bitrate: int, measure_peak):

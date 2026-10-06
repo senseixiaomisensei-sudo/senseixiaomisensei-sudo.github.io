@@ -14,10 +14,10 @@ import soundfile as sf
 import torch
 from scipy.signal import resample_poly
 try:
-    from app.chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement
+    from app.chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment
     from app.chorus_medley import candidate_available, load_candidate, prefer_candidate
 except ModuleNotFoundError:
-    from chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement
+    from chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment
     from chorus_medley import candidate_available, load_candidate, prefer_candidate
 
 REVISION = '8e750521b5942f4717656cac86a23cf0bd90dea5'
@@ -74,30 +74,42 @@ def align_pair(previous: np.ndarray, current: np.ndarray) -> tuple[np.ndarray, b
 
 
 @torch.inference_mode()
-def split_pair(model, audio: np.ndarray) -> tuple[np.ndarray, list[dict]]:
+def split_pair(model, audio: np.ndarray, reference=None) -> tuple[np.ndarray, list[dict]]:
     # 12 s windows / 2 s overlap bound GPU memory, complementary linear fades
     # keep correlated waveforms at unity gain. The first/last sample are retained.
     window, overlap = RATE*12, RATE*2
+    if reference is not None and (reference.shape != (2,len(audio)) or not np.isfinite(reference).all()):
+        raise ValueError('CHORUS_INVALID_STEMS')
     result = np.zeros((2, len(audio)), np.float32)
     boundaries = []
     end = 0
     for start in range(0, len(audio), window-overlap):
         stop = min(start+window, len(audio))
         x = audio[start:stop]
-        if len(x) < 960:
-            x = np.pad(x, (0, 960-len(x)))
+        minimum = getattr(model, 'min_input_samples', 960)
+        if len(x) < minimum:
+            x = np.pad(x, (0, minimum-len(x)))
         y = model(torch.from_numpy(x)[None, None].cuda(), istest=True)[0]
         y = y[0, :, :stop-start].float().cpu().numpy()
         if y.shape != (2, stop-start) or not np.isfinite(y).all():
             raise ValueError('CHORUS_INVALID_STEMS')
         n = max(0, end-start)
         ambiguous = False
-        if n:
+        assignment = reference_assignment(y, reference[:,start:stop]) if reference is not None else None
+        if assignment and assignment['confident']:
+            if assignment['swapped']: y = y[::-1].copy()
+            method = 'full-song-reference'
+        elif n:
             y, ambiguous = align_pair(result[:, start:end], y)
+            method = 'overlap-fallback' if reference is not None else 'overlap'
+        else:
+            method = 'initial'
+        if n:
             weight = np.linspace(0, 1, n, dtype=np.float32)
             result[:, start:end] = result[:, start:end]*(1-weight) + y[:, :n]*weight
         result[:, start+n:stop] = y[:, n:]
-        boundaries.append({'startSample': start, 'endSample': stop, 'assignmentUncertain': ambiguous})
+        boundaries.append({'startSample': start, 'endSample': stop, 'assignmentUncertain': ambiguous,
+            'assignmentMethod': method, **({'referenceAssignment':assignment} if assignment else {})})
         end = stop
         if stop == len(audio): break
     return result, boundaries
@@ -183,10 +195,26 @@ def main():
             trial, trial_bounds = split_pair(alternate,audio)
             after = split_evidence(trial)
             agreement=source_agreement(tracks,trial)
+            # Waveform-only overlap matching loses identity through solo/quiet
+            # sections. Retry permutations using a full-song learned reference.
+            # Keep all UNMIXX samples; never mix reference audio into its output.
+            tracking = {'attempted':False}
+            if not agreement['consistent'] and accept_pair(original,False) and accept_pair(after,False):
+                tracked, tracked_bounds = split_pair(model,audio,reference=trial)
+                tracked_agreement = source_agreement(tracked,trial)
+                tracking = {'attempted':True,'selected':bool(tracked_agreement['consistent'] and accept_pair(split_evidence(tracked),False)),
+                    'before':agreement,'after':tracked_agreement,'boundaries':tracked_bounds}
+                if tracking['selected']:
+                    tracks, bounds = tracked, tracked_bounds
+                    agreement = tracked_agreement
+            candidate_selection['globalTracking'] = tracking
             candidate_selection.update({'original':original,'candidate':after,
-                'revision':alternate_manifest['revision'],'modelSha256':alternate_manifest['modelSha256']})
-            count_confirmation.update({'confirmed':a.count!='auto' or (accept_pair(after,False) and agreement['consistent']),
-                'independentEvidence':after,'sourceAgreement':agreement})
+                'revision':alternate_manifest['revision'],'modelSha256':alternate_manifest['modelSha256'],
+                'checkpointSha256':alternate_manifest['checkpointSha256'],'checkpointPath':alternate_manifest['checkpointPath']})
+            count_confirmation.update({'confirmed':a.count!='auto' or (accept_pair(after,False) and agreement['consistent'] and not tracking.get('selected')),
+                'candidatesReady':bool(accept_pair(after,False) and agreement['consistent']),
+                'independentEvidence':after,'sourceAgreement':agreement,
+                'assignmentAssisted':bool(tracking.get('selected')),'humanCountVerified':False})
             if prefer_candidate(original,after,any(b['assignmentUncertain'] for b in trial_bounds)):
                 tracks, bounds, model = trial, trial_bounds, alternate
                 candidate_manifest = alternate_manifest
@@ -200,7 +228,8 @@ def main():
     # into invented people. Automatic mode never makes that unsupported jump.
     # Three/four sources remain available through explicit manual count.
     wanted = 2 if a.count == 'auto' else int(a.count)
-    leaves = [t for t in tracks] if accept_pair(evidence[0], a.count!='auto') and count_confirmation['confirmed'] else [audio]
+    leaves = [t for t in tracks] if accept_pair(evidence[0], a.count!='auto') and (
+        count_confirmation['confirmed'] or count_confirmation.get('candidatesReady')) else [audio]
     while 1<len(leaves)<wanted:
         candidates = []
         for i, leaf in enumerate(leaves):
@@ -218,7 +247,7 @@ def main():
     final_pairs = [split_evidence(np.stack([leaves[i],leaves[j]]))
         for i in range(len(leaves)) for j in range(i+1,len(leaves))]
     separation_status = ('single-or-unresolved' if len(leaves)==1 else
-        'needs-review' if any(info['crossTalkRisk'] for info in final_pairs) else 'separated')
+        'needs-review' if count_confirmation.get('assignmentAssisted') or any(info['crossTalkRisk'] for info in final_pairs) else 'separated')
     a.output_dir.mkdir(parents=True, exist_ok=True)
     paths = []
     for i, track in enumerate(leaves):
