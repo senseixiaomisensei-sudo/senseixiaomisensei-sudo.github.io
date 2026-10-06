@@ -1515,7 +1515,7 @@ async def synthesize_tts(request: Request) -> Response:
     params=await parse_tts_input(request);params.pop('request_id')
     try:
         async with inference_lock:
-            if params['model_id'] in {'qwen3-06b','indextts-25'}: await asyncio.to_thread(release_cached_models)
+            if params['model_id'] in {'qwen3-17b','qwen3-06b','indextts-25'}: await asyncio.to_thread(release_cached_models)
             audio = await asyncio.to_thread(tts_runtime.synthesize, **params)
     except ValueError as error:
         code = str(error)
@@ -1536,7 +1536,7 @@ async def process_tts_job(job_id,params):
     try:
         async with inference_lock:
             record.state='processing';record.stage='tts-synthesis';persist_output_records()
-            if params['model_id'] in {'qwen3-06b','indextts-25'}: await asyncio.to_thread(release_cached_models)
+            if params['model_id'] in {'qwen3-17b','qwen3-06b','indextts-25'}: await asyncio.to_thread(release_cached_models)
             audio=await asyncio.to_thread(tts_runtime.synthesize,**params)
             if not audio or len(audio)>128*1024*1024: raise ValueError('RVC_TTS_EMPTY_OUTPUT')
             record.path.write_bytes(audio);record.state='completed';record.stage='completed'
