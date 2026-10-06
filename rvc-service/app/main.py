@@ -1467,7 +1467,9 @@ async def list_models(request: Request) -> dict[str, list[dict]]:
 @app.get("/v1/tts-health")
 async def tts_health(request: Request) -> dict:
     ensure_authorized(request)
-    return await asyncio.to_thread(tts_runtime.status)
+    model_id = request.query_params.get('model_id') or None
+    try: return await asyncio.to_thread(tts_runtime.status, model_id)
+    except ValueError as error: raise RvcServiceError(400, str(error)) from None
 
 
 @app.post("/v1/tts/install")

@@ -62,7 +62,7 @@ def install_chorus_routes(app, core):
         if record.state == 'completed':
             result.update({k:info[k] for k in ('tracks','requestedCount','estimatedCount','countNeedsReview',
                 'experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256','parameters','reusedConversion','countPolicyRevision',
-                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','candidateSelection','finalPairDiagnostics','analysisOnly') if k in info})
+                'separationStatus','duplicateMerges','separationDiagnostics','contextRefinement','candidateSelection','finalPairDiagnostics','analysisOnly','automaticCountLimit','countConfirmation') if k in info})
         return result
 
     async def track_task(task):
@@ -119,12 +119,14 @@ def install_chorus_routes(app, core):
             info={k:analysis[k] for k in ('requestedCount','estimatedCount','countNeedsReview','experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256')}
             info.update({'duration':duration,'sampleRate':24000,'inputKind':kind,'analysisOnly':analysis_only,
                 'countPolicyRevision':analysis.get('countPolicyRevision','legacy'),
+                'automaticCountLimit':analysis.get('automaticCountLimit',2),
                 'accompaniment':str(accompaniment.relative_to(work)),
                 'separationStatus':analysis.get('separationStatus','needs-review'),
                 'duplicateMerges':analysis.get('duplicateMerges',[]),
                 'separationDiagnostics':analysis.get('separationDiagnostics',[]),
                 'contextRefinement':analysis.get('contextRefinement',{}),
                 'candidateSelection':analysis.get('candidateSelection',{}),
+                'countConfirmation':analysis.get('countConfirmation',{}),
                 'finalPairDiagnostics':analysis.get('finalPairDiagnostics',[]),
                 'tracks':[{'trackId':i+1,'label':f'声部 {i+1}','frames':analysis['frames'],
                     'sourceSha256':hashlib.sha256(Path(path).read_bytes()).hexdigest(),

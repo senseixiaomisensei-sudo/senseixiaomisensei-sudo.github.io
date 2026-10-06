@@ -56,6 +56,11 @@ class ProxyContracts(unittest.TestCase):
             self.assertEqual(status,206);self.assertEqual(body,b'bytes=0-1023')
             self.assertEqual(headers['Content-Range'],'bytes 0-1023/4096')
             self.assertEqual(headers['Accept-Ranges'],'bytes')
+    def test_tts_model_query_reaches_the_private_health_route(self):
+        self.assertEqual(self.request('GET','/v1/tts-health?model_id=qwen3-17b')[0],200)
+        self.assertEqual(self.request('GET','/v1/tts-health?model_id=../../weights')[0],404)
+        self.assertEqual(self.request('GET','/v1/tts-health?model_id=qwen3-17b&other=1')[0],404)
+
     def test_json_body_limit_remains_enforced(self):
         status,_,_=self.request('POST',f'/v1/chorus/{self.job}/convert'+self.query,b'x'*65537,{'Content-Type':'application/json'})
         self.assertEqual(status,413)

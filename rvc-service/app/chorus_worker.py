@@ -175,7 +175,8 @@ def main():
     original = split_evidence(tracks)
     candidate_selection = {'attempted':False, 'selected':'unmixx'}
     candidate_manifest = None
-    if original['crossTalkRisk'] and candidate_available():
+    count_confirmation = {'required':a.count=='auto','confirmed':a.count!='auto'}
+    if (a.count=='auto' or original['crossTalkRisk']) and candidate_available():
         candidate_selection['attempted'] = True
         try:
             alternate, alternate_manifest = load_candidate()
@@ -183,6 +184,7 @@ def main():
             after = split_evidence(trial)
             candidate_selection.update({'original':original,'candidate':after,
                 'revision':alternate_manifest['revision'],'modelSha256':alternate_manifest['modelSha256']})
+            count_confirmation.update({'confirmed':accept_pair(after,False), 'independentEvidence':after})
             if prefer_candidate(original,after,any(b['assignmentUncertain'] for b in trial_bounds)):
                 tracks, bounds, model = trial, trial_bounds, alternate
                 candidate_manifest = alternate_manifest
@@ -191,8 +193,12 @@ def main():
             candidate_selection['failure'] = type(error).__name__
     tracks, bounds, context = refine_pair_context(model,audio,tracks,bounds)
     evidence = [{'parent': 'mix', **split_evidence(tracks), 'boundaries': bounds}]
-    wanted = 4 if a.count == 'auto' else int(a.count)
-    leaves = [t for t in tracks] if accept_pair(evidence[0], a.count!='auto') else [audio]
+    # The two-source model is not a trained singer-count classifier.
+    # Recursively splitting a clean singer can partition registers/articulation
+    # into invented people. Automatic mode never makes that unsupported jump.
+    # Three/four sources remain available through explicit manual count.
+    wanted = 2 if a.count == 'auto' else int(a.count)
+    leaves = [t for t in tracks] if accept_pair(evidence[0], a.count!='auto') and count_confirmation['confirmed'] else [audio]
     while 1<len(leaves)<wanted:
         candidates = []
         for i, leaf in enumerate(leaves):
@@ -224,10 +230,10 @@ def main():
         'sampleRate': RATE, 'frames': len(audio), 'tracks': paths,
         'requestedCount': a.count, 'estimatedCount': len(leaves), 'countNeedsReview': True,
         'experimentalRecursive': len(leaves)>2, 'evidence': evidence,
-        'countPolicyRevision':COUNT_POLICY_REVISION,'voiceRanges':[voice_range(track) for track in leaves],
+        'automaticCountLimit':2,'countPolicyRevision':COUNT_POLICY_REVISION,'voiceRanges':[voice_range(track) for track in leaves],
         'separationStatus':separation_status,'duplicateMerges':merged,
         'contextRefinement':context,
-        'candidateSelection':candidate_selection,
+        'candidateSelection':candidate_selection,'countConfirmation':count_confirmation,
         'finalPairDiagnostics':final_pairs,
         'separationDiagnostics':[{k:v for k,v in info.items() if k not in {'boundaries'}} for info in evidence],
         'reconstructionRms': float(np.sqrt(np.mean((np.sum(leaves, axis=0)-audio).astype(np.float64)**2)))}

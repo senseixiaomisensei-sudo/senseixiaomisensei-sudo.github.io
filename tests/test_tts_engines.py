@@ -8,7 +8,7 @@ from app import tts_models as m
 
 class TtsEnginesTest(unittest.TestCase):
     def test_required_component_sizes_are_within_budget(self):
-        self.assertEqual(set(m.MODELS),{'qwen3-06b','indextts-25'})
+        self.assertEqual(set(m.MODELS),{'qwen3-17b','qwen3-06b','indextts-25'})
         for model in m.MODELS.values():
             self.assertLessEqual(model.get('installedBytes',model['downloadBytes']),6_000_000_000)
             self.assertEqual(model['downloadBytes'],sum(x.get('sourceBytes',x['bytes']) for x in model['files']))
@@ -33,6 +33,25 @@ class TtsEnginesTest(unittest.TestCase):
         gpt=next(f for f in model['files'] if f['path']=='gpt.pth')
         self.assertEqual(gpt['transform'],'bf16-gpt-torch-2.7.1')
         self.assertEqual(len(gpt['sourceSha256']),64)
+
+    def test_premium_qwen_has_native_tones_and_a_fixed_small_bundle(self):
+        model=m.MODELS['qwen3-17b']
+        self.assertEqual(model['revision'],'0c0e3051f131929182e2c023b9537f8b1c68adfe')
+        self.assertEqual(model['emotionMode'],'native-instructions')
+        self.assertEqual(model['defaultVoice'],'serena')
+        self.assertEqual(t.validate_options('qwen3-17b','ja','gentle')['id'],'qwen3-17b')
+
+    def test_health_only_validates_the_selected_installed_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            for key in m.MODELS:
+                (root/key).mkdir();(root/key/'installed.json').write_text('{}')
+            states={key:{'state':'not-installed','ready':False} for key in m.MODELS}
+            with patch.object(t,'ROOT',root),patch.dict(t._states,states),patch.object(t.legacy,'status',return_value={'ready':False}),patch.object(t.threading,'Thread') as thread:
+                t.status('qwen3-17b')
+                self.assertEqual(thread.call_count,1)
+                self.assertEqual(thread.call_args.kwargs['args'][0],'qwen3-17b')
+                self.assertEqual(t._states['indextts-25']['state'],'not-installed')
 
     def test_unknown_voice_cannot_reach_worker(self):
         with self.assertRaisesRegex(ValueError,'RVC_TTS_INVALID_VOICE'): t.validate_options('qwen3-06b','zh','neutral','not-a-speaker')

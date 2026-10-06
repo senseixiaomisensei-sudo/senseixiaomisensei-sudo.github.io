@@ -57,6 +57,28 @@ class CountEvidence(unittest.TestCase):
         self.assertEqual(len(merged),2)
         np.testing.assert_allclose(np.sum(merged,axis=0),np.sum(leaves,axis=0),atol=1e-7)
 
+    def test_delayed_gain_scaled_duplicate_is_merged_without_moving_audio(self):
+        rng=np.random.default_rng(41)
+        voice=rng.normal(0,.1,RATE*6).astype(np.float32)
+        delayed=np.r_[np.zeros(113,np.float32),voice[:-113]]*.65
+        leaves, evidence=merge_duplicate_leaves([voice,delayed])
+        self.assertEqual(len(leaves),1)
+        self.assertEqual(abs(evidence[0]['duplicateLagSamples']),113)
+        np.testing.assert_array_equal(leaves[0],voice+delayed)
+
+    def test_tone_change_transition_edges_do_not_invent_a_second_person(self):
+        t=np.arange(RATE*8)/RATE
+        pair=np.array([.2*np.sin(2*np.pi*190*t),.2*np.sin(2*np.pi*275*t)],dtype=np.float32)
+        # Disjoint phrases overlap briefly at each delivery change; cumulative
+        # overlap exceeds 1.5s, but no sustained independent overlap exists.
+        block=RATE//2
+        for frame in range(16):
+            if frame%4 != 0: pair[frame%2,frame*block:(frame+1)*block]=0
+        evidence=split_evidence(pair)
+        self.assertGreaterEqual(evidence['simultaneousSeconds'],1.5)
+        self.assertEqual(evidence['longestOverlapSeconds'],.5)
+        self.assertFalse(accept_pair(evidence,manual=False))
+
     def test_alternate_separator_only_replaces_an_established_leaking_result(self):
         clean=split_evidence(self.tones())
         leaking={**clean,'crossTalkRisk':True,'sharedCoherenceMedian':.81,'highCoherenceRatio':.43}

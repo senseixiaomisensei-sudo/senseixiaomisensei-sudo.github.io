@@ -259,7 +259,7 @@
               <label class="chorus-heading"><input type="checkbox" data-enable><span data-rvc-label="Chorus · up to four voices">多人合唱 · 最多四路声线</span></label>
               <div data-workspace hidden>
                 <div class="chorus-options">
-                  <label><span data-rvc-label="Singer count">歌手数量</span><select data-count><option value="auto" data-rvc-label="Automatic">智能识别</option><option value="2" data-rvc-label="Two singers">两人</option><option value="3" data-rvc-label="Three singers (experimental)">三人（实验）</option><option value="4" data-rvc-label="Four singers (experimental)">四人（实验）</option></select></label>
+                  <label><span data-rvc-label="Singer count">歌手数量</span><select data-count><option value="auto" data-rvc-label="Automatic (up to two candidates)">智能识别（最多两路候选）</option><option value="2" data-rvc-label="Two singers">两人</option><option value="3" data-rvc-label="Three singers (experimental)">三人（实验）</option><option value="4" data-rvc-label="Four singers (experimental)">四人（实验）</option></select></label>
                   <label><span data-rvc-label="Input">输入</span><select data-kind><option value="mix" data-rvc-label="Song with accompaniment">歌曲含伴奏</option><option value="vocals" data-rvc-label="Separated chorus vocals">已分离的合唱人声</option></select></label>
                   <button type="button" data-analyze data-rvc-label="Identify and extract singers">识别与提取人声</button>
                 </div>
@@ -280,9 +280,9 @@
 
           <!-- 文本朗读来源（第三输入源）：输入文字 → 受保护或本机 TTS 合成中性人声 → 自动用当前角色变声 -->
           <div id="rvc-tts-wrap" class="mt-5 hidden">
-            <p class="mb-3 text-xs leading-5 text-muted" data-rvc-label="IndexTTS 2.5 · multilingual emotion control · Qwen and compatibility backup retained · installed on the service.">IndexTTS 2.5 · 多语言与原生情绪控制 · 保留千问和兼容备用 · 下载到服务端。</p>
+            <p class="mb-3 text-xs leading-5 text-muted" data-rvc-label="Qwen3 1.7B · multilingual tones · IndexTTS and compatibility backup retained · runs on the server.">Qwen3 1.7B · 多语言与原生语气 · 保留 IndexTTS 和兼容备用 · 在服务端运行。</p>
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <label class="col-span-2 text-xs font-bold sm:col-span-1"><span data-rvc-label="TTS engine / quality">TTS 引擎 / 品质</span><select id="rvc-tts-engine" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="qwen3-06b">Qwen3 · 多语自然 · 2.50 GB</option><option value="indextts-25">IndexTTS 2.5 · 多语情绪 · 约 5.45 GB</option><option value="aishell-legacy">旧版 AIShell · 兼容备用</option></select></label>
+              <label class="col-span-2 text-xs font-bold sm:col-span-1"><span data-rvc-label="TTS engine / quality">TTS 引擎 / 品质</span><select id="rvc-tts-engine" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="qwen3-17b">Qwen3 1.7B · 多语与语气 · 4.52 GB</option><option value="qwen3-06b">Qwen3 · 多语自然 · 2.50 GB</option><option value="indextts-25">IndexTTS 2.5 · 多语情绪 · 约 5.45 GB</option><option value="aishell-legacy">旧版 AIShell · 兼容备用</option></select></label>
               <label class="text-xs font-bold"><span data-rvc-label="Language">语言</span><select id="rvc-tts-language" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="zh">中文</option></select></label>
               <label class="text-xs font-bold"><span data-rvc-label="Tone">语气</span><select id="rvc-tts-style" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="neutral">自然</option></select></label>
               <label class="col-span-2 text-xs font-bold sm:col-span-1"><span data-rvc-label="Base voice">朗读声线</span><select id="rvc-tts-voice" class="mt-1 min-h-10 w-full rounded-lg border border-line bg-white px-2 text-sm"><option value="">自动选择</option></select></label>
@@ -293,17 +293,17 @@
                 <i class="fa-solid fa-plug"></i>检测 TTS 服务…
               </span>
               <button id="rvc-tts-install" type="button" class="min-h-9 rounded-lg border border-brand bg-white px-3 py-1.5 text-xs font-bold text-brand" data-rvc-label="Download and enable TTS">下载并启用 TTS</button>
-              <!-- 一键适配：自动探测本机 rvc-service，写入本地并下载配置文件，免手动改 IP -->
+              <!-- Public server connection: no local model or shared Wi-Fi required. -->
               <button id="rvc-tts-adapt" type="button" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-brand bg-white px-3 py-1.5 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-50 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1">
-                <i class="fa-solid fa-link" aria-hidden="true"></i><span data-rvc-label="Connect automatically">自动连接</span>
+                <i class="fa-solid fa-link" aria-hidden="true"></i><span data-rvc-label="Connect automatically">一键适配</span>
               </button>
             </div>
             <div class="mt-2 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
               <label for="rvc-tts-manual-base" class="shrink-0 text-xs font-bold text-muted"><span data-rvc-label="Enter service address">手动填写服务地址</span></label>
               <input id="rvc-tts-manual-base" type="text" inputmode="url" autocomplete="off" spellcheck="false"
-                placeholder="如 http://192.168.1.3:8080 或你的公网 TTS 地址，回车即试"
+                placeholder="可留空；自定义服务请填公共 HTTPS 地址"
                 class="min-h-9 w-full rounded-lg border border-line bg-white px-3 py-1.5 text-xs text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand sm:w-64">
-              <span class="text-[11px] leading-4 text-muted" data-rvc-label="Devices on the same Wi-Fi usually connect automatically. If connection fails, enter the service address.">同一 Wi-Fi 下，其他设备一般会自动连上；连不上时手动填服务地址再试</span>
+              <span class="text-[11px] leading-4 text-muted" data-rvc-label="Connects to public TTS on any online device. No shared Wi-Fi or local model installation needed.">手机、电脑联网即可连接公共 TTS，无需同一 Wi-Fi 或安装模型</span>
             </div>
             <textarea id="rvc-tts-text" rows="3" maxlength="800" data-rvc-i18n-placeholder="ttsTextPlaceholder" placeholder="在这里输入你想让角色朗读的文字…（最多 800 字）" class="mt-3 w-full resize-y rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink shadow-sm placeholder:text-zinc-400 focus:border-brand focus:ring-brand"></textarea>
             <div class="mt-3 flex flex-wrap items-center gap-3">
@@ -536,10 +536,10 @@
 
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-center text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200 sm:w-auto" role="status" aria-live="polite"></div>
-  <script src="assets/postprep-config.js?v=20260823-v14"></script>
+  <script src="assets/postprep-config.js?v=20261006-public-tts-1"></script>
   <script src="assets/postprep.js?v=20261004-storage-1"></script>
   <script src="assets/rvc-language.js?v=20261004-chorus-2"></script>
   <script src="assets/rvc-schools.js?v=20261004-chorus-2"></script>
-  <script src="assets/rvc.js?v=20261005-speech-steps-1"></script>
+  <script src="assets/rvc.js?v=20261006-public-tts-chorus-1"></script>
 </body>
 </html>

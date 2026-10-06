@@ -39,21 +39,33 @@
   const OFFICIAL_RVC_MEDIA_ENDPOINT = String(globalThis.POSTPREP_RVC_MEDIA_ENDPOINT || "").trim();
   const OFFICIAL_RVC_TTS_BASE = OFFICIAL_RVC_ENDPOINT.replace(/\/+$/u, "");
   const COLLECTION_STORAGE_KEY = "postprep_rvc_custom_collections_v1";
-  // 本机 edge-tts 服务（rvc-service）地址。
-  // 优先级：locaStorage 里"一键适配"保存的地址 > 全局注入 __RVC_TTS_BASE__（postprep-config.js）> 同源。
-  // 这样"一键适配"写入本地后立即生效，且支持"全机适配"局域网 IP。
+  // Public HTTPS relays work independently of the client's Wi-Fi and OS.
+  // A custom local service is allowed only from a local HTTP page.
   const TTS_LOCAL_STORAGE_KEY = "rvcTtsBase";
-  const TTS_INJECTED_BASE = (typeof window !== "undefined" && window.__RVC_TTS_BASE__) || "";
-  const TTS_SAME_ORIGIN = (typeof window !== "undefined" && window.location.origin) || "";
-  const getTtsBase = () => {
+  const TTS_INJECTED_BASE = String(window.__RVC_TTS_BASE__ || "");
+  const TTS_SAME_ORIGIN = window.location.origin;
+  const normalizeTtsBase = value => {
+    if (!String(value || '').trim()) return '';
     try {
-      const saved = window.localStorage && window.localStorage.getItem(TTS_LOCAL_STORAGE_KEY);
-      if (saved && typeof saved === "string" && saved.trim()) return saved.trim();
-    } catch (e) {}
-    if (TTS_INJECTED_BASE) return TTS_INJECTED_BASE;
-    if (OFFICIAL_RVC_TTS_BASE) return OFFICIAL_RVC_TTS_BASE;
-    return TTS_SAME_ORIGIN;
+      const url = new URL(String(value).trim(), TTS_SAME_ORIGIN);
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return '';
+      const local = /^(localhost|127\.|\[::1\]|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/u.test(url.hostname);
+      if (window.location.protocol === 'https:' && (url.protocol !== 'https:' || local)) return '';
+      url.search = ''; url.hash = '';
+      url.pathname = url.pathname.replace(/\/(?:tts(?:\/(?:health|install|jobs))?|v1\/tts(?:-health|\/(?:install|jobs))?)\/?$/u, '').replace(/\/+$/u, '');
+      return url.href.replace(/\/+$/u, '');
+    } catch { return ''; }
   };
+  let connectedTtsBase = '';
+  const ttsCandidateBases = (manual = '') => {
+    let saved = '';
+    try { saved = window.localStorage.getItem(TTS_LOCAL_STORAGE_KEY) || ''; } catch {}
+    const localPage = window.location.protocol === 'http:';
+    return [...new Set([manual, OFFICIAL_RVC_TTS_BASE, TTS_INJECTED_BASE,
+      'https://postprep-text-gateway.postprep.workers.dev/rvc', saved,
+      ...(localPage ? [TTS_SAME_ORIGIN] : [])].map(normalizeTtsBase).filter(Boolean))];
+  };
+  const getTtsBase = () => connectedTtsBase || ttsCandidateBases()[0];
   const ttsEndpoint = (base, kind) => {
     const normalized = String(base || "").replace(/\/+$/u, "");
     if (/\/(?:rvc|rvc-api)$/u.test(normalized)) {
@@ -65,35 +77,6 @@
     if (kind === "jobs") return `${normalized}/v1/tts/jobs`;
     return kind === "health" ? `${normalized}/v1/tts-health` : `${normalized}/v1/tts`;
   };
-  // 候选探测地址（"一键适配"自动尝试）。
-  // 核心思想：如果这个"文本朗读"页面本身就是那台电脑部署的（serve.js 绑 0.0.0.0），
-  // 那么局域网里其他设备访问到的地址主机名(hostname)就是电脑的局域网 IP，
-  // 自动推导 http://<hostname>:8080 即可连上 rvc-service —— 从而全机共享，不只服务机自己能用。
-  // 再叠加：同源、常见本机回环、以及管理员在 config 里注入的 __RVC_TTS_BASE__。
-  const TTS_CANDIDATES = (() => {
-    const collect = () => {
-      const arr = [];
-      const host = (typeof window !== "undefined" && window.location && window.location.hostname) || "";
-      // 0) 同源最优先：serve.js 已把 /v1/tts 反向代理到本机 rvc-service，
-      //    所以任何设备连到部署本页面的电脑(8124)后，走同源即可自动成功，无需知道 IP/端口/跨域。
-      if (OFFICIAL_RVC_TTS_BASE) arr.push(OFFICIAL_RVC_TTS_BASE);
-      if (TTS_SAME_ORIGIN) arr.push(TTS_SAME_ORIGIN);
-      if (TTS_INJECTED_BASE) arr.push(TTS_INJECTED_BASE);
-      // 1) 由当前访问主机名推导 8080（兜底：若未走代理，直连电脑 8080）
-      if (host && host !== "localhost" && host !== "127.0.0.1" && host !== "::1") {
-        arr.push(`http://${host}:8080`);
-        if (window.location && window.location.protocol === "https:") {
-          arr.push(`https://${host}:8080`);
-        }
-      }
-      // 2) 本机回环（服务机自己访问自己时直连）
-      arr.push("http://127.0.0.1:8080");
-      arr.push("http://localhost:8080");
-      arr.push("http://localhost:8124");
-      return [...new Set(arr.filter(Boolean))];
-    };
-    return collect();
-  })();
   const ALLOWED_EXTENSIONS = new Set(["wav", "mp3", "m4a", "ogg", "webm", "flac", "aac"]);
 
   const translations = {
@@ -7757,7 +7740,7 @@
       });
     }
 
-    // 文本朗读（TTS，第三输入源）：探测受保护或本机 edge-tts 服务 → 合成中性人声 → 自动用当前角色变声
+    // 文本朗读：公共网关 → 服务端模型 → 当前角色变声
     const ttsSynth = document.getElementById("rvc-tts-synth");
     const ttsConvert = document.getElementById("rvc-tts-convert");
     const ttsReady = document.getElementById("rvc-tts-ready");
@@ -7771,10 +7754,10 @@
     const ttsCapabilities = document.getElementById('rvc-tts-capabilities');
     const ttsLanguages = {zh:['中文','Chinese'],en:['英语','English'],ja:['日语','Japanese'],ko:['韩语','Korean'],de:['德语','German'],fr:['法语','French'],ru:['俄语','Russian'],pt:['葡萄牙语','Portuguese'],es:['西班牙语','Spanish'],it:['意大利语','Italian'],yue:['粤语','Cantonese'],ar:['阿拉伯语','Arabic']};
     const ttsStyles = {neutral:['自然','Natural'],gentle:['温柔','Gentle'],happy:['开心','Happy'],sad:['低落','Sad'],serious:['认真','Serious'],calm:['平静','Calm'],surprised:['惊喜','Surprised']};
-    const ttsModelLabels={'qwen3-06b':['Qwen3 · 多语自然 · 2.50 GB','Qwen3 · natural multilingual · 2.50 GB'],'indextts-25':['IndexTTS 2.5 · 多语情绪 · 约 5.45 GB','IndexTTS 2.5 · multilingual emotions · ~5.45 GB'],'aishell-legacy':['旧版 AIShell · 兼容备用','Legacy AIShell · compatibility']};
+    const ttsModelLabels={'qwen3-17b':['Qwen3 1.7B · 多语与语气 · 4.52 GB','Qwen3 1.7B · languages & tones · 4.52 GB'],'qwen3-06b':['Qwen3 · 多语自然 · 2.50 GB','Qwen3 · natural multilingual · 2.50 GB'],'indextts-25':['IndexTTS 2.5 · 多语情绪 · 约 5.45 GB','IndexTTS 2.5 · multilingual emotions · ~5.45 GB'],'aishell-legacy':['旧版 AIShell · 兼容备用','Legacy AIShell · compatibility']};
     if(ttsEngine){
-      state.ttsModelId='indextts-25';
-      try { const saved=window.localStorage.getItem('rvcTtsModel');if(['qwen3-06b','indextts-25','aishell-legacy'].includes(saved))state.ttsModelId=saved;}catch{}
+      state.ttsModelId='qwen3-17b';
+      try { const saved=window.localStorage.getItem('rvcTtsModel');if(['qwen3-17b','qwen3-06b','indextts-25','aishell-legacy'].includes(saved))state.ttsModelId=saved;}catch{}
       ttsEngine.value=state.ttsModelId;
     }
     let ttsProbeTimer;
@@ -7805,6 +7788,7 @@
       },'');
       if(ttsStyle)ttsStyle.disabled=(info.styles||[]).length<2;
       if(ttsCapabilities)ttsCapabilities.textContent=info.modelId==='indextts-25'?l('2026 年 8 月 10 日发布 · 中、英、日、西、阿五语 · 原生自然、平静、开心、低落、惊喜；试听决定表现。','Released August 10, 2026 · Chinese, English, Japanese, Spanish & Arabic · native natural, calm, happy, sad & surprised tones; preview the result.'):
+        info.modelId==='qwen3-17b'?l('十种语言、九种声线 · 原生语气指令 · 自然、温柔、开心、低落、认真；模型在服务端运行。','Ten languages, nine voices · native natural, gentle, happy, sad and serious instructions; runs on the server.'):
         info.modelId==='qwen3-06b'?l('十种语言、九种声线 · 此 0.6B 版本支持自然朗读，不支持独立语气指令。','Ten languages, nine voices · this 0.6B model provides natural speech without separate tone instructions.'):
         l('旧版仅作兼容备用，建议选择新引擎。','Legacy compatibility engine; a new engine is recommended.');
     };
@@ -7821,7 +7805,7 @@
       state.ttsEnabled = ok;
       if(ttsSynth)ttsSynth.disabled=!ok || Boolean(state.ttsSynthBusy||state.busy);
       if(ttsConvert)ttsConvert.disabled=!ok || Boolean(state.ttsSynthBusy||state.busy);
-      if(ttsInstall){ttsInstall.hidden=ok;ttsInstall.disabled=state.ttsInfo?.installAvailable!==true || Boolean(state.ttsInstalling);}
+      if(ttsInstall){ttsInstall.hidden=ok;ttsInstall.disabled=state.ttsInfo?.installAvailable!==true || Boolean(state.ttsInstalling||state.ttsSynthBusy||state.busy||['validating','downloading'].includes(state.ttsInfo?.state));}
       if(ttsEngine)ttsEngine.disabled=Boolean(state.ttsInstalling||state.ttsSynthBusy||state.busy);
       if(ttsLanguage)ttsLanguage.disabled=Boolean(state.ttsSynthBusy||state.busy);
       if(ttsVoice)ttsVoice.disabled=Boolean(state.ttsSynthBusy||state.busy);
@@ -7837,35 +7821,57 @@
     };
     state.syncTtsControls = () => setTtsReady(state.ttsEnabled);
 
-    // 探测端点是否可达（GET /health 或 OPTIONS），仅用于 UI 状态
+    // Discovery has no UI side effects. Only the chosen endpoint may commit
+    // its catalog, so a slower failed probe cannot overwrite the active model.
     const probeSingleBase = async (base) => {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 20000);
+      const timer = setTimeout(() => controller.abort(), 10000);
       try {
-        const res = await fetch(ttsEndpoint(base, "health"), { method: "GET", signal: controller.signal }).catch(() => null);
-        if (res && res.ok) {
-          try { const catalog=await res.json();state.ttsCatalog=catalog;const info=catalog.models?.find(model=>model.modelId===state.ttsModelId)||catalog;state.ttsInfo=info;syncTtsOptions();return info?.ready === true; } catch { return false; }
-        }
-      } catch (e) {} finally {
-        clearTimeout(timer);
-      }
-      return false;
+        const res = await fetch(`${ttsEndpoint(base, 'health')}?${/\/rvc(?:-api)?$/u.test(base)?'modelId':'model_id'}=${encodeURIComponent(state.ttsModelId)}`,  {signal:controller.signal, cache:'no-store'});
+        if (!res.ok) return {base, code:`HTTP ${res.status}`};
+        const catalog = await res.json();
+        const models = Array.isArray(catalog.models) ? catalog.models : [catalog];
+        if (!models.some(model => typeof model.modelId === 'string' && typeof model.ready === 'boolean')) return {base, code:'INVALID_CATALOG'};
+        return {base, catalog};
+      } catch (error) { return {base, code:error.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK'}; }
+      finally { clearTimeout(timer); }
     };
-
-    const probeTts = async () => {
-      if (state.ttsLoading) return;
+    const commitTtsConnection = result => {
+      connectedTtsBase = result.base;
+      try { window.localStorage.setItem(TTS_LOCAL_STORAGE_KEY, result.base); } catch {}
+      state.ttsCatalog = result.catalog;
+      state.ttsInfo = (result.catalog.models || [result.catalog]).find(model => model.modelId === state.ttsModelId);
+      syncTtsOptions(); setTtsReady(state.ttsInfo?.ready === true);
+      const info = state.ttsInfo;
+      if (info?.ready) setTtsStatus(l('公共 TTS 已连接，可合成或使用当前角色朗读。','TTS connected. Generate speech or read with the selected character.'), 'ok');
+      else if (['validating','downloading'].includes(info?.state)) setTtsStatus(l('服务已连接，所选模型正在准备；完成后自动启用。','Connected. The selected model is preparing and will enable automatically.'));
+      else if (info?.installAvailable) setTtsStatus(l('服务已连接，请下载并启用所选模型；模型安装在服务端，手机无需下载。','Connected. Enable the selected model on the server; no model download is needed on your phone.'));
+      else setTtsStatus(l('服务已连接，但所选模型不可用，请选择已就绪的引擎。','Connected, but the selected model is unavailable. Choose a ready engine.'), 'err');
+    };
+    let ttsProbePromise;
+    const probeTts = (manual = '') => {
+      if (ttsProbePromise) return ttsProbePromise;
       state.ttsLoading = true;
-      try {
-        const base = getTtsBase();
-        const ok = await probeSingleBase(base);
-        setTtsReady(ok);
-      } catch {
-        setTtsReady(false);
-      } finally {
-        state.ttsLoading = false;
+      const probedModelId = state.ttsModelId;
+      ttsProbePromise = (async () => {
+        let waiting;
+        for (const base of [...new Set([manual ? normalizeTtsBase(manual) : connectedTtsBase, ...ttsCandidateBases(manual)].filter(Boolean))]) {
+          const result = await probeSingleBase(base);
+          if (!result.catalog) continue;
+          const info = (result.catalog.models || [result.catalog]).find(model => model.modelId === state.ttsModelId);
+          if (info?.ready || ['validating','downloading'].includes(info?.state)) { commitTtsConnection(result); return; }
+          waiting ||= result;
+        }
+        if (waiting) { commitTtsConnection(waiting); return; }
+        state.ttsInfo = null; state.ttsCatalog = null; connectedTtsBase = ''; setTtsReady(false);
+        setTtsStatus(l('暂时无法连接公共 TTS。请检查联网情况后重试；不需要填写电脑 IP 或连接同一 Wi-Fi。','Public TTS is unreachable. Check your connection and retry; no computer IP or shared Wi-Fi is required.'), 'err');
+      })().finally(() => {
+        state.ttsLoading = false; ttsProbePromise = null;
         clearTimeout(ttsProbeTimer);
-        if(['validating','downloading'].includes(state.ttsInfo?.state)&&!state.ttsInstalling)ttsProbeTimer=setTimeout(probeTts,4000);
-      }
+        if (probedModelId !== state.ttsModelId) { queueMicrotask(() => probeTts()); return; }
+        if (['validating','downloading'].includes(state.ttsInfo?.state) && !state.ttsInstalling) ttsProbeTimer = setTimeout(() => probeTts(), 4000);
+      });
+      return ttsProbePromise;
     };
     if(ttsEngine)ttsEngine.addEventListener('change',()=>{
       state.ttsModelId=ttsEngine.value;try{window.localStorage.setItem('rvcTtsModel',state.ttsModelId);}catch{}
@@ -7894,7 +7900,7 @@
       finally{clearTimeout(timer);state.ttsInstalling=false;setTtsReady(state.ttsEnabled);}
     });
 
-    // 取当前文字，调用本机 /rvc/tts 合成中性人声 WAV，返回 File
+    // Submit to the verified endpoint and retain the same job across transient failures.
     const synthTts = async () => {
       if(state.ttsSynthBusy || state.busy)return null;
       const text = (ttsText?.value || "").trim();
@@ -8021,83 +8027,29 @@
     // no same-origin /v1/tts-health route, so eager probing created a harmless
     // but noisy 404 on every visit and made browser diagnostics differ.
     const ttsBtn = document.getElementById("rvc-source-tts");
-    if (ttsBtn) ttsBtn.addEventListener("click", probeTts);
+    if (ttsBtn) ttsBtn.addEventListener("click", () => probeTts());
     if(ttsReady)setTtsReady(false);
 
-    // 一键适配：并行快速探测本机/常见地址 → 写入 localStorage（立即生效）→ 下载配置文件
-    const adaptBtn = document.getElementById("rvc-tts-adapt");
-    const manualBaseInput = document.getElementById("rvc-tts-manual-base");
-    const applyFoundBase = (base, from = "auto") => {
-      try { window.localStorage.setItem(TTS_LOCAL_STORAGE_KEY, base); } catch (e) {}
-      // 生成可下载的配置文件内容（用户可覆盖官方 postprep-config.js，或直接参考）
-      const configContent = [
-        "// 由「一键适配」自动生成/手动填写的文本朗读(TTS)配置",
-        "// 用法：把下面这一行覆盖到 assets/postprep-config.js 的对应位置，或直接参考。",
-        `globalThis.__RVC_TTS_BASE__ = ${JSON.stringify(base)};`,
-        "",
-      ].join("\n");
-      const blob = new Blob([configContent], { type: "application/javascript;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "postprep-config.rvc-tts.js";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setTtsReady(true);
-      setTtsStatus(` 已连接 TTS 服务：${base}（已保存到本浏览器，立即生效）。也已下载配置文件备用。`, "ok");
-    };
-    if (adaptBtn) {
-      adaptBtn.addEventListener("click", async () => {
-        if (state.ttsAdapting) return;
-        state.ttsAdapting = true;
-        adaptBtn.disabled = true;
-        adaptBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>正在自动适配…</span>';
-        const priorDisabled = ttsConvert?.disabled;
-        setTtsStatus("正在自动检测 TTS 服务…", null);
-        try {
-          // 若已手动填了地址，优先直接用它
-          const manual = (manualBaseInput?.value || "").trim().replace(/\/+$/, "");
-          if (manual) {
-            const ok = await probeSingleBase(manual);
-            if (ok) { applyFoundBase(manual, "manual"); return; }
-            setTtsStatus(`手动填入的地址不可达：${manual}。请检查服务是否已启动，或清空改用自动检测。`, "err");
-            return;
-          }
-          // 优先串行探测同源 + 注入地址（serve.js 反向代理后走同源必成功，最快最稳）
-          const priority = [...new Set([TTS_SAME_ORIGIN, TTS_INJECTED_BASE].filter(Boolean))];
-          let found = null;
-          for (const base of priority) {
-            if (await probeSingleBase(base)) { found = base; break; }
-          }
-          // 其余候选（hostname 推导 / 回环）并行兜底
-          if (!found) {
-            const rest = TTS_CANDIDATES.filter((b) => !priority.includes(b));
-            const results = await Promise.allSettled(rest.map(async (base) => ({ base, ok: await probeSingleBase(base) })));
-            found = results.find((r) => r.status === "fulfilled" && r.value.ok)?.value?.base || null;
-          }
-          if (found) { applyFoundBase(found); return; }
-          setTtsStatus(
-            " 未检测到可用的 TTS 服务。请在下方“手动填写服务地址”输入你部署的 TTS 地址（如 http://192.168.1.3:8080），再点一次「一键适配」。", "err"
-          );
-          setTtsReady(false);
-        } catch (err) {
-          setTtsStatus(`一键适配失败：${err.message}`, "err");
-        } finally {
-          state.ttsAdapting = false;
-          adaptBtn.disabled = false;
-          adaptBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span>一键适配（自动配置）</span>';
-          if (ttsConvert) ttsConvert.disabled = !!priorDisabled;
-        }
-      });
-    }
-    // 手动地址回车即触发适配
-    if (manualBaseInput) {
-      manualBaseInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") adaptBtn?.click();
-      });
-    }
+    // 一键适配：连接公共服务；不扫描客户端局域网、不下载配置文件。
+    const adaptBtn = document.getElementById('rvc-tts-adapt');
+    const manualBaseInput = document.getElementById('rvc-tts-manual-base');
+    if (adaptBtn) adaptBtn.addEventListener('click', async () => {
+      if (state.ttsAdapting || state.ttsInstalling || state.ttsSynthBusy || state.busy) return;
+      const manual = (manualBaseInput?.value || '').trim();
+      if (manual && !normalizeTtsBase(manual)) {
+        setTtsStatus(l('服务地址无效。HTTPS 网页请使用公共 HTTPS 地址；清空后自动连接网站服务。','Invalid service address. Use public HTTPS on this page, or clear it to connect automatically.'), 'err'); return;
+      }
+      state.ttsAdapting = true; adaptBtn.disabled = true;
+      adaptBtn.textContent = l('正在连接…','Connecting…');
+      setTtsStatus(l('正在连接公共 TTS 服务…','Connecting to public TTS…'));
+      try { await probeTts(manual); }
+      finally {
+        state.ttsAdapting = false; adaptBtn.disabled = false;
+        adaptBtn.textContent = l('一键适配','Connect automatically');
+        setTtsReady(state.ttsEnabled);
+      }
+    });
+    if (manualBaseInput) manualBaseInput.addEventListener('keydown', e => { if (e.key === 'Enter') adaptBtn?.click(); });
 
     setupRecording();
     setupModelTraining();
@@ -8110,7 +8062,7 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261005-speech-steps-1');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261006-count-consensus-1');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,

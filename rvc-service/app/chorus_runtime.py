@@ -20,7 +20,7 @@ def chorus_status():
     from app.chorus_quality import COUNT_POLICY_REVISION
     return {'ready': all((ENGINE_ROOT/name).is_file() for name in
         ['固定资源.json','ckpt/best.ckpt','look2hear/models/unmixx_model.py']),
-        'engine': 'unmixx-recursive', 'maxSingers': 4, 'recursiveNeedsReview': True,
+        'engine': 'unmixx-recursive', 'maxSingers': 4, 'automaticCountLimit':2, 'recursiveNeedsReview': True,
         'countPolicyRevision':COUNT_POLICY_REVISION,
         'correlatedCandidateReady':candidate_available(),'correlatedCandidateRevision':candidate_revision}
 

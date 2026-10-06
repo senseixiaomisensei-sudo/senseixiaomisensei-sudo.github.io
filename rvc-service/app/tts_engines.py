@@ -50,7 +50,12 @@ def _run(model_id,path,text,language='zh',style='neutral',voice=''):
             process=subprocess.Popen([str(python),str(Path(__file__).with_name('tts_worker.py')),str(work/'request.json')],stdout=stderr,stderr=stderr,env=env,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             try: code=process.wait(timeout=900)
             except subprocess.TimeoutExpired:
-                process.kill();process.wait();raise ValueError('RVC_TTS_SYNTH_TIMEOUT') from None
+                # The Windows venv launcher has a child Python process. Killing
+                # only the launcher leaves the CUDA worker alive indefinitely.
+                if os.name == 'nt':
+                    subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],capture_output=True,timeout=15)
+                else: process.kill()
+                process.wait(timeout=15);raise ValueError('RVC_TTS_SYNTH_TIMEOUT') from None
         if code or not output.is_file(): raise ValueError('RVC_TTS_SYNTH_FAILED')
         return output.read_bytes(),json.loads(proof.read_text(encoding='utf-8'))
 
@@ -71,10 +76,12 @@ def status(model_id=None):
     with _lock:
         for key, model in MODELS.items():
             state=_states[key];path=ROOT/key
-            if state['state']=='not-installed' and (path/'installed.json').is_file():
+            if key == selected and state['state']=='not-installed' and (path/'installed.json').is_file():
                 state.update(state='validating');threading.Thread(target=_verify,args=(key,path),daemon=True,name=f'tts-check-{key}').start()
             supported=INDEX_PYTHON.is_file() and (INDEX_SOURCE/'.git').exists() if key=='indextts-25' else PYTHON.is_file()
-            models.append({**{k:v for k,v in model.items() if k not in {'files','url'}},**state,'modelId':key,'installAvailable':supported})
+            snapshot={**state}
+            if state['state']=='not-installed' and (path/'installed.json').is_file(): snapshot['state']='installed'
+            models.append({**{k:v for k,v in model.items() if k not in {'files','url'}},**snapshot,'modelId':key,'installAvailable':supported})
     models.append({**legacy.status(),'id':'aishell-legacy','modelId':'aishell-legacy','label':'旧版 AIShell · 兼容备用','styles':['neutral'],'voices':[],'legacy':True})
     current=next(item for item in models if item['modelId']==selected)
     return {**current,'defaultModel':DEFAULT,'models':models,'maxModelBytes':CATALOG['maxModelBytes']}

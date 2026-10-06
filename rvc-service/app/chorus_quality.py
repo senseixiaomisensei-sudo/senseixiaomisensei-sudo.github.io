@@ -1,10 +1,39 @@
 """Conservative source validity checks, never a singer-identity classifier."""
 from __future__ import annotations
 import numpy as np
-from scipy.signal import stft
+from scipy.signal import stft, correlate, correlation_lags
 
 RATE = 24000
-COUNT_POLICY_REVISION = 'source-validity-v2'
+COUNT_POLICY_REVISION = 'source-validity-v4-consensus'
+
+def aligned_duplicate_evidence(pair: np.ndarray) -> dict:
+    """Detect a delayed copy, without warping or aligning the exported stems.
+
+    One fixed, small delay must explain multiple energetic sections. Similar
+    voices, matching pitch and alternating delivery alone are never duplicates.
+    """
+    window = RATE * 2
+    pieces = [(i, pair[:,i:i+window]) for i in range(0, pair.shape[1]-window+1, window)]
+    pieces = sorted(pieces, key=lambda item:float(np.min(np.mean(item[1]**2,axis=1))), reverse=True)[:6]
+    candidates = []
+    for _, x in pieces:
+        power = np.sum(x.astype(np.float64)**2,axis=1)
+        if min(power) < 1e-8: continue
+        correlations = correlate(x[0], x[1],mode='full',method='fft')
+        lags = correlation_lags(window,window,mode='full')
+        valid = abs(lags) <= RATE//50  # <=20 ms; no song timing correction.
+        lag = int(lags[valid][np.argmax(abs(correlations[valid]))])
+        candidates.append(lag)
+    if not candidates: return {'alignedCorrelation':0.,'duplicateLagSamples':0,'duplicateWindowFraction':0.}
+    lag = int(np.median(candidates))
+    scores = []
+    for _, x in pieces:
+        a,b = (x[0,lag:],x[1,:window-lag]) if lag>=0 else (x[0,:window+lag],x[1,-lag:])
+        norm = np.linalg.norm(a)*np.linalg.norm(b)
+        if norm>1e-8: scores.append(float(abs(np.dot(a,b))/norm))
+    return {'alignedCorrelation':float(np.median(scores)) if scores else 0.,
+        'duplicateLagSamples':lag,'duplicateWindowFraction':float(np.mean(np.array(scores)>.985)) if scores else 0.}
+
 
 def pair_quality(pair: np.ndarray) -> dict:
     if pair.ndim != 2 or pair.shape[0] != 2 or not np.isfinite(pair).all():
@@ -41,10 +70,18 @@ def pair_quality(pair: np.ndarray) -> dict:
     duplicate = ratio>.005 and (correlation>.985 or (
         len(local_correlation)>=2 and float(np.mean(local_correlation>.98))>.95
         and coherence_median>.98 and envelope_correlation>.95))
+    aligned = aligned_duplicate_evidence(pair) if ratio>.005 and correlation<.985 else {'alignedCorrelation':correlation,'duplicateLagSamples':0,'duplicateWindowFraction':float(correlation>.985)}
+    duplicate = duplicate or (aligned['alignedCorrelation']>.985 and aligned['duplicateWindowFraction']>=.8)
+    # A single singer changing delivery can produce disjoint leaves with tiny
+    # transition overlaps. Require sustained overlap, not accumulated edges.
+    runs = np.diff(np.r_[False, overlap if frames else [], False].astype(int))
+    lengths = np.flatnonzero(runs==-1)-np.flatnonzero(runs==1)
+    longest_overlap = float(max(lengths,default=0)*.5)
     overlap_seconds = simultaneous*.5
     distinct = (not duplicate and ratio>=.08 and correlation<.5
-        and overlap_seconds>=min(1.5, len(pair[0])/RATE*.15) and simultaneous>=2)
-    return {'secondaryEnergyRatio':ratio, 'waveformCorrelation':correlation,
+        and overlap_seconds>=min(1.5, len(pair[0])/RATE*.15)
+        and longest_overlap>=min(1.,len(pair[0])/RATE*.15) and simultaneous>=2)
+    return {**aligned, 'longestOverlapSeconds':longest_overlap, 'secondaryEnergyRatio':ratio, 'waveformCorrelation':correlation,
         'simultaneousSeconds':overlap_seconds, 'distinctCandidate':distinct,
         'duplicateCandidate':bool(duplicate), 'envelopeCorrelation':envelope_correlation,
         'sharedCoherenceMedian':coherence_median, 'highCoherenceRatio':high_coherence_ratio,
@@ -64,7 +101,8 @@ def merge_duplicate_leaves(leaves: list[np.ndarray]) -> tuple[list[np.ndarray], 
         while j<len(leaves):
             info = pair_quality(np.stack([leaves[i],leaves[j]]))
             if info['duplicateCandidate']:
-                merged.append({'first':i+1,'second':j+1,'waveformCorrelation':info['waveformCorrelation']})
+                merged.append({'first':i+1,'second':j+1,'waveformCorrelation':info['waveformCorrelation'],
+                    'alignedCorrelation':info['alignedCorrelation'],'duplicateLagSamples':info['duplicateLagSamples']})
                 # Sum, rather than drop, preserves every sample and source energy.
                 leaves[i] = leaves[i]+leaves.pop(j)
             else:

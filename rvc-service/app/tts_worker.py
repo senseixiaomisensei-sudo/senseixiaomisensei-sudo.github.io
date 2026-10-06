@@ -14,13 +14,13 @@ def main(request_path):
     language = request.get('language','zh'); voice = request.get('voice',''); style = request.get('style','neutral')
     import torch
     torch.set_num_threads(2); torch.manual_seed(1986)
-    if model_id == 'qwen3-06b':
+    if model_id in {'qwen3-06b','qwen3-17b'}:
         from qwen_tts import Qwen3TTSModel
         model = Qwen3TTSModel.from_pretrained(str(root), device_map='cuda:0', dtype=torch.bfloat16, attn_implementation='sdpa', local_files_only=True)
         speakers = model.get_supported_speakers()
         voice = voice or ('ryan' if language == 'en' else 'serena')
         if voice not in speakers: raise ValueError('RVC_TTS_INVALID_VOICE')
-        waves, rate = model.generate_custom_voice(text=text, language=LANGUAGES[language], speaker=voice, instruct='', non_streaming_mode=True, max_new_tokens=4096)
+        waves, rate = model.generate_custom_voice(text=text, language=LANGUAGES[language], speaker=voice, instruct=STYLES[style] if model_id == 'qwen3-17b' and style != 'neutral' else '', non_streaming_mode=True, max_new_tokens=4096)
         samples = waves[0]
     elif model_id == 'indextts-25':
         sys.path.insert(0,request['indexSource'])

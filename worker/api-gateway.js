@@ -160,6 +160,7 @@ function requestRoute(request) {
   if (path === "/rvc/tts/health") {
     return {
       id: "rvc-tts-health",
+      modelId: /^[A-Za-z0-9_-]{1,64}$/u.test(url.searchParams.get("modelId") || "") ? url.searchParams.get("modelId") : "",
       method: "GET",
       rateBinding: TEXT_RATE_LIMITER_BINDING,
       ratePrefix: "rvc-tts-health",
@@ -328,7 +329,7 @@ function resolvedDirectRvcUrl(route, env) {
         || route.id.startsWith("rvc-train-") && route.token) {
       url.searchParams.set("token", route.token);
     }
-    if (route.id === "rvc-status" && route.modelId) {
+    if (["rvc-status", "rvc-tts-health"].includes(route.id) && route.modelId) {
       url.searchParams.set("model_id", route.modelId);
     }
     return url.toString();
@@ -355,7 +356,7 @@ function resolvedUpstreamUrl(route, env) {
       url.searchParams.set("token", route.token);
       if (route.id === "rvc-output-remix") url.pathname = "/api/rvc-remix";
     }
-    if (route.id === "rvc-status" && route.modelId) {
+    if (["rvc-status", "rvc-tts-health"].includes(route.id) && route.modelId) {
       url.searchParams.set("modelId", route.modelId);
     }
     return url.toString();

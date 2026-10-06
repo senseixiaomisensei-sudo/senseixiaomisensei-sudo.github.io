@@ -111,7 +111,15 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             if set(values) == {"model_id"} and len(model_ids) == 1 and re.fullmatch(r"[A-Za-z0-9_-]{1,64}", model_ids[0]):
                 return f"/healthz?model_id={model_ids[0]}"
             return None
-        if parsed.path in {"/v1/models", "/v1/tts-health"}:
+        if parsed.path == "/v1/tts-health":
+            if self.command != 'GET': return None
+            if not parsed.query: return parsed.path
+            values = parse_qs(parsed.query, keep_blank_values=True)
+            ids = values.get('model_id', [])
+            if set(values) == {'model_id'} and len(ids) == 1 and re.fullmatch(r'[A-Za-z0-9_-]{1,64}', ids[0]):
+                return f'{parsed.path}?model_id={ids[0]}'
+            return None
+        if parsed.path == "/v1/models":
             return parsed.path if not parsed.query else None
         if parsed.path in {"/v1/tts", "/v1/tts/install", "/v1/tts/jobs"}:
             return parsed.path if self.command == "POST" and not parsed.query else None
