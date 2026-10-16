@@ -18,6 +18,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $RepoRoot 'rvc-service\startup_health.ps1')
+# Resolve the installed CLI before copying the large model CDN; do not depend
+# on an npm install/audit completing during every production deployment.
+$WranglerJs = Resolve-RvcWrangler $RepoRoot
 $StagingRoot = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot "..\部署临时"))
 New-Item -ItemType Directory -Force -Path $StagingRoot | Out-Null
 $StagingParent = [System.IO.Path]::GetFullPath((Join-Path $StagingRoot ("postprep-pages-" + [guid]::NewGuid().ToString("N").Substring(0, 8))))
@@ -46,7 +50,7 @@ try {
       $env:NODE_OPTIONS = "-r `"$cleanDnsNormalized`""
     }
     try {
-      npx --yes wrangler@4 pages deploy . --project-name $ProjectName --branch $Branch
+      & node $WranglerJs pages deploy . --project-name $ProjectName --branch $Branch
       if ($LASTEXITCODE -ne 0) { throw "wrangler pages deploy failed" }
     } finally {
       $env:NODE_OPTIONS = $oldNodeOptions
