@@ -44,7 +44,7 @@
         const labels = {
           navigation: ['叠层快捷导航', 'Stacked shortcuts'],
           monitor: ['原声监视器', 'Source monitor'],
-          tools: ['导入与训练模型', 'Import & train models'],
+          tools: ['模型导入、导出与训练', 'Import, export & train models'],
           roster: ['角色目录与来源', 'Character directory & sources'],
           help: ['指南与使用提示', 'Guide & usage notes'],
           content: ['音频模式说明', 'Audio mode notes'],

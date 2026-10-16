@@ -121,3 +121,10 @@ html[data-ui="glass"] body[data-page="rvc"] .rvc-inspector .studio-fold { border
   html[data-ui] body[data-page="rvc"] #rvc-create-collection { padding-inline: 7px; }
 }
 @media (prefers-reduced-motion: reduce) { .studio-fold, .studio-engine { scroll-behavior: auto; } }
+/* Native hidden stays effective; the completed download remains a 40px target. */
+#rvc-onnx-export [data-onnx-download]:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}

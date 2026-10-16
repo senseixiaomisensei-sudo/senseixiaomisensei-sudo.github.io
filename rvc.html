@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#0F766E">
   <title>AI 变声器 | PostPrep</title>
   <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
-  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20261005-register-1">
+  <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20261016-onnx-1">
   <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="assets/postprep-motion.css?v=20260925-rvcfix">
   <link rel="stylesheet" href="assets/liquid-ui.css?v=20261004-compact-1">
@@ -19,8 +19,8 @@
   <script src="assets/liquid-ui.js?v=20261004-compact-1"></script>
   <link rel="stylesheet" href="assets/classic-glass.css?v=20261004-compact-1">
   <script type="module" src="assets/classic-glass.js?v=20261004-compact-1"></script>
-  <link rel="stylesheet" href="assets/studio-layout.css?v=20261004-compact-1">
-  <script src="assets/studio-layout.js?v=20261004-compact-1"></script>
+  <link rel="stylesheet" href="assets/studio-layout.css?v=20261016-onnx-1">
+  <script src="assets/studio-layout.js?v=20261016-onnx-1"></script>
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="rvc">
   <div id="site-header"></div>
@@ -165,7 +165,7 @@
           </div>
 
           <details class="studio-fold studio-model-tools">
-            <summary data-studio-label="tools">导入与训练模型</summary>
+            <summary data-studio-label="tools">模型导入、导出与训练</summary>
           <!-- 导入我的模型（自己训练/转换的 .onnx，仅本机使用） -->
           <div class="mt-4 rounded-xl border border-dashed border-brand/40 bg-teal-50/50 p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -179,6 +179,18 @@
                 <input id="rvc-own-model-file" type="file" accept=".onnx,application/onnx" class="sr-only">
               </label>
             </div>
+          </div>
+
+          <div id="rvc-onnx-export" class="mt-4 rounded-xl border border-line bg-canvas p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-black text-ink" data-onnx-title>导出角色 ONNX 模型</p>
+                <p class="mt-1 text-xs leading-5 text-muted" data-onnx-hint>保存当前角色的设备端模型，不含语义模型、音高模型和检索索引。</p>
+              </div>
+              <button type="button" data-onnx-action disabled class="min-h-10 rounded-lg border border-brand bg-white px-3.5 py-2 text-xs font-bold text-brand shadow-xs transition hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50">导出 .onnx</button>
+            </div>
+            <p data-onnx-status class="mt-2 text-xs leading-5 text-muted" role="status" aria-live="polite" hidden></p>
+            <a data-onnx-download hidden download class="mt-3 min-h-10 rounded-lg bg-brand px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:opacity-90"></a>
           </div>
 
           <details id="rvc-training-panel" class="mt-4 rounded-xl border border-violet-200 bg-violet-50/40 p-4">
@@ -540,6 +552,6 @@
   <script src="assets/postprep.js?v=20261004-storage-1"></script>
   <script src="assets/rvc-language.js?v=20261004-chorus-2"></script>
   <script src="assets/rvc-schools.js?v=20261004-chorus-2"></script>
-  <script src="assets/rvc.js?v=20261006-public-tts-chorus-2"></script>
+  <script src="assets/rvc.js?v=20261016-onnx-export-1"></script>
 </body>
 </html>

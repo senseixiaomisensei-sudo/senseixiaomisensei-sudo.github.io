@@ -5550,6 +5550,7 @@
   }
 
   function updateStatusDisplay(msg) {
+    state.modelExportController?.refresh();
     state.syncTtsControls?.();
     chorusController?.refresh();
     state.autoParameterController?.refresh();
@@ -8076,6 +8077,12 @@
       },
     });
     await initCatalog();
+    try {
+      const {initModelExport} = await import('./rvc-model-export.js?v=20261016-1');
+      state.modelExportController = initModelExport({state,getModel:getSelectedModel,name:voiceName,
+        readOwnModel:getCachedItem,cacheKey:characterModelCacheKey,verifyBytes:verifyModelBytes,
+        loadModel:(model,onProgress)=>loadModelAuto(model,characterModelCacheKey(model),voiceName(model),'application/onnx',onProgress)});
+    } catch (error) { console.warn('ONNX export could not initialize', error); }
     const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-4');
     state.autoParameterController=initRegularAutoParameters({state,getEndpoint:getOfficialEndpoint,getModel:getSelectedModel,
       prepareFile:fixUploadContainer,isModernSpeech:useNewSpeechEngine,createRequestId:createCloudRequestId,
