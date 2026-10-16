@@ -6260,28 +6260,46 @@
     }
   }
 
-  function startPcmRecorder(stream) {
+  async function startPcmRecorder(stream) {
     const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextCtor) throw new Error("PCM_RECORDER_UNAVAILABLE");
     const context = new AudioContextCtor();
-    const source = context.createMediaStreamSource(stream);
-    const processor = context.createScriptProcessor(4096, 1, 1);
-    const silent = context.createGain();
-    silent.gain.value = 0;
+    let resumeTimer;
+    try {
+      if (context.state === "suspended") {
+        await Promise.race([context.resume(), new Promise((_, reject) => {
+          resumeTimer = setTimeout(() => reject(new Error("AUDIO_CONTEXT_SUSPENDED")), 5000);
+        })]);
+        if (context.state !== "running") throw new Error("AUDIO_CONTEXT_SUSPENDED");
+      }
+    } catch (error) { await context.close().catch(() => {}); throw error; }
+    finally { clearTimeout(resumeTimer); }
+    let source, processor, silent;
     const chunks = [];
-    processor.onaudioprocess = (event) => {
-      if (state.recording) chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+    let closed = false;
+    const close = async () => {
+      if (closed) return;
+      closed = true;
+      for (const node of [processor, source, silent]) { try { node?.disconnect(); } catch {} }
+      if (processor) processor.onaudioprocess = null;
+      await context.close().catch(() => {});
     };
-    source.connect(processor);
-    processor.connect(silent);
-    silent.connect(context.destination);
+    try {
+      source = context.createMediaStreamSource(stream);
+      processor = context.createScriptProcessor(4096, 1, 1);
+      silent = context.createGain();
+      silent.gain.value = 0;
+      processor.onaudioprocess = event => {
+        if (state.recording) chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+      };
+      source.connect(processor);
+      processor.connect(silent);
+      silent.connect(context.destination);
+    } catch (error) { await close(); throw error; }
     return {
+      cancel: close,
       stop: async () => {
-        processor.disconnect();
-        source.disconnect();
-        silent.disconnect();
-        processor.onaudioprocess = null;
-        await context.close().catch(() => {});
+        await close();
         const samples = concatenateFloat32(chunks);
         if (!samples.length) throw new Error("EMPTY_RECORDING");
         return encodePcmWav(samples, context.sampleRate || 48000, `mic_recording_${Date.now()}`);
@@ -6303,30 +6321,50 @@
     if (!recordBtn) return;
 
     const recordHint = document.getElementById("rvc-record-hint");
+    let starting = false, finishing = false, session = 0;
+    const hint = message => { if (recordHint) recordHint.textContent = message; };
+    const recordingError = error => {
+      if (error?.name === "NotAllowedError" || error?.name === "SecurityError") return t("recordDenied");
+      if (error?.name === "NotFoundError" || error?.name === "DevicesNotFoundError") return l("没有检测到麦克风，请连接后重试。","No microphone found. Connect one and retry.");
+      if (error?.name === "NotReadableError" || error?.name === "TrackStartError") return l("麦克风无法启动，可能正被其他应用占用，请关闭占用后重试。","Microphone unavailable. Close other apps using it and retry.");
+      if (error?.message === "MIC_PERMISSION_TIMEOUT") return l("仍未获得麦克风，请确认浏览器的授权提示后重试。","Microphone permission is still pending. Check the browser prompt and retry.");
+      if (error?.message === "AUDIO_CONTEXT_SUSPENDED") return l("浏览器未能启用录音音频，请再次点击录音，或改用系统浏览器。","The browser could not activate recording audio. Retry or use your system browser.");
+      return t("recordError");
+    };
     const resetButton = () => {
       state.recording = false;
+      starting = false; finishing = false;
       clearInterval(state.recordTimerId);
+      state.recordTimerId = null;
       if (recordLabel) recordLabel.textContent = t("recordStart");
       recordBtn.disabled = false;
+      recordBtn.setAttribute("aria-busy", "false");
       recordBtn.classList.remove("bg-red-600", "hover:bg-red-700");
       recordBtn.classList.add("bg-brand", "hover:bg-brandDark");
     };
     const finishRecordedFile = async (file) => {
       if (!file || file.size < 44) throw new Error("EMPTY_RECORDING");
+      await handleAudioSelected(file, Math.max(0, (Date.now() - state.recordStartAt) / 1000));
+      if (state.audio?.file !== file) throw new Error("RECORDING_DECODE_FAILED");
       if (state.recordPreviewUrl) URL.revokeObjectURL(state.recordPreviewUrl);
       if (recordPreview) {
         recordPreview.pause();
-        recordPreview.removeAttribute("src");
-        recordPreview.hidden = true;
+        state.recordPreviewUrl = URL.createObjectURL(file);
+        recordPreview.src = state.recordPreviewUrl;
+        recordPreview.hidden = false;
       }
-      await handleAudioSelected(file, Math.max(0, (Date.now() - state.recordStartAt) / 1000));
-      if (recordHint) recordHint.textContent = l(`录音已就绪：${file.name} · 点击“开始变声”即可处理。`,`Recording ready: ${file.name}. Select “Convert” to process it.`);
+      hint(l(`录音已就绪，可先试听，再点击“开始变声”。`,`Recording ready. Preview it, then select Convert.`));
     };
 
     recordBtn.addEventListener("click", async () => {
+      if (starting || finishing || state.busy) return;
       if (state.recording) {
+        finishing = true;
         state.recording = false;
+        clearInterval(state.recordTimerId);
         recordBtn.disabled = true;
+        recordBtn.setAttribute("aria-busy", "true");
+        hint(l("正在整理录音，请稍候…","Preparing your recording…"));
         if (recordLabel) recordLabel.textContent = l("正在整理录音…","Preparing recording\u2026");
         if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
           try { state.mediaRecorder.requestData(); } catch {}
@@ -6339,6 +6377,7 @@
             await finishRecordedFile(file);
           } catch (error) {
             console.error("PCM recording finalize failed:", error);
+            hint(recordingError(error));
             showToast(t("recordError"));
           } finally {
             state.pcmRecorder = null;
@@ -6357,14 +6396,37 @@
 
       // Start recording
       if (!navigator.mediaDevices?.getUserMedia) {
-        showToast(t("recordUnsupported"));
+        const message = window.isSecureContext === false
+          ? l("录音需要安全网页，请使用 HTTPS 网站；手机局域网 HTTP 页面无法调用麦克风。","Recording requires HTTPS. Microphone access is unavailable on an insecure LAN HTTP page.") : t("recordUnsupported");
+        hint(message); showToast(message);
         return;
       }
 
+      const requestSession = ++session;
+      let permissionTimer, permissionExpired = false;
+      const ownsSession = () => requestSession === session || (permissionExpired && session === requestSession + 1);
+      starting = true; recordBtn.disabled = true;
+      recordBtn.setAttribute("aria-busy", "true");
+      if (recordLabel) recordLabel.textContent = l("正在请求麦克风…","Requesting microphone…");
+      hint(l("请在浏览器弹窗中允许麦克风；若没有弹窗，请检查地址栏权限。","Allow microphone access in the browser prompt. If no prompt appears, check the address-bar permissions."));
       try {
-        state.recordStream = await microphoneStream();
+        const requestedStream = microphoneStream().then(stream => {
+          if (session !== requestSession) {
+            stream.getTracks().forEach(track => track.stop());
+            throw new Error("RECORDING_CANCELLED");
+          }
+          return stream;
+        });
+        state.recordStream = await Promise.race([requestedStream, new Promise((_, reject) => {
+          permissionTimer = setTimeout(() => {
+            if (requestSession !== session) { reject(new Error("RECORDING_CANCELLED")); return; }
+            permissionExpired = true; ++session; reject(new Error("MIC_PERMISSION_TIMEOUT"));
+          }, 30000);
+        })]);
+        clearTimeout(permissionTimer);
         state.recordChunks = [];
         const format = recorderFormat();
+        let pcmRecorder = null;
         if (format) {
           let recorder;
           try {
@@ -6372,39 +6434,65 @@
               ? new MediaRecorder(state.recordStream, { mimeType: format.mimeType, audioBitsPerSecond: 128000 })
               : new MediaRecorder(state.recordStream);
           } catch {
-            recorder = new MediaRecorder(state.recordStream);
+            try { recorder = new MediaRecorder(state.recordStream); } catch {}
           }
+          if (recorder) {
           state.mediaRecorder = recorder;
+          const chunks = state.recordChunks;
+          let failed = false;
           recorder.ondataavailable = (event) => {
-            if (event.data?.size > 0) state.recordChunks.push(event.data);
+            if (event.data?.size > 0) chunks.push(event.data);
           };
           recorder.onerror = (event) => {
+            if (requestSession !== session) return;
+            failed = true;
             console.error("MediaRecorder error:", event.error || event);
+            try { if (recorder.state !== "inactive") recorder.stop(); } catch {}
+            stopRecordStream(); resetButton(); hint(recordingError(event.error));
             showToast(t("recordError"));
           };
           recorder.onstop = async () => {
-            const actualType = recorder.mimeType || format.mimeType || state.recordChunks[0]?.type || "audio/webm";
+            if (failed || requestSession !== session) return;
+            finishing = true;
+            state.recording = false;
+            recordBtn.disabled = true;
+            recordBtn.setAttribute("aria-busy", "true");
+            stopRecordStream();
+            const actualType = recorder.mimeType || format.mimeType || chunks[0]?.type || "audio/webm";
             const extension = actualType.includes("mp4") ? "m4a" : actualType.includes("ogg") ? "ogg" : "webm";
-            const blob = new Blob(state.recordChunks, { type: actualType });
+            const blob = new Blob(chunks, { type: actualType });
             const file = new File([blob], `mic_recording_${Date.now()}.${extension}`, { type: actualType });
             try {
               await finishRecordedFile(file);
             } catch (error) {
               console.error("Recorded audio decode failed:", error);
+              hint(t("decodeFailed"));
               showToast(t("decodeFailed"));
             } finally {
-              state.mediaRecorder = null;
-              stopRecordStream();
-              resetButton();
+              if (requestSession === session) {
+                state.mediaRecorder = null;
+                stopRecordStream();
+                resetButton();
+              }
             }
           };
           recorder.start(250);
+          } else {
+            state.mediaRecorder = null;
+            pcmRecorder = await startPcmRecorder(state.recordStream);
+          }
         } else {
           state.mediaRecorder = null;
-          state.pcmRecorder = startPcmRecorder(state.recordStream);
+          pcmRecorder = await startPcmRecorder(state.recordStream);
         }
+        if (requestSession !== session) {
+          await pcmRecorder?.cancel();
+          return;
+        }
+        state.pcmRecorder = pcmRecorder;
         state.recording = true;
         state.recordStartAt = Date.now();
+        if (recordTimer) recordTimer.textContent = formatTime(0);
         if (recordHint) recordHint.textContent = l("正在录音；再次点击后会自动整理为可变声的标准音频。","Recording. Click again to prepare standard audio for conversion.");
         if (recordLabel) recordLabel.textContent = t("recordStop");
         recordBtn.classList.remove("bg-brand", "hover:bg-brandDark");
@@ -6415,19 +6503,32 @@
           if (recordTimer) recordTimer.textContent = formatTime(sec);
         }, 500);
       } catch (err) {
+        if (!ownsSession()) return;
         console.error("Mic access denied or error:", err);
         stopRecordStream();
         resetButton();
-        showToast(err?.name === "NotAllowedError" || err?.name === "SecurityError" ? t("recordDenied") : t("recordError"));
+        if (err?.message !== "RECORDING_CANCELLED") { hint(recordingError(err)); showToast(recordingError(err)); }
+      } finally {
+        clearTimeout(permissionTimer);
+        if (ownsSession()) {
+          starting = false;
+          recordBtn.disabled = false;
+          recordBtn.setAttribute("aria-busy", "false");
+        }
       }
     });
 
-    window.addEventListener("pagehide", () => {
+    state.cancelRecording = () => {
+      ++session;
       try {
-        if (state.mediaRecorder?.state !== "inactive") state.mediaRecorder.stop();
+        if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") state.mediaRecorder.stop();
       } catch {}
+      state.pcmRecorder?.cancel().catch(() => {});
+      state.pcmRecorder = null; state.mediaRecorder = null;
       stopRecordStream();
-    });
+      resetButton();
+    };
+    window.addEventListener("pagehide", state.cancelRecording);
   }
 
   async function runWebRvcInference({ allowLong = false, fallback = false } = {}) {
@@ -7395,6 +7496,8 @@
   }
 
   function setupEventListeners() {
+    // Microphone controls must not depend on optional TTS/training initialization.
+    setupRecording();
     // Mode Switcher (Official PyTorch vs Local WebAssembly)
     const btnOfficial = document.getElementById("rvc-mode-official");
     const btnLocal = document.getElementById("rvc-mode-local");
@@ -7520,6 +7623,7 @@
     const SOURCE_WRAPS = { upload: "rvc-upload-wrap", record: "rvc-record-wrap", tts: "rvc-tts-wrap" };
 
     const setSource = (mode) => {
+      if (mode !== "record") state.cancelRecording?.();
       state.sourceMode = mode;
       sourceButtons.forEach(({ elId, mode: m }) => {
         const btn = document.getElementById(elId);
@@ -8052,7 +8156,6 @@
     });
     if (manualBaseInput) manualBaseInput.addEventListener('keydown', e => { if (e.key === 'Enter') adaptBtn?.click(); });
 
-    setupRecording();
     setupModelTraining();
   }
 

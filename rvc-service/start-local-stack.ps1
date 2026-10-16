@@ -3,11 +3,11 @@
 # 前置：一次性执行过 setup-rvc.ps1，且本机已完成 `npx wrangler login`。
 # 用法: powershell -ExecutionPolicy Bypass -File start-all.ps1
 
-param([switch]$NoWatchdog)
+param([switch]$NoWatchdog, [switch]$LocalOnly)
 
-$startupCreated = $false
-$startupMutex = New-Object Threading.Mutex($true, "Local\PostPrepRvcStartup", [ref]$startupCreated)
-if (-not $startupCreated) { $startupMutex.Dispose(); exit 0 }
+. (Join-Path $PSScriptRoot 'startup_health.ps1')
+$startupMutex = Enter-RvcStartupMutex 'Local\PostPrepRvcStartup'
+if (-not $startupMutex) { Write-Warning '另一启动流程仍在运行；本次未执行恢复。'; exit 75 }
 try {
 
 $ErrorActionPreference = "Stop"
@@ -40,11 +40,7 @@ if (-not (Test-Path $TokenFile)) {
 $Token = (Get-Content $TokenFile -Raw).Trim()
 
 Step "2/5 启动本地 RVC 服务（GPU）"
-$healthy = $false
-try {
-  $r = curl.exe -s --max-time 5 --noproxy "*" "http://127.0.0.1:$LocalPort/healthz" -H "Authorization: Bearer $Token"
-  $healthy = ($r -match '"ready":\s*true')
-} catch {}
+$healthy = Test-RvcLocalReady $LocalPort $Token
 # 端口已被占用（典型：上一实例冷启动加载权重中，healthz 尚未 ready）时绝不再起第二个
 # uvicorn，否则两个进程同时绑定同一端口，请求随机落到新旧进程，行为时好时坏。
 # 冷启动到绑定端口需要十几秒，所以先给端口一小段出现窗口再决定是否另起实例。
@@ -52,16 +48,11 @@ if (-not $healthy) {
   $portListening = $null
   for ($i = 0; $i -lt 6 -and -not $portListening; $i++) {
     Start-Sleep -Seconds 3
-    $portListening = Get-NetTCPConnection -State Listen -LocalPort $LocalPort -ErrorAction SilentlyContinue
+    $portListening = Test-RvcTcpPort $LocalPort
     if ($portListening) {
-      for ($j = 0; $j -lt 40 -and -not $healthy; $j++) {
-        Start-Sleep -Seconds 3
-        try {
-          $r = curl.exe -s --max-time 5 --noproxy "*" "http://127.0.0.1:$LocalPort/healthz" -H "Authorization: Bearer $Token"
-          $healthy = ($r -match '"ready":\s*true')
-        } catch {}
-      }
+      $healthy = Wait-RvcLocalReady $LocalPort $Token 150
       if ($healthy) { Write-Host "本地服务已在启动中，等待就绪 OK" }
+      else { throw "端口 $LocalPort 已被占用，但 GPU 未就绪；保留现有进程，请查看 gpu-service-runtime.log.err。" }
       break
     }
   }
@@ -94,28 +85,26 @@ if (-not $healthy) {
   $ServiceAppDir = Join-Path $SiteDir "rvc-service"
   $ServiceLog = Join-Path $Root "gpu-service-runtime.log"
   Start-Process -FilePath $OfficialVenvPython -ArgumentList "-m","uvicorn","app.main:app","--app-dir",$ServiceAppDir,"--host","127.0.0.1","--port",$LocalPort,"--no-access-log" -RedirectStandardOutput $ServiceLog -RedirectStandardError "$ServiceLog.err" -WindowStyle Hidden
-  # 官方运行时冷启动要把 HuBERT/RMVPE 权重载入显存，实测远超 8 秒；轮询到 120 秒再判失败。
-  for ($i = 0; $i -lt 40 -and -not $healthy; $i++) {
-    Start-Sleep -Seconds 3
-    try {
-      $r = curl.exe -s --max-time 5 --noproxy "*" "http://127.0.0.1:$LocalPort/healthz" -H "Authorization: Bearer $Token"
-      $healthy = ($r -match '"ready":\s*true')
-    } catch {}
-  }
+  # Bound cold loading while keeping the existing process on a slow boot.
+  $healthy = Wait-RvcLocalReady $LocalPort $Token 150
 }
 if (-not $healthy) { throw "本地 RVC 服务启动失败，请查看日志。" }
 Write-Host "本地服务 OK"
 
 Step "3/5 启动窄代理与公网隧道（trycloudflare）"
 # 窄代理（tunnel_proxy.py）监听 8090，只放行服务端到服务的 RVC 路由；隧道只指向它，GPU 服务保持仅回环访问。
-$proxyListening = Get-NetTCPConnection -State Listen -LocalPort $ProxyPort -ErrorAction SilentlyContinue
+$proxyListening = Test-RvcTcpPort $ProxyPort
 if (-not $proxyListening) {
   if (-not (Test-Path $ProxyScript)) { throw "未找到窄代理脚本: $ProxyScript" }
   $env:RVC_GATEWAY_TOKEN = $Token
+  $env:RVC_PROXY_PORT = $ProxyPort
+  $env:RVC_UPSTREAM_PORT = $LocalPort
   if (-not (Test-Path $OfficialVenvPython)) { throw "未找到代理运行时: $OfficialVenvPython" }
-  Start-Process -FilePath $OfficialVenvPython -ArgumentList "-u",$ProxyScript -WindowStyle Hidden
-  Start-Sleep -Seconds 2
+  $ProxyLog = Join-Path $Root 'tunnel-proxy.log'
+  Start-Process -FilePath $OfficialVenvPython -ArgumentList "-u",$ProxyScript -RedirectStandardOutput $ProxyLog -RedirectStandardError "$ProxyLog.err" -WindowStyle Hidden
 }
+if (-not (Wait-RvcLocalReady $ProxyPort $Token 10)) { throw '窄代理未就绪，请查看 tunnel-proxy.log.err。' }
+if ($LocalOnly) { Write-Host '本地 GPU 与代理已就绪；未执行公网发布。'; return }
 $TunnelUrl = ""
 # cloudflared 把 quick tunnel 地址写到 stderr，所以两个日志文件都要扫。
 function Find-TunnelUrl([string]$logPath) {
@@ -156,7 +145,7 @@ if (-not $tunnelAlive) {
   $systemProxyPort = if ($proxySettings -and $proxySettings.ProxyServer -match ':(\d+)$') { [int]$Matches[1] } else { 0 }
   $proxyActive = $false
   if ($systemProxyPort -gt 0) {
-    $proxyActive = [bool](Get-NetTCPConnection -State Listen -LocalPort $systemProxyPort -ErrorAction SilentlyContinue)
+    $proxyActive = Test-RvcTcpPort $systemProxyPort
   }
   if ($proxySettings -and $proxySettings.ProxyEnable -eq 1 -and $proxyActive) {
     $env:HTTPS_PROXY = "http://$($proxySettings.ProxyServer)"
@@ -169,7 +158,7 @@ if (-not $tunnelAlive) {
   }
   $env:NO_PROXY = '127.0.0.1,localhost' 
   $quickArgs = @()
-  if (-not (Get-NetTCPConnection -State Listen -LocalPort 8091 -ErrorAction SilentlyContinue)) {
+  if (-not (Test-RvcTcpPort 8091)) {
     Start-Process -FilePath $OfficialVenvPython -ArgumentList (Join-Path $SiteDir 'rvc-service\quick_tunnel_registration.py') -WindowStyle Hidden
     Start-Sleep -Seconds 2
   }
@@ -188,7 +177,7 @@ if (-not $tunnelAlive) {
 }
 $verifiedTunnel = $false
 $tHost = ([Uri]$TunnelUrl).Host
-for ($probeAttempt = 0; $probeAttempt -lt 30 -and -not $verifiedTunnel; $probeAttempt++) {
+for ($probeAttempt = 0; $probeAttempt -lt 6 -and -not $verifiedTunnel; $probeAttempt++) {
   try {
     # 1. Clean IP Anycast probe (direct, bypasses domestic DNS poisoning and proxy errors)
     $h = curl.exe -s --max-time 6 --noproxy "*" --resolve "${tHost}:443:172.66.47.151" "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
@@ -219,14 +208,16 @@ try {
   if (Test-Path $cleanDnsCjs) {
     $nodeArgs += @("-r", $cleanDnsCjs)
   }
-  $wranglerJs = "D:\DevCaches\npm-cache\_npx\32026684e21afda6\node_modules\wrangler\bin\wrangler.js"
-  if (-not (Test-Path $wranglerJs)) {
-    $found = Get-ChildItem "D:\DevCaches\npm-cache\_npx\*\node_modules\wrangler\bin\wrangler.js" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($found) { $wranglerJs = $found.FullName }
-  }
+  $wranglerJs = Resolve-RvcWrangler $SiteDir
   $nodeArgs += @($wranglerJs, "secret", "bulk", $SecretFile, "--config", (Join-Path $SiteDir "worker\wrangler.toml"))
-  & node @nodeArgs
-  if ($LASTEXITCODE -ne 0) { throw "Worker 隧道密钥同步失败" }
+  $SyncLog = Join-Path $Root 'worker-sync.log'
+  $syncProcess = Start-Process -FilePath 'node.exe' -ArgumentList ($nodeArgs | ForEach-Object { '"' + $_ + '"' }) -RedirectStandardOutput $SyncLog -RedirectStandardError "$SyncLog.err" -WindowStyle Hidden -PassThru
+  if (-not $syncProcess.WaitForExit(90000)) {
+    $syncProcess.Kill()
+    $syncProcess.WaitForExit()
+    throw 'Worker 同步超过 90 秒，请查看 worker-sync.log.err；保留现有线上入口。'
+  }
+  if ($syncProcess.ExitCode -ne 0) { throw "Worker 隧道密钥同步失败，请查看 worker-sync.log.err。" }
 } finally {
   Remove-Item -LiteralPath $SecretFile -Force -ErrorAction SilentlyContinue
 }
@@ -242,20 +233,15 @@ if ($status -match '"ready":\s*true') {
   Write-Host ""
   Write-Host "全部就绪！打开 https://senseixiaomisensei-sudo.github.io/rvc.html 即可在线变声。" -ForegroundColor Green
 } else {
-  Write-Host "状态异常，请检查本地服务与隧道日志。" -ForegroundColor Red
+  throw "线上入口未就绪；本地启动不等于发布成功，请检查 worker-sync.log.err 与隧道日志。"
 }
 
 if (-not $NoWatchdog -and (Test-Path -LiteralPath $WatchdogScript)) {
   $WatchdogPidFile = Join-Path $Root "watchdog.pid"
   $watchdogRunning = $false
-  if (Test-Path -LiteralPath $WatchdogPidFile) {
-    $watchdogPid = 0
-    [void][int]::TryParse((Get-Content -LiteralPath $WatchdogPidFile -Raw).Trim(), [ref]$watchdogPid)
-    if ($watchdogPid -gt 0) {
-      $watchdogOwner = Get-CimInstance Win32_Process -Filter "ProcessId=$watchdogPid" -ErrorAction SilentlyContinue
-      $watchdogRunning = $watchdogOwner -and $watchdogOwner.CommandLine -like "*$WatchdogScript*"
-    }
-  }
+  $watchdogProbe = Enter-RvcStartupMutex 'Local\PostPrepRvcWatchdog'
+  if (-not $watchdogProbe) { $watchdogRunning = $true }
+  else { $watchdogProbe.ReleaseMutex(); $watchdogProbe.Dispose() }
   if (-not $watchdogRunning) {
     $watchdogTask = Get-ScheduledTask -TaskName "PostPrepRvcWatchdog" -ErrorAction SilentlyContinue
     if ($watchdogTask -and $watchdogTask.State -ne "Disabled") {

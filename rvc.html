@@ -338,7 +338,7 @@
                 <i class="fa-solid fa-microphone" aria-hidden="true"></i><span id="rvc-record-label" data-rvc-i18n="recordStart">开始录音</span>
               </button>
               <span id="rvc-record-timer" class="font-mono text-lg font-black text-brand" aria-live="polite">0:00</span>
-              <span id="rvc-record-hint" class="text-xs leading-5 text-muted" data-rvc-i18n="recordHint">录音在浏览器本地完成，只有点击“开始变声”后才会发送。</span>
+              <span id="rvc-record-hint" class="text-xs leading-5 text-muted" role="status" aria-live="polite" data-rvc-i18n="recordHint">录音在浏览器本地完成，只有点击“开始变声”后才会发送。</span>
             </div>
             <audio id="rvc-record-preview" class="mt-4 w-full" controls preload="metadata" hidden></audio>
           </div>
@@ -552,6 +552,6 @@
   <script src="assets/postprep.js?v=20261004-storage-1"></script>
   <script src="assets/rvc-language.js?v=20261004-chorus-2"></script>
   <script src="assets/rvc-schools.js?v=20261004-chorus-2"></script>
-  <script src="assets/rvc.js?v=20261016-onnx-export-1"></script>
+  <script src="assets/rvc.js?v=20261016-recording-startup-1"></script>
 </body>
 </html>

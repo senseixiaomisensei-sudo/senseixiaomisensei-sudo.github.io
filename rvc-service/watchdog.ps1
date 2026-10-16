@@ -1,4 +1,4 @@
-param(
+﻿param(
   [int]$IntervalSeconds = 20,
   [int]$FailureThreshold = 2
 )
@@ -13,14 +13,16 @@ $LogFile = Join-Path $MachineRoot "watchdog.log"
 $PidFile = Join-Path $MachineRoot "watchdog.pid"
 $PublicStatus = "https://postprep-ae6.pages.dev/rvc-api/status"
 $Origin = "https://senseixiaomisensei-sudo.github.io"
+. (Join-Path $PSScriptRoot 'startup_health.ps1')
+$RecoveryTimeoutSeconds = 600
+$RecoveryLog = Join-Path $MachineRoot 'startup-recovery.log'
 
 function Write-WatchdogLog([string]$message) {
   Add-Content -LiteralPath $LogFile -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $message" -Encoding UTF8
 }
 
-$createdNew = $false
-$mutex = New-Object Threading.Mutex($true, "Local\PostPrepRvcWatchdog", [ref]$createdNew)
-if (-not $createdNew) { exit 0 }
+$mutex = Enter-RvcStartupMutex 'Local\PostPrepRvcWatchdog'
+if (-not $mutex) { exit 0 }
 
 try {
   Set-Content -LiteralPath $PidFile -Value $PID -NoNewline -Encoding ASCII
@@ -32,17 +34,19 @@ try {
     if ($recoveryProcess -and $recoveryProcess.HasExited) {
       if ($recoveryProcess.ExitCode -eq 0) {
         Write-WatchdogLog "automatic recovery command finished"
+      } elseif ($recoveryProcess.ExitCode -eq 75) {
+        Write-WatchdogLog 'another startup owns recovery; no recovery was performed by this command'
       } else {
-        Write-WatchdogLog "automatic recovery exited with code $($recoveryProcess.ExitCode)"
+        Write-WatchdogLog "automatic recovery exited with code $($recoveryProcess.ExitCode); see $RecoveryLog.err"
       }
       $recoveryProcess = $null
       $recoveryStartedAt = $null
-    } elseif ($recoveryProcess -and $recoveryStartedAt -and ((Get-Date) - $recoveryStartedAt).TotalSeconds -ge 180) {
+    } elseif ($recoveryProcess -and $recoveryStartedAt -and ((Get-Date) - $recoveryStartedAt).TotalSeconds -ge $RecoveryTimeoutSeconds) {
       # A recovery must never leave this monitor blocked indefinitely.  Stop
       # the stale launcher after its bounded startup window; the next failed
       # probe can then launch a clean service/tunnel synchronization.
       Stop-Process -Id $recoveryProcess.Id -Force -ErrorAction SilentlyContinue
-      Write-WatchdogLog "automatic recovery exceeded 180 seconds and was stopped"
+      Write-WatchdogLog "automatic recovery exceeded $RecoveryTimeoutSeconds seconds and was stopped; see $RecoveryLog.err"
       $recoveryProcess = $null
       $recoveryStartedAt = $null
     }
@@ -51,8 +55,7 @@ try {
     $localHealthy = $false
     try {
       $token = (Get-Content -LiteralPath $TokenFile -Raw).Trim()
-      $local = Invoke-RestMethod -Uri "http://127.0.0.1:8088/healthz" -Headers @{ Authorization = "Bearer $token" } -TimeoutSec 5
-      if ($local.ready -eq $true) {
+      if (Test-RvcLocalReady 8088 $token) {
         $localHealthy = $true
         $publicOut = curl.exe -s --max-time 10 $PublicStatus -H "Origin: $Origin"
         if ($publicOut -match '"ready":\s*true') {
@@ -92,7 +95,7 @@ try {
             $recoveryProcess = Start-Process -FilePath "pwsh.exe" -ArgumentList @(
               "-NoProfile", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass",
               "-File", $StartScript, "-NoWatchdog"
-            ) -WindowStyle Hidden -PassThru
+            ) -WindowStyle Hidden -RedirectStandardOutput $RecoveryLog -RedirectStandardError "$RecoveryLog.err" -PassThru
             $recoveryStartedAt = Get-Date
             Write-WatchdogLog "automatic recovery launched (pid $($recoveryProcess.Id))"
           } catch {

@@ -4,7 +4,8 @@ import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 const source=await readFile(new URL('../assets/rvc.js',import.meta.url),'utf8');
 const start=source.indexOf('    const ttsSynth = document.getElementById("rvc-tts-synth")');
-const end=source.indexOf('    setupRecording();',start);
+const end=source.indexOf('    setupModelTraining();',start);
+assert.ok(start>=0 && end>start,'TTS controls have a complete setup section');
 const connectionSource=source.slice(source.indexOf('  const OFFICIAL_RVC_ENDPOINT'),source.indexOf('  const ALLOWED_EXTENSIONS'));
 const catalog={defaultModel:'qwen3-17b',models:[
   {modelId:'qwen3-17b',ready:true,languages:['zh','en','ja'],styles:['neutral','gentle','happy'],voices:['serena','ryan'],installAvailable:true},
