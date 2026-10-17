@@ -194,6 +194,43 @@ test("rvc endpoint sends only sanitized fields to the fixed GPU backend", async 
   }
 });
 
+test("audio MIME aliases and codec parameters reach the decoder with canonical metadata and unchanged bytes", async () => {
+  const cases = [
+    ["speech.mp3", "audio/mp3", "audio/mpeg"],
+    ["speech.mp3", "audio/x-mp3", "audio/mpeg"],
+    ["speech.mp3", "application/octet-stream", "audio/mpeg"],
+    ["speech.mp3", "audio/mpeg; codecs=mp3", "audio/mpeg"],
+    ["recording.m4a", "audio/mp4;codecs=mp4a.40.2", "audio/mp4"],
+    ["recording.m4a", "video/mp4", "audio/mp4"],
+    ["speech.wav", "audio/vnd.wave", "audio/wav"],
+    ["recording.ogg", "application/ogg", "audio/ogg"],
+  ];
+  const mocked = mockRvcFetch();
+  try {
+    for (const [filename, type, canonical] of cases) {
+      const form = rvcForm();
+      const bytes = new Uint8Array([82, 73, 70, 70, 1, 2, 3, 4]);
+      form.set("audio", new Blob([bytes], { type }), filename);
+      const response = await rvcRequest(context({ form }));
+      assert.equal(response.status, 200, `${filename}: ${type}`);
+      const forwarded = mocked.calls.at(-1).options.body.get("audio");
+      assert.equal(forwarded.type, canonical);
+      assert.deepEqual(new Uint8Array(await forwarded.arrayBuffer()), bytes);
+    }
+    const calls = mocked.calls.length;
+    for (const [filename, type] of [["input.exe", "audio/mpeg"], ["input.mp3", "text/html"]]) {
+      const form = rvcForm();
+      form.set("audio", new Blob(["not audio"], { type }), filename);
+      const response = await rvcRequest(context({ form }));
+      assert.equal(response.status, 400);
+      assert.equal((await response.json()).code, "RVC_INVALID_AUDIO");
+    }
+    assert.equal(mocked.calls.length, calls, "unrelated files must not reach the GPU");
+  } finally {
+    mocked.restore();
+  }
+});
+
 test("rvc endpoint surfaces structured upstream error codes instead of masking them", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => Response.json({ code: "RVC_MODEL_NOT_FOUND" }, { status: 404 });

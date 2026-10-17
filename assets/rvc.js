@@ -4918,13 +4918,19 @@
       if (!file || typeof file.slice !== "function") return file;
       const header = new Uint8Array(await file.slice(0, 16).arrayBuffer());
       const kind = sniffAudioContainer(header);
-      if (!kind) return file;
       const extension = String(file.name || "").toLowerCase().split(".").pop();
-      const targetExtension = kind === "mp4" ? "m4a" : kind;
-      if (extension === targetExtension) return file;
+      const targetExtension = kind === "mp4" ? "m4a" : kind || (UPLOAD_MIME_BY_KIND[extension] ? extension : null);
+      if (!targetExtension) return file;
+      const type = UPLOAD_MIME_BY_KIND[targetExtension];
+      // Correct extensions can still carry audio/mp3, codec parameters or a
+      // generic MIME from mobile pickers. Repair metadata without decoding
+      // or copying the full audio into WebAudio on memory-limited devices.
+      if (extension === targetExtension && file.type === type) return file;
       const stem = String(file.name || "audio").replace(/\.[^.]+$/u, "").replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 48) || "audio";
-      return new File([file], `${stem}.postprep-${targetExtension}.${targetExtension}`, {
-        type: UPLOAD_MIME_BY_KIND[targetExtension],
+      const name = extension === targetExtension ? file.name : `${stem}.postprep-${targetExtension}.${targetExtension}`;
+      return new File([file], name, {
+        type,
+        lastModified: file.lastModified,
       });
     } catch (error) {
       console.warn("Upload container fix skipped:", error);

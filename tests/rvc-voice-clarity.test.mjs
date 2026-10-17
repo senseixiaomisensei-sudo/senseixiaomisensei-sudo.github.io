@@ -243,7 +243,7 @@ test("local engine and rvc client cache versions are bumped for the workspace re
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
   assert.match(runtimeSource, /inference\.worker\.js\?v=20260930-fractional-r42/u);
   assert.match(clientSource, /rvc-web-runtime\.js\?v=20260930-fractional-r42/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20261016-recording-startup-1/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20261017-audio-upload-1/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {
@@ -291,4 +291,20 @@ test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", asyn
   // 正确标称的文件原样返回
   const proper = new File([mp4Bytes], "ok.m4a", { type: "audio/mp4" });
   assert.equal(await fixUpload(proper), proper);
+
+  // Mobile file pickers use aliases, codec parameters, or a generic MIME
+  // even when the extension and audio bytes are already correct.
+  for (const type of ["audio/mp3", "audio/mpeg;codecs=mp3", "application/octet-stream", ""]) {
+    const bytes = new Uint8Array(2048);
+    bytes.set([0x49, 0x44, 0x33, 0x04]);
+    const upload = new File([bytes], "speech.mp3", { type });
+    const normalized = await fixUpload(upload);
+    assert.equal(normalized.type, "audio/mpeg", type);
+    assert.equal(normalized.name, upload.name, "a correct filename should be retained");
+    assert.deepEqual(await normalized.arrayBuffer(), await upload.arrayBuffer());
+  }
+  const recorded = new File([mp4Bytes], "recording.m4a", { type: "audio/mp4;codecs=mp4a.40.2" });
+  assert.equal((await fixUpload(recorded)).type, "audio/mp4");
+  const unknown = new File(["unrecognized"], "file.txt", { type: "text/plain" });
+  assert.equal(await fixUpload(unknown), unknown);
 });

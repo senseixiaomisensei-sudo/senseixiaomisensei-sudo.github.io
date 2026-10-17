@@ -56,7 +56,26 @@ const ALLOWED_MIME_TYPES = new Set([
   "audio/flac",
   "audio/x-flac",
   "audio/aac",
+  "audio/mp3",
+  "audio/x-mp3",
+  "audio/mpeg3",
+  "audio/x-mpeg-3",
+  "audio/wave",
+  "audio/vnd.wave",
+  "audio/x-pn-wav",
+  "audio/m4a",
+  "audio/x-mp4",
+  "audio/x-aac",
+  "audio/opus",
+  "application/ogg",
+  "application/octet-stream",
+  "video/mp4",
+  "video/webm",
 ]);
+const CANONICAL_AUDIO_MIME = Object.freeze({
+  wav: "audio/wav", mp3: "audio/mpeg", m4a: "audio/mp4",
+  ogg: "audio/ogg", webm: "audio/webm", flac: "audio/flac", aac: "audio/aac",
+});
 const ALLOWED_FORMATS = new Set(["wav", "mp3"]);
 const ALLOWED_F0_METHODS = new Set(["auto", "rmvpe", "fcpe", "pm"]);
 const ALLOWED_RESAMPLE = new Set(["0", "16000", "24000", "32000", "44100", "48000"]);
@@ -86,7 +105,7 @@ function extensionFor(file) {
 function validAudio(file) {
   if (!file || file.size < 1 || file.size > MAX_AUDIO_BYTES) return false;
   const extension = extensionFor(file);
-  const type = String(file.type || "").toLowerCase();
+  const type = String(file.type || "").split(";", 1)[0].trim().toLowerCase();
   return ALLOWED_EXTENSIONS.has(extension) && (!type || ALLOWED_MIME_TYPES.has(type));
 }
 
@@ -295,7 +314,9 @@ export async function onRequest(context) {
   upstreamBody.set("audio_mode", audioMode);
   upstreamBody.set("voice_engine", voiceEngine);
   if (requestId) upstreamBody.set("request_id", requestId);
-  upstreamBody.set("audio", audio, safeFilename(audio, "input"));
+  // MIME is transport metadata, not proof of an audio codec. Preserve bytes
+  // and let the backend decoder validate the file after metadata validation.
+  upstreamBody.set("audio", audio.slice(0, audio.size, CANONICAL_AUDIO_MIME[extensionFor(audio)]), safeFilename(audio, "input"));
 
   let upstream;
   try {

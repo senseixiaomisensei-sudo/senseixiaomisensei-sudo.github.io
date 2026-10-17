@@ -153,6 +153,20 @@ ALLOWED_MIME_TYPES = {
     "audio/flac",
     "audio/x-flac",
     "audio/aac",
+    "audio/mp3",
+    "audio/x-mp3",
+    "audio/mpeg3",
+    "audio/x-mpeg-3",
+    "audio/wave",
+    "audio/vnd.wave",
+    "audio/x-pn-wav",
+    "audio/m4a",
+    "audio/x-mp4",
+    "audio/x-aac",
+    "audio/opus",
+    "application/ogg",
+    "video/mp4",
+    "video/webm",
     # Some HTTP clients (curl, PowerShell, generic uploaders) send a generic
     # type for audio files; ffmpeg still parses the real format below.
     "application/octet-stream",
@@ -683,7 +697,9 @@ def safe_extension(upload: UploadFile) -> str:
     extension = name.rsplit(".", 1)[-1] if "." in name else ""
     if extension not in ALLOWED_EXTENSIONS:
         raise RvcServiceError(400, "RVC_INVALID_AUDIO")
-    mime = str(upload.content_type or "").lower()
+    # Mobile pickers and MediaRecorder can supply aliases or codec parameters.
+    # The extension remains allowlisted; probe_duration/ffmpeg validate bytes.
+    mime = str(upload.content_type or "").split(";", 1)[0].strip().lower()
     if mime and mime not in ALLOWED_MIME_TYPES:
         raise RvcServiceError(400, "RVC_INVALID_AUDIO")
     return extension
