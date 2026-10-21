@@ -1,4 +1,15 @@
 ﻿# Loopback checks work at user logon without administrator/CIM permissions.
+function Set-RvcDirectNetwork {
+  # Only this service tree changes. Do not alter the user's Windows/VPN setup.
+  foreach ($name in @('HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'FTP_PROXY',
+      'GLOBAL_AGENT_HTTP_PROXY', 'GLOBAL_AGENT_HTTPS_PROXY', 'npm_config_proxy', 'npm_config_https_proxy')) {
+    [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+  }
+  $env:NO_PROXY = '*'
+  $env:NODE_USE_ENV_PROXY = '0'
+  $env:RVC_DIRECT_NETWORK = '1'
+}
+
 function Test-RvcTcpPort([int]$Port) {
   $client = [Net.Sockets.TcpClient]::new()
   try {

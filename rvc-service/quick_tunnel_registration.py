@@ -1,4 +1,4 @@
-"""Loopback-only registration bridge for cloudflared on proxied Windows hosts.
+"""Loopback-only, proxy-independent registration bridge for cloudflared.
 
 cloudflared's quick-registration transport does not use the system proxy.
 Forward only its fixed registration request; never proxy arbitrary URLs or log
@@ -6,46 +6,20 @@ the returned tunnel credentials. The public tunnel still targets tunnel_proxy.
 """
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-import socket
-
 import requests
-
-CLEAN_IPS = ['172.66.47.151', '172.66.47.152']
-_orig_getaddrinfo = socket.getaddrinfo
-active_clean_ip = CLEAN_IPS[0]
-
-
-def patched_getaddrinfo(host, port, *args, **kwargs):
-    if host == 'api.trycloudflare.com' and active_clean_ip:
-        return _orig_getaddrinfo(active_clean_ip, port, *args, **kwargs)
-    return _orig_getaddrinfo(host, port, *args, **kwargs)
-
-
-socket.getaddrinfo = patched_getaddrinfo
 
 
 def request_tunnel():
-    global active_clean_ip
-    for ip in CLEAN_IPS:
-        active_clean_ip = ip
+    # Windows registry proxies are also ignored when trust_env is false.
+    for _ in range(2):
         try:
-            s = requests.Session()
-            s.trust_env = False
-            res = s.post('https://api.trycloudflare.com/tunnel', timeout=10)
-            if res.status_code == 200:
-                return res
-        except Exception:
+            with requests.Session() as session:
+                session.trust_env = False
+                response = session.post('https://api.trycloudflare.com/tunnel', timeout=(5, 15))
+                if response.status_code == 200:
+                    return response
+        except requests.RequestException:
             continue
-
-    active_clean_ip = None
-    try:
-        s = requests.Session()
-        s.trust_env = True
-        res = s.post('https://api.trycloudflare.com/tunnel', timeout=15)
-        if res.status_code == 200:
-            return res
-    except Exception:
-        pass
     return None
 
 

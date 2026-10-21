@@ -6,7 +6,8 @@
 param([switch]$NoWatchdog, [switch]$LocalOnly)
 
 . (Join-Path $PSScriptRoot 'startup_health.ps1')
-$startupMutex = Enter-RvcStartupMutex 'Local\PostPrepRvcStartup'
+Set-RvcDirectNetwork
+$startupMutex = Enter-RvcStartupMutex 'Global\PostPrepRvcStartup'
 if (-not $startupMutex) { Write-Warning '另一启动流程仍在运行；本次未执行恢复。'; exit 75 }
 try {
 
@@ -140,23 +141,7 @@ if (-not $tunnelAlive) {
     Where-Object { -not $_.Path -or $_.Path -eq $CfBin } |
     Stop-Process -Force
   Remove-Item $TunnelLog, "$TunnelLog.err" -ErrorAction SilentlyContinue
-  # Use the operator's enabled Windows proxy for quick-tunnel registration if active.
-  $proxySettings = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -ErrorAction SilentlyContinue
-  $systemProxyPort = if ($proxySettings -and $proxySettings.ProxyServer -match ':(\d+)$') { [int]$Matches[1] } else { 0 }
-  $proxyActive = $false
-  if ($systemProxyPort -gt 0) {
-    $proxyActive = Test-RvcTcpPort $systemProxyPort
-  }
-  if ($proxySettings -and $proxySettings.ProxyEnable -eq 1 -and $proxyActive) {
-    $env:HTTPS_PROXY = "http://$($proxySettings.ProxyServer)"
-    $env:HTTP_PROXY = $env:HTTPS_PROXY
-    $env:ALL_PROXY = "socks5://$($proxySettings.ProxyServer)"
-  } else {
-    $env:HTTPS_PROXY = ""
-    $env:HTTP_PROXY = ""
-    $env:ALL_PROXY = ""
-  }
-  $env:NO_PROXY = '127.0.0.1,localhost' 
+  Set-RvcDirectNetwork
   $quickArgs = @()
   if (-not (Test-RvcTcpPort 8091)) {
     Start-Process -FilePath $OfficialVenvPython -ArgumentList (Join-Path $SiteDir 'rvc-service\quick_tunnel_registration.py') -WindowStyle Hidden
@@ -182,10 +167,7 @@ for ($probeAttempt = 0; $probeAttempt -lt 6 -and -not $verifiedTunnel; $probeAtt
     # 1. Clean IP Anycast probe (direct, bypasses domestic DNS poisoning and proxy errors)
     $h = curl.exe -s --max-time 6 --noproxy "*" --resolve "${tHost}:443:172.66.47.151" "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
     if ($h -match '"ready":\s*true') { $verifiedTunnel = $true; break }
-    # 2. Probe through system proxy if active
-    $hProxy = curl.exe -s --max-time 6 "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
-    if ($hProxy -match '"ready":\s*true') { $verifiedTunnel = $true; break }
-    # 3. Direct probe
+    # System DNS is also tested directly; never fall back to a VPN proxy.
     $hDirect = curl.exe -s --max-time 6 --noproxy "*" "$TunnelUrl/healthz" -H "Authorization: Bearer $Token"
     if ($hDirect -match '"ready":\s*true') { $verifiedTunnel = $true; break }
   } catch {}
@@ -224,7 +206,7 @@ try {
 
 Step "5/5 线上自检"
 Start-Sleep -Seconds 5
-$status = curl.exe -s "https://postprep-ae6.pages.dev/rvc-api/status" -H "Origin: https://senseixiaomisensei-sudo.github.io" --max-time 30
+$status = curl.exe -s --noproxy "*" "https://postprep-ae6.pages.dev/rvc-api/status" -H "Origin: https://senseixiaomisensei-sudo.github.io" --max-time 30
 if ($status -notmatch '"ready":\s*true') {
   $status = curl.exe -s --noproxy "*" "https://postprep-ae6.pages.dev/rvc-api/status" -H "Origin: https://senseixiaomisensei-sudo.github.io" --max-time 30
 }
@@ -239,7 +221,7 @@ if ($status -match '"ready":\s*true') {
 if (-not $NoWatchdog -and (Test-Path -LiteralPath $WatchdogScript)) {
   $WatchdogPidFile = Join-Path $Root "watchdog.pid"
   $watchdogRunning = $false
-  $watchdogProbe = Enter-RvcStartupMutex 'Local\PostPrepRvcWatchdog'
+  $watchdogProbe = Enter-RvcStartupMutex 'Global\PostPrepRvcWatchdog'
   if (-not $watchdogProbe) { $watchdogRunning = $true }
   else { $watchdogProbe.ReleaseMutex(); $watchdogProbe.Dispose() }
   if (-not $watchdogRunning) {

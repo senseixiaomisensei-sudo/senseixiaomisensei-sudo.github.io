@@ -1,18 +1,11 @@
-const dns = require('dns');
-
-const CLEAN_IPS = ['172.66.47.151', '172.66.47.152'];
-const origLookup = dns.lookup;
-
-dns.lookup = (hostname, options, callback) => {
-  if (typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-  if (hostname === 'api.cloudflare.com' || hostname === 'api.trycloudflare.com') {
-    if (options && options.all) {
-      return callback(null, [{ address: CLEAN_IPS[0], family: 4 }]);
+// Compatibility preload for existing launchers. Keep current system DNS;
+// do not pin Cloudflare's APIs to tunnel-front IPs from an old registration.
+if (process.env.RVC_DIRECT_NETWORK === '1') {
+  for (const key of Object.keys(process.env)) {
+    if (/^(?:(?:https?|all|ftp)_proxy|npm_config_(?:https_)?proxy|global_agent_https?_proxy)$/i.test(key)) {
+      delete process.env[key];
     }
-    return callback(null, CLEAN_IPS[0], 4);
   }
-  return origLookup(hostname, options, callback);
-};
+  process.env.NO_PROXY = '*';
+  process.env.NODE_USE_ENV_PROXY = '0';
+}

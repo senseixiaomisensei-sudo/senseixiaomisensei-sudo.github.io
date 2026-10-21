@@ -51,3 +51,18 @@ test('Wrangler resolves an existing install and rejects stale explicit paths',wi
     assert.equal(await ps(`$env:RVC_WRANGLER_JS=${quote(join(root,'missing.js'))}; try { Resolve-RvcWrangler ${quote(root)} } catch { 'missing-install' }`),'missing-install');
   } finally { await rm(root,{recursive:true,force:true}); }
 });
+
+test('service startup discards unavailable desktop proxies in its own environment',windowsOnly,async()=>{
+  const result=JSON.parse(await ps(`$env:HTTP_PROXY='http://127.0.0.1:9'; $env:HTTPS_PROXY='http://127.0.0.1:9'; $env:ALL_PROXY='socks5://127.0.0.1:9'; $env:npm_config_proxy='http://127.0.0.1:9'; Set-RvcDirectNetwork; @{http=$env:HTTP_PROXY;https=$env:HTTPS_PROXY;all=$env:ALL_PROXY;npm=$env:npm_config_proxy;noProxy=$env:NO_PROXY;direct=$env:RVC_DIRECT_NETWORK} | ConvertTo-Json -Compress`));
+  for(const field of ['http','https','all','npm']) assert.ok(!result[field], `${field} proxy must be absent or empty`);
+  assert.equal(result.noProxy,'*');
+  assert.equal(result.direct,'1');
+});
+
+test('Cloudflare preload retains normal DNS and removes inherited proxies only for service mode',async()=>{
+  const preload=fileURLToPath(new URL('../rvc-service/clean-cf-dns.cjs',import.meta.url));
+  const script=`const dns=require('node:dns');const lookup=dns.lookup;require(${JSON.stringify(preload)});console.log(JSON.stringify({dnsUnchanged:dns.lookup===lookup,proxy:process.env.HTTPS_PROXY||null,noProxy:process.env.NO_PROXY}));`;
+  const environment={...process.env,HTTPS_PROXY:'http://127.0.0.1:9',RVC_DIRECT_NETWORK:'1'};
+  const result=JSON.parse((await run(process.execPath,['-e',script],{env:environment})).stdout);
+  assert.deepEqual(result,{dnsUnchanged:true,proxy:null,noProxy:'*'});
+});

@@ -4,16 +4,16 @@
 )
 
 $ErrorActionPreference = "Continue"
-$env:NO_PROXY = '127.0.0.1,localhost'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $MachineRoot = Join-Path (Split-Path -Parent $RepoRoot) "rvc-local"
-$StartScript = Join-Path $MachineRoot "start-all.ps1"
+$StartScript = Join-Path $PSScriptRoot "start-local-stack.ps1"
 $TokenFile = Join-Path $MachineRoot ".gateway-token"
 $LogFile = Join-Path $MachineRoot "watchdog.log"
 $PidFile = Join-Path $MachineRoot "watchdog.pid"
 $PublicStatus = "https://postprep-ae6.pages.dev/rvc-api/status"
 $Origin = "https://senseixiaomisensei-sudo.github.io"
 . (Join-Path $PSScriptRoot 'startup_health.ps1')
+Set-RvcDirectNetwork
 $RecoveryTimeoutSeconds = 600
 $RecoveryLog = Join-Path $MachineRoot 'startup-recovery.log'
 
@@ -21,7 +21,7 @@ function Write-WatchdogLog([string]$message) {
   Add-Content -LiteralPath $LogFile -Value "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $message" -Encoding UTF8
 }
 
-$mutex = Enter-RvcStartupMutex 'Local\PostPrepRvcWatchdog'
+$mutex = Enter-RvcStartupMutex 'Global\PostPrepRvcWatchdog'
 if (-not $mutex) { exit 0 }
 
 try {
@@ -57,12 +57,9 @@ try {
       $token = (Get-Content -LiteralPath $TokenFile -Raw).Trim()
       if (Test-RvcLocalReady 8088 $token) {
         $localHealthy = $true
-        $publicOut = curl.exe -s --max-time 10 $PublicStatus -H "Origin: $Origin"
+        $publicOut = curl.exe -s --noproxy "*" --max-time 10 $PublicStatus -H "Origin: $Origin"
         if ($publicOut -match '"ready":\s*true') {
           $healthy = $true
-        } else {
-          $publicOutDirect = curl.exe -s --max-time 10 --noproxy "*" $PublicStatus -H "Origin: $Origin"
-          $healthy = ($publicOutDirect -match '"ready":\s*true')
         }
       }
     } catch {
@@ -72,7 +69,7 @@ try {
     if ($healthy) {
       if ($failures -gt 0) { Write-WatchdogLog "service recovered without restart" }
       $failures = 0
-    } elseif (-not $localHealthy) {
+    } elseif (-not $localHealthy -and -not (Test-RvcTcpPort 8088)) {
       # At logon there is no value in waiting through two public probes when
       # the loopback GPU service is definitively absent. Start the complete
       # service/tunnel/Worker sync immediately; transient public probe failures
