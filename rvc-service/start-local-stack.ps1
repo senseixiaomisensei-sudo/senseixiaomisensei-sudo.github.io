@@ -152,11 +152,18 @@ if (-not $tunnelAlive) {
   # completed the identical upload. Preserve an explicit operator override.
   $tunnelProtocol = if ($env:RVC_TUNNEL_PROTOCOL) { $env:RVC_TUNNEL_PROTOCOL } else { "http2" }
   if ($tunnelProtocol -notin @("http2", "quic", "auto")) { throw "Invalid RVC_TUNNEL_PROTOCOL" }
-  Start-Process -FilePath $CfBin -ArgumentList (@("tunnel","--url","http://127.0.0.1:$ProxyPort","--no-autoupdate","--protocol",$tunnelProtocol) + $quickArgs) -RedirectStandardOutput $TunnelLog -RedirectStandardError "$TunnelLog.err" -WindowStyle Hidden
+  $runner = Join-Path $PSScriptRoot 'run-cloudflared.ps1'
+  $runnerArgs = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',$runner,
+    '-Executable',$CfBin,'-OriginUrl',"http://127.0.0.1:$ProxyPort",'-Protocol',$tunnelProtocol,
+    '-RegistrationUrl','http://127.0.0.1:8091','-LogPath',$TunnelLog)
+  $tunnelLauncher = Start-Process -FilePath 'pwsh.exe' -ArgumentList ($runnerArgs | ForEach-Object { '"' + $_ + '"' }) -WindowStyle Hidden -PassThru
   $TunnelUrl = ""
   for ($i = 0; $i -lt 40 -and -not $TunnelUrl; $i++) {
     Start-Sleep -Seconds 1
     $TunnelUrl = Find-TunnelUrl $TunnelLog
+    if (-not $TunnelUrl -and $tunnelLauncher.HasExited) {
+      throw "Tunnel runner exited with code $($tunnelLauncher.ExitCode); see $TunnelLog.err"
+    }
   }
   if (-not $TunnelUrl) { throw "隧道启动失败，请查看 $TunnelLog" }
 }
