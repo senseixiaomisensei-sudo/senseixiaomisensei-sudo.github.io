@@ -9,18 +9,11 @@
   /* arrival wipe when coming from another page of this site */
   try { if (!RM && d.referrer && new URL(d.referrer).origin === location.origin) html.classList.add('arrived'); } catch (e) {}
 
-  /* ---------- menu ---------- */
-  const mb = d.querySelector('.menu-btn'), menu = d.getElementById('menu');
-  if (mb && menu) {
-    const set = o => {
-      menu.classList.toggle('open', o); mb.setAttribute('aria-expanded', o);
-      mb.querySelector('.sr').textContent = o ? '关闭菜单' : '打开菜单';
-      d.body.style.overflow = o ? 'hidden' : '';
-    };
-    mb.addEventListener('click', () => set(!menu.classList.contains('open')));
-    addEventListener('keydown', e => { if (e.key === 'Escape') set(false); });
-    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => set(false)));
-  }
+  /* ---------- glass nav: specular highlight follows scroll position ---------- */
+  const bar = d.querySelector('.bar');
+  const spec = () => { if (!bar) return; const m = Math.max(1, html.scrollHeight - innerHeight); bar.style.setProperty('--sy', clamp(scrollY / m).toFixed(3)); };
+  const nv = d.querySelector('.nav [aria-current]');
+  if (nv && nv.scrollIntoView) { const n = nv.parentElement; n.scrollLeft = nv.offsetLeft - (n.clientWidth - nv.offsetWidth) / 2; }
 
   /* ---------- kinetic type: split into masked tokens ---------- */
   const PUNCT = /^[，。、？！：；,.!?)）」』”’]$/;
@@ -69,17 +62,17 @@
     }
   }
   const req = () => { if (!raf) raf = requestAnimationFrame(tick); };
-  addEventListener('scroll', req, { passive: true });
+  addEventListener('scroll', () => { req(); spec(); }, { passive: true });
   addEventListener('resize', () => { layout(); req(); });
 
   /* features: pinned sequence */
   d.querySelectorAll('.seq').forEach(sec => {
-    const steps = sec.querySelectorAll('.step'), imgs = sec.querySelectorAll('.screen img'), rail = sec.querySelectorAll('.rail span');
+    const steps = sec.querySelectorAll('.step'), imgs = sec.querySelectorAll('.screen img'), rail = sec.querySelectorAll('.rail span'), cards = sec.querySelectorAll('.cards figure');
     let cur = -1; const n = steps.length;
     sec._cb = p => {
       const k = Math.min(n - 1, Math.floor(p * n * 0.999 + 0.0001));
       if (k === cur) return; cur = k;
-      [steps, imgs, rail].forEach(list => list.forEach((x, j) => x.classList.toggle('on', j === k)));
+      [steps, imgs, rail, cards].forEach(list => list.forEach((x, j) => x.classList.toggle('on', j === k)));
     };
   });
 
@@ -88,8 +81,9 @@
   function layout() {
     strips.forEach(s => {
       const tr = s.querySelector('.track');
-      s._dist = Math.max(0, tr.scrollWidth - innerWidth);
-      s.style.height = (innerHeight + s._dist) + 'px';
+      const native = innerWidth <= 820;
+      s._dist = native ? 0 : Math.max(0, tr.scrollWidth - innerWidth);
+      s.style.height = native ? '' : (innerHeight + s._dist) + 'px';
       s._cb = p => tr.style.setProperty('--x', (p * s._dist).toFixed(1));
       s._p = -1;
     });
@@ -225,6 +219,6 @@
     }, { threshold: .1 }).observe(v);
   });
 
-  layout(); tick();
+  layout(); tick(); spec();
   addEventListener('load', () => { layout(); tick(); });
 })();
