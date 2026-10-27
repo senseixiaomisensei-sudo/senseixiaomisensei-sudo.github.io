@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>路线 — Hoshino Harness</title>
-<meta name="description" content="M0 已完成，M1 已发布 preview.5，M2 规划中。">
+<meta name="description" content="M0、M1 已完成，M2 已发布 0.2.0-m2，M3 规划中。">
 <meta name="theme-color" content="#050608">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Hoshino Harness">
 <meta property="og:title" content="路线 — Hoshino Harness">
-<meta property="og:description" content="M0 已完成，M1 已发布 preview.5，M2 规划中。">
+<meta property="og:description" content="M0、M1 已完成，M2 已发布 0.2.0-m2，M3 规划中。">
 <meta property="og:image" content="assets/poster.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/app.svg" type="image/svg+xml">
@@ -27,18 +27,18 @@
 <main>
 <section class="pagehead"><canvas class="hz" data-hz="head" aria-hidden="true"></canvas>
 <p class="mono rv">04 · 路线</p><h1 class="mega kt">走过的，<br>和要去的。</h1>
-<p class="lede rv" style="--d:500ms">亮着的线已经走完，虚线是接下来的路。M0 让内核在手机上跑起来，M1 让它好用，M2 让它改动整个 Harness。</p></section>
+<p class="lede rv" style="--d:500ms">亮着的线已经走完，虚线是接下来的路。M0 让内核在手机上跑起来，M1 让它好用，M2 让它改动整个 Harness，M3 让它更稳。</p></section>
 <section class="journey"><div class="jline" data-p="mid"><span class="dot" aria-hidden="true"></span>
 <div class="ms lit first"><div class="tag"><b>M0</b><span class="mono">已完成</span></div><div class="body"><h2 class="kt">内核在手机上原样运行。</h2><p class="rv">从源码编译 proot，在 Android 上跑起 Alpine 3.23 与 Node 24，再把原版 dsh 原样放进去：不 fork，不改写。</p></div></div>
-<div class="ms lit"><div class="tag"><b>M1</b><span class="mono">已发布<br>preview.5</span></div><div class="body"><h2 class="kt">能用，而且好用。</h2><p class="rv">第一个可安装版本：0.1.0 M1 preview.5，arm64-v8a 测试版。已交付：</p><ul class="check rv"><li>双协议流式聊天与思考</li><li>工具审批</li><li>工作区文件读写</li><li>真实 PTY 终端</li><li>Shizuku 系统命令</li><li>历史正文搜索</li><li>软件内截图与长图</li><li>消息与代码复制</li><li>声明式 UI 覆盖</li><li>配置快照回滚</li><li>token-meter 用量统计</li></ul></div></div>
-<div class="ms plan"><div class="tag"><b>M2</b><span class="mono">规划中</span></div><div class="body"><h2 class="kt">让它改动整个 Harness。</h2><ol><li class="rv"><span>01</span>除最终回复外全流程折叠</li><li class="rv"><span>02</span>Agent 完全改动 Harness（全量 UI DSL、自动重编译并安装更新）</li><li class="rv"><span>03</span>四档自动审批（手动 / 规则 / 自选审批模型 / 全自动）</li><li class="rv"><span>04</span>兼容电脑端 dsh 插件与配置</li><li class="rv"><span>05</span>更多 Agent 模式与自定义模式</li><li class="rv"><span>06</span>后台持续运行与断点恢复</li><li class="rv"><span>07</span>零成本联网搜索</li><li class="rv"><span>08</span>输出 zip、mp4、mp3 等任意格式</li><li class="rv"><span>09</span>自定义系统提示词</li></ol></div></div>
-<div class="ms plan last"><div class="tag"><b class="sm">探索中</b></div><div class="body"><h2 class="kt">更小，更稳。</h2><p class="rv">APK 瘦身；更多机型真机验证。</p></div></div>
+<div class="ms lit"><div class="tag"><b>M1</b><span class="mono">已完成<br>preview.5</span></div><div class="body"><h2 class="kt">能用，而且好用。</h2><p class="rv">第一个可安装版本：0.1.0 M1 preview.5，arm64-v8a 测试版。已交付：</p><ul class="check rv"><li>双协议流式聊天与思考</li><li>工具审批</li><li>工作区文件读写</li><li>真实 PTY 终端</li><li>Shizuku 系统命令</li><li>历史正文搜索</li><li>软件内截图与长图</li><li>消息与代码复制</li><li>声明式 UI 覆盖</li><li>配置快照回滚</li><li>token-meter 用量统计</li></ul></div></div>
+<div class="ms lit"><div class="tag"><b>M2</b><span class="mono">已发布<br>0.2.0-m2</span></div><div class="body"><h2 class="kt">让它改动整个 Harness。</h2><p class="rv">0.2.0-m2，签名构建。已交付：</p><ul class="check rv"><li>过程折叠</li><li>UI Schema 与热重载</li><li>四档审批</li><li>九种模式</li><li>分层提示词</li><li>无 Key 搜索</li><li>插件安装与配置同步</li><li>文件交付与预览</li><li>自我更新</li><li>后台运行与恢复</li></ul></div></div>
+<div class="ms plan last"><div class="tag"><b>M3</b><span class="mono">规划中</span></div><div class="body"><h2 class="kt">更稳，覆盖更全。</h2><ol><li class="rv"><span>01</span>真机启动 / 后台 / 安装恢复矩阵与 OEM 验收</li><li class="rv"><span>02</span>更多 UI Token 与 slot 覆盖</li><li class="rv"><span>03</span>原生模块兼容与自动编译重试</li><li class="rv"><span>04</span>配置扫码导入</li><li class="rv"><span>05</span>显式 HTTP / SOCKS5 代理</li><li class="rv"><span>06</span>编辑已发送消息后重新生成</li><li class="rv"><span>07</span>原生 Git / PR 面板与任务预算</li><li class="rv"><span>08</span>完整的“撤销本轮”时间旅行</li></ol></div></div>
 </div></section>
 <div class="divider"><canvas data-hz="div" aria-hidden="true"></canvas></div><section class="next"><a class="next-link" href="download.html"><span class="mono">下一页</span><span class="next-t">下载<i>→</i></span></a></section>
 </main>
 <footer class="foot">
 <a class="brand" href="index.html"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="7" width="7" height="34" rx="3.5" fill="#fff"/><rect x="32" y="7" width="7" height="34" rx="3.5" fill="#fff"/><path d="M24 11.5Q25.3 22.7 35 24Q25.3 25.3 24 36.5Q22.7 25.3 13 24Q22.7 22.7 24 11.5Z" fill="#4C7DFF"/></svg><span>Hoshino Harness</span></a>
-<nav aria-label="页脚"><a href="https://github.com/senseixiaomisensei-sudo/hoshino-harness-android">GitHub</a><a href="https://github.com/senseixiaomisensei-sudo/hoshino-harness-android/blob/codex/m1/LICENSE">许可证</a><a href="https://github.com/senseixiaomisensei-sudo/hoshino-harness-android/blob/codex/m1/THIRD_PARTY.md">第三方许可</a></nav>
+<nav aria-label="页脚"><a href="https://github.com/senseixiaomisensei-sudo/hoshino-harness-android">GitHub</a><a href="https://github.com/senseixiaomisensei-sudo/hoshino-harness-android/blob/codex/m2/LICENSE">许可证</a><a href="https://github.com/senseixiaomisensei-sudo/hoshino-harness-android/blob/codex/m2/THIRD_PARTY.md">第三方许可</a></nav>
 <p>Hoshino Harness 是独立开源项目，与 DeepSeek 官方无隶属关系。<br>© 2026 Hoshino Harness · MIT</p>
 </footer>
 </body>
