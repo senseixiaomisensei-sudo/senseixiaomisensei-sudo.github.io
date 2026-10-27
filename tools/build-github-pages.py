@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-STATIC_DIRS = {'assets', 'community', 'skills', 'docs'}
+STATIC_DIRS = {'assets', 'community', 'skills', 'docs', 'hoshino'}
 STATIC_FILES = {'.nojekyll', '_headers', '_redirects', 'robots.txt', 'sitemap.xml',
                 'ads.txt', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'README.md',
                 'CONTRIBUTING.md', 'SECURITY.md'}
