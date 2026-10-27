@@ -20,11 +20,9 @@
 <body>
 <header class="bar">
 <a class="brand" href="index.html" aria-label="Hoshino Harness 概览"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="7" width="7" height="34" rx="3.5" fill="#fff"/><rect x="32" y="7" width="7" height="34" rx="3.5" fill="#fff"/><path d="M24 11.5Q25.3 22.7 35 24Q25.3 25.3 24 36.5Q22.7 25.3 13 24Q22.7 22.7 24 11.5Z" fill="#4C7DFF"/></svg><span>Hoshino Harness</span></a>
-<nav class="nav" aria-label="主导航"><a href="index.html" aria-current="page">概览</a><a href="features.html">能力</a><a href="architecture.html">架构</a><a href="roadmap.html">路线</a></nav>
-<a class="btn sm" href="download.html">下载</a>
-<button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu"><i></i><span class="sr">打开菜单</span></button>
+<nav class="nav" aria-label="主导航"><a href="index.html" aria-current="page"><i class="bub" aria-hidden="true"></i><span>概览</span></a><a href="features.html"><span>能力</span></a><a href="architecture.html"><span>架构</span></a><a href="roadmap.html"><span>路线</span></a></nav>
+<a class="btn pill" href="download.html">下载</a>
 </header>
-<div class="menu" id="menu"><nav aria-label="菜单"><a href="index.html" aria-current="page"><span>01</span>概览</a><a href="features.html"><span>02</span>能力</a><a href="architecture.html"><span>03</span>架构</a><a href="roadmap.html"><span>04</span>路线</a><a href="download.html"><span>05</span>下载</a></nav><p class="mono">v0.1.0 · M1 preview.5<br>Android · arm64-v8a · MIT</p></div>
 <div class="wipe" aria-hidden="true"></div>
 <main>
 <section class="hero" data-p="out">
@@ -32,32 +30,36 @@
 <svg class="mark-big" viewBox="0 0 48 48" aria-hidden="true"><rect class="bar-l" x="9" y="7" width="7" height="34" rx="3.5"/><rect class="bar-r" x="32" y="7" width="7" height="34" rx="3.5"/><path class="star" d="M24 11.5Q25.3 22.7 35 24Q25.3 25.3 24 36.5Q22.7 25.3 13 24Q22.7 22.7 24 11.5Z"/></svg>
 <div class="hero-in">
 <h1 class="mega kt" style="--d:250ms">把 Agent<br>装进口袋。</h1>
-<p class="lede rv" style="--d:900ms">手机上的 Codex。原生 Android，原版 DeepSeek Harness 内核，开源、零成本、<span class="nw">一切皆插件。</span></p>
+<p class="lede rv" style="--d:900ms">手机上的 Codex。原生 Android 界面，里面跑的是原版 DeepSeek Harness 内核：会思考、有终端、能改自己。开源、零成本、<span class="nw">一切皆插件。</span></p>
 <div class="cta rv" style="--d:1100ms"><a class="btn lg" href="https://github.com/senseixiaomisensei-sudo/hoshino-harness-android/releases/download/v0.1.0-m1-preview.5/Hoshino-Harness-0.1.0-m1-arm64-v8a-debug.apk">下载 APK</a><a class="tlink" href="https://github.com/senseixiaomisensei-sudo/hoshino-harness-android">GitHub ↗</a></div>
 <p class="mono rv" style="--d:1300ms">v0.1.0 · M1 preview.5 · arm64-v8a · MIT</p>
 </div>
 <div class="scroll-cue mono" aria-hidden="true"><i></i>向下</div>
 </section>
-<section class="sec" style="padding-bottom:6vh"><p class="mono rv">影片 · 00:25</p><h2 class="big kt" style="margin-top:24px">看它<br>醒来。</h2></section>
+<div class="ticker" aria-label="双协议流式 · 工具审批 · 工作区读写 · 真实 PTY 终端 · Shizuku 系统命令 · 历史正文搜索 · 截图与长图 · 声明式 UI 覆盖 · 配置快照回滚 · token-meter"><div class="tk-run" aria-hidden="true"><span>双协议流式</span><span>工具审批</span><span>工作区读写</span><span>真实 PTY 终端</span><span>Shizuku 系统命令</span><span>历史正文搜索</span><span>截图与长图</span><span>声明式 UI 覆盖</span><span>配置快照回滚</span><span>token-meter</span><span>双协议流式</span><span>工具审批</span><span>工作区读写</span><span>真实 PTY 终端</span><span>Shizuku 系统命令</span><span>历史正文搜索</span><span>截图与长图</span><span>声明式 UI 覆盖</span><span>配置快照回滚</span><span>token-meter</span></div></div>
+<section class="sec film-head"><p class="mono rv">影片 · 00:25</p><h2 class="big kt">看它醒来。</h2><p class="lede rv">二十五秒，从桌面图标到第一条流式回复：内核在手机里的 Alpine 上启动，原生界面经本机回环接上它。</p></section>
 <section class="film" data-p="sticky"><div class="film-stage"><div class="film-frame">
 <video src="assets/promo.mp4" poster="assets/poster.jpg" muted autoplay loop playsinline preload="metadata" aria-label="Hoshino Harness 宣传片"></video>
 <div class="film-cap mono"><span>Hoshino Harness · 宣传片</span><span>静音循环</span></div>
 </div></div></section>
 <section class="stmt" data-p="view">
 <span class="ghost" aria-hidden="true">01</span>
-<div class="txt"><p class="mono">01 · 思考</p><h2 class="big kt">它会思考。</h2><p class="lede rv">双协议流式聊天，思考过程随时折叠。拆任务、跑子流程、停下来问你，都在一屏之内。</p></div>
+<div class="txt"><p class="mono">01 · 思考</p><h2 class="big kt">它会思考。</h2><p class="lede rv">双协议流式聊天：Anthropic Messages 与 OpenAI 兼容接口都能接入，回复和思考过程边生成边显示，思考随时折叠。拆任务、跑子流程、停下来问你，都在一屏之内。</p><dl class="facts rv"><div><dt>协议</dt><dd>Anthropic Messages · OpenAI 兼容</dd></div><div><dt>思考</dt><dd>流式输出，随时折叠</dd></div><div><dt>审批</dt><dd>调用工具前先由你确认</dd></div></dl></div>
 <div class="stage3d"><div class="phone "><div class="screen"><img src="assets/dark_run_16.webp" alt="执行中的会话：并行子任务与交付确认" width="600" height="1302"></div></div></div>
 </section>
 <section class="stmt flip" data-p="view">
 <span class="ghost" aria-hidden="true">02</span>
-<div class="txt"><p class="mono">02 · 终端</p><h2 class="big kt">它有终端。</h2><p class="lede rv">APK 自带 Alpine Linux 与 Node 24。真实 PTY，不是模拟器。</p></div>
+<div class="txt"><p class="mono">02 · 终端</p><h2 class="big kt">它有终端。</h2><p class="lede rv">APK 自带源码编译的 proot、Alpine 3.23 与 Node 24。终端是真实 PTY，不是模拟器；装上 Shizuku，Agent 还能执行 Android 系统命令，无需 root。</p><dl class="facts rv"><div><dt>运行时</dt><dd>proot · Alpine 3.23 · Node 24</dd></div><div><dt>终端</dt><dd>真实 PTY</dd></div><div><dt>系统</dt><dd>Shizuku 系统命令，可选</dd></div></dl></div>
 <div class="stage3d"><div class="phone "><div class="screen"><img src="assets/dark_terminal.webp" alt="内置终端" width="600" height="1302"></div></div></div>
 </section>
 <section class="stmt" data-p="view">
 <span class="ghost" aria-hidden="true">03</span>
-<div class="txt"><p class="mono">03 · 自我</p><h2 class="big kt">它能改自己。</h2><p class="lede rv">声明式 UI 覆盖与配置快照回滚。说一句话，界面就照你的意思改；改坏了，一键回到上一个快照。</p></div>
+<div class="txt"><p class="mono">03 · 自我</p><h2 class="big kt">它能改自己。</h2><p class="lede rv">声明式 UI 覆盖：说一句话，界面就照你的意思改。配置快照回滚：改坏了，一键回到之前的快照，配置原样恢复。</p><dl class="facts rv"><div><dt>界面</dt><dd>声明式 UI 覆盖</dd></div><div><dt>恢复</dt><dd>配置快照，一键回滚</dd></div><div><dt>工作区</dt><dd>文件读写，改动看得见</dd></div></dl></div>
 <div class="stage3d"><div class="phone "><div class="screen"><img src="assets/light_hero.webp" alt="浅色主题的新会话界面" width="600" height="1302"></div></div></div>
 </section>
+<section class="band"><div class="band-line" aria-hidden="true"></div>
+<dl class="band-row rv"><div><dt>内核</dt><dd>原版 dsh 0.2.1-rc.2</dd></div><div><dt>系统</dt><dd>Alpine 3.23</dd></div><div><dt>运行时</dt><dd>Node 24</dd></div><div><dt>界面</dt><dd>Kotlin + Compose</dd></div><div><dt>许可</dt><dd>MIT</dd></div></dl>
+<p class="band-note rv">无遥测 · 无 Google Play 服务 · 无远程业务后端 · 自带 API key</p></section>
 <div class="divider"><canvas data-hz="div" aria-hidden="true"></canvas></div><section class="next"><a class="next-link" href="features.html"><span class="mono">下一页</span><span class="next-t">能力<i>→</i></span></a></section>
 </main>
 <footer class="foot">
