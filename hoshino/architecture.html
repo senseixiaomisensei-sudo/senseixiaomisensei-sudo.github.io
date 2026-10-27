@@ -20,27 +20,29 @@
 <body>
 <header class="bar">
 <a class="brand" href="index.html" aria-label="Hoshino Harness 概览"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="7" width="7" height="34" rx="3.5" fill="#fff"/><rect x="32" y="7" width="7" height="34" rx="3.5" fill="#fff"/><path d="M24 11.5Q25.3 22.7 35 24Q25.3 25.3 24 36.5Q22.7 25.3 13 24Q22.7 22.7 24 11.5Z" fill="#4C7DFF"/></svg><span>Hoshino Harness</span></a>
-<nav class="nav" aria-label="主导航"><a href="index.html">概览</a><a href="features.html">能力</a><a href="architecture.html" aria-current="page">架构</a><a href="roadmap.html">路线</a></nav>
-<a class="btn sm" href="download.html">下载</a>
-<button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu"><i></i><span class="sr">打开菜单</span></button>
+<nav class="nav" aria-label="主导航"><a href="index.html"><span>概览</span></a><a href="features.html"><span>能力</span></a><a href="architecture.html" aria-current="page"><i class="bub" aria-hidden="true"></i><span>架构</span></a><a href="roadmap.html"><span>路线</span></a></nav>
+<a class="btn pill" href="download.html">下载</a>
 </header>
-<div class="menu" id="menu"><nav aria-label="菜单"><a href="index.html"><span>01</span>概览</a><a href="features.html"><span>02</span>能力</a><a href="architecture.html" aria-current="page"><span>03</span>架构</a><a href="roadmap.html"><span>04</span>路线</a><a href="download.html"><span>05</span>下载</a></nav><p class="mono">v0.1.0 · M1 preview.5<br>Android · arm64-v8a · MIT</p></div>
 <div class="wipe" aria-hidden="true"></div>
 <main>
 <section class="pagehead"><canvas class="hz" data-hz="head" aria-hidden="true"></canvas>
 <p class="mono rv">03 · 架构</p><h1 class="mega kt">原版内核，<br>原生外壳。</h1>
-<p class="lede rv" style="--d:500ms">不 fork 内核。原版 DeepSeek Harness 跑在手机里的 Alpine 上；Kotlin 与 Compose 写成的原生界面，经本机回环与它对话。</p></section>
-<section class="stack" data-p="sticky"><div class="stack-stage"><p class="mono">五层 · 自上而下</p><div class="layers"><div class="layer" style="--i:0"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L5 · 界面</p><h3>Kotlin + Jetpack Compose 原生界面</h3><p>你看到和触摸的一切</p></div></div><div class="layer" style="--i:1"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L4 · 桥</p><h3>loopback WebSocket 桥</h3><p>只走本机回环</p></div></div><div class="layer" style="--i:2"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L3 · 内核</p><h3>原版 DeepSeek Harness 0.2.1-rc.2 + Cordis</h3><p>不 fork 内核</p></div></div><div class="layer" style="--i:3"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L2 · 运行时</p><h3>源码编译 proot + Alpine 3.23 + Node 24</h3><p>真正的 Linux 用户空间</p></div></div><div class="layer" style="--i:4"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L1 · 系统</p><h3>Android</h3><p>Keystore · 前台服务 · Shizuku</p></div></div></div></div></section>
+<p class="lede rv" style="--d:500ms">不 fork 内核。原版 DeepSeek Harness 跑在手机里的 Alpine 上；Kotlin 与 Compose 写成的原生界面，经本机回环与它对话。五层，各管一件事。</p></section>
+<section class="stack" data-p="sticky"><div class="stack-stage"><p class="mono">五层 · 自上而下</p><div class="layers"><div class="layer" style="--i:0"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L5 · 界面</p><h3>Kotlin + Jetpack Compose 原生界面</h3><p>聊天、终端、设置全是原生绘制；声明式 UI 覆盖作用在这一层。</p></div></div><div class="layer" style="--i:1"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L4 · 桥</p><h3>loopback WebSocket 桥</h3><p>界面与内核只走本机回环，不经过任何远程服务器。</p></div></div><div class="layer" style="--i:2"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L3 · 内核</p><h3>原版 DeepSeek Harness 0.2.1-rc.2 + Cordis</h3><p>不 fork，原样运行；模型、工具、手机能力都是 Cordis 插件。</p></div></div><div class="layer" style="--i:3"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L2 · 运行时</p><h3>源码编译 proot + Alpine 3.23 + Node 24</h3><p>无需 root 的完整 Linux 用户空间，终端是真实 PTY。</p></div></div><div class="layer" style="--i:4"><div class="plane-w"><div class="plane"></div></div><div class="lab"><p class="mono">L1 · 系统</p><h3>Android</h3><p>Keystore 保管 key，前台服务托住内核，Shizuku 开放系统命令。</p></div></div></div></div></section>
+<section class="sec flow-sec"><p class="mono rv">数据流</p><h2 class="h2 kt">一条请求，走四站。</h2>
+<ol class="flow rv"><li><span class="mono">01 · 界面</span><b>Kotlin + Compose</b></li><li><span class="mono">02 · 桥</span><b>loopback WebSocket</b></li><li><span class="mono">03 · 内核</span><b>原版 dsh</b></li><li><span class="mono">04 · 模型</span><b>provider · 你的 key</b></li></ol>
+<p class="lede rv">中间没有 Hoshino 自己的服务器：无遥测、无 Google Play 服务、无远程业务后端。key 由你提供，存在 Android Keystore。</p></section>
 <section class="sec"><p class="mono rv">插件 · 示意</p>
-<div class="code rv" style="margin-top:28px"><header><span class="mono">plugins/hello-tool.ts</span><span class="mono">示意</span></header><pre><code><span class="c-k">export const</span> <span class="c-v">name</span> <span class="c-p">=</span> <span class="c-s">'hello-tool'</span>
+<div class="code rv"><header><span class="mono">plugins/hello-tool.ts</span><span class="mono">示意</span></header><pre><code><span class="c-k">export const</span> <span class="c-v">name</span> <span class="c-p">=</span> <span class="c-s">'hello-tool'</span>
 <span class="c-k">export function</span> <span class="c-f">apply</span><span class="c-p">(</span><span class="c-v">ctx</span><span class="c-p">) {</span>
   <span class="c-v">ctx</span><span class="c-p">.</span><span class="c-f">tool</span><span class="c-p">(</span><span class="c-s">'hello'</span><span class="c-p">, {</span> <span class="c-v">description</span><span class="c-p">:</span> <span class="c-s">'向用户问好'</span> <span class="c-p">},</span> <span class="c-k">async</span> <span class="c-p">({</span> <span class="c-v">name</span> <span class="c-p">}) =&gt;</span> <span class="c-s">`你好，</span><span class="c-p">${</span><span class="c-v">name</span><span class="c-p">}</span><span class="c-s">`</span><span class="c-p">)</span>
 <span class="c-p">}</span></code></pre></div>
-<h2 class="h2 kt cap">写一个插件，<br>就是写一个 <span class="nw">Cordis 插件。</span></h2></section>
-<section class="sec" style="padding-top:4vh"><p class="mono rv" style="margin-bottom:28px">原则</p><div class="princ">
-<div class="rv"><strong>0<small>成本</small></strong><p>无订阅、无后端、自带 key</p></div>
+<h2 class="h2 kt cap">写一个插件，<br>就是写一个 <span class="nw">Cordis 插件。</span></h2>
+<p class="lede rv">模型、工具、手机能力用的是同一套原版插件机制；内核不 fork，插件写法也不用另学。</p></section>
+<section class="sec"><p class="mono rv">原则</p><div class="princ">
+<div class="rv"><strong>0<small>成本</small></strong><p>无订阅、无后端，自带 API key</p></div>
 <div class="rv" style="--d:120ms"><strong>0<small>遥测</small></strong><p>无统计、无 Google Play 服务</p></div>
-<div class="rv" style="--d:240ms"><strong>MIT</strong><p>完全开源</p></div>
+<div class="rv" style="--d:240ms"><strong>MIT</strong><p>完全开源，代码都在 GitHub</p></div>
 <div class="rv" style="--d:360ms"><strong>本地</strong><p>内核跑在你的手机上</p></div>
 </div></section>
 <div class="divider"><canvas data-hz="div" aria-hidden="true"></canvas></div><section class="next"><a class="next-link" href="roadmap.html"><span class="mono">下一页</span><span class="next-t">路线<i>→</i></span></a></section>
