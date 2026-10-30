@@ -20,6 +20,8 @@ const T = {
   zh: { kicker: 'STUDIO MONITOR', title: '录音棚监视器', wave: '波形', spectrum: '频谱', compare: 'A/B 对比', hint: '拖动滑块比较原声与转换结果', playA: '播放原声', playB: '播放结果', swap: 'A/B 切换', waiting: '载入音频后显示波形', waitingB: '完成变声后显示结果波形', progress: '处理进度', idle: '待命', running: '处理中', done: '完成', a: '原声 A', b: '转换 B', large: '大文件：省略波形解码，仍可正常试听与转换', duration: '时长', rate: '峰值电平', voice: '当前声线' },
   en: { kicker: 'STUDIO MONITOR', title: 'Studio monitor', wave: 'Waveform', spectrum: 'Spectrum', compare: 'A/B compare', hint: 'Drag to compare original and converted audio', playA: 'Play original', playB: 'Play result', swap: 'Swap A/B', waiting: 'Load audio to see its waveform', waitingB: 'Convert to see the result waveform', progress: 'Progress', idle: 'Idle', running: 'Working', done: 'Done', a: 'Original A', b: 'Converted B', large: 'Large file: waveform skipped, playback and conversion still work', duration: 'Length', rate: 'Peak level', voice: 'Voice' },
 };
+// lane materials (docs/frontend-v3-direction.md §3b): original = warm orange, converted = indigo
+const LANE_A = '#e39257', LANE_B = '#8e9bf2';
 const MAX_DECODE_BYTES = 20 * 1024 * 1024;
 const SPEC_RATE = 8000, SPEC_MAX_SECONDS = 600, FFT = 1024, BANDS = 40;
 const appleMobile = /iPhone|iPad|iPod/iu.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -246,7 +248,7 @@ export function initStudio(ctx) {
       }
       g.restore();
     };
-    gradB = '#3d8bff';
+    gradB = LANE_B;
     const hasA = !!S.A?.peaks, hasB = !!S.B?.peaks;
     if (!hasA && !hasB) {
       // empty track: a timeline ruler and a hairline, like an empty lane in a DAW
@@ -265,8 +267,8 @@ export function initStudio(ctx) {
       g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(Math.round(12 * k), rh, Math.max(1, 1.5 * k), h - rh);
       g.beginPath(); g.moveTo(12 * k - 5 * k, rh - 7 * k); g.lineTo(12 * k + 6 * k, rh - 7 * k); g.lineTo(12 * k + .75 * k, rh); g.closePath(); g.fill();
     }
-    if (hasA && hasB) { lane(S.A, 0, split, '#8e8e93'); lane(S.B, split, w, gradB); }
-    else if (hasA) lane(S.A, 0, w, '#8e8e93');
+    if (hasA && hasB) { lane(S.A, 0, split, LANE_A); lane(S.B, split, w, gradB); }
+    else if (hasA) lane(S.A, 0, w, LANE_A);
     else if (hasB) lane(S.B, 0, w, gradB);
     // playhead
     const cur = S.playing === 'b' ? S.bEl : S.playing === 'a' ? S.aEl : null;
@@ -311,7 +313,7 @@ export function initStudio(ctx) {
     for (let b = 0; b < BANDS; b++) {
       smooth[b] += (bands[b] - smooth[b]) * (bands[b] > smooth[b] ? .55 : .18);
       const v = smooth[b], hh = Math.max(2 * k, v * h);
-      g.fillStyle = S.playing === 'b' ? '#3d8bff' : '#d1d1d6';
+      g.fillStyle = S.playing === 'b' ? LANE_B : S.playing === 'a' ? LANE_A : '#d1d1d6';
       g.globalAlpha = .3 + v * .7;
       g.fillRect(b * bw + bw * .18, h - hh, bw * .64, hh);
     }

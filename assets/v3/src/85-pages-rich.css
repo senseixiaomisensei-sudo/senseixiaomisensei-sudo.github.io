@@ -1,0 +1,96 @@
+/* ==========================================================================
+   Tool pages · rich pass: each page wears its tool's material (the same colour as
+   its card on the home page), stands under the same photographed light, and its
+   sheets get a bezel-weight shadow. CSS only; no markup or behaviour changes.
+   ========================================================================== */
+$G body[data-page="length"] { --m: var(--m-orange); --m-ic: "\f547"; }
+$G body[data-page="hashtags"] { --m: var(--m-indigo); --m-ic: "\f292"; }
+$G body[data-page="formatter"] { --m: var(--m-slate); --m-ic: "\f1dd"; }
+$G body[data-page="generator"] { --m: var(--m-ochre); --m-ic: "\f5ad"; }
+$G body[data-page="trust"] { --m: var(--m-green); --m-ic: "\f3ed"; }
+$G body[data-page="passport"] { --m: var(--m-brick); --m-ic: "\f5ab"; }
+$G body[data-page="skills"] { --m: var(--m-plum); --m-ic: "\f1b3"; }
+$G body[data-page="privacy"] { --m: var(--m-green); --m-ic: "\f023"; }
+$G body[data-page="rvc"] { --m: var(--m-orange); --m-ic: "\f83e"; }
+
+/* the header marks the current page with its material: a 4px dot under the label */
+$G #site-header nav a[aria-current]::after { content: ""; position: absolute; left: 50%; bottom: 1px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--m, var(--v3-accent)); }
+
+/* the light: one static layer behind the page head */
+$G body:not([data-page="home"]):not([data-page="404"]) main { position: relative; isolation: isolate; }
+$G body:not([data-page="home"]):not([data-page="404"]) main::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; top: -120px; left: 50%; width: 100vw; height: min(760px, 90vh); transform: translateX(-50%);
+  background: url(img/amb-light.webp) 70% 0 / cover no-repeat;
+  -webkit-mask-image: linear-gradient(#000 40%, transparent); mask-image: linear-gradient(#000 40%, transparent);
+}
+@media (prefers-color-scheme: dark) { $G body:not([data-page="home"]):not([data-page="404"]) main::before { background-image: url(img/amb-dark.webp); } }
+html.v3[data-gfx="lite"] body main::before { display: none; }
+
+/* page head: material icon tile, coloured kicker, editorial title */
+$G body[data-page] main > header:first-child { padding-top: 76px; }
+$G body[data-page] main > header:first-child::before {
+  content: var(--m-ic, "\f0c8"); position: absolute; left: 0; top: 0; width: 56px; height: 56px; border-radius: 17px;
+  display: grid; place-items: center; font: var(--fa-font-solid, 900 22px/1 "Font Awesome 6 Free"); font-size: 23px; color: #fff;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--m) 76%, #fff), var(--m) 60%, color-mix(in srgb, var(--m) 85%, #000));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), inset 0 -1px 0 rgb(0 0 0 / .14), 0 0 0 .5px color-mix(in srgb, var(--m) 70%, #000), 0 10px 20px -10px color-mix(in srgb, var(--m) 80%, transparent);
+}
+$G body[data-page="home"] main > header:first-child, $G body[data-page="404"] main > header:first-child { padding-top: 0; }
+$G body[data-page="home"] main > header:first-child::before, $G body[data-page="404"] main > header:first-child::before { content: none; }
+$G body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:first-child { color: var(--m, var(--v3-ink-3)) !important; }
+$G body:not([data-page="home"]):not([data-page="404"]) main > header:first-child h1, $G body:not([data-page="home"]):not([data-page="404"]) main h1:first-of-type { font-weight: 700; font-size: clamp(40px, 6vw, 84px); letter-spacing: -.045em; line-height: 1; }
+
+/* sheets: bezel-weight depth, a lit top edge, a thin material rule on the first sheet */
+$G body:not([data-page="home"]) main :is(section, aside, article).bg-surface, $G body:not([data-page="home"]) main :is(section, aside, article).bg-white {
+  box-shadow: 0 0 0 .5px rgb(0 0 0 / .07), inset 0 1px 0 rgb(255 255 255 / .9), 0 2px 4px rgb(60 40 20 / .04), 0 22px 44px -26px rgb(60 40 20 / .26) !important;
+  border-radius: 26px !important;
+}
+@media (prefers-color-scheme: dark) {
+  $G body:not([data-page="home"]) main :is(section, aside, article).bg-surface, $G body:not([data-page="home"]) main :is(section, aside, article).bg-white {
+    box-shadow: 0 0 0 .5px rgb(255 255 255 / .1), inset 0 .5px 0 rgb(255 255 255 / .08), 0 26px 50px -26px #000 !important;
+  }
+}
+/* inputs: inset wells, material focus ring kept on the accent for consistency */
+$G body:not([data-page="home"]) main :is(textarea, input[type="text"], input[type="search"], input:not([type]), select):not(:focus) {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / .06), 0 0 0 .5px rgb(0 0 0 / .1) !important;
+}
+@media (prefers-color-scheme: dark) { $G body:not([data-page="home"]) main :is(textarea, input[type="text"], input[type="search"], input:not([type]), select):not(:focus) { box-shadow: inset 0 1px 2px rgb(0 0 0 / .6), 0 0 0 .5px rgb(255 255 255 / .12) !important; } }
+/* big numbers on tool pages take the material */
+$G body:not([data-page="home"]) main p.text-2xl.tabular-nums { font-weight: 700; letter-spacing: -.03em; }
+$G body[data-page="length"] #length-progress { background: var(--m) !important; }
+
+@media (max-width: 640px) {
+  $G body[data-page] main > header:first-child { padding-top: 66px; }
+  $G body[data-page] main > header:first-child::before { width: 48px; height: 48px; border-radius: 15px; font-size: 20px; }
+}
+
+/* ---------- 404: the same light, the code set as a huge pale numeral ---------- */
+.v3-404 { position: relative; isolation: isolate; }
+.v3-404::before { content: ""; position: absolute; z-index: -1; inset: -120px 0 0; pointer-events: none; background: url(img/amb-light.webp) 70% 0 / cover no-repeat; -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+@media (prefers-color-scheme: dark) { .v3-404::before { background-image: url(img/amb-dark.webp); } }
+html.v3[data-gfx="lite"] .v3-404::before { display: none; }
+html.v3 .v3-404-code { font: 700 clamp(120px, 20vw, 280px)/.82 var(--v3-font); letter-spacing: -.06em; color: color-mix(in srgb, var(--m-brick) 22%, transparent); margin-bottom: -.12em; }
+
+/* ---------- voice studio monitor: dark aluminium faceplate, coloured lanes ---------- */
+html.v3 #v3-studio {
+  --m-accent: #8e9bf2; --la: #e39257; --lb: #8e9bf2;
+  background:
+    radial-gradient(circle at 18px 18px, #5c5c63 0 2.5px, #1d1d21 3px 5px, transparent 5.5px),
+    radial-gradient(circle at calc(100% - 18px) 18px, #5c5c63 0 2.5px, #1d1d21 3px 5px, transparent 5.5px),
+    radial-gradient(circle at 18px calc(100% - 18px), #5c5c63 0 2.5px, #1d1d21 3px 5px, transparent 5.5px),
+    radial-gradient(circle at calc(100% - 18px) calc(100% - 18px), #5c5c63 0 2.5px, #1d1d21 3px 5px, transparent 5.5px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / .014) 0 1px, rgb(0 0 0 / 0) 1px 3px),
+    linear-gradient(180deg, #2a2a2f 0%, #18181b 8%, #0f0f12 100%) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .16), inset 0 -1px 0 rgb(0 0 0 / .7), 0 0 0 .5px rgb(0 0 0 / .6), var(--drop-deep) !important;
+}
+.v3-scope-labels .la { color: var(--la); } .v3-scope-labels .lb { color: var(--lb); }
+.v3-scope-labels :is(.la, .lb) { display: inline-flex; align-items: center; gap: 6px; }
+.v3-scope-labels :is(.la, .lb)::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+.v3-scope-wave { background: linear-gradient(180deg, #121215, #0b0b0d); box-shadow: inset 0 1px 4px rgb(0 0 0 / .9), 0 .5px 0 rgb(255 255 255 / .08) !important; }
+.v3-scope-spec { background: #0b0b0d; }
+.v3-studio-side { padding: 14px; border-radius: 18px; background: linear-gradient(180deg, #1b1b1f, #141417); box-shadow: inset 0 .5px 0 rgb(255 255 255 / .08), 0 0 0 .5px rgb(0 0 0 / .6); }
+/* the progress ring gets a machined bezel and minute ticks */
+.v3-ring::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(rgb(255 255 255 / .22) 0 .6deg, transparent .6deg 6deg);
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 6px), #000 calc(100% - 5px)); mask: radial-gradient(closest-side, transparent calc(100% - 6px), #000 calc(100% - 5px)); }
+.v3-readouts dd { color: #ffd9a8 !important; }
+.v3-studio-head .v3-kicker { color: #ffd9a8; opacity: .8; }

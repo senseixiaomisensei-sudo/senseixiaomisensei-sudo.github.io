@@ -163,8 +163,43 @@ function initRack() {
   io.observe(rack);
 }
 
+// Hero depth: the editor is an object under light. A very small parallax follows a fine
+// pointer (or the gyroscope on phones), transform-only, one rAF while it settles, nothing
+// at rest; off for reduced motion and the lite tier, flat while the editor has focus.
+function initTilt() {
+  const stage = document.querySelector('[data-tilt]'); if (!stage) return;
+  const d = document.documentElement;
+  if (reduced.matches || d.dataset.gfx === 'lite' || d.dataset.motion === 'reduced') return;
+  const obj = stage.querySelector('.h-obj'), floor = stage.querySelector('.h-floor'), ruler = stage.querySelector('.h-ruler');
+  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  if (!fine && !matchMedia('(min-width: 901px)').matches) return; // phones: the tilt is flattened by CSS anyway
+  const rest = { x: -4.5, y: 2 }; let tx = 0, ty = 0, x = 0, y = 0, raf = 0, on = false, focus = false;
+  const step = () => {
+    const gx = focus ? 0 : tx, gy = focus ? 0 : ty;
+    x += (gx - x) * .12; y += (gy - y) * .12;
+    const rx = focus ? 0 : rest.y - y * 2.2, ry = focus ? 0 : rest.x + x * 3.2;
+    obj.style.transform = `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+    if (floor) floor.style.transform = `translate3d(${(-x * 10).toFixed(1)}px,0,0)`;
+    if (ruler) ruler.style.transform = `translate3d(${(x * 6).toFixed(1)}px,${(y * 4).toFixed(1)}px,40px) rotate(4deg)`;
+    raf = Math.abs(gx - x) + Math.abs(gy - y) > .002 ? requestAnimationFrame(step) : 0;
+  };
+  const kick = () => { if (!raf) raf = requestAnimationFrame(step); };
+  const hero = stage.closest('section') || stage;
+  hero.addEventListener('pointermove', e => {
+    if (!on || e.pointerType !== 'mouse') return;
+    const r = hero.getBoundingClientRect();
+    tx = (e.clientX - r.left) / r.width * 2 - 1; ty = (e.clientY - r.top) / r.height * 2 - 1; kick();
+  }, { passive: true });
+  hero.addEventListener('pointerleave', () => { tx = ty = 0; kick(); });
+  stage.addEventListener('focusin', () => { focus = true; obj.style.transition = 'none'; kick(); });
+  stage.addEventListener('focusout', () => { focus = false; kick(); });
+  new IntersectionObserver(([e]) => { on = e.isIntersecting; if (!on) { tx = ty = 0; } }).observe(stage);
+  obj.style.transition = 'none'; obj.style.transform = `rotateX(${rest.y}deg) rotateY(${rest.x}deg)`;
+}
+
 export function initHome() {
   initEditor();
   initFlow();
   initRack();
+  initTilt();
 }

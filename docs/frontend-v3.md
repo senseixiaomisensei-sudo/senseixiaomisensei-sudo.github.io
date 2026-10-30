@@ -14,6 +14,9 @@ v3 是叠加在现有站点之上的一层：页面结构、所有 id / `data-*`
 | `assets/v3/studio.js` | 变声器"录音棚监视器"：波形、频谱、A/B 分割、播放条、进度环（只读 UI） |
 | `assets/v3/lens.js` | WebGL 透镜：只给录音棚播放条用，首次交互后才加载；画布 = 播放条包围盒，只采样它下方那一条波形 |
 | `assets/v3/src/*.css` | 手写样式源（`$G` = v3 作用域前缀）：`00-base` 色板/字体/玻璃，`10-chrome` 页头/表单/按钮/分段，`50-home`，`60-pages`，`70-rvc`，`90-motion` |
+| `assets/v3/src/80-rich.css` | 第二轮"极致版"：材质色 token、首屏环境光与铝边框物件、玻璃尺、分镜（一条文案四道工序：量→理→清→过，巨字动词 + 滚动驱动进度轨）、工具卡片（图标砖 + 微缩产品画面 + 悬停弹簧/光泽）、录音棚铝面板（螺丝、VU、旋钮、彩色 A/B、频谱） |
+| `assets/v3/src/85-pages-rich.css` | 工具页：按 `data-page` 套材质色图标砖与彩色小标题、页头环境光、纸卡加厚阴影；404 大号淡色数字；`rvc.html` 监视器铝面板与彩色轨道 |
+| `assets/v3/img/` | `amb-light.webp` / `amb-dark.webp`（窗光/月光，各约 5 KB）、`grain.webp`（纸纹平铺，约 18 KB）；由 `/workspace/work/v3-qa/gen-amb.py` 生成 |
 | `assets/v3/v3.css` | 构建产物：`tools/v3-build.mjs` = Tailwind 颜色类的中性重映射（亮色纸面 + 深色 OLED）+ 源样式 |
 | `tools/v3-inject.mjs` | 给所有根目录页面写入/刷新 `<!-- v3:head -->` 块（幂等，不碰 `community/`、`hoshino/`） |
 

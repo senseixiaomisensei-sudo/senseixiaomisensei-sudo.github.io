@@ -32,6 +32,7 @@
   <main id="main">
     <!-- 1 · the product, working -->
     <section class="h-hero" aria-labelledby="h-title">
+      <div class="h-amb" aria-hidden="true"></div>
       <div class="h-wrap h-hero-grid">
         <div class="h-hero-copy">
           <p class="v3-eyebrow" data-i18n="v3.h.eyebrow">PostPrep · 发布前检查</p>
@@ -43,6 +44,9 @@
           </div>
         </div>
 
+        <div class="h-stage" data-tilt>
+          <span class="h-floor" aria-hidden="true"></span>
+          <div class="h-obj">
         <div class="h-device" id="h-device">
           <div class="h-scroll" data-plat="xhs">
             <div class="h-bar v3-glass" data-lens-ok role="toolbar" data-i18n-aria-label="v3.h.toolbar" aria-label="检查工具栏">
@@ -82,6 +86,9 @@
             </div>
           </div>
         </div>
+          <div class="h-ruler" aria-hidden="true"><i></i><b class="v3-num">20</b></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -94,30 +101,36 @@
       <div class="h-flow-track">
         <div class="h-flow-pin" data-step="0">
           <div class="h-wrap h-flow-grid">
+            <div class="h-flow-side">
+            <p class="h-verb" aria-hidden="true"><b data-i18n="v3.h.v0">量</b><b data-i18n="v3.h.v1">理</b><b data-i18n="v3.h.v2">清</b><b data-i18n="v3.h.v3">过</b></p>
             <ol class="h-steps">
               <li data-i="0"><span class="v3-num">01</span><h3 class="v3-h3" data-i18n="v3.story1Title">量一量</h3><p data-i18n="v3.story1Body">按平台目标即时统计字符、词数和行数，超出多少一眼可见。</p><a class="v3-btn-plain" href="length-checker.html"><span data-i18n="shared.length">长度检查</span> ›</a></li>
               <li data-i="1"><span class="v3-num">02</span><h3 class="v3-h3" data-i18n="v3.story2Title">理标签</h3><p data-i18n="v3.story2Body">统一 # 格式、去重、排序，整理成可直接粘贴的一行。</p><a class="v3-btn-plain" href="hashtag-cleaner.html"><span data-i18n="shared.hashtags">标签整理</span> ›</a></li>
               <li data-i="2"><span class="v3-num">03</span><h3 class="v3-h3" data-i18n="v3.story3Title">清排版</h3><p data-i18n="v3.story3Body">去掉多余空行、行尾空格与隐形字符，原意一字不改。</p><a class="v3-btn-plain" href="caption-formatter.html"><span data-i18n="shared.formatter">排版整理</span> ›</a></li>
               <li data-i="3"><span class="v3-num">04</span><h3 class="v3-h3" data-i18n="v3.story4Title">过一遍</h3><p data-i18n="v3.story4Body">生成发布可信包：待确认事项、AI 使用提醒与检查清单。</p><a class="v3-btn-plain" href="publish-trust.html"><span data-i18n="shared.trust">可信发布</span> ›</a></li>
             </ol>
+            <span class="h-rail" aria-hidden="true"><i></i></span>
+            </div>
             <div class="h-screen" aria-hidden="true">
-              <div class="h-screen-bar"><i></i><b class="v3-num">PostPrep</b><span class="h-screen-prog"><i></i></span></div>
-              <div class="h-scene s0">
-                <p class="h-s-title">秋天的第一杯｜街角这家咖啡店<mark class="bad">绝对是全城</mark></p>
-                <div class="h-s-meter"><i></i></div>
-                <dl class="h-s-stats v3-num"><div><dt data-i18n="v3.h.sTitle">标题</dt><dd>23<small>/20</small></dd></div><div><dt data-i18n="v3.h.sBody">正文</dt><dd>186<small>/1000</small></dd></div><div><dt data-i18n="v3.h.sLines">行数</dt><dd>7</dd></div></dl>
-              </div>
-              <div class="h-scene s1">
-                <p class="h-s-tags before"><span>#咖啡探店</span><span>＃城市漫步</span><span>#秋天</span><span class="dup">#咖啡探店</span><span>#citywalk</span></p>
-                <p class="h-s-arrow">↓</p>
-                <p class="h-s-tags after"><span>#咖啡探店</span><span>#城市漫步</span><span>#秋天</span><span>#citywalk</span></p>
-              </div>
-              <div class="h-scene s2">
-                <div class="h-s-pair"><p class="h-s-text before">燕麦拿铁奶香很足<i class="zw"></i>，<i class="sp">··</i><br><i class="nl">¶</i><br><i class="nl">¶</i><br>豆子是店主自己烘的<i class="sp">··</i></p><p class="h-s-text after">燕麦拿铁奶香很足，<br>豆子是店主自己烘的</p></div>
-                <p class="h-s-clean"><span data-i18n="v3.h.sClean">已清理</span> <b class="v3-num">3</b></p>
-              </div>
-              <div class="h-scene s3">
-                <ul class="h-s-check"><li><i></i><span data-i18n="v3.h.c1">标题长度已确认</span></li><li><i></i><span data-i18n="v3.h.c2">话题去重</span></li><li><i></i><span data-i18n="v3.h.c3">已标注 AI 辅助</span></li><li><i></i><span data-i18n="v3.h.c4">价格与地址已核实</span></li></ul>
+              <div class="h-screen-bar"><span class="h-dots"><i></i><i></i><i></i></span><b class="v3-num">PostPrep</b><span class="h-screen-tabs"><em data-i18n="v3.h.v0">量</em><em data-i18n="v3.h.v1">理</em><em data-i18n="v3.h.v2">清</em><em data-i18n="v3.h.v3">过</em></span><span class="h-screen-prog"><i></i></span></div>
+              <div class="h-doc">
+                <div class="h-doc-part p-title">
+                  <span class="h-doc-ticks"><i></i><b class="v3-num">20</b></span>
+                  <p class="h-s-title">秋天的第一杯｜街角这家咖啡店绝对是全城最<mark class="bad">好喝的</mark></p>
+                  <div class="h-s-meter"><i></i></div>
+                  <dl class="h-s-stats v3-num"><div><dt data-i18n="v3.h.sTitle">标题</dt><dd>23<small>/20</small></dd></div><div><dt data-i18n="v3.h.sBody">正文</dt><dd>186<small>/1000</small></dd></div><div><dt data-i18n="v3.h.sLines">行数</dt><dd>7</dd></div></dl>
+                </div>
+                <div class="h-doc-part p-body">
+                  <div class="h-s-pair"><p class="h-s-text before">燕麦拿铁奶香很足<i class="zw"></i>，<i class="sp">··</i><i class="nl">¶</i><i class="nl">¶</i>豆子是店主自己烘的<i class="sp">··</i></p><p class="h-s-text after">燕麦拿铁奶香很足，豆子是店主自己烘的</p></div>
+                  <p class="h-s-clean"><span data-i18n="v3.h.sClean">已清理</span> <b class="v3-num">3</b></p>
+                </div>
+                <div class="h-doc-part p-tags">
+                  <div class="h-s-pair"><p class="h-s-tags before"><span>#咖啡探店</span><span>＃城市漫步</span><span>#秋天</span><span class="dup">#咖啡探店</span><span>#citywalk</span></p><p class="h-s-tags after"><span>#咖啡探店</span><span>#城市漫步</span><span>#秋天</span><span>#citywalk</span></p></div>
+                </div>
+                <div class="h-doc-pass">
+                  <p class="h-pass-stamp"><i></i><b data-i18n="v3.h.ready">可以发布</b></p>
+                  <ul class="h-s-check"><li><i></i><span data-i18n="v3.h.c1">标题长度已确认</span></li><li><i></i><span data-i18n="v3.h.c2">话题去重</span></li><li><i></i><span data-i18n="v3.h.c3">已标注 AI 辅助</span></li><li><i></i><span data-i18n="v3.h.c4">价格与地址已核实</span></li></ul>
+                </div>
               </div>
             </div>
           </div>
@@ -132,15 +145,15 @@
         <div class="h-tools-head">
           <h2 id="h-tools-title" class="v3-h2" data-reveal data-i18n="v3.h.toolsTitle">八个工具，各管一件事。</h2>
         </div>
-        <nav class="h-index" aria-labelledby="h-tools-title">
-          <a class="h-tool" href="length-checker.html"><span class="v3-num">01</span><b data-i18n="home.lengthTitle">文案长度检查</b><span data-i18n="home.lengthBody">按平台目标查看字符、英文词数与行数。</span><i aria-hidden="true">›</i></a>
-          <a class="h-tool" href="hashtag-cleaner.html"><span class="v3-num">02</span><b data-i18n="home.tagTitle">标签整理</b><span data-i18n="home.tagBody">统一 # 格式、去重并整理成可直接粘贴的一行。</span><i aria-hidden="true">›</i></a>
-          <a class="h-tool" href="caption-formatter.html"><span class="v3-num">03</span><b data-i18n="home.formatTitle">文案排版整理</b><span data-i18n="home.formatBody">清掉多余空行与隐形字符，保留你的原意。</span><i aria-hidden="true">›</i></a>
-          <a class="h-tool" href="idea-generator.html"><span class="v3-num">04</span><b data-i18n="home.generatorTitle">按平台生成文案</b><span data-i18n="home.generatorBody">输入一句主题、标题或标签，按平台生成可直接编辑的文案或标签。</span><i aria-hidden="true">›</i></a>
-          <a class="h-tool" href="rvc.html"><span class="v3-num">05</span><b data-i18n="home.rvcTitle">AI 变声器</b><span data-i18n="home.rvcBody">选一个角色声音，上传或录制自己的声音，一键完成 RVC 声音转换。</span><i aria-hidden="true">›</i></a>
-          <a class="h-tool" href="publish-trust.html"><span class="v3-num">06</span><b data-i18n="home.trustTitle">发布可信包</b><span data-i18n="home.trustBody">本机整理发布前检查、待确认事项与 AI 使用提醒。</span><i aria-hidden="true">›</i></a>
-          <a class="h-tool" href="skill-passport.html"><span class="v3-num">07</span><b data-i18n="home.passportTitle">Skill 权限护照</b><span data-i18n="home.passportBody">安装前查看 Skill 的来源、版本与静态风险信号。</span><i aria-hidden="true">›</i></a>
-          <a class="h-tool" href="skills.html"><span class="v3-num">08</span><b data-i18n="v3.skillsTitle">Skills 工具箱</b><span data-i18n="v3.skillsBody">浏览、搜索与下载 PostPrep 的创作者 Skills。</span><i aria-hidden="true">›</i></a>
+        <nav class="h-index h-cards" aria-labelledby="h-tools-title">
+          <a class="h-tool c-len" href="length-checker.html"><span class="h-tool-ic" aria-hidden="true"><i class="fa-solid fa-ruler-horizontal"></i></span><span class="v3-num h-tool-no">01</span><b data-i18n="home.lengthTitle">文案长度检查</b><span class="h-tool-d" data-i18n="home.lengthBody">按平台目标查看字符、英文词数与行数。</span><span class="h-tool-pv" aria-hidden="true"><span class="pv-meter"><i></i><i></i></span><span class="pv-n v3-num">23<small>/20</small></span></span><i class="h-tool-go" aria-hidden="true">›</i></a>
+          <a class="h-tool c-tag" href="hashtag-cleaner.html"><span class="h-tool-ic" aria-hidden="true"><i class="fa-solid fa-hashtag"></i></span><span class="v3-num h-tool-no">02</span><b data-i18n="home.tagTitle">标签整理</b><span class="h-tool-d" data-i18n="home.tagBody">统一 # 格式、去重并整理成可直接粘贴的一行。</span><span class="h-tool-pv" aria-hidden="true"><span class="pv-chips"><i>#咖啡探店</i><i>#秋天</i><i class="x">#咖啡探店</i></span></span><i class="h-tool-go" aria-hidden="true">›</i></a>
+          <a class="h-tool c-fmt" href="caption-formatter.html"><span class="h-tool-ic" aria-hidden="true"><i class="fa-solid fa-paragraph"></i></span><span class="v3-num h-tool-no">03</span><b data-i18n="home.formatTitle">文案排版整理</b><span class="h-tool-d" data-i18n="home.formatBody">清掉多余空行与隐形字符，保留你的原意。</span><span class="h-tool-pv" aria-hidden="true"><span class="pv-lines"><i></i><i class="m"></i><i></i><i class="s"></i></span></span><i class="h-tool-go" aria-hidden="true">›</i></a>
+          <a class="h-tool c-gen" href="idea-generator.html"><span class="h-tool-ic" aria-hidden="true"><i class="fa-solid fa-pen-nib"></i></span><span class="v3-num h-tool-no">04</span><b data-i18n="home.generatorTitle">按平台生成文案</b><span class="h-tool-d" data-i18n="home.generatorBody">输入一句主题、标题或标签，按平台生成可直接编辑的文案或标签。</span><span class="h-tool-pv" aria-hidden="true"><span class="pv-write"><i></i><i></i><i class="c"></i></span></span><i class="h-tool-go" aria-hidden="true">›</i></a>
+          <a class="h-tool c-rvc" href="rvc.html"><span class="h-tool-ic" aria-hidden="true"><i class="fa-solid fa-wave-square"></i></span><span class="v3-num h-tool-no">05</span><b data-i18n="home.rvcTitle">AI 变声器</b><span class="h-tool-d" data-i18n="home.rvcBody">选一个角色声音，上传或录制自己的声音，一键完成 RVC 声音转换。</span><span class="h-tool-pv" aria-hidden="true"><span class="pv-wave"><i class="a"></i><i class="b"></i></span></span><i class="h-tool-go" aria-hidden="true">›</i></a>
+          <a class="h-tool c-trust" href="publish-trust.html"><span class="h-tool-ic" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span><span class="v3-num h-tool-no">06</span><b data-i18n="home.trustTitle">发布可信包</b><span class="h-tool-d" data-i18n="home.trustBody">本机整理发布前检查、待确认事项与 AI 使用提醒。</span><span class="h-tool-pv" aria-hidden="true"><span class="pv-check"><i></i><i></i><i></i></span></span><i class="h-tool-go" aria-hidden="true">›</i></a>
+          <a class="h-tool c-pass" href="skill-passport.html"><span class="h-tool-ic" aria-hidden="true"><i class="fa-solid fa-passport"></i></span><span class="v3-num h-tool-no">07</span><b data-i18n="home.passportTitle">Skill 权限护照</b><span class="h-tool-d" data-i18n="home.passportBody">安装前查看 Skill 的来源、版本与静态风险信号。</span><span class="h-tool-pv" aria-hidden="true"><span class="pv-pass"><i></i><b></b></span></span><i class="h-tool-go" aria-hidden="true">›</i></a>
+          <a class="h-tool c-skill" href="skills.html"><span class="h-tool-ic" aria-hidden="true"><i class="fa-solid fa-cubes"></i></span><span class="v3-num h-tool-no">08</span><b data-i18n="v3.skillsTitle">Skills 工具箱</b><span class="h-tool-d" data-i18n="v3.skillsBody">浏览、搜索与下载 PostPrep 的创作者 Skills。</span><span class="h-tool-pv" aria-hidden="true"><span class="pv-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span></span><i class="h-tool-go" aria-hidden="true">›</i></a>
         </nav>
       </div>
     </section>
@@ -154,14 +167,22 @@
           <a href="rvc.html" class="v3-btn v3-btn-primary"><span data-i18n="v3.studioCta">进入录音棚</span></a>
         </div>
         <div class="h-rack" aria-hidden="true">
-          <div class="h-rack-top"><span class="h-rack-name" data-i18n="v3.h.rackName">小鸟游星野 · 声线 B</span><span class="h-rack-tc v3-num">00:00:03:12</span></div>
+          <div class="h-rack-top"><span class="h-screw" aria-hidden="true"></span><span class="h-rack-led"></span><span class="h-rack-name" data-i18n="v3.h.rackName">小鸟游星野 · 声线 B</span><span class="h-rack-tc v3-num">00:00:03:12</span><span class="h-screw"></span></div>
+          <div class="h-rack-body">
           <div class="h-rack-wave">
             <svg class="w-a" viewBox="0 0 600 120" preserveAspectRatio="none"><path d="M1.2 55.0v10.0M7.5 54.9v10.2M13.8 54.6v10.8M20.0 52.1v15.7M26.2 50.0v20.0M32.5 51.3v17.3M38.8 49.9v20.3M45.0 39.7v40.6M51.2 42.8v34.3M57.5 40.6v38.9M63.8 26.7v66.6M70.0 32.0v56.0M76.2 23.4v73.3M82.5 28.2v63.7M88.8 24.1v71.8M95.0 33.3v53.4M101.2 24.4v71.1M107.5 21.4v77.1M113.8 29.7v60.7M120.0 28.6v62.9M126.2 32.7v54.6M132.5 43.6v32.7M138.8 38.3v43.4M145.0 43.2v33.5M151.2 48.4v23.3M157.5 52.2v15.6M163.8 49.6v20.7M170.0 53.3v13.3M176.2 54.0v11.9M182.5 53.4v13.1M188.8 52.9v14.3M195.0 50.6v18.7M201.2 51.6v16.9M207.5 47.4v25.3M213.8 47.5v24.9M220.0 40.8v38.4M226.2 38.0v43.9M232.5 44.0v31.9M238.8 41.3v37.3M245.0 38.0v44.0M251.2 23.5v73.0M257.5 30.4v59.1M263.8 25.6v68.9M270.0 31.0v58.0M276.2 27.1v65.9M282.5 30.1v59.9M288.8 32.0v56.0M295.0 30.0v60.1"/></svg>
             <svg class="w-b" viewBox="0 0 600 120" preserveAspectRatio="none"><path d="M301.2 34.2v51.6M307.5 20.9v78.2M313.8 29.3v61.4M320.0 31.8v56.5M326.2 25.4v69.1M332.5 33.9v52.1M338.8 39.0v42.0M345.0 39.4v41.1M351.2 39.5v41.0M357.5 48.0v24.0M363.8 41.5v37.0M370.0 50.5v19.1M376.2 46.0v28.1M382.5 46.1v27.8M388.8 52.0v16.0M395.0 47.6v24.8M401.2 50.7v18.5M407.5 50.3v19.4M413.8 52.2v15.5M420.0 49.6v20.8M426.2 45.5v28.9M432.5 32.7v54.5M438.8 39.1v41.9M445.0 26.6v66.9M451.2 19.4v81.2M457.5 15.6v88.9M463.8 25.8v68.3M470.0 24.3v71.3M476.2 20.0v80.1M482.5 14.6v90.7M488.8 30.7v58.6M495.0 18.9v82.3M501.2 20.8v78.3M507.5 23.2v73.5M513.8 40.1v39.7M520.0 29.9v60.2M526.2 44.2v31.6M532.5 43.8v32.4M538.8 43.7v32.6M545.0 43.6v32.7M551.2 49.6v20.8M557.5 47.4v25.2M563.8 50.7v18.6M570.0 52.7v14.6M576.2 53.4v13.2M582.5 53.4v13.2M588.8 51.9v16.1M595.0 49.1v21.7"/></svg>
+            <span class="h-lane l-a">A</span><span class="h-lane l-b">B</span>
             <span class="h-rack-split"></span>
             <span class="h-rack-head"></span>
             <div class="h-rack-transport v3-glass"><span class="h-rack-play"></span><span class="v3-num">0:03 / 0:06</span><span class="h-rack-ab"><b>A</b><b class="on">B</b></span></div>
           </div>
+          <div class="h-rack-side">
+            <div class="h-vu"><span class="v3-num">L</span><i style="--v:.78"></i><span class="v3-num">R</span><i style="--v:.66"></i></div>
+            <div class="h-knobs"><span class="h-knob" style="--k:.62"><b data-i18n="v3.h.kPitch">音高</b><em class="v3-num">+4</em></span><span class="h-knob" style="--k:.75"><b data-i18n="v3.h.kIndex">音色</b><em class="v3-num">0.75</em></span><span class="h-knob" style="--k:1"><b data-i18n="v3.h.kMix">混合</b><em class="v3-num">100</em></span></div>
+          </div>
+          </div>
+          <svg class="h-spec" viewBox="0 0 320 60" preserveAspectRatio="none"><defs><linearGradient id="h-spec-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="320" y2="0"><stop offset="0" stop-color="#d98a4e"/><stop offset=".5" stop-color="#c9a85a"/><stop offset="1" stop-color="#6f86c8"/></linearGradient></defs><g fill="url(#h-spec-g)"><rect x="1" y="42" width="7" height="18" rx="1.5"/><rect x="11" y="34" width="7" height="26" rx="1.5"/><rect x="21" y="26" width="7" height="34" rx="1.5"/><rect x="31" y="16" width="7" height="44" rx="1.5"/><rect x="41" y="8" width="7" height="52" rx="1.5"/><rect x="51" y="12" width="7" height="48" rx="1.5"/><rect x="61" y="20" width="7" height="40" rx="1.5"/><rect x="71" y="14" width="7" height="46" rx="1.5"/><rect x="81" y="22" width="7" height="38" rx="1.5"/><rect x="91" y="30" width="7" height="30" rx="1.5"/><rect x="101" y="26" width="7" height="34" rx="1.5"/><rect x="111" y="32" width="7" height="28" rx="1.5"/><rect x="121" y="36" width="7" height="24" rx="1.5"/><rect x="131" y="30" width="7" height="30" rx="1.5"/><rect x="141" y="38" width="7" height="22" rx="1.5"/><rect x="151" y="42" width="7" height="18" rx="1.5"/><rect x="161" y="40" width="7" height="20" rx="1.5"/><rect x="171" y="44" width="7" height="16" rx="1.5"/><rect x="181" y="46" width="7" height="14" rx="1.5"/><rect x="191" y="48" width="7" height="12" rx="1.5"/><rect x="201" y="45" width="7" height="15" rx="1.5"/><rect x="211" y="49" width="7" height="11" rx="1.5"/><rect x="221" y="51" width="7" height="9" rx="1.5"/><rect x="231" y="50" width="7" height="10" rx="1.5"/><rect x="241" y="52" width="7" height="8" rx="1.5"/><rect x="251" y="53" width="7" height="7" rx="1.5"/><rect x="261" y="52" width="7" height="8" rx="1.5"/><rect x="271" y="54" width="7" height="6" rx="1.5"/><rect x="281" y="55" width="7" height="5" rx="1.5"/><rect x="291" y="54" width="7" height="6" rx="1.5"/><rect x="301" y="56" width="7" height="4" rx="1.5"/><rect x="311" y="56" width="7" height="4" rx="1.5"/></g></svg>
           <div class="h-rack-meters"><span>-4.1 dBFS</span><span>48 kHz</span><span>RVC v2</span></div>
         </div>
       </div>
