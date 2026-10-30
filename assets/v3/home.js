@@ -1,180 +1,166 @@
-// PostPrep v3 · home page: liquid droplet, deck, scroll story, live spectrum.
-import { Deck } from './deck.js';
-import { addTask, wake, reduced, Spring, Velocity, clamp } from './motion.js';
+// PostPrep v3 · home: a real caption checked live in an editor (the hero), the
+// four-tool storyboard, and the studio teaser. Everything is event-driven: no per-frame
+// work unless the typing demo or a spring is running, and no scroll listeners at all.
+import { Seg, reduced } from './motion.js';
 
-export function initHome(ctx) {
-  const { glass } = ctx;
-  const hero = document.querySelector('.v3-hero');
-  const audio = initSpectrum(ctx);
-  if (hero) initHero(hero, ctx, audio);
-  const deck = document.getElementById('v3-deck');
-  if (deck) new Deck(deck, glass);
-  initStory(ctx);
-  initCounters();
-}
+const PLAT = { // limits mirror PLATFORM_PRESETS in postprep.js (title-type fields)
+  xhs: { limit: 20, scope: 'title' }, douyin: { limit: 55, scope: 'title' }, wechat: { limit: 64, scope: 'title' }, ig: { limit: 2200, scope: 'all' },
+};
+const EXTREME = ['全网最', '全城最', '最好', '最佳', '最低价', '最便宜', '第一', '唯一', '顶级', '绝对', '万能', '史上', '国家级', '首选', '100%', 'best ever', 'No.1', '#1 ', 'guaranteed', 'cheapest'];
+const DEMO = {
+  zh: '秋天的第一杯｜街角这家咖啡店绝对是全城最好喝的\n周末路过梧桐路，被门口那棵银杏吸引进去。\n燕麦拿铁奶香很足，豆子是店主自己烘的，酸度\u200b刚好。\n\n\n人均 38，下午三点后人少，靠窗位置拍照很出片。  \n#咖啡探店 #城市漫步 #秋天 #咖啡探店',
+  en: 'The best flat white in the city, guaranteed — our autumn find\nWandered down Plane Tree Road on Sunday and the ginkgo out front pulled us in.\nOat latte, beans roasted in-house, just the\u200b right acidity.\n\n\nAbout $6. Quiet after 3 pm, and the window seat is made for photos.  \n#coffee #citywalk #autumn #coffee',
+};
+const T = {
+  zh: { title: '标题', all: '全文', chars: '字', over: n => `超出 ${n}`, fits: '合适', extreme: '极限词', none: '无', tags: n => `话题 ${n} 个`, dup: n => `重复 ${n} 个`, noDup: '无重复', clean: '隐形字符与多余空格', spots: n => `${n} 处`, lines: '多余空行', todo: n => `${n} 项待处理`, ready: '可以发布', sep: '、' },
+  en: { title: 'Title', all: 'Caption', chars: 'chars', over: n => `${n} over`, fits: 'Fits', extreme: 'Risky claims', none: 'None', tags: n => `${n} hashtag${n === 1 ? '' : 's'}`, dup: n => `${n} duplicate${n === 1 ? '' : 's'}`, noDup: 'No duplicates', clean: 'Invisible chars & extra spaces', spots: n => `${n} found`, lines: 'Extra blank lines', todo: n => `${n} to fix`, ready: 'Ready to post', sep: ', ' },
+};
+const lang = () => (document.documentElement.lang.startsWith('en') ? 'en' : 'zh');
 
-// ------------------------------------------------------------ synthetic spectrum
-// A deterministic "music" signal (kick + bass + hats) drives the waveform ribbons in the
-// glass backdrop and the DOM equalizer. No microphone, no audio decoding.
-function initSpectrum(ctx) {
-  const bars = [...document.querySelectorAll('.v3-eq i')];
-  const level = new Float32Array(8);
-  const css = bars.map(() => '');
-  let visible = true;
-  const eq = document.querySelector('.v3-eq');
-  if (eq) new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) wake(); }).observe(eq);
-  const bpm = 104, beat = 60000 / bpm;
-  const sample = now => {
-    const ph = (now % beat) / beat, kick = Math.exp(-ph * 7), off = Math.exp(-(((now + beat / 2) % beat) / beat) * 9);
-    for (let j = 0; j < 8; j++) {
-      const f = j / 7;
-      const tone = .35 + .25 * Math.sin(now / (900 + j * 170) + j * 1.3) + .15 * Math.sin(now / (330 + j * 60));
-      level[j] = clamp(tone * (1 - f * .45) + kick * (1 - f) * .55 + off * f * .45, .04, 1.1);
-    }
-  };
-  if (reduced.matches) { sample(1200); if (ctx.glass) ctx.glass.renderer.audio.set(level.map(v => v * .6)); return level; }
-  addTask(now => {
-    sample(now);
-    if (ctx.glass) { const A = ctx.glass.renderer.audio; for (let j = 0; j < 8; j++) A[j] = level[j] * .55; }
-    if (visible && !ctx.isScrolling()) {
-      for (let i = 0; i < bars.length; i++) {
-        const j = i % 8, k = Math.abs(Math.sin(now / (260 + i * 37) + i));
-        const v = clamp(level[j] * (.55 + .45 * k), .06, 1);
-        const s = `scaleY(${v.toFixed(3)})`;
-        if (s !== css[i]) { css[i] = s; bars[i].style.transform = s; }
-      }
-    }
-    return visible || !!ctx.glass;
-  });
-  return level;
-}
+let seg;
+const graphemes = (() => { try { const s = new Intl.Segmenter(undefined, { granularity: 'grapheme' }); return str => [...s.segment(str)].map(x => x.segment); } catch { return str => Array.from(str); } })();
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 
-// ------------------------------------------------------------ hero droplet
-function initHero(hero, ctx, audio) {
-  const { glass } = ctx;
-  const orb = hero.querySelector('.v3-orb');
-  const stage = hero.querySelector('.v3-hero-stage');
-  const inner = hero.querySelector('.v3-hero-inner');
-  const cta = hero.querySelector('.v3-hero-cta .v3-btn-primary');
-  let progress = 0; // 0..1 scroll-out of the pinned hero
-  let ctaLens = null, orbLens = null;
-  // hero lenses are viewport-fixed while the hero is pinned; only measure them at the top
-  const atTop = () => scrollY < 2;
-  if (glass && cta) { ctaLens = glass.lens(cta, { fixed: true, strength: 16 }); ctaLens.canMeasure = atTop; }
-  if (!orb || !stage) return;
-  const R = () => orb.offsetWidth / 2;
-  const x = new Spring(0, { stiffness: 120, damping: 14 }), y = new Spring(0, { stiffness: 120, damping: 14 });
-  const sq = new Spring(0, { stiffness: 420, damping: 16 }); // squash amount
-  let home = { x: 0, y: 0 }, angle = 0, drag = null, css = '', t0 = performance.now(), interacted = false;
-  const vel = new Velocity();
-  const place = () => {
-    const s = stage.getBoundingClientRect();
-    home = { x: s.width * (innerWidth < 720 ? .72 : .78) - R(), y: s.height * (innerWidth < 720 ? .1 : .2) - R() };
-    if (!drag) { x.target = home.x; y.target = home.y; }
-    if (orbLens && atTop()) { orbLens.setLayout(s.left, s.top, orb.offsetWidth, orb.offsetHeight); }
-    if (ctaLens) ctaLens.measure();
-  };
-  let wasTop = atTop();
-  ctx.scrollListeners.add(() => { const t = atTop(); if (t && !wasTop) place(); wasTop = t; });
-  if (glass) { orbLens = glass.lens(orb, { fixed: true, managed: true, strength: 30, radius: 999 }); }
-  place(); x.set(home.x); y.set(home.y);
-  new ResizeObserver(place).observe(stage);
-
-  orb.addEventListener('pointerdown', e => {
-    if (drag || !e.isPrimary) return;
-    const s = stage.getBoundingClientRect();
-    drag = { id: e.pointerId, ox: e.clientX - s.left - x.value, oy: e.clientY - s.top - y.value, sl: s.left, st: s.top };
-    x.set(x.value); y.set(y.value);
-    vel.reset(); vel.push(e.clientX, e.clientY, e.timeStamp);
-    try { orb.setPointerCapture(e.pointerId); } catch {}
-    orb.classList.add('is-held'); interacted = true; hero.classList.add('has-played');
-    addTask(step);
-  });
-  orb.addEventListener('pointermove', e => {
-    if (!drag || e.pointerId !== drag.id) return;
-    vel.push(e.clientX, e.clientY, e.timeStamp);
-    x.set(e.clientX - drag.sl - drag.ox); y.set(e.clientY - drag.st - drag.oy);
-    const v = vel.get(), sp = Math.hypot(v.x, v.y);
-    sq.target = clamp(sp * .16, 0, .32); if (sp > .05) angle = Math.atan2(v.y, v.x);
-  });
-  const release = e => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const v = vel.get(); drag = null; orb.classList.remove('is-held');
-    try { orb.releasePointerCapture(e.pointerId); } catch {}
-    x.target = home.x; y.target = home.y; x.velocity = v.x * 1000; y.velocity = v.y * 1000;
-    sq.target = 0; sq.velocity = -2.5; // wobble
-    addTask(step);
-  };
-  orb.addEventListener('pointerup', release); orb.addEventListener('pointercancel', release);
-  orb.addEventListener('keydown', e => {
-    const m = { ArrowLeft: [-24, 0], ArrowRight: [24, 0], ArrowUp: [0, -24], ArrowDown: [0, 24] }[e.key];
-    if (!m) return; e.preventDefault(); x.velocity += m[0] * 30; y.velocity += m[1] * 30; sq.velocity -= 1.5; addTask(step);
-  });
-
-  function step(now, dt) {
-    let moving = false;
-    if (!drag) { moving = x.step(dt) | moving; moving = y.step(dt) | moving; const v = Math.hypot(x.velocity, y.velocity); if (v > 30) { angle = Math.atan2(y.velocity, x.velocity); sq.target = clamp(v / 4000, 0, .25); } else if (sq.target > 0 && !drag) sq.target = 0; }
-    moving = sq.step(dt) | moving || !!drag;
-    // idle float
-    const f = reduced.matches || drag ? 0 : Math.sin((now - t0) / 1400) * 6;
-    const s = 1 + sq.value, k = 1 / Math.max(.6, s);
-    const fade = 1 - progress;
-    const cssNext = `translate3d(${x.value.toFixed(1)}px,${(y.value + f).toFixed(1)}px,0) rotate(${angle.toFixed(3)}rad) scale(${s.toFixed(3)},${k.toFixed(3)}) rotate(${(-angle).toFixed(3)}rad)`;
-    if (cssNext !== css) { css = cssNext; orb.style.transform = cssNext; }
-    if (orbLens) {
-      const t = orbLens.transform || (orbLens.transform = {});
-      // circle squash along the velocity direction == ellipse rotated by angle
-      t.x = x.value; t.y = y.value + f; t.angle = angle; t.sx = s; t.sy = k;
-      orbLens.targetAlpha = fade > .02 ? 1 : 0; orbLens.animating = true;
-      glass.wake();
-    }
-    return moving || (!reduced.matches && progress < 1);
+export function analyse(text, plat) {
+  const P = PLAT[plat] || PLAT.xhs;
+  const n = text.length, mark = new Array(n).fill('');
+  const put = (a, b, cls, force) => { for (let i = a; i < b && i < n; i++) if (force || !mark[i]) mark[i] = cls; };
+  const nl = text.indexOf('\n'), titleEnd = nl < 0 ? n : nl;
+  const scope = P.scope === 'title' ? text.slice(0, titleEnd) : text;
+  const g = graphemes(scope), count = g.length, over = Math.max(0, count - P.limit);
+  if (over) { const at = g.slice(0, P.limit).join('').length; put(at, scope.length, 'm-over', true); }
+  // invisible characters
+  let zw = 0; for (const m of text.matchAll(/[\u200b-\u200d\u2060\ufeff\u00ad]/g)) { zw++; put(m.index, m.index + 1, 'm-zw', true); }
+  // hashtags (+ duplicates)
+  const seen = new Set(); let tags = 0, dups = 0; const tagRanges = [];
+  for (const m of text.matchAll(/[#＃][^\s#＃]+/g)) {
+    tags++; const key = m[0].replace('＃', '#').toLowerCase(); tagRanges.push([m.index, m.index + m[0].length]);
+    if (seen.has(key)) { dups++; put(m.index, m.index + m[0].length, 'm-dup'); } else { seen.add(key); put(m.index, m.index + m[0].length, 'm-tag'); }
   }
-  addTask(step);
-
-  // scroll-out: pinned hero fades, scales and the droplet sinks; CSS scroll timelines
-  // do the DOM part where supported, JS keeps the glass in sync.
-  const supportsTimeline = CSS.supports?.('animation-timeline: scroll()');
-  let innerCss = '';
-  const onScroll = sy => {
-    const h = hero.offsetHeight || innerHeight;
-    progress = clamp(sy / (h * .55), 0, 1);
-    if (!supportsTimeline && inner) {
-      const c = `translate3d(0,${(-progress * 60).toFixed(1)}px,0) scale(${(1 - progress * .06).toFixed(3)})`;
-      if (c !== innerCss) { innerCss = c; inner.style.transform = c; inner.style.opacity = String(1 - progress); }
-    }
-    if (ctaLens) ctaLens.targetAlpha = progress < .6 ? 1 : 0;
-    if (glass) glass.renderer.wave = 1 - progress * .7;
-    addTask(step);
-  };
-  ctx.scrollListeners.add(onScroll); onScroll(scrollY);
-  // first-time hint fades after the droplet is touched
-  setTimeout(() => { if (!interacted) hero.classList.add('hint'); }, 2200);
+  const inTag = i => tagRanges.some(([a, b]) => i >= a && i < b);
+  // risky superlatives (outside hashtags)
+  const found = []; const low = text.toLowerCase();
+  for (const w of EXTREME) { const k = w.toLowerCase(); let i = low.indexOf(k); while (i >= 0) { if (!inTag(i)) { put(i, i + w.length, 'm-warn'); found.push(w.trim()); } i = low.indexOf(k, i + k.length); } }
+  // doubled spaces / trailing spaces
+  let sp = 0; for (const m of text.matchAll(/ {2,}|[ \t]+(?=\n|$)/g)) { sp++; put(m.index, m.index + m[0].length, 'm-sp'); }
+  const blank = (text.match(/\n{3,}/g) || []).length;
+  return { mark, count, limit: P.limit, scope: P.scope, over, extreme: [...new Set(found)], tags, dups, zw, sp, blank };
+}
+function toHTML(text, mark, caret) {
+  let out = '', cur = null, buf = '';
+  const flush = () => { if (!buf) return; out += cur ? `<span class="${cur}">${esc(buf)}</span>` : esc(buf); buf = ''; };
+  const nl = text.indexOf('\n'), te = nl < 0 ? text.length : nl;
+  for (let i = 0; i < text.length; i++) { const c = mark[i] || (i < te ? 'm-title' : null); if (c !== cur) { flush(); cur = c; } buf += text[i]; }
+  flush();
+  return out + (caret ? '<span class="m-caret"></span>' : '');
+}
+export function tidy(text) {
+  const seen = new Set();
+  return text.replace(/[\u200b-\u200d\u2060\ufeff\u00ad]/g, '')
+    .replace(/[#＃][^\s#＃]+/g, t => { const k = t.replace('＃', '#').toLowerCase(); if (seen.has(k)) return ''; seen.add(k); return t.replace('＃', '#'); })
+    .replace(/[ \t]+(?=\n|$)/g, '').replace(/ {2,}/g, ' ').replace(/\n{3,}/g, '\n\n').replace(/ +(?=\n|$)/g, '');
 }
 
-// ------------------------------------------------------------ scroll story
-function initStory(ctx) {
-  const story = document.querySelector('.v3-story');
-  if (!story) return;
-  const steps = [...story.querySelectorAll('[data-step]')];
-  const stage = story.querySelector('.v3-story-stage');
-  const set = i => { if (stage && stage.dataset.active !== String(i)) { stage.dataset.active = String(i); steps.forEach((s, k) => s.classList.toggle('is-active', k === i)); } };
-  set(0);
-  const io = new IntersectionObserver(entries => {
-    for (const e of entries) if (e.isIntersecting) set(steps.indexOf(e.target));
-  }, { rootMargin: '-45% 0px -45% 0px' });
-  steps.forEach(s => io.observe(s));
-}
+function initEditor() {
+  const dev = document.getElementById('h-device'); if (!dev) return;
+  const ta = dev.querySelector('.h-input'), mirror = dev.querySelector('.h-mirror'), scroller = dev.querySelector('.h-scroll');
+  const meterN = dev.querySelector('.h-meter-n'), meterMax = dev.querySelector('.h-meter-max'), meter = dev.querySelector('.h-meter');
+  const list = dev.querySelector('.h-findings'), sum = dev.querySelector('.h-report-sum'), fix = dev.querySelector('.h-fix');
+  let plat = 'xhs', typing = null, userEdited = false, lastStates = '';
 
-// ------------------------------------------------------------ count-up numbers
-function initCounters() {
-  const els = document.querySelectorAll('[data-count]');
-  const io = new IntersectionObserver(entries => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue; io.unobserve(e.target);
-      const el = e.target, to = +el.dataset.count, dur = reduced.matches ? 0 : 1100, t0 = performance.now();
-      addTask(now => { const p = dur ? clamp((now - t0) / dur, 0, 1) : 1; el.textContent = String(Math.round(to * (1 - Math.pow(1 - p, 3)))); return p < 1; });
-    }
+  // upto: scan position (chars) while the opening pass runs; Infinity once live
+  function render(upto = Infinity) {
+    const text = ta.value, r = analyse(text, plat), L = T[lang()];
+    const scanning = upto < text.length;
+    if (scanning) for (let i = upto; i < r.mark.length; i++) r.mark[i] = '';
+    mirror.innerHTML = scanning ? toHTML(text.slice(0, upto), r.mark, true) + `<span class="m-rest">${esc(text.slice(upto))}</span>` : toHTML(text, r.mark, false);
+    const shownCount = scanning ? Math.min(r.count, graphemes(text.slice(0, Math.min(upto, text.indexOf('\n') < 0 ? upto : text.indexOf('\n')))).length) : r.count;
+    meterN.textContent = String(shownCount); meterMax.textContent = `/ ${r.limit}`;
+    meter.dataset.state = shownCount > r.limit ? 'bad' : 'ok';
+    const rows = [
+      [r.over ? 'bad' : 'ok', `${r.scope === 'title' ? L.title : L.all} ${r.count} / ${r.limit} ${L.chars}`, r.over ? L.over(r.over) : L.fits],
+      [r.extreme.length ? 'warn' : 'ok', L.extreme, r.extreme.length ? r.extreme.slice(0, 3).join(L.sep) : L.none],
+      [r.dups ? 'bad' : 'ok', L.tags(r.tags), r.dups ? L.dup(r.dups) : L.noDup],
+      [r.zw + r.sp ? 'warn' : 'ok', L.clean, r.zw + r.sp ? L.spots(r.zw + r.sp) : L.none],
+      [r.blank ? 'warn' : 'ok', L.lines, r.blank ? L.spots(r.blank) : L.none],
+    ];
+    const shown = scanning ? Math.floor(upto / Math.max(1, text.length) * rows.length) : rows.length;
+    const states = rows.map((x, i) => i < shown ? x[0] : '-').join();
+    const prev = lastStates.split(','); lastStates = states;
+    if (states !== prev.join() || !scanning) list.innerHTML = rows.map(([s, a, b], i) => i < shown
+      ? `<li data-s="${s}"${prev[i] && prev[i] !== s ? ' class="is-new"' : ''}><span>${esc(a)}</span><em>${esc(b)}</em></li>`
+      : `<li data-s="wait"><span>${esc(a)}</span><em>…</em></li>`).join('');
+    const todo = rows.filter(x => x[0] !== 'ok').length;
+    sum.textContent = todo ? L.todo(todo) : L.ready;
+    fix.disabled = !(r.dups || r.zw || r.sp || r.blank);
+  }
+  const stopDemo = () => { if (!typing) return; clearTimeout(typing.t); typing = null; dev.classList.add('is-live'); render(); };
+  ta.addEventListener('input', () => { userEdited = true; render(); });
+  ta.addEventListener('focus', () => stopDemo());
+  ta.addEventListener('pointerdown', () => stopDemo());
+  fix.addEventListener('click', () => { stopDemo(); ta.value = tidy(ta.value); userEdited = true; render(); });
+
+  seg = new Seg(dev.querySelector('.v3-seg'), {
+    onChange: b => {
+      plat = b.dataset.plat; scroller.dataset.plat = plat; render(typing ? typing.i : Infinity);
+      if (!reduced.matches) meterN.animate([{ transform: 'translateY(-.2em)', opacity: .35 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)' });
+    },
   });
-  els.forEach(e => io.observe(e));
+  dev.querySelector('.v3-seg').addEventListener('pointerdown', () => { if (typing) typing.touched = true; }, { capture: true });
+
+  // Opening pass: the caption is already on the page (it is the LCP text); a caret sweeps
+  // through it once and the checks light up behind it, then the editor is yours.
+  const demo = () => {
+    if (reduced.matches || userEdited) { stopDemo(); return; }
+    const len = ta.value.length;
+    typing = { i: 0, t: 0, touched: false };
+    const tick = () => {
+      if (!typing) return;
+      const c = ta.value[typing.i] || '';
+      typing.i = Math.min(len, typing.i + (c === '\n' ? 1 : 3));
+      render(typing.i);
+      if (typing.i >= len) { const touched = typing.touched; typing = null; dev.classList.add('is-live'); render(); if (!touched && !userEdited) showcase(); return; }
+      typing.t = setTimeout(tick, ta.value[typing.i - 1] === '\n' ? 140 : 22);
+    };
+    render(0);
+    typing.t = setTimeout(tick, 260);
+  };
+  // one unattended pass of the platform switch, so the liquid control explains itself
+  const showcase = () => {
+    const pick = id => seg.select(seg.btns.find(b => b.dataset.plat === id));
+    const t1 = setTimeout(() => { if (!userEdited) pick('douyin'); }, 1300);
+    const t2 = setTimeout(() => { if (!userEdited) pick('xhs'); }, 3000);
+    const cancel = () => { clearTimeout(t1); clearTimeout(t2); };
+    dev.addEventListener('pointerdown', cancel, { once: true });
+    ta.addEventListener('input', cancel, { once: true });
+  };
+  if (lang() === 'en' && ta.value.startsWith('秋天')) ta.value = DEMO.en;
+  render();
+  // start only once the editor is on screen and the main thread is idle
+  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); (window.requestIdleCallback || setTimeout)(demo, { timeout: 900 }); } }, { threshold: .35 });
+  io.observe(dev);
+  document.addEventListener('postprep:languagechange', () => setTimeout(() => {
+    if (!userEdited) { stopDemo(); ta.value = DEMO[lang()]; }
+    render();
+  }, 60));
+}
+
+function initFlow() {
+  const pin = document.querySelector('.h-flow-pin'); if (!pin) return;
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries) if (e.isIntersecting && pin.dataset.step !== e.target.dataset.i) pin.dataset.step = e.target.dataset.i;
+  }, { rootMargin: '-50% 0px -50% 0px' });
+  document.querySelectorAll('.h-flow-sentinel').forEach(s => io.observe(s));
+}
+
+function initRack() {
+  const rack = document.querySelector('.h-rack'); if (!rack) return;
+  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { rack.classList.add('is-in'); io.disconnect(); } }, { threshold: .5 });
+  io.observe(rack);
+}
+
+export function initHome() {
+  initEditor();
+  initFlow();
+  initRack();
 }

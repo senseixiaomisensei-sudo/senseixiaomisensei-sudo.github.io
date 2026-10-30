@@ -1,113 +1,127 @@
-/* ---------- header: floating liquid glass bar ---------- */
-$G #site-header { padding: 10px 12px 0; pointer-events: none; }
+/* ---------- header: one floating glass bar over the content ---------- */
+$G #site-header { padding: 10px max(10px, calc((100vw - 1220px) / 2)) 0; pointer-events: none; background: none; min-height: 66px; }
+@media (max-width: 1023px) { $G #site-header { min-height: 60px; } }
 $G #site-header > header {
   pointer-events: auto; position: relative; isolation: isolate; max-width: 1220px; margin: 0 auto;
-  border: 0 !important; border-radius: 22px;
-  background: linear-gradient(180deg, rgb(255 255 255 / .1), rgb(255 255 255 / .04)), rgb(12 16 28 / .55) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8);
-  box-shadow: 0 1px 0 rgb(255 255 255 / .12) inset, 0 -1px 0 rgb(255 255 255 / .04) inset, 0 18px 40px -18px rgb(0 0 0 / .7) !important;
+  border: 0 !important; border-radius: 18px;
+  background: var(--g-tint) !important;
+  -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur);
+  box-shadow: var(--g-edge), var(--g-drop) !important;
   view-transition-name: v3-header; animation: none;
 }
-$G #site-header > header::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; padding: 1px; pointer-events: none;
-  background: linear-gradient(100deg, rgb(255 255 255 / .45), rgb(255 255 255 / .06) 25%, rgb(255 255 255 / .03) 70%, rgb(255 255 255 / .3));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+$G #site-header > header > div { min-height: 56px; max-width: none; padding-inline: 10px 8px; gap: 12px; }
+$G #site-header header > div > a:first-child { gap: 10px; border-radius: 12px; }
+$G #site-header header > div > a > span:first-child {
+  width: 32px; height: 32px; border-radius: 9px; background: var(--v3-ink) !important; color: var(--v3-bg) !important; box-shadow: none !important; font-size: 14px;
 }
-$G #site-header > header > div { min-height: 60px; max-width: none; padding-inline: 14px; }
-$G #site-header a > span:first-child.bg-brand, $G #site-header header > div > a > span:first-child {
-  background: conic-gradient(from 210deg, #2dd4bf, #818cf8, #fb7185, #fbbf24, #2dd4bf) !important; color: #06101a !important;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / .35) inset, 0 6px 18px -4px rgb(45 212 191 / .55); border-radius: 13px;
+$G #site-header header > div > a > span:first-child > i { display: none; }
+$G #site-header header > div > a > span:first-child::before { content: "P"; font: 700 17px/1 var(--v3-font); letter-spacing: -.02em; }
+$G #site-header header > div > a > span:last-child > span:first-child { font-size: 15px; font-weight: 650; letter-spacing: -.01em; color: var(--v3-ink); }
+$G #site-header header > div > a > span:last-child > span:last-child { font-size: 12px; color: var(--v3-ink-3) !important; }
+/* desktop nav: plain text items, a single liquid droplet marks the current/hovered item */
+$G #site-header nav[aria-label="Primary navigation"] { position: relative; gap: 0; isolation: isolate; }
+$G #site-header nav a {
+  position: relative; z-index: 1; color: var(--v3-ink-2) !important; background: transparent !important;
+  border-radius: 10px; padding: 7px 11px; font-weight: 500; font-size: 14px; letter-spacing: -.005em;
+  transition: color .2s var(--v3-ease);
 }
-$G #site-header nav a { color: var(--v3-ink-2) !important; background: transparent !important; border-radius: 12px; padding: 8px 12px; transition: color .2s, background-color .25s; position: relative; overflow: hidden; }
-$G #site-header nav a:hover { color: var(--v3-ink) !important; background: rgb(255 255 255 / .07) !important; }
-$G #site-header nav a[aria-current] {
-  color: #fff !important;
-  background: linear-gradient(180deg, rgb(255 255 255 / .18), rgb(255 255 255 / .06)) !important;
-  box-shadow: 0 1px 0 rgb(255 255 255 / .35) inset, 0 -1px 0 rgb(255 255 255 / .06) inset, 0 6px 16px -8px rgb(45 212 191 / .6);
-}
+$G #site-header nav a:hover, $G #site-header nav a[aria-current] { color: var(--v3-ink) !important; }
+$G #site-header nav a[aria-current] { font-weight: 600; }
+/* without JS (or before it runs) the current item gets a static fill */
+$G #site-header nav:not(.has-drop) a[aria-current] { background: rgb(var(--v3-ink-rgb) / .07) !important; }
+/* liquid pill (motion.js Pill): three transform-only parts */
+.v3-pill { position: absolute; z-index: 0; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; opacity: 0; transition: opacity .25s; --pill: #e6e6e3; --pr: 11px; }
+.v3-pill > i { position: absolute; top: 0; bottom: 0; left: 0; background: var(--pill); }
+.v3-pill > .l { width: calc(var(--pr) + .5px); border-radius: var(--pr) 0 0 var(--pr); }
+.v3-pill > .m { width: 100px; transform-origin: 0 50%; }
+.v3-pill > .r { width: var(--pr); border-radius: 0 var(--pr) var(--pr) 0; }
+$G #site-header nav .v3-pill { top: 50%; bottom: auto; height: 34px; margin-top: -17px; }
+@media (prefers-color-scheme: dark) { .v3-pill { --pill: #2c2c2f; } }
 $G #site-header :is(button, .style-toggle) {
-  background: rgb(255 255 255 / .07) !important; color: var(--v3-ink) !important; border: 0 !important; border-radius: 13px !important;
-  box-shadow: 0 1px 0 rgb(255 255 255 / .18) inset, 0 0 0 1px rgb(255 255 255 / .08) inset !important;
-  transition: background-color .2s, transform .35s var(--v3-spring);
+  min-height: 36px; background: transparent !important; color: var(--v3-ink) !important; border: 0 !important; border-radius: 10px !important;
+  box-shadow: none !important; font-weight: 500; font-size: 14px;
+  transition: background-color .2s, scale .5s var(--v3-spring);
 }
-$G #site-header :is(button, .style-toggle):hover { background: rgb(255 255 255 / .14) !important; }
-$G #site-header :is(button, .style-toggle):active { transform: scale(.94); }
-$G #site-header :is(button, .style-toggle) i { color: var(--v3-brand-2) !important; }
-$G #mobile-navigation { background: transparent !important; border-top: 1px solid var(--v3-line) !important; padding: 8px 10px 12px; }
-$G #mobile-navigation a { display: block; }
-@media (max-width: 1023px) { $G #site-header > header > div { min-height: 56px; padding-inline: 10px; } }
+$G #site-header :is(button, .style-toggle):hover { background: rgb(var(--v3-ink-rgb) / .07) !important; }
+$G #site-header :is(button, .style-toggle):active { scale: .92; transition-duration: .08s; }
+$G #site-header :is(button, .style-toggle) i { color: var(--v3-ink-2) !important; }
+$G #mobile-navigation { background: transparent !important; border-top: .5px solid var(--v3-line) !important; padding: 6px 6px 10px; }
+$G #mobile-navigation a { display: block; padding: 12px 12px; font-size: 16px; border-radius: 12px; }
+$G #mobile-navigation a[aria-current] { background: rgb(var(--v3-ink-rgb) / .07) !important; }
+@media (max-width: 1023px) { $G #site-header > header > div { min-height: 52px; } $G #site-header { padding: 8px 8px 0; } }
 
 /* ---------- footer ---------- */
-$G #site-footer > footer { background: transparent !important; border: 0 !important; backdrop-filter: none !important; }
-$G #site-footer > footer > div { border-top: 1px solid var(--v3-line); max-width: 1180px; color: var(--v3-ink-3); }
-$G #site-footer a { color: var(--v3-ink-2) !important; text-decoration-color: rgb(255 255 255 / .25) !important; }
+$G #site-footer > footer { background: transparent !important; border: 0 !important; }
+$G #site-footer > footer > div { border-top: .5px solid var(--v3-line); max-width: none; width: min(1180px, calc(100% - 2 * max(20px, 4.5vw))); padding-inline: 0 !important; color: var(--v3-ink-3); font-size: 13px; }
+$G #site-footer a { color: var(--v3-ink) !important; text-decoration-color: var(--v3-line-2) !important; }
 
 /* ---------- toast ---------- */
-$G #toast { background: linear-gradient(180deg, rgb(255 255 255 / .2), rgb(255 255 255 / .1)), rgb(20 26 42 / .8) !important; color: #fff !important; border-radius: 16px; -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6); box-shadow: 0 1px 0 rgb(255 255 255 / .3) inset, 0 18px 40px -12px rgb(0 0 0 / .7); }
+$G #toast { background: var(--g-tint) !important; color: var(--v3-ink) !important; border-radius: 14px; -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur); box-shadow: var(--g-edge), var(--g-drop) !important; font-weight: 500; }
 
-/* ---------- form controls ---------- */
+/* ---------- form controls: opaque paper, hairline, accent focus ---------- */
 $G :is(input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) {
-  background: rgb(4 7 14 / .55) !important; color: var(--v3-ink) !important;
-  border: 1px solid rgb(255 255 255 / .12) !important; border-radius: 14px !important;
-  box-shadow: 0 1px 0 rgb(255 255 255 / .05), 0 2px 10px rgb(0 0 0 / .25) inset !important;
-  transition: border-color .2s, box-shadow .25s, background-color .2s;
+  background: var(--v3-paper) !important; color: var(--v3-ink) !important;
+  border: .5px solid var(--v3-line-2) !important; border-radius: 12px !important; box-shadow: none !important;
+  transition: border-color .2s, box-shadow .2s;
 }
 $G :is(input, textarea, select)::placeholder { color: var(--v3-ink-3) !important; opacity: 1; }
 $G :is(input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), textarea, select):focus {
-  border-color: rgb(94 234 212 / .6) !important; background: rgb(4 7 14 / .7) !important;
-  box-shadow: 0 0 0 4px rgb(45 212 191 / .14), 0 2px 10px rgb(0 0 0 / .25) inset !important; outline: none;
+  border-color: var(--v3-accent) !important; box-shadow: 0 0 0 3.5px rgb(var(--v3-accent-rgb) / .18) !important; outline: none;
 }
-$G select option { background: #121828; color: var(--v3-ink); }
-$G input[type="checkbox"], $G input[type="radio"] { accent-color: var(--v3-brand); }
+$G select option { background: var(--v3-paper); color: var(--v3-ink); }
+$G :is(input[type="checkbox"], input[type="radio"], input[type="range"], progress) { accent-color: var(--v3-accent); }
 $G input[type="file"] { color: var(--v3-ink-2); }
-$G input[type="file"]::file-selector-button { background: rgb(255 255 255 / .1); color: var(--v3-ink); border: 0; border-radius: 10px; padding: 8px 12px; margin-right: 10px; }
-
-/* range: glass track + droplet thumb */
-$G input[type="range"] { accent-color: var(--v3-brand); }
+$G input[type="file"]::file-selector-button { background: rgb(var(--v3-ink-rgb) / .07); color: var(--v3-ink); border: 0; border-radius: 9px; padding: 8px 12px; margin-right: 10px; font: inherit; font-weight: 500; }
 
 /* ---------- buttons ---------- */
-/* primary (bg-brand) → luminous liquid pill */
+$G .v3-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5em; min-height: 44px; padding: 0 20px;
+  border-radius: 980px; font-size: 16px; font-weight: 500; letter-spacing: -.01em; text-decoration: none; white-space: nowrap;
+  transition: background-color .2s, color .2s, scale .55s var(--v3-spring);
+}
+$G .v3-btn:active { scale: .955; transition-duration: .1s; }
 $G :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"]), $G .v3-btn-primary {
-  position: relative; isolation: isolate; overflow: hidden;
-  background: linear-gradient(180deg, rgb(255 255 255 / .35), rgb(255 255 255 / 0) 55%), linear-gradient(120deg, #14b8a6, #2dd4bf 45%, #67e8f9) !important;
-  color: #04121a !important; border: 0 !important; font-weight: 800;
-  box-shadow: 0 1px 0 rgb(255 255 255 / .7) inset, 0 -2px 6px rgb(0 60 60 / .25) inset, 0 10px 28px -10px rgb(45 212 191 / .75) !important;
-  transition: transform .45s var(--v3-spring), box-shadow .3s, filter .2s;
+  background: var(--v3-accent) !important; color: var(--v3-on-accent) !important; border: 0 !important; box-shadow: none !important; font-weight: 500;
 }
 $G :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"]) :is(i, span), $G .v3-btn-primary :is(i, span) { color: inherit !important; }
-$G :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"]):hover, $G .v3-btn-primary:hover { filter: brightness(1.08) saturate(1.1); box-shadow: 0 1px 0 rgb(255 255 255 / .7) inset, 0 -2px 6px rgb(0 60 60 / .25) inset, 0 14px 36px -10px rgb(45 212 191 / .9) !important; }
-$G :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"]):active, $G .v3-btn-primary:active { transform: scale(.96); }
-$G :is(button, a)[class*="bg-brand"]:disabled { filter: grayscale(.7) brightness(.7); }
-/* bordered / white buttons → glass chips */
+$G :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"]):hover, $G .v3-btn-primary:hover { background: color-mix(in srgb, var(--v3-accent) 88%, #000) !important; }
+$G :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"]) { transition: background-color .2s, scale .55s var(--v3-spring); }
+$G :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"]):active { scale: .96; transition-duration: .1s; }
+$G :is(button, a)[class*="bg-brand"]:disabled { opacity: .4; }
+$G .v3-btn-plain { color: var(--v3-accent-ink) !important; padding-inline: 6px; background: none; }
+$G .v3-btn-plain:hover { text-decoration: underline; text-underline-offset: 4px; }
+$G .v3-btn-line { box-shadow: inset 0 0 0 .5px var(--v3-line-2), inset 0 0 0 1px var(--v3-line); color: var(--v3-ink) !important; }
+$G .v3-btn-line:hover { background: rgb(var(--v3-ink-rgb) / .05); }
+/* secondary buttons in tool pages: quiet tinted fill */
 $G main :is(button, a.inline-flex)[class*="border-line"]:not([class*="bg-brand"]), $G main button[class*="bg-white"], $G .v3-chip {
-  background: linear-gradient(180deg, rgb(255 255 255 / .1), rgb(255 255 255 / .04)) !important; color: var(--v3-ink) !important;
-  border: 0 !important; box-shadow: 0 1px 0 rgb(255 255 255 / .2) inset, 0 0 0 1px rgb(255 255 255 / .1) inset, 0 6px 16px -8px rgb(0 0 0 / .6) !important;
-  border-radius: 14px; transition: background-color .2s, transform .45s var(--v3-spring), box-shadow .25s;
+  background: rgb(var(--v3-ink-rgb) / .06) !important; color: var(--v3-ink) !important;
+  border: 0 !important; box-shadow: none !important; border-radius: 10px; font-weight: 500;
+  transition: background-color .2s, scale .5s var(--v3-spring);
 }
-$G main :is(button, a.inline-flex)[class*="border-line"]:not([class*="bg-brand"]):hover, $G main button[class*="bg-white"]:hover, $G .v3-chip:hover {
-  background: linear-gradient(180deg, rgb(255 255 255 / .16), rgb(255 255 255 / .07)) !important;
-  box-shadow: 0 1px 0 rgb(255 255 255 / .28) inset, 0 0 0 1px rgb(94 234 212 / .35) inset, 0 8px 20px -8px rgb(0 0 0 / .6) !important;
+$G main :is(button, a.inline-flex)[class*="border-line"]:not([class*="bg-brand"]):hover, $G main button[class*="bg-white"]:hover, $G .v3-chip:hover { background: rgb(var(--v3-ink-rgb) / .1) !important; }
+$G main :is(button, a.inline-flex)[class*="border-line"]:active, $G .v3-chip:active { scale: .95; transition-duration: .08s; }
+$G main :is(button, a.inline-flex)[class*="border-line"] i, $G .v3-chip i { color: var(--v3-ink-2) !important; }
+$G main button[aria-pressed="true"]:not([class*="bg-brand"]), $G main [role="radio"][aria-checked="true"]:not(.v3-seg *), $G main [role="tab"][aria-selected="true"] {
+  background: var(--v3-ink) !important; color: var(--v3-bg) !important; box-shadow: none !important;
 }
-$G main :is(button, a.inline-flex)[class*="border-line"]:active, $G .v3-chip:active { transform: scale(.95); }
-$G main button[aria-pressed="true"]:not([class*="bg-brand"]), $G main [role="radio"][aria-checked="true"], $G main [role="tab"][aria-selected="true"] {
-  background: linear-gradient(180deg, rgb(45 212 191 / .32), rgb(45 212 191 / .14)) !important; color: #e9fffb !important;
-  box-shadow: 0 1px 0 rgb(255 255 255 / .35) inset, 0 0 0 1px rgb(94 234 212 / .55) inset, 0 8px 22px -10px rgb(45 212 191 / .7) !important;
-}
-/* press ripple */
-$G .is-pressed::after { content: ""; position: absolute; left: var(--px); top: var(--py); width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: rgb(255 255 255 / .45); pointer-events: none; animation: v3-press .6s var(--v3-ease) forwards; z-index: 0; }
-@keyframes v3-press { from { transform: scale(0); opacity: .9; } to { transform: scale(26); opacity: 0; } }
+$G main button[aria-pressed="true"]:not([class*="bg-brand"]) i, $G main [role="tab"][aria-selected="true"] i { color: inherit !important; }
 
-/* rounded corners: make Tailwind's tight radii feel like iOS 26 */
-$G main .rounded-lg { border-radius: 14px; }
-$G main .rounded-xl { border-radius: 18px; }
+/* Tailwind radii → softer, consistent */
+$G main .rounded-lg { border-radius: 12px; }
+$G main .rounded-xl { border-radius: 16px; }
+$G main .rounded-2xl { border-radius: 22px; }
 $G main .shadow-sm { box-shadow: none; }
-
-/* nested cards inside glass surfaces: inset wells */
-$G .lg :is(.bg-canvas, .bg-zinc-50, .bg-white, .bg-surface):not(button):not(input):not(textarea):not(select) {
-  background: rgb(255 255 255 / .045) !important; box-shadow: 0 0 0 1px rgb(255 255 255 / .07) inset;
-}
-$G .lg .border-line, $G main .border-line { border-color: var(--v3-line) !important; }
-$G hr { border-color: var(--v3-line); }
-$G main a:not([class*="bg-"]):not(.v3-btn):not(.v3-card):not(.v3-link) { text-decoration-color: rgb(94 234 212 / .35); }
+$G main .border-line, $G hr { border-color: var(--v3-line) !important; }
+$G main a:not([class*="bg-"]):not(.v3-btn):not(.h-tool):not(.v3-link) { text-decoration-color: rgb(var(--v3-accent-rgb) / .4); }
 $G code, $G pre, $G kbd { font-family: var(--v3-mono); }
 $G details > summary { cursor: pointer; }
+
+/* ---------- segmented control (liquid droplet thumb) ---------- */
+$G .v3-seg { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; border-radius: 12px; background: rgb(var(--v3-ink-rgb) / .065); isolation: isolate; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+$G .v3-seg > button { position: relative; z-index: 1; min-height: 32px; padding: 0 12px; border: 0; background: none; border-radius: 9px; font: inherit; font-size: 14px; font-weight: 500; color: var(--v3-ink-2); white-space: nowrap; cursor: pointer; transition: color .2s; }
+$G .v3-seg > button[aria-checked="true"] { color: var(--v3-ink); font-weight: 600; }
+$G .v3-seg-drop { display: none; }
+$G .v3-seg > .v3-pill { top: 3px; bottom: 3px; --pr: 9px; --pill: #fff; filter: drop-shadow(0 1px 2.5px rgb(0 0 0 / .16)) drop-shadow(0 0 .5px rgb(0 0 0 / .2)); }
+@media (prefers-color-scheme: dark) { $G .v3-seg > .v3-pill { --pill: #48484c; } }
+$G .v3-seg.is-held > .v3-pill { --pill: #fff; }
+$G .v3-seg:not(.is-live) > button[aria-checked="true"] { background: var(--v3-paper); box-shadow: 0 0 0 .5px rgb(0 0 0 / .06), 0 2px 6px -1px rgb(0 0 0 / .14); }

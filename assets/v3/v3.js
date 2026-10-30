@@ -1,182 +1,157 @@
-// PostPrep v3 · runtime entry. Loaded as a module on every page (deferred).
-// Tiered liquid glass, scroll + pointer state, reveals, magnetic controls, page modules.
-import { GlassRenderer, Lens } from './glass.js';
-import { addTask, wake, reduced, Spring, Velocity, clamp } from './motion.js';
+// PostPrep v3 · runtime entry (ES module, deferred) on every page.
+// Kept deliberately small: nav droplet, reveals fallback, the SVG lens for glass controls,
+// title morph between pages, and lazy page modules. No full-page canvas, no scroll handlers
+// that write styles, nothing toggled on <html> while scrolling.
+import { reduced, Pill, Seg } from './motion.js';
 
 const root = document.documentElement;
 const page = document.body.dataset.page || 'home';
 const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
 const gfx = root.dataset.gfx || 'css';
-const en = () => root.lang.startsWith('en');
+const idle = (fn, timeout = 1200) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout }) : setTimeout(fn, 200));
 
-// ---------------------------------------------------------------- scroll state
-// No classes are toggled on <html> while scrolling (that caused v2 style storms).
-let scrolling = false, scrollTimer = 0, lastY = scrollY;
-const scrollListeners = new Set();
-addEventListener('scroll', () => {
-  if (!scrolling) { scrolling = true; glass?.renderer.setScrolling(true); wake(); }
-  clearTimeout(scrollTimer);
-  scrollTimer = setTimeout(() => { scrolling = false; glass?.renderer.setScrolling(false); wake(); }, 170);
-  for (const fn of scrollListeners) fn(scrollY);
-}, { passive: true });
-
-// ---------------------------------------------------------------- glass manager
-let glass = null;
-function createGlass() {
-  if (gfx !== 'webgl') return null;
-  const canvas = document.createElement('canvas');
-  canvas.className = 'v3-glass-canvas';
-  canvas.setAttribute('aria-hidden', 'true');
-  const renderer = new GlassRenderer({ reducedMotion: reduced.matches, force: root.dataset.gfxForced === '1', onLost: () => { root.dataset.gfx = 'css'; canvas.remove(); glass = null; } });
-  document.body.prepend(canvas);
-  if (!renderer.init(canvas)) { canvas.remove(); root.dataset.gfx = 'css'; return null; }
-  const lenses = new Map();
-  const io = new IntersectionObserver(entries => { for (const e of entries) { const L = lenses.get(e.target); if (L) L.visible = e.isIntersecting; } wake(); }, { rootMargin: '80px' });
-  let measureQueued = 0;
-  const measurers = new Set();
-  const remeasure = () => { if (measureQueued) return; measureQueued = requestAnimationFrame(() => { measureQueued = 0; for (const L of lenses.values()) L.measure(); for (const fn of measurers) fn(); renderer.dirty = true; wake(); }); };
-  const ro = new ResizeObserver(remeasure);
-  ro.observe(document.body);
-  const api = {
-    renderer,
-    lens(el, opts = {}) {
-      const L = new Lens(el, opts);
-      if (opts.managed) L.managed = true;
-      lenses.set(el, L); renderer.add(L); io.observe(el); if (!opts.managed) ro.observe(el);
-      el.classList.add('is-lensed');
-      return L;
-    },
-    drop(el) { const L = lenses.get(el); if (L) { renderer.remove(L); io.unobserve(el); lenses.delete(el); } },
-    wake: () => { renderer.dirty = true; wake(); },
-    remeasure,
-    onMeasure(fn) { measurers.add(fn); },
-  };
-  addTask((now, dt) => renderer.frame(now, dt, scrollY));
-  addEventListener('resize', () => { renderer.resize(); remeasure(); }, { passive: true });
-  document.fonts?.ready.then(remeasure);
-  addEventListener('load', remeasure);
-  document.addEventListener('postprep:languagechange', () => setTimeout(remeasure, 320));
-  // occasional re-measure for content that changes height (tool results, accordions)
-  new MutationObserver(() => { if (!scrolling) remeasure(); }).observe(document.querySelector('main') || document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'open', 'class'] });
-  // detect refresh rate for the adaptive-resolution budget
-  let n = 0, t0 = 0; const probe = t => { if (!t0) t0 = t; if (++n < 30) requestAnimationFrame(probe); else renderer.refresh = (t - t0) / 29; }; requestAnimationFrame(probe);
-  reduced.addEventListener?.('change', () => { renderer.reduced = reduced.matches; wake(); });
-  return api;
-}
-
-// ---------------------------------------------------------------- pointer light
-function initPointer() {
-  let hovered = null, qx = 0, qy = 0, queued = 0;
-  addEventListener('pointermove', e => {
-    if (glass) { const P = glass.renderer.pointer; P.tx = e.clientX; P.ty = e.clientY; P.active = true; wake(); }
-    if (!fine || e.pointerType === 'touch') return;
-    qx = e.clientX; qy = e.clientY;
-    const target = e.target.closest?.('.lg, .v3-card');
-    if (target !== hovered) { hovered?.style.removeProperty('--hx'); hovered = target; }
-    if (!hovered || queued) return;
-    queued = requestAnimationFrame(() => {
-      queued = 0; if (!hovered) return;
-      const r = hovered.getBoundingClientRect();
-      hovered.style.setProperty('--hx', ((qx - r.left) / r.width * 100).toFixed(1) + '%');
-      hovered.style.setProperty('--hy', ((qy - r.top) / r.height * 100).toFixed(1) + '%');
-    });
-  }, { passive: true });
-  addEventListener('pointerout', e => { if (!e.relatedTarget && glass) glass.renderer.pointer.active = false; });
-  // touch devices: slowly orbiting light
-  if (!fine && glass && !reduced.matches) {
-    addTask(now => { const P = glass.renderer.pointer; if (P.active) return false; P.tx = innerWidth * (.5 + .4 * Math.cos(now / 2600)); P.ty = innerHeight * (.25 + .2 * Math.sin(now / 3100)); return false; });
+// ---------------------------------------------------------------- nav droplet
+function initNav() {
+  const nav = document.querySelector('#site-header nav[aria-label="Primary navigation"]');
+  if (!nav || nav.querySelector('.v3-pill')) return;
+  const links = [...nav.querySelectorAll('a')];
+  if (!links.length) return;
+  const pill = new Pill(nav, { radius: 11 });
+  nav.classList.add('has-drop');
+  const current = () => nav.querySelector('a[aria-current]');
+  const box = a => [a.offsetLeft, a.offsetLeft + a.offsetWidth];
+  let rest = current();
+  const place = (a, instant) => { if (!a) { pill.el.style.opacity = '0'; return; } const [l, r] = box(a); pill.to(l, r, instant); pill.el.style.opacity = '1'; };
+  place(rest, true);
+  if (fine) {
+    nav.addEventListener('pointerover', e => { const a = e.target.closest('a'); if (a && nav.contains(a)) place(a); });
+    nav.addEventListener('pointerleave', () => place(current()));
   }
-}
-
-// ---------------------------------------------------------------- surfaces
-const SURFACES = [
-  'main > div > section.bg-surface', 'main > div > aside.bg-surface', 'main > section.bg-surface',
-  'main > div > div > section.bg-surface', 'main .lg-auto', '[data-lg]',
-];
-function registerSurfaces() {
-  const els = new Set();
-  for (const sel of SURFACES) document.querySelectorAll(sel).forEach(el => els.add(el));
-  els.forEach(el => {
-    el.classList.add('lg');
-    if (glass && !el.closest('.v3-deck')) glass.lens(el, { strength: +(el.dataset.lgStrength || 20) });
-  });
+  nav.addEventListener('focusin', e => { const a = e.target.closest('a'); if (a) place(a); });
+  nav.addEventListener('focusout', () => place(current()));
+  new ResizeObserver(() => place(current(), true)).observe(nav);
+  document.fonts?.ready.then(() => place(current(), true));
 }
 
 // ---------------------------------------------------------------- reveals
+// Scroll-driven CSS handles [data-reveal] where animation-timeline exists; elsewhere a
+// one-shot IntersectionObserver adds .is-in (html.v3-io gates the hidden state, set once).
 function initReveal() {
   const els = document.querySelectorAll('[data-reveal]');
-  if (!els.length) return;
-  if (reduced.matches || !('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('is-in')); return; }
+  if (!els.length || reduced.matches) return;
+  if (CSS.supports?.('animation-timeline: view()')) return;
+  if (!('IntersectionObserver' in window)) return;
+  const below = [...els].filter(e => e.getBoundingClientRect().top > innerHeight);
+  if (!below.length) return;
+  root.classList.add('v3-io');
+  els.forEach(e => { if (!below.includes(e)) e.classList.add('is-in'); });
   const io = new IntersectionObserver(entries => {
     for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
-  }, { rootMargin: '0px 0px -8% 0px', threshold: .05 });
-  els.forEach(e => io.observe(e));
+  }, { rootMargin: '0px 0px -8% 0px' });
+  below.forEach(e => io.observe(e));
 }
 
-// ---------------------------------------------------------------- magnetic controls (fine pointers only)
-function initMagnets() {
-  if (!fine || reduced.matches) return;
-  document.querySelectorAll('.v3-magnet').forEach(el => {
-    const sx = new Spring(0, { stiffness: 260, damping: 18 }), sy = new Spring(0, { stiffness: 260, damping: 18 });
-    let css = '';
-    const step = (now, dt) => { const a = sx.step(dt), b = sy.step(dt); const c = `translate3d(${sx.value.toFixed(2)}px,${sy.value.toFixed(2)}px,0)`; if (c !== css) { css = c; el.style.translate = `${sx.value.toFixed(2)}px ${sy.value.toFixed(2)}px`; } return a || b; };
-    el.addEventListener('pointermove', e => { const r = el.getBoundingClientRect(); sx.target = (e.clientX - r.left - r.width / 2) * .22; sy.target = (e.clientY - r.top - r.height / 2) * .3; addTask(step); });
-    el.addEventListener('pointerleave', () => { sx.target = 0; sy.target = 0; addTask(step); });
+// ---------------------------------------------------------------- SVG lens (CSS tier refraction)
+// Chromium can feed a backdrop through an SVG filter: feDisplacementMap bends the real DOM
+// under the glass near its rim, like a thick lens. Built once per control at idle, sized to
+// the control. Desktop fine pointers only; switched off while the page scrolls (one attribute
+// write at scroll start and one at the end, never per frame).
+function lensMap(w, h, r) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), img = g.createImageData(w, h), d = img.data;
+  const t = Math.min(h * .42, 22);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    // signed distance to a rounded rect, and its outward normal
+    const qx = Math.abs(x + .5 - w / 2) - (w / 2 - r), qy = Math.abs(y + .5 - h / 2) - (h / 2 - r);
+    const ox = Math.max(qx, 0), oy = Math.max(qy, 0), out = Math.hypot(ox, oy);
+    const sd = out + Math.min(Math.max(qx, qy), 0) - r;
+    let nx = 0, ny = 0;
+    if (out > 0) { nx = ox / out; ny = oy / out; } else if (qx > qy) nx = 1; else ny = 1;
+    nx *= Math.sign(x + .5 - w / 2); ny *= Math.sign(y + .5 - h / 2);
+    const k = sd > -t ? Math.pow(1 - Math.min(1, -sd / t), 2.2) : 0;
+    const i = (y * w + x) * 4;
+    d[i] = 128 - nx * k * 127; d[i + 1] = 128 - ny * k * 127; d[i + 2] = 128; d[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  return { url: c.toDataURL(), t };
+}
+function initLens() {
+  const chromium = !!navigator.userAgentData?.brands?.some(b => /Chromium/.test(b.brand));
+  if (!chromium || !fine || gfx === 'lite' || matchMedia('(prefers-reduced-transparency: reduce)').matches) return;
+  const els = () => [...document.querySelectorAll('#site-header > header, .v3-glass[data-lens-ok]')];
+  idle(() => {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('aria-hidden', 'true'); svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
+    svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    document.body.append(svg);
+    let n = 0;
+    const build = el => {
+      const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
+      if (w < 40 || h < 20 || (el.dataset.lensSize === `${w}x${h}`)) return;
+      el.dataset.lensSize = `${w}x${h}`;
+      const r = Math.min(h / 2, parseFloat(getComputedStyle(el).borderTopLeftRadius) || 16);
+      const { url, t } = lensMap(w, h, r);
+      const id = el.dataset.lensId || (el.dataset.lensId = `v3-lens-${++n}`);
+      svg.querySelector('#' + id)?.remove();
+      const f = document.createElementNS(NS, 'filter');
+      f.id = id; f.setAttribute('x', '0'); f.setAttribute('y', '0'); f.setAttribute('width', '100%'); f.setAttribute('height', '100%'); f.setAttribute('color-interpolation-filters', 'sRGB');
+      f.innerHTML = `<feImage href="${url}" x="0" y="0" width="${w}" height="${h}" result="m" preserveAspectRatio="none"/><feDisplacementMap in="SourceGraphic" in2="m" scale="${(t * 1.1).toFixed(1)}" xChannelSelector="R" yChannelSelector="G"/>`;
+      svg.append(f);
+      el.style.setProperty('--lens', `url(#${id})`);
+      el.setAttribute('data-lens-ok', '');
+    };
+    const all = els(); all.forEach(build);
+    const ro = new ResizeObserver(entries => idle(() => entries.forEach(e => build(e.target))));
+    all.forEach(el => ro.observe(el));
+    root.dataset.lens = 'on';
+    // pause refraction while the page moves (two writes per scroll gesture, not per frame)
+    let moving = false, timer = 0;
+    addEventListener('scroll', () => {
+      if (!moving) { moving = true; for (const el of all) el.setAttribute('data-moving', ''); }
+      clearTimeout(timer);
+      timer = setTimeout(() => { moving = false; for (const el of all) el.removeAttribute('data-moving'); }, 180);
+    }, { passive: true });
   });
-}
-
-// ---------------------------------------------------------------- ripple on press (glass "pressure" response)
-function initPress() {
-  document.addEventListener('pointerdown', e => {
-    const el = e.target.closest?.('.v3-btn, .v3-chip, #site-header nav a, [data-deck]');
-    if (!el || reduced.matches) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty('--px', (e.clientX - r.left) + 'px');
-    el.style.setProperty('--py', (e.clientY - r.top) + 'px');
-    el.classList.remove('is-pressed'); void el.offsetWidth; el.classList.add('is-pressed');
-  }, { passive: true });
-  document.addEventListener('animationend', e => { if (e.animationName === 'v3-press') e.target.classList.remove('is-pressed'); });
 }
 
 // ---------------------------------------------------------------- view transitions (cross-document)
+// The header keeps its name across pages; the first <h1> morphs into the next page's <h1>.
 function initTransitions() {
-  let lastCard = null;
-  document.addEventListener('click', e => {
-    const a = e.target.closest?.('a[href]');
-    if (!a || a.target || e.metaKey || e.ctrlKey) return;
-    lastCard = a.closest('.v3-card, .v3-tool-link');
-  }, true);
-  addEventListener('pageswap', e => {
-    if (!e.viewTransition) return;
-    if (lastCard) lastCard.style.viewTransitionName = 'v3-surface';
-  });
+  const title = () => document.querySelector('main h1');
+  addEventListener('pageswap', e => { if (e.viewTransition) { const h = title(); if (h) h.style.viewTransitionName = 'v3-title'; } });
   addEventListener('pagereveal', e => {
     if (!e.viewTransition) return;
-    root.classList.add('vt-in');
-    e.viewTransition.finished.finally(() => root.classList.remove('vt-in'));
+    const h = title(); if (h) h.style.viewTransitionName = 'v3-title';
+    e.viewTransition.finished.finally(() => { if (h) h.style.viewTransitionName = ''; });
   });
+  addEventListener('pageshow', () => { const h = title(); if (h) h.style.viewTransitionName = ''; });
 }
 
-// ---------------------------------------------------------------- fps probe for QA (?fps=1)
+// ---------------------------------------------------------------- QA probe (window.PostPrepV3)
 function initProbe() {
-  const box = { frames: [], start() { this.frames = []; let last = 0; const f = t => { if (last) this.frames.push(t - last); last = t; if (this.on) requestAnimationFrame(f); }; this.on = true; requestAnimationFrame(f); }, stop() { this.on = false; const s = this.frames.slice().sort((a, b) => a - b); const p = q => s[Math.min(s.length - 1, Math.floor(s.length * q))] || 0; return { n: s.length, avg: s.reduce((a, b) => a + b, 0) / (s.length || 1), p50: p(.5), p95: p(.95), p99: p(.99), long: s.filter(x => x > 25).length }; } };
-  window.PostPrepV3 = { gfx: () => root.dataset.gfx, glass: () => glass, probe: box, scale: () => glass?.renderer.scale };
+  const box = {
+    frames: [], on: false,
+    start() { this.frames = []; let last = 0; const f = t => { if (last) this.frames.push(t - last); last = t; if (this.on) requestAnimationFrame(f); }; this.on = true; requestAnimationFrame(f); },
+    stop() { this.on = false; const s = this.frames.slice().sort((a, b) => a - b); const p = q => s[Math.min(s.length - 1, Math.floor(s.length * q))] || 0; return { n: s.length, avg: s.reduce((a, b) => a + b, 0) / (s.length || 1), p50: p(.5), p95: p(.95), p99: p(.99), long: s.filter(x => x > 25).length }; },
+  };
+  window.PostPrepV3 = { gfx: () => root.dataset.gfx, probe: box, Seg };
 }
 
 // ---------------------------------------------------------------- boot
 function boot() {
   initProbe();
-  glass = createGlass();
-  root.dataset.gfxReady = glass ? 'webgl' : 'css';
-  initPointer();
-  registerSurfaces();
+  root.dataset.gfxReady = 'css';
+  // the header is rendered by postprep.js (classic script, runs before modules)
+  initNav();
+  document.addEventListener('postprep:languagechange', () => setTimeout(initNav, 50));
   initReveal();
-  initMagnets();
-  initPress();
   initTransitions();
-  const ctx = { glass, en, scrollListeners, fine, isScrolling: () => scrolling };
-  if (page === 'home') import('./home.js').then(m => m.initHome(ctx));
-  if (page === 'rvc') import('./studio.js').then(m => m.initStudio(ctx));
+  initLens();
+  const p404 = document.querySelector('[data-404-path]');
+  if (p404) p404.textContent = location.pathname + location.search;
+  if (page === 'home') import('./home.js').then(m => m.initHome({ fine, gfx, idle }));
+  if (page === 'rvc') import('./studio.js').then(m => m.initStudio({ fine, gfx, idle }));
   root.classList.add('v3-ready');
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

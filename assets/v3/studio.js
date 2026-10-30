@@ -6,6 +6,16 @@
 // and audio is never re-routed through Web Audio (no createMediaElementSource).
 import { addTask, wake, reduced, clamp } from './motion.js';
 
+// WebGL refraction for the transport bar only: loaded after the first interaction, sized to
+// the bar, sampling the waveform canvas beneath it (the one thing worth refracting here).
+function initLensLater(ctx, bar, source, active) {
+  if (!bar || ctx.gfx === 'lite' || ctx.gfx === 'css' && document.documentElement.dataset.gfxForced === '1') return;
+  const go = () => { cleanup(); ctx.idle(() => import('./lens.js').then(m => m.attachLens(bar, source, active)).catch(() => {})); };
+  const evs = ['pointerdown', 'keydown'];
+  const cleanup = () => evs.forEach(t => removeEventListener(t, go, true));
+  evs.forEach(t => addEventListener(t, go, { capture: true, passive: true }));
+}
+
 const T = {
   zh: { kicker: 'STUDIO MONITOR', title: '录音棚监视器', wave: '波形', spectrum: '频谱', compare: 'A/B 对比', hint: '拖动滑块比较原声与转换结果', playA: '播放原声', playB: '播放结果', swap: 'A/B 切换', waiting: '载入音频后显示波形', waitingB: '完成变声后显示结果波形', progress: '处理进度', idle: '待命', running: '处理中', done: '完成', a: '原声 A', b: '转换 B', large: '大文件：省略波形解码，仍可正常试听与转换', duration: '时长', rate: '峰值电平', voice: '当前声线' },
   en: { kicker: 'STUDIO MONITOR', title: 'Studio monitor', wave: 'Waveform', spectrum: 'Spectrum', compare: 'A/B compare', hint: 'Drag to compare original and converted audio', playA: 'Play original', playB: 'Play result', swap: 'Swap A/B', waiting: 'Load audio to see its waveform', waitingB: 'Convert to see the result waveform', progress: 'Progress', idle: 'Idle', running: 'Working', done: 'Done', a: 'Original A', b: 'Converted B', large: 'Large file: waveform skipped, playback and conversion still work', duration: 'Length', rate: 'Peak level', voice: 'Voice' },
@@ -22,7 +32,7 @@ export function initStudio(ctx) {
   const t = k => T[lang()][k];
 
   const el = document.createElement('section');
-  el.id = 'v3-studio'; el.className = 'v3-studio lg';
+  el.id = 'v3-studio'; el.className = 'v3-studio';
   el.innerHTML = `
     <div class="v3-studio-head">
       <div><p class="v3-kicker" data-t="kicker"></p><h2 class="v3-studio-title"><span data-t="title"></span><em class="v3-studio-voice"></em></h2></div>
@@ -35,25 +45,24 @@ export function initStudio(ctx) {
           <canvas aria-hidden="true"></canvas>
           <div class="v3-ab" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="v3-ab-line"></span><span class="v3-ab-knob"><i class="fa-solid fa-left-right" aria-hidden="true"></i></span></div>
           <p class="v3-scope-empty"></p>
+          <div class="v3-transport">
+            <button type="button" class="v3-chip" data-play="a"><i class="fa-solid fa-play" aria-hidden="true"></i><span data-t="playA"></span></button>
+            <button type="button" class="v3-chip" data-play="b" disabled><i class="fa-solid fa-play" aria-hidden="true"></i><span data-t="playB"></span></button>
+            <button type="button" class="v3-chip" data-play="swap" disabled><i class="fa-solid fa-right-left" aria-hidden="true"></i><span data-t="swap"></span></button>
+        </div>
         </div>
         <canvas class="v3-scope-spec" aria-hidden="true"></canvas>
       </div>
       <div class="v3-studio-side">
         <div class="v3-ring" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <svg viewBox="0 0 120 120" aria-hidden="true"><defs><linearGradient id="v3-ring-g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset=".55" stop-color="#a78bfa"/><stop offset="1" stop-color="#fb7185"/></linearGradient></defs><circle class="trk" cx="60" cy="60" r="52"/><circle class="val" cx="60" cy="60" r="52"/></svg>
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="trk" cx="60" cy="60" r="52"/><circle class="val" cx="60" cy="60" r="52"/></svg>
           <div><strong>0<small>%</small></strong><span data-t="progress"></span></div>
-        </div>
-        <div class="v3-transport">
-          <button type="button" class="v3-chip" data-play="a"><i class="fa-solid fa-play" aria-hidden="true"></i><span data-t="playA"></span></button>
-          <button type="button" class="v3-chip" data-play="b" disabled><i class="fa-solid fa-play" aria-hidden="true"></i><span data-t="playB"></span></button>
-          <button type="button" class="v3-chip" data-play="swap" disabled><i class="fa-solid fa-right-left" aria-hidden="true"></i><span data-t="swap"></span></button>
         </div>
         <dl class="v3-readouts"><div><dt data-t="duration"></dt><dd class="r-dur">--:--</dd></div><div><dt data-t="rate"></dt><dd class="r-rate">--</dd></div></dl>
       </div>
     </div>`;
   let anchor = workflow; while (anchor && anchor.parentElement !== main) anchor = anchor.parentElement;
   main.insertBefore(el, anchor || null);
-  const glassLens = ctx.glass?.lens(el, { strength: 18 });
 
   const $ = s => el.querySelector(s);
   const waveBox = $('.v3-scope-wave'), waveCv = waveBox.querySelector('canvas'), specCv = $('.v3-scope-spec');
@@ -184,7 +193,7 @@ export function initStudio(ctx) {
   let dragging = false;
   const setSplit = v => { S.split = clamp(v, 0, 1); ab.style.left = (S.split * 100).toFixed(2) + '%'; ab.setAttribute('aria-valuenow', String(Math.round(S.split * 100))); draw(); };
   waveBox.addEventListener('pointerdown', e => {
-    if (!e.isPrimary) return;
+    if (!e.isPrimary || e.target.closest('.v3-transport')) return;
     const r = waveBox.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
     if (e.target.closest('.v3-ab') || Math.abs(x - S.split) * r.width < 22) {
       dragging = true; waveBox.setPointerCapture(e.pointerId); setSplit(x); e.preventDefault();
@@ -211,7 +220,7 @@ export function initStudio(ctx) {
     g.clearRect(0, 0, w, h);
     const k = dpr();
     // grid
-    g.fillStyle = 'rgba(255,255,255,.05)';
+    g.fillStyle = 'rgba(255,255,255,.045)';
     for (let x = 0; x < w; x += 40 * k) g.fillRect(Math.round(x), 0, 1, h);
     g.fillRect(0, Math.round(h / 2), w, 1);
     const split = S.split * w;
@@ -230,11 +239,11 @@ export function initStudio(ctx) {
       }
       g.restore();
     };
-    if (!gradB || gradB.w !== w) { gradB = g.createLinearGradient(0, 0, w, 0); gradB.addColorStop(0, '#5eead4'); gradB.addColorStop(.5, '#a78bfa'); gradB.addColorStop(1, '#fb7185'); gradB.w = w; }
+    gradB = '#3d8bff';
     const hasA = !!S.A?.peaks, hasB = !!S.B?.peaks;
-    if (hasA && hasB) { lane(S.A, 0, split, 'rgba(203,213,225,.85)'); lane(S.B, split, w, gradB, true); }
-    else if (hasA) lane(S.A, 0, w, 'rgba(203,213,225,.85)');
-    else if (hasB) lane(S.B, 0, w, gradB, true);
+    if (hasA && hasB) { lane(S.A, 0, split, '#8e8e93'); lane(S.B, split, w, gradB); }
+    else if (hasA) lane(S.A, 0, w, '#8e8e93');
+    else if (hasB) lane(S.B, 0, w, gradB);
     // playhead
     const cur = S.playing === 'b' ? S.bEl : S.playing === 'a' ? S.aEl : null;
     const ref = cur || S.aEl || S.bEl;
@@ -245,6 +254,7 @@ export function initStudio(ctx) {
     }
     empty.hidden = hasA || hasB;
     el.dataset.compare = String(hasA && hasB);
+    waveCv.dispatchEvent(new Event('v3-drawn'));
   }
   // radix-2 FFT magnitude → log bands
   const re = new Float32Array(FFT), im = new Float32Array(FFT), win = new Float32Array(FFT).map((_, i) => .5 - .5 * Math.cos(2 * Math.PI * i / (FFT - 1)));
@@ -277,9 +287,8 @@ export function initStudio(ctx) {
     for (let b = 0; b < BANDS; b++) {
       smooth[b] += (bands[b] - smooth[b]) * (bands[b] > smooth[b] ? .55 : .18);
       const v = smooth[b], hh = Math.max(2 * k, v * h);
-      const hue = 170 + b / BANDS * 170;
-      g.fillStyle = `hsl(${hue} 85% ${60 + v * 15}%)`;
-      g.globalAlpha = .35 + v * .65;
+      g.fillStyle = S.playing === 'b' ? '#3d8bff' : '#d1d1d6';
+      g.globalAlpha = .3 + v * .7;
       g.fillRect(b * bw + bw * .18, h - hh, bw * .64, hh);
     }
     g.globalAlpha = 1;
@@ -313,6 +322,6 @@ export function initStudio(ctx) {
   if (convert) new MutationObserver(syncProgress).observe(convert, { attributes: true, attributeFilter: ['aria-busy'] });
 
   localize(); setSplit(.5); btnState(); syncProgress(); draw();
-  if (glassLens) ctx.glass.remeasure();
+  initLensLater(ctx, $('.v3-transport'), waveCv, () => !!S.playing || dragging);
   window.PostPrepV3 && (window.PostPrepV3.studio = { state: S, loadA, loadB, draw });
 }

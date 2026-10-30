@@ -17,11 +17,10 @@
   <link rel="stylesheet" href="/assets/classic-glass.css?v=20261004-compact-1">
   <script type="module" src="/assets/classic-glass.js?v=20261004-compact-1"></script>
   <!-- v3:head -->
-  <link rel="stylesheet" href="/assets/v3/v3.css?v=20261031-v3">
+  <link rel="stylesheet" href="/assets/v3/v3.css?v=20261031-v3b">
   <link rel="modulepreload" href="/assets/v3/motion.js">
-  <link rel="modulepreload" href="/assets/v3/glass.js">
   <script>(function(){var d=document.documentElement,g='webgl';d.classList.add('v3');try{var f=(location.search.match(/[?&]gfx=(webgl|css|lite)/)||[])[1];if(f){sessionStorage.setItem('v3-gfx',f)}else{f=sessionStorage.getItem('v3-gfx')}var n=navigator,c=n.connection;if(f){g=f;d.dataset.gfxForced='1'}else if(matchMedia('(prefers-reduced-transparency: reduce)').matches||(c&&c.saveData)){g='lite'}else if((n.deviceMemory&&n.deviceMemory<4)||(n.hardwareConcurrency&&n.hardwareConcurrency<4)||!window.WebGLRenderingContext){g='css'}}catch(e){g='css'}d.dataset.gfx=g;var only=!!document.querySelector('meta[name="v3-only"]');var sk=function(){d.classList.toggle('v3s',only||d.dataset.ui!=='classic')};sk();new MutationObserver(sk).observe(d,{attributes:true,attributeFilter:['data-ui']});if(matchMedia('(prefers-reduced-motion: reduce)').matches)d.dataset.motion='reduced'})();</script>
-  <script type="module" src="/assets/v3/v3.js?v=20261031-v3"></script>
+  <script type="module" src="/assets/v3/v3.js?v=20261031-v3b"></script>
   <!-- /v3:head -->
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="404" data-title-key="v3.notFoundTitle">
@@ -30,13 +29,14 @@
     <section class="v3-404">
       <div>
         <p class="v3-404-code" aria-hidden="true">404</p>
-        <h1 data-i18n="v3.notFoundTitle">这一页飘走了。</h1>
+        <h1 data-i18n="v3.notFoundTitle">这一页没有发出来。</h1>
+        <p class="v3-404-url" aria-hidden="true"><s data-404-path>/does-not-exist</s></p>
         <p data-i18n="v3.notFoundBody">链接可能已更改或输入有误。回到首页，或直接打开常用工具。</p>
         <div class="v3-404-links">
-          <a class="v3-btn v3-btn-primary" href="/index.html"><i class="fa-solid fa-house" aria-hidden="true"></i><span data-i18n="v3.notFoundHome">回到首页</span></a>
-          <a class="v3-chip" href="/length-checker.html"><i class="fa-solid fa-ruler-horizontal" aria-hidden="true"></i><span data-i18n="shared.length">长度检查</span></a>
-          <a class="v3-chip" href="/hashtag-cleaner.html"><i class="fa-solid fa-hashtag" aria-hidden="true"></i><span data-i18n="shared.hashtags">标签整理</span></a>
-          <a class="v3-chip" href="/rvc.html"><i class="fa-solid fa-wave-square" aria-hidden="true"></i><span data-i18n="shared.rvc">变声</span></a>
+          <a class="v3-btn v3-btn-primary" href="/index.html"><span data-i18n="v3.notFoundHome">回到首页</span></a>
+          <a class="v3-btn v3-btn-plain" href="/length-checker.html"><span data-i18n="shared.length">长度检查</span><span aria-hidden="true">›</span></a>
+          <a class="v3-btn v3-btn-plain" href="/hashtag-cleaner.html"><span data-i18n="shared.hashtags">标签整理</span><span aria-hidden="true">›</span></a>
+          <a class="v3-btn v3-btn-plain" href="/rvc.html"><span data-i18n="shared.rvc">变声</span><span aria-hidden="true">›</span></a>
         </div>
       </div>
     </section>
