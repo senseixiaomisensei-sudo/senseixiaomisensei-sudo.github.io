@@ -42,12 +42,19 @@ class SeparationRuntimeError(RuntimeError):
         self.code = code
 
 
+SEPARATOR_OVERLAP = max(0, min(int(os.getenv("RVC_SEPARATOR_OVERLAP", "264600") or 264600), 352000))
+
+
 @dataclass(frozen=True)
 class SongStems:
     vocals: Path
     instrumental: Path
     sample_rate: int
     cache_hit: bool = False
+    # v3: "vocals" is the (dry) lead that is converted; "instrumental" holds
+    # everything that is not converted (accompaniment + backing harmony).
+    chain: str = "legacy"
+    stages: dict | None = None
 
 
 def separation_status() -> dict[str, object]:
@@ -64,7 +71,95 @@ def separation_status() -> dict[str, object]:
     }
 
 
+def _v3_plan() -> dict | None:
+    """Models the v3 chain can use right now, or None for the legacy chain."""
+    from app.v3_quality import enabled
+    if not enabled("SEPARATOR"):
+        return None
+    from app import v3_models
+    entries = v3_models.catalog()
+    main = v3_models.MAIN_MODEL
+    if not v3_models.model_ready(main, entries):
+        # keep the validated legacy checkpoint as the main stage
+        main = SEPARATOR_MODEL if separation_status()["ready"] else ""
+    if not main:
+        return None
+    karaoke = v3_models.KARAOKE_MODEL if enabled("KARAOKE") and v3_models.model_ready(v3_models.KARAOKE_MODEL, entries) else ""
+    dereverb = v3_models.DEREVERB_MODEL if enabled("DEREVERB") and v3_models.model_ready(v3_models.DEREVERB_MODEL, entries) else ""
+    if main == SEPARATOR_MODEL and not karaoke and not dereverb:
+        return None  # nothing new available: identical to legacy
+    files = []
+    for name in (main, karaoke, dereverb):
+        for rel, _ in v3_models.files_for(name, entries)[:2] if name else []:
+            files.append(SEPARATOR_MODELS_DIR / rel)
+    return {"main": main, "karaoke": karaoke, "dereverb": dereverb, "files": files}
+
+
+def _separate_v3(source: Path, output_dir: Path, plan: dict, on_cache_miss=None) -> SongStems:
+    worker = Path(__file__).with_name("separation_worker_v3.py")
+    key = None
+    if separation_cache.cache_root() is not None:
+        try:
+            runtime = ["v3", plan["main"], plan["karaoke"], plan["dereverb"], SEPARATOR_DEVICE, str(SEPARATOR_OVERLAP)]
+            for package in ('pymss', 'torch', 'torchaudio'):
+                runtime.append(importlib.metadata.version(package))
+            key = separation_cache.cache_key(source, [*plan["files"], worker], json.dumps(runtime))
+            sample_rate = separation_cache.restore(key, output_dir)
+            if sample_rate is not None:
+                extra = separation_cache.restore_extra(key)
+                return SongStems(output_dir.resolve() / 'vocals.wav', output_dir.resolve() / 'instrumental.wav',
+                                 sample_rate, True, "v3", extra.get("stages") or {})
+        except (OSError, importlib.metadata.PackageNotFoundError):
+            key = None
+    if on_cache_miss is not None:
+        on_cache_miss()
+    command = [sys.executable, str(worker), "--input", str(source), "--output-dir", str(output_dir),
+               "--model-dir", str(SEPARATOR_MODELS_DIR), "--model", plan["main"],
+               "--karaoke-model", plan["karaoke"], "--dereverb-model", plan["dereverb"],
+               "--device", SEPARATOR_DEVICE, "--overlap", str(SEPARATOR_OVERLAP)]
+    try:
+        result = subprocess.run(command, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, encoding='utf-8', errors='replace',
+                                env={**os.environ, 'PYTHONUTF8': '1', 'PYTHONIOENCODING': 'utf-8'},
+                                timeout=SEPARATOR_TIMEOUT_SECONDS * 2)
+    except subprocess.TimeoutExpired as error:
+        raise SeparationRuntimeError("RVC_SEPARATION_TIMEOUT") from error
+    if result.returncode != 0:
+        logging.getLogger(__name__).warning('v3 separation failed: %s', (result.stderr or '')[-600:])
+        raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
+    try:
+        payload = json.loads(result.stdout.strip().splitlines()[-1])
+        vocals = Path(payload["vocals"]).resolve()
+        instrumental = Path(payload["instrumental"]).resolve()
+        sample_rate = int(payload["sampleRate"])
+        stages = payload.get("stages") or {}
+    except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise SeparationRuntimeError("RVC_SEPARATION_FAILED") from error
+    if (output_dir.resolve() not in vocals.parents or output_dir.resolve() not in instrumental.parents
+            or not vocals.is_file() or not instrumental.is_file()):
+        raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
+    if key is not None:
+        try:
+            separation_cache.store(key, vocals, instrumental, sample_rate, {"stages": stages})
+        except OSError:
+            pass
+    return SongStems(vocals, instrumental, sample_rate, False, "v3", stages)
+
+
 def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongStems:
+    plan = None
+    try:
+        plan = _v3_plan()
+    except Exception:  # never let the optional chain block conversion
+        logging.getLogger(__name__).exception('v3 separation plan unavailable')
+    if plan is not None:
+        try:
+            return _separate_v3(source, output_dir, plan, on_cache_miss)
+        except SeparationRuntimeError as error:
+            logging.getLogger(__name__).warning('v3 separation fell back to legacy: %s', error.code)
+            if not separation_status()["ready"]:
+                raise
+            on_cache_miss = None  # models were already released for the v3 attempt
     if not separation_status()["ready"]:
         raise SeparationRuntimeError("RVC_SEPARATOR_UNAVAILABLE")
     worker = Path(__file__).with_name("separation_worker.py")

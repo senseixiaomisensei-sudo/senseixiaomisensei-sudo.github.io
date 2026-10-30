@@ -15,6 +15,24 @@ def prepare(model,input_wav,work_root,requested_method,diagnostic_dir,pitch=0,in
     method='rmvpe' if requested_method=='auto' else requested_method
     consensus=os.getenv('RVC_TIMELINE_CONSENSUS','1')=='1'
     timeline=prepare_analysis(model,input_wav,method,diagnostic_dir,consensus=consensus,filter_radius=filter_radius)
+    v3_range={}
+    try:
+        from app import v3_quality
+        if v3_quality.enabled('RANGE_GUARD') or v3_quality.enabled('PHRASE_OCTAVE'):
+            path=Path(getattr(model,'model_path',''))
+            model_id=path.parent.name if path.name=='model.pth' else path.stem
+            envelope=v3_quality.singing_range(v3_quality.range_profile(model_id))
+            if v3_quality.enabled('PHRASE_OCTAVE') and envelope:
+                shifted=timeline.f0*2**(pitch/12)
+                offsets,moved=v3_quality.phrase_octave_plan(shifted,envelope['ceilingHz'],envelope['floorHz'])
+                if moved:
+                    timeline.f0=timeline.f0*2**(offsets/12)
+                v3_range['phraseOctave']=moved
+            if v3_quality.enabled('RANGE_GUARD'):
+                register_strength,info=v3_quality.auto_register_strength(timeline.f0,pitch,envelope,register_strength)
+                v3_range['rangeGuard']=dict(modelId=model_id,**info)
+    except (OSError,ValueError,KeyError,TypeError) as error:
+        v3_range['error']=str(error)[:200]
     prepare_priors(model,timeline,index_rate,protect,pitch,diagnostic_dir,
                    register_strength=register_strength,register_pitch=register_pitch)
     source=Path(work_root)/'source';source.mkdir(parents=True,exist_ok=True)
@@ -22,7 +40,9 @@ def prepare(model,input_wav,work_root,requested_method,diagnostic_dir,pitch=0,in
         mode='absolute-analysis-v1',crossfadeSeconds=.5,
         contextSeconds=3.,tailPaddingSamples=0,f0MethodRequested=requested_method,
         f0MethodPreferred=method,f0MethodsUsed=[method]*len(timeline.spans),
-        consensus=consensus and method=='rmvpe',registerControls=timeline.register_controls,chunks=[],overlaps=[])
+        consensus=consensus and method=='rmvpe',registerControls=timeline.register_controls,
+        v3=dict(range=v3_range,pitchRepair=timeline.evidence.get('v3PitchRepair') if isinstance(timeline.evidence,dict) else None),
+        chunks=[],overlaps=[])
     for i,(start,end) in enumerate(timeline.spans):
         stop=min(end*HOP,timeline.input_samples)
         wave=timeline.audio[(start+PAD_FRAMES)*HOP:PAD_FRAMES*HOP+stop]

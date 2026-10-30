@@ -221,6 +221,15 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
         evidence.update(decision)
     if filter_radius>=5:
         actual=median_smooth_pitch(actual,1)
+    from app.v3_quality import enabled as v3_enabled
+    if v3_enabled('OCTAVE_FIX') and bool(model._vc.if_f0):
+        # v3: short octave islands / 1-2 frame spikes / <=20 ms supported
+        # dropouts. Sustained leaps and unvoiced consonants are untouched.
+        from app.v3_quality import repair_pitch
+        before=actual.copy()
+        actual,report=repair_pitch(actual,audio,16000,HOP)
+        evidence['v3PitchRepair']=report
+        evidence['beforeV3Repair']=before
     evidence['corrected'] = actual
     if diagnostics is not None:
         root = Path(diagnostics)/'timeline';root.mkdir(parents=True,exist_ok=True)

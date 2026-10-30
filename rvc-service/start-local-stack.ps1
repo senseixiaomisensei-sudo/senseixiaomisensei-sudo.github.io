@@ -82,6 +82,16 @@ if (-not $healthy) {
   # character switches on this 8 GiB device. Eager inference is the stable
   # default; an operator may explicitly opt back in for a controlled trial.
   if (-not (Test-Path Env:RVC_CUDA_GRAPH)) { $env:RVC_CUDA_GRAPH = "0" }
+  # v3 cover-quality chain (docs/rvc-v3-quality.md). On first start the
+  # service downloads its extra separation models in the background
+  # (ModelScope first) and keeps using the legacy separator until they are
+  # complete. Safe default is OFF (RVC_V3=0 = exact legacy chain) until the
+  # A/B evidence in docs/rvc-v3-quality.md is confirmed on the GPU host.
+  # Opt in for a trial: set RVC_V3=1 before starting.
+  if (-not (Test-Path Env:RVC_V3)) { $env:RVC_V3 = "0" }
+  # Model auto-download is a separate opt-in (default OFF even with RVC_V3=1;
+  # without the models the v3 separator falls back to the legacy one).
+  if (-not (Test-Path Env:RVC_V3_AUTO_FETCH)) { $env:RVC_V3_AUTO_FETCH = "0" }
   $env:CUBLAS_WORKSPACE_CONFIG = ":4096:8"
   $ServiceAppDir = Join-Path $SiteDir "rvc-service"
   $ServiceLog = Join-Path $Root "gpu-service-runtime.log"
