@@ -59,6 +59,19 @@
   * 再加现有设备端 RVC 处理同长度人声的时间（与纯人声设备端兜底相同）。
 * RVC 段：沿用现有设备端 ONNX 引擎（RMVPE 单算法），不含云端的多算法音高共识与 v3-audio 的音质链路，因此兜底音质低于云端，是「能用」而非「等同」。
 
+## 端到端验证（2026-10-31，本沙箱 Playwright + headless Chromium）
+
+* 方法：本地静态服务器打开 `rvc.html`；拦截所有非本机请求（含 `/rvc/*`、pages.dev、jsDelivr、workers.dev），模拟电脑端云引擎与中继全部不可达；选「带伴奏翻唱」，上传 MUSDB 片段 `Side_Effects_Project – Sing With Me`（6.8 s，44.1 kHz 立体声），默认角色 小鸟游星野 (Hoshino)，点击「开始变声」。
+* 结果：**通过**。云端探测失败 → 自动走本机兜底；`separator.worker.js`（module worker）与 `ort126` WASM 正常加载；headless 无 GPU，WebGPU 初始化失败后自动改用 WASM；分离模型 4 片从同源 `models/base/separator/` 读取；随后设备端 RVC worker 跑完；页面产出可下载 WAV（2 声道 / 44.1 kHz / 16-bit / 6.80 s，峰值 0.87，无削波），无 pageerror。
+* 耗时：点击到 WAV 产出 **155 s**（本机分离 2 块 ≈ 88 s，HuBERT/RMVPE/角色模型加载 ≈ 11 s，设备端 RVC ≈ 53 s，回混与 WAV 编码 < 3 s）。沙箱为 2 核共享 CPU、WASM 单线程，真实桌面会快得多。
+* 观察：模型分片请求在 DevTools 中显示 `ERR_ABORTED`，现有 HuBERT/RMVPE/角色模型同样如此（现有下载器行为），不影响结果。
+* 脚本（不在仓库内）：`/workspace/work/v3-cloud-lab/e2e/serve.mjs`、`run.mjs`；日志 `e2e.log`。
+
+## 测试状态
+
+* `tests/rvc-offline-song-fallback.test.mjs`：5/5 通过（分片 SHA-256 全部校验）。
+* 全量（不含 `rvc-audio-quality`，用临时符号链接补齐稀疏缺失的 `models/`）：248 通过 / 4 跳过 / 1 失败。唯一失败「RVC watchdog automatically recovers the local service and public tunnel」在 main 上同样失败，与本改动无关。
+
 ## 文件
 
 * 新增：`assets/rvc-engine/song-separator.mjs`、`assets/rvc-engine/separator.worker.js`、`models/base/separator/chunk_{0..3}.bin`、`tests/rvc-offline-song-fallback.test.mjs`、本文档
