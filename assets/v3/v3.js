@@ -150,8 +150,8 @@ function boot() {
   initLens();
   const p404 = document.querySelector('[data-404-path]');
   if (p404) p404.textContent = location.pathname + location.search;
-  if (page === 'home') import('./home.js').then(m => m.initHome({ fine, gfx, idle }));
-  if (page === 'rvc') import('./studio.js').then(m => m.initStudio({ fine, gfx, idle }));
+  if (page === 'home') import('./home.js?v=20261031-v3c').then(m => m.initHome({ fine, gfx, idle }));
+  if (page === 'rvc') import('./studio.js?v=20261031-v3c').then(m => m.initStudio({ fine, gfx, idle }));
   root.classList.add('v3-ready');
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
