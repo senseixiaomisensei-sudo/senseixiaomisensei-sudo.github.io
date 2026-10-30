@@ -1,0 +1,33 @@
+/* ---------- tool pages ---------- */
+$G main > header:first-child, $G main > div > header:first-child { position: relative; view-transition-name: v3-surface; }
+$G body:not([data-page="home"]) main > header:first-child h1, $G body:not([data-page="home"]) main h1:first-of-type {
+  font-family: var(--v3-font); font-weight: 900; letter-spacing: -.03em; font-size: clamp(34px, 5.2vw, 64px); line-height: 1.04;
+  background: linear-gradient(100deg, #f4f7fb 0%, #f4f7fb 45%, #99f6e4 70%, #c4b5fd 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  padding-bottom: .06em; text-wrap: balance;
+}
+$G body:not([data-page="home"]) main > header:first-child > p:first-child { letter-spacing: .22em; color: var(--v3-brand-2) !important; }
+$G body:not([data-page="home"]) main > header:first-child > p:last-child { font-size: clamp(15px, 1.3vw, 18px); color: var(--v3-ink-2) !important; }
+$G body:not([data-page="home"]) main { padding-top: clamp(28px, 5vw, 64px); }
+$G main .lg { padding: clamp(18px, 2.6vw, 30px); }
+
+/* chips rendered by postprep.js (platform presets etc.) */
+$G main [role="group"] button, $G main #preset-list button { border-radius: 999px !important; }
+/* progress tracks */
+$G main .bg-zinc-100 { background: rgb(255 255 255 / .08) !important; }
+$G #length-progress { background-image: linear-gradient(90deg, #2dd4bf, #67e8f9); }
+/* status boxes */
+$G main [role="status"][class*="border"] { border-radius: 16px; }
+/* stat tiles */
+$G main .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ---------- 404 ---------- */
+.v3-404 { min-height: calc(100svh - 160px); display: grid; place-items: center; text-align: center; padding: 40px 20px; }
+.v3-404-code { font: 900 clamp(110px, 24vw, 280px)/.9 var(--v3-font); letter-spacing: -.06em; margin: 0; background: linear-gradient(160deg, rgb(255 255 255 / .9), rgb(255 255 255 / .15)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.v3-404 h1 { font: 850 clamp(26px, 4vw, 44px)/1.15 var(--v3-font); margin: 14px 0 0; color: var(--v3-ink); }
+.v3-404 p { color: var(--v3-ink-2); max-width: 30em; margin: 14px auto 0; line-height: 1.7; }
+.v3-404-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 30px; }
+.v3-404-links .v3-chip { text-decoration: none; }
+
+/* classic (paper) mode keeps v3 pages legible */
+html.v3[data-ui="classic"] body:is([data-page="home"], [data-page="404"]) { background: #070a14; color: #eef2f8; }
+html.v3[data-ui="classic"] body:is([data-page="home"], [data-page="404"]) main { --v3-ink: #eef2f8; }

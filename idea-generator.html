@@ -15,6 +15,13 @@
   <script src="assets/liquid-ui.js?v=20261004-compact-1"></script>
   <link rel="stylesheet" href="assets/classic-glass.css?v=20261004-compact-1">
   <script type="module" src="assets/classic-glass.js?v=20261004-compact-1"></script>
+  <!-- v3:head -->
+  <link rel="stylesheet" href="assets/v3/v3.css?v=20261031-v3">
+  <link rel="modulepreload" href="assets/v3/motion.js">
+  <link rel="modulepreload" href="assets/v3/glass.js">
+  <script>(function(){var d=document.documentElement,g='webgl';d.classList.add('v3');try{var f=(location.search.match(/[?&]gfx=(webgl|css|lite)/)||[])[1];if(f){sessionStorage.setItem('v3-gfx',f)}else{f=sessionStorage.getItem('v3-gfx')}var n=navigator,c=n.connection;if(f){g=f;d.dataset.gfxForced='1'}else if(matchMedia('(prefers-reduced-transparency: reduce)').matches||(c&&c.saveData)){g='lite'}else if((n.deviceMemory&&n.deviceMemory<4)||(n.hardwareConcurrency&&n.hardwareConcurrency<4)||!window.WebGLRenderingContext){g='css'}}catch(e){g='css'}d.dataset.gfx=g;if(matchMedia('(prefers-reduced-motion: reduce)').matches)d.dataset.motion='reduced'})();</script>
+  <script type="module" src="assets/v3/v3.js?v=20261031-v3"></script>
+  <!-- /v3:head -->
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="generator" data-title-key="generator.title">
   <div id="site-header"></div>

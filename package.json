@@ -6,7 +6,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "build:styles": "tailwindcss -i assets/tailwind.input.css -o assets/postprep-tailwind.css --minify",
+    "build:styles": "tailwindcss -i assets/tailwind.input.css -o assets/postprep-tailwind.css --minify && node tools/v3-build.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {

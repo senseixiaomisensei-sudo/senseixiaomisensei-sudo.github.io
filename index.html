@@ -7,7 +7,8 @@
   <meta name="google-adsense-account" content="ca-pub-2239449670938714">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2239449670938714" crossorigin="anonymous"></script>
   <meta name="description" content="PostPrep：无需登录的双语创作者文案工具，帮助你在发布前检查长度、整理标签与清理排版。">
-  <meta name="theme-color" content="#0F766E">
+  <meta name="theme-color" content="#070a14">
+  <meta name="color-scheme" content="dark">
   <title>PostPrep · 发布前检查</title>
   <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;text y='.9em' font-size='90'&gt;✦&lt;/text&gt;&lt;/svg&gt;">
   <link rel="stylesheet" href="assets/postprep-tailwind.css?v=20260812-skills">
@@ -17,123 +18,194 @@
   <script src="assets/liquid-ui.js?v=20261004-compact-1"></script>
   <link rel="stylesheet" href="assets/classic-glass.css?v=20261004-compact-1">
   <script type="module" src="assets/classic-glass.js?v=20261004-compact-1"></script>
+  <!-- v3:head -->
+  <link rel="stylesheet" href="assets/v3/v3.css?v=20261031-v3">
+  <link rel="modulepreload" href="assets/v3/motion.js">
+  <link rel="modulepreload" href="assets/v3/glass.js">
+  <script>(function(){var d=document.documentElement,g='webgl';d.classList.add('v3');try{var f=(location.search.match(/[?&]gfx=(webgl|css|lite)/)||[])[1];if(f){sessionStorage.setItem('v3-gfx',f)}else{f=sessionStorage.getItem('v3-gfx')}var n=navigator,c=n.connection;if(f){g=f;d.dataset.gfxForced='1'}else if(matchMedia('(prefers-reduced-transparency: reduce)').matches||(c&&c.saveData)){g='lite'}else if((n.deviceMemory&&n.deviceMemory<4)||(n.hardwareConcurrency&&n.hardwareConcurrency<4)||!window.WebGLRenderingContext){g='css'}}catch(e){g='css'}d.dataset.gfx=g;if(matchMedia('(prefers-reduced-motion: reduce)').matches)d.dataset.motion='reduced'})();</script>
+  <script type="module" src="assets/v3/v3.js?v=20261031-v3"></script>
+  <!-- /v3:head -->
 </head>
 <body class="bg-canvas text-ink antialiased" data-page="home" data-title-key="home.title">
   <div id="site-header"></div>
 
-  <main>
-    <section class="border-b border-line bg-surface">
-      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.82fr)] lg:items-center lg:gap-14 lg:px-8 lg:py-20">
-        <div class="max-w-2xl">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand" data-i18n="home.eyebrow">FOR CREATOR WORKFLOWS</p>
-          <h1 class="mt-4 text-4xl font-black tracking-tight text-ink sm:text-5xl" data-i18n="home.title">发布前，把文案收拾得更利落。</h1>
-          <p class="mt-5 max-w-xl text-base leading-8 text-muted sm:text-lg" data-i18n="home.intro">一个轻量、双语、无需登录的创作者工具站。基础整理留在浏览器，云端深度处理只在部署启用且你主动点击时工作。</p>
-          <div class="mt-8 flex flex-wrap gap-3">
-            <a href="#tools" class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-              <span data-i18n="home.openTools">打开工具</span>
-              <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-            </a>
-            <a href="privacy.html" class="inline-flex min-h-11 items-center gap-2 rounded-lg border border-line bg-white px-5 py-3 text-sm font-bold text-ink transition hover:border-brand hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-              <i class="fa-solid fa-shield-halved text-brand" aria-hidden="true"></i>
-              <span data-i18n="shared.privacy">隐私</span>
-            </a>
+  <main id="main">
+    <div class="v3-hero-wrap">
+      <section class="v3-hero" aria-labelledby="v3-hero-title">
+        <div class="v3-hero-stage">
+          <div class="v3-orb" tabindex="0" role="img" data-i18n-aria-label="v3.orbLabel" aria-label="液态玻璃水滴，可拖动"><span class="v3-orb-shine"></span></div>
+          <p class="v3-orb-hint" aria-hidden="true"><i class="fa-solid fa-hand-pointer"></i><span data-i18n="v3.orbHint">拖动水滴试试</span></p>
+        </div>
+        <div class="v3-hero-inner">
+          <p class="v3-eyebrow"><span class="v3-pulse" aria-hidden="true"></span><span data-i18n="v3.heroEyebrow">PostPrep 3 · 创作者发布工作台</span></p>
+          <h1 id="v3-hero-title" class="v3-display"><span data-i18n="v3.heroLine1">发布之前，</span><span class="v3-grad" data-i18n="v3.heroLine2">一切打磨到位。</span></h1>
+          <p class="v3-lead" data-i18n="home.intro">一个轻量、双语、无需登录的创作者工具站。基础整理留在浏览器，云端深度处理只在部署启用且你主动点击时工作。</p>
+          <div class="v3-hero-cta">
+            <a href="#tools" class="v3-btn v3-btn-primary v3-magnet"><span data-i18n="v3.heroTools">打开工具</span><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></a>
+            <a href="rvc.html" class="v3-btn v3-btn-ghost v3-magnet v3-tool-link"><i class="fa-solid fa-wave-square" aria-hidden="true"></i><span data-i18n="v3.heroStudio">AI 变声录音棚</span></a>
           </div>
-          <ul class="mt-9 grid gap-3 text-sm font-semibold text-ink sm:grid-cols-3" aria-label="PostPrep 特点">
-            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand" aria-hidden="true"></i><span data-i18n="home.noteOne">中英界面，一键切换</span></li>
-            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand" aria-hidden="true"></i><span data-i18n="home.noteTwo">手机与电脑都能使用</span></li>
-            <li class="flex items-center gap-2"><i class="fa-solid fa-check text-brand" aria-hidden="true"></i><span data-i18n="home.noteThree">Google AdSense 自动广告异步加载</span></li>
+          <ul class="v3-facts">
+            <li><strong data-count="8">8</strong><span data-i18n="v3.factTools">个创作工具</span></li>
+            <li><strong>0</strong><span data-i18n="v3.factLogin">次登录</span></li>
+            <li><strong>100<small>%</small></strong><span data-i18n="v3.factLocal">本机优先处理</span></li>
+            <li><strong data-count="2">2</strong><span data-i18n="v3.factLang">种界面语言</span></li>
           </ul>
         </div>
+        <div class="v3-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <a class="v3-scroll-cue" href="#tools"><span data-i18n="v3.scroll">向下滑动</span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></a>
+      </section>
+    </div>
 
-        <figure class="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
-          <img src="assets/hero-postprep-original.png" alt="打开的笔记本与钢笔" class="h-72 w-full object-cover sm:h-96" decoding="async">
-          <figcaption class="border-t border-line px-5 py-4 text-sm leading-6 text-muted">从一段草稿开始，把发布前的细节收好。</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <section id="tools" class="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
-      <div class="max-w-2xl">
-        <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand">POSTPREP TOOLS</p>
-        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl" data-i18n="home.toolHeading">从你的草稿开始</h2>
-      </div>
-
-      <div class="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-xl text-brand"><i class="fa-solid fa-ruler-horizontal" aria-hidden="true"></i></div>
-          <h3 class="mt-6 text-xl font-black" data-i18n="home.lengthTitle">文案长度检查</h3>
-          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.lengthBody">按平台目标查看字符、英文词数与行数。</p>
-          <a href="length-checker.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-          </a>
-        </article>
-
-        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-xl text-coral"><i class="fa-solid fa-hashtag" aria-hidden="true"></i></div>
-          <h3 class="mt-6 text-xl font-black" data-i18n="home.tagTitle">标签整理</h3>
-          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.tagBody">统一 # 格式、去重并整理成可直接粘贴的一行。</p>
-          <a href="hashtag-cleaner.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-          </a>
-        </article>
-
-        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-xl text-sky-700"><i class="fa-solid fa-align-left" aria-hidden="true"></i></div>
-          <h3 class="mt-6 text-xl font-black" data-i18n="home.formatTitle">文案排版整理</h3>
-          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.formatBody">清掉多余空行与隐形字符，保留你的原意。</p>
-          <a href="caption-formatter.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-          </a>
-        </article>
-
-        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-xl text-brand"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></div>
-          <h3 class="mt-6 text-xl font-black" data-i18n="home.generatorTitle">按平台生成文案</h3>
-          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.generatorBody">输入一句主题、标题或标签，按平台生成可直接编辑的文案或标签。</p>
-          <a href="idea-generator.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-          </a>
-        </article>
-
-        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-xl text-amber-700"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i></div>
-          <h3 class="mt-6 text-xl font-black" data-i18n="home.trustTitle">发布可信包</h3>
-          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.trustBody">本机整理发布前检查、待确认事项与 AI 使用提醒。</p>
-          <a href="publish-trust.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-          </a>
-        </article>
-
-        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-xl text-sky-700"><i class="fa-solid fa-passport" aria-hidden="true"></i></div>
-          <h3 class="mt-6 text-xl font-black" data-i18n="home.passportTitle">Skill 权限护照</h3>
-          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.passportBody">安装前查看 Skill 的来源、版本与静态风险信号。</p>
-          <a href="skill-passport.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-          </a>
-        </article>
-
-        <article class="flex min-h-64 flex-col rounded-xl border border-line bg-surface p-6 shadow-sm">
-          <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 text-xl text-violet-700"><i class="fa-solid fa-wave-square" aria-hidden="true"></i></div>
-          <h3 class="mt-6 text-xl font-black" data-i18n="home.rvcTitle">AI 变声器</h3>
-          <p class="mt-3 flex-1 text-sm leading-7 text-muted" data-i18n="home.rvcBody">选一个角色声音，上传或录制自己的声音，一键完成 RVC 声音转换。</p>
-          <a href="rvc.html" class="mt-6 inline-flex min-h-10 items-center gap-2 self-start rounded-lg font-bold text-brand underline decoration-teal-200 underline-offset-4 hover:text-brandDark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-            <span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-          </a>
-        </article>
-      </div>
-    </section>
-
-    <section class="border-y border-line bg-teal-50/70">
-      <div class="mx-auto grid max-w-6xl gap-7 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:px-8">
-        <div class="max-w-2xl">
-          <p class="text-xs font-bold uppercase tracking-[0.18em] text-brand">PRIVACY FIRST</p>
-          <h2 class="mt-3 text-2xl font-black tracking-tight" data-i18n="home.privacyHeading">文案留在你手边</h2>
-          <p class="mt-3 text-sm leading-7 text-muted" data-i18n="home.privacyBody">基础工具只在当前网页中计算和整理文字；云端深度处理只有在部署启用且你主动点击时才发送当前文案。</p>
+    <section id="tools" class="v3-section v3-tools" aria-labelledby="v3-tools-title">
+      <div class="v3-wrap v3-tools-grid">
+        <div class="v3-tools-copy" data-reveal>
+          <p class="v3-kicker" data-i18n="v3.toolsEyebrow">POSTPREP TOOLS</p>
+          <h2 id="v3-tools-title" class="v3-h2" data-i18n="v3.toolsTitle">八个工具，叠成一副牌。</h2>
+          <p class="v3-body" data-i18n="v3.toolsBody">拖动、甩开或展开。每张卡片都是一块会折射背景的液态玻璃，点按即可打开对应工具。</p>
+          <div class="v3-deck-controls" data-deck-controls="v3-deck">
+            <button type="button" class="v3-chip v3-icon-btn" data-deck="prev" data-i18n-aria-label="v3.deckPrev" aria-label="上一张"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></button>
+            <span class="v3-deck-count" data-deck-count aria-live="polite">01 / 08</span>
+            <button type="button" class="v3-chip v3-icon-btn" data-deck="next" data-i18n-aria-label="v3.deckNext" aria-label="下一张"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+            <button type="button" class="v3-chip" data-deck="toggle" aria-expanded="false" aria-controls="v3-deck"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i><span class="v3-when-stack" data-i18n="v3.deckExpand">展开全部</span><span class="v3-when-grid" data-i18n="v3.deckCollapse">收成一叠</span></button>
+          </div>
         </div>
-        <a href="privacy.html" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand bg-white px-5 py-3 text-sm font-bold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-          <span data-i18n="shared.privacy">隐私</span><i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
-        </a>
+        <div class="v3-deck-host">
+          <nav class="v3-deck" id="v3-deck" data-mode="stack" aria-labelledby="v3-tools-title">
+          <a class="v3-card" href="length-checker.html" data-tone="teal">
+            <span class="v3-card-top"><span class="v3-card-icon"><i class="fa-solid fa-ruler-horizontal" aria-hidden="true"></i></span><span class="v3-card-no">01</span></span>
+            <span class="v3-card-title" data-i18n="home.lengthTitle">文案长度检查</span>
+            <span class="v3-card-body" data-i18n="home.lengthBody">按平台目标查看字符、英文词数与行数。</span>
+            <span class="v3-card-go"><span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </a>
+          <a class="v3-card" href="hashtag-cleaner.html" data-tone="coral">
+            <span class="v3-card-top"><span class="v3-card-icon"><i class="fa-solid fa-hashtag" aria-hidden="true"></i></span><span class="v3-card-no">02</span></span>
+            <span class="v3-card-title" data-i18n="home.tagTitle">标签整理</span>
+            <span class="v3-card-body" data-i18n="home.tagBody">统一 # 格式、去重并整理成可直接粘贴的一行。</span>
+            <span class="v3-card-go"><span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </a>
+          <a class="v3-card" href="caption-formatter.html" data-tone="sky">
+            <span class="v3-card-top"><span class="v3-card-icon"><i class="fa-solid fa-align-left" aria-hidden="true"></i></span><span class="v3-card-no">03</span></span>
+            <span class="v3-card-title" data-i18n="home.formatTitle">文案排版整理</span>
+            <span class="v3-card-body" data-i18n="home.formatBody">清掉多余空行与隐形字符，保留你的原意。</span>
+            <span class="v3-card-go"><span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </a>
+          <a class="v3-card" href="idea-generator.html" data-tone="violet">
+            <span class="v3-card-top"><span class="v3-card-icon"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span><span class="v3-card-no">04</span></span>
+            <span class="v3-card-title" data-i18n="home.generatorTitle">按平台生成文案</span>
+            <span class="v3-card-body" data-i18n="home.generatorBody">输入一句主题、标题或标签，按平台生成可直接编辑的文案或标签。</span>
+            <span class="v3-card-go"><span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </a>
+          <a class="v3-card" href="rvc.html" data-tone="pink">
+            <span class="v3-card-top"><span class="v3-card-icon"><i class="fa-solid fa-wave-square" aria-hidden="true"></i></span><span class="v3-card-no">05</span></span>
+            <span class="v3-card-title" data-i18n="home.rvcTitle">AI 变声器</span>
+            <span class="v3-card-body" data-i18n="home.rvcBody">选一个角色声音，上传或录制自己的声音，一键完成 RVC 声音转换。</span>
+            <span class="v3-card-go"><span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </a>
+          <a class="v3-card" href="publish-trust.html" data-tone="amber">
+            <span class="v3-card-top"><span class="v3-card-icon"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i></span><span class="v3-card-no">06</span></span>
+            <span class="v3-card-title" data-i18n="home.trustTitle">发布可信包</span>
+            <span class="v3-card-body" data-i18n="home.trustBody">本机整理发布前检查、待确认事项与 AI 使用提醒。</span>
+            <span class="v3-card-go"><span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </a>
+          <a class="v3-card" href="skill-passport.html" data-tone="blue">
+            <span class="v3-card-top"><span class="v3-card-icon"><i class="fa-solid fa-passport" aria-hidden="true"></i></span><span class="v3-card-no">07</span></span>
+            <span class="v3-card-title" data-i18n="home.passportTitle">Skill 权限护照</span>
+            <span class="v3-card-body" data-i18n="home.passportBody">安装前查看 Skill 的来源、版本与静态风险信号。</span>
+            <span class="v3-card-go"><span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </a>
+          <a class="v3-card" href="skills.html" data-tone="lime">
+            <span class="v3-card-top"><span class="v3-card-icon"><i class="fa-solid fa-toolbox" aria-hidden="true"></i></span><span class="v3-card-no">08</span></span>
+            <span class="v3-card-title" data-i18n="v3.skillsTitle">Skills 工具箱</span>
+            <span class="v3-card-body" data-i18n="v3.skillsBody">浏览、搜索与下载 PostPrep 的创作者 Skills。</span>
+            <span class="v3-card-go"><span data-i18n="home.open">打开</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </a>
+          </nav>
+        </div>
+      </div>
+    </section>
+
+    <section class="v3-section v3-story" aria-labelledby="v3-story-title">
+      <div class="v3-wrap">
+        <div class="v3-section-head" data-reveal>
+          <p class="v3-kicker" data-i18n="v3.storyEyebrow">WORKFLOW</p>
+          <h2 id="v3-story-title" class="v3-h2" data-i18n="v3.storyTitle">从草稿到发布，四步一气呵成。</h2>
+        </div>
+        <div class="v3-story-grid">
+          <div class="v3-story-sticky">
+            <div class="v3-story-stage lg-auto" data-active="0" data-lg-strength="18" aria-hidden="true">
+              <div class="v3-mock-bar"><span></span><span></span><span></span><em>PostPrep</em></div>
+              <div class="v3-mock-text"><span data-i18n="v3.mockCaption">秋天的第一杯咖啡，在街角的小店。</span><span class="v3-mock-tags"><b>#咖啡</b><b>#秋天</b><b class="dup">#咖啡</b><b>#街角</b></span></div>
+              <div class="v3-mock-meter"><span class="v3-mock-fill"></span></div>
+              <div class="v3-mock-badges">
+                <span class="s0"><i class="fa-solid fa-ruler-horizontal"></i><span data-i18n="v3.mockOver">超出 6 字</span></span>
+                <span class="s1"><i class="fa-solid fa-hashtag"></i><span data-i18n="v3.mockFit">已适配</span></span>
+                <span class="s2"><i class="fa-solid fa-broom"></i><span data-i18n="v3.mockClean">已清理 3 处</span></span>
+                <span class="s3"><i class="fa-solid fa-circle-check"></i><span data-i18n="v3.mockReady">可以发布</span></span>
+              </div>
+            </div>
+          </div>
+          <ol class="v3-story-steps">
+            <li class="v3-step" data-step="0">
+              <span class="v3-step-no">01</span>
+              <h3><i class="fa-solid fa-ruler-horizontal" aria-hidden="true"></i><span data-i18n="v3.story1Title">量一量</span></h3>
+              <p data-i18n="v3.story1Body">按平台目标即时统计字符、词数和行数，超出多少一眼可见。</p>
+              <a class="v3-link v3-tool-link" href="length-checker.html"><span data-i18n="v3.storyOpen">打开工具</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </li>
+            <li class="v3-step" data-step="1">
+              <span class="v3-step-no">02</span>
+              <h3><i class="fa-solid fa-hashtag" aria-hidden="true"></i><span data-i18n="v3.story2Title">理标签</span></h3>
+              <p data-i18n="v3.story2Body">统一 # 格式、去重、排序，整理成可直接粘贴的一行。</p>
+              <a class="v3-link v3-tool-link" href="hashtag-cleaner.html"><span data-i18n="v3.storyOpen">打开工具</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </li>
+            <li class="v3-step" data-step="2">
+              <span class="v3-step-no">03</span>
+              <h3><i class="fa-solid fa-align-left" aria-hidden="true"></i><span data-i18n="v3.story3Title">清排版</span></h3>
+              <p data-i18n="v3.story3Body">去掉多余空行、行尾空格与隐形字符，原意一字不改。</p>
+              <a class="v3-link v3-tool-link" href="caption-formatter.html"><span data-i18n="v3.storyOpen">打开工具</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </li>
+            <li class="v3-step" data-step="3">
+              <span class="v3-step-no">04</span>
+              <h3><i class="fa-solid fa-shield-heart" aria-hidden="true"></i><span data-i18n="v3.story4Title">过一遍</span></h3>
+              <p data-i18n="v3.story4Body">生成发布可信包：待确认事项、AI 使用提醒与检查清单。</p>
+              <a class="v3-link v3-tool-link" href="publish-trust.html"><span data-i18n="v3.storyOpen">打开工具</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="v3-section v3-teaser-sec" aria-labelledby="v3-studio-title">
+      <div class="v3-wrap">
+        <div class="v3-teaser lg-auto" data-reveal data-lg-strength="18">
+          <div class="v3-teaser-copy">
+            <p class="v3-kicker" data-i18n="v3.studioEyebrow">VOICE STUDIO</p>
+            <h2 id="v3-studio-title" class="v3-h2" data-i18n="v3.studioTitle">AI 变声录音棚</h2>
+            <p class="v3-body" data-i18n="v3.studioBody">选一个角色声音，上传、录制或朗读文本，实时看到波形与频谱；转换后用 A/B 滑块逐段对比原声与新声线。</p>
+            <ul class="v3-badges"><li data-i18n="v3.studioBadge1">A/B 对比</li><li data-i18n="v3.studioBadge2">实时频谱</li><li data-i18n="v3.studioBadge3">云端 / 本机</li></ul>
+            <a href="rvc.html" class="v3-btn v3-btn-primary v3-magnet v3-tool-link"><span data-i18n="v3.studioCta">进入录音棚</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+          </div>
+          <div class="v3-ab-demo" aria-hidden="true">
+            <div class="v3-ab-row a"><em data-i18n="v3.studioA">原声 A</em><svg viewBox="0 0 600 120" preserveAspectRatio="none"><path d="M1.2 55.0v10.0M7.5 54.9v10.2M13.8 54.6v10.8M20.0 52.1v15.7M26.2 50.0v20.0M32.5 51.3v17.3M38.8 49.9v20.3M45.0 39.7v40.6M51.2 42.8v34.3M57.5 40.6v38.9M63.8 26.7v66.6M70.0 32.0v56.0M76.2 23.4v73.3M82.5 28.2v63.7M88.8 24.1v71.8M95.0 33.3v53.4M101.2 24.4v71.1M107.5 21.4v77.1M113.8 29.7v60.7M120.0 28.6v62.9M126.2 32.7v54.6M132.5 43.6v32.7M138.8 38.3v43.4M145.0 43.2v33.5M151.2 48.4v23.3M157.5 52.2v15.6M163.8 49.6v20.7M170.0 53.3v13.3M176.2 54.0v11.9M182.5 53.4v13.1M188.8 52.9v14.3M195.0 50.6v18.7M201.2 51.6v16.9M207.5 47.4v25.3M213.8 47.5v24.9M220.0 40.8v38.4M226.2 38.0v43.9M232.5 44.0v31.9M238.8 41.3v37.3M245.0 38.0v44.0M251.2 23.5v73.0M257.5 30.4v59.1M263.8 25.6v68.9M270.0 31.0v58.0M276.2 27.1v65.9M282.5 30.1v59.9M288.8 32.0v56.0M295.0 30.0v60.1M301.2 32.6v54.8M307.5 31.3v57.4M313.8 37.7v44.7M320.0 38.6v42.8M326.2 42.9v34.1M332.5 45.4v29.2M338.8 50.3v19.5M345.0 54.6v10.8M351.2 52.6v14.9M357.5 51.4v17.2M363.8 50.8v18.3M370.0 51.5v17.0M376.2 49.8v20.4M382.5 51.4v17.2M388.8 45.9v28.3M395.0 45.7v28.6M401.2 46.1v27.8M407.5 46.3v27.4M413.8 34.8v50.3M420.0 29.9v60.2M426.2 40.3v39.3M432.5 27.2v65.7M438.8 31.9v56.2M445.0 35.5v49.0M451.2 32.6v54.9M457.5 24.2v71.5M463.8 23.5v73.0M470.0 39.1v41.8M476.2 32.0v56.0M482.5 42.6v34.8M488.8 36.6v46.7M495.0 44.1v31.9M501.2 42.2v35.7M507.5 45.1v29.9M513.8 51.0v18.0M520.0 49.9v20.1M526.2 52.5v15.0M532.5 53.3v13.4M538.8 50.2v19.5M545.0 53.1v13.9M551.2 51.8v16.4M557.5 50.0v20.0M563.8 47.8v24.3M570.0 49.9v20.2M576.2 49.6v20.7M582.5 40.6v38.7M588.8 43.9v32.1M595.0 34.4v51.2"/></svg></div>
+            <div class="v3-ab-row b"><em data-i18n="v3.studioB">转换 B</em><svg viewBox="0 0 600 120" preserveAspectRatio="none"><defs><linearGradient id="v3gB" x1="0" x2="1"><stop offset="0" stop-color="#5eead4"/><stop offset=".5" stop-color="#a78bfa"/><stop offset="1" stop-color="#fb7185"/></linearGradient></defs><path d="M1.2 42.5v34.9M7.5 41.6v36.8M13.8 40.9v38.2M20.0 38.9v42.1M26.2 40.3v39.4M32.5 37.8v44.4M38.8 46.8v26.4M45.0 42.2v35.7M51.2 37.6v44.7M57.5 41.7v36.7M63.8 41.0v38.1M70.0 49.5v20.9M76.2 43.7v32.6M82.5 42.8v34.4M88.8 35.8v48.3M95.0 32.3v55.4M101.2 39.2v41.7M107.5 34.2v51.6M113.8 32.1v55.8M120.0 19.9v80.2M126.2 23.2v73.6M132.5 35.3v49.4M138.8 25.9v68.2M145.0 38.6v42.7M151.2 33.6v52.9M157.5 42.4v35.1M163.8 45.6v28.7M170.0 37.8v44.4M176.2 46.1v27.7M182.5 47.1v25.9M188.8 41.1v37.7M195.0 42.6v34.9M201.2 47.6v24.9M207.5 42.0v35.9M213.8 45.5v29.0M220.0 44.6v30.9M226.2 48.7v22.5M232.5 43.9v32.1M238.8 47.1v25.7M245.0 42.2v35.5M251.2 38.3v43.4M257.5 41.1v37.8M263.8 36.9v46.1M270.0 37.0v46.0M276.2 35.0v50.0M282.5 34.7v50.6M288.8 28.6v62.7M295.0 21.6v76.9M301.2 34.2v51.6M307.5 20.9v78.2M313.8 29.3v61.4M320.0 31.8v56.5M326.2 25.4v69.1M332.5 33.9v52.1M338.8 39.0v42.0M345.0 39.4v41.1M351.2 39.5v41.0M357.5 48.0v24.0M363.8 41.5v37.0M370.0 50.5v19.1M376.2 46.0v28.1M382.5 46.1v27.8M388.8 52.0v16.0M395.0 47.6v24.8M401.2 50.7v18.5M407.5 50.3v19.4M413.8 52.2v15.5M420.0 49.6v20.8M426.2 45.5v28.9M432.5 32.7v54.5M438.8 39.1v41.9M445.0 26.6v66.9M451.2 19.4v81.2M457.5 15.6v88.9M463.8 25.8v68.3M470.0 24.3v71.3M476.2 20.0v80.1M482.5 14.6v90.7M488.8 30.7v58.6M495.0 18.9v82.3M501.2 20.8v78.3M507.5 23.2v73.5M513.8 40.1v39.7M520.0 29.9v60.2M526.2 44.2v31.6M532.5 43.8v32.4M538.8 43.7v32.6M545.0 43.6v32.7M551.2 49.6v20.8M557.5 47.4v25.2M563.8 50.7v18.6M570.0 52.7v14.6M576.2 53.4v13.2M582.5 53.4v13.2M588.8 51.9v16.1M595.0 49.1v21.7" stroke="url(#v3gB)"/></svg></div>
+            <span class="v3-ab-split"><i class="fa-solid fa-left-right"></i></span>
+            <div class="v3-eq v3-eq-mini"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="v3-section v3-privacy" aria-labelledby="v3-privacy-title">
+      <div class="v3-wrap v3-bento">
+        <div class="v3-bento-main lg-auto" data-reveal>
+          <p class="v3-kicker" data-i18n="v3.privacyEyebrow">PRIVACY FIRST</p>
+          <h2 id="v3-privacy-title" class="v3-h2" data-i18n="home.privacyHeading">文案留在你手边</h2>
+          <p class="v3-body" data-i18n="home.privacyBody">基础工具只在当前网页中计算和整理文字；云端生成或深度处理只有在部署启用且你主动点击时才发送当前主题或文案。</p>
+          <a href="privacy.html" class="v3-btn v3-btn-ghost"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span data-i18n="shared.privacy">隐私</span></a>
+        </div>
+        <div class="v3-bento-cell lg-auto" data-reveal><i class="fa-solid fa-lock" aria-hidden="true"></i><p data-i18n="v3.bentoLocal">基础整理全程在浏览器内完成，不上传。</p></div>
+        <div class="v3-bento-cell lg-auto" data-reveal><i class="fa-solid fa-language" aria-hidden="true"></i><p data-i18n="home.noteOne">中英界面，一键切换</p></div>
+        <div class="v3-bento-cell lg-auto" data-reveal><i class="fa-solid fa-mobile-screen" aria-hidden="true"></i><p data-i18n="v3.bentoDevices">手机、平板与电脑同样顺手。</p></div>
+        <div class="v3-bento-cell lg-auto" data-reveal><i class="fa-solid fa-user-slash" aria-hidden="true"></i><p data-i18n="v3.bentoNoLogin">无需注册登录，打开即用。</p></div>
       </div>
     </section>
   </main>
@@ -141,6 +213,6 @@
   <div id="site-footer"></div>
   <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-lg bg-ink px-4 py-3 text-sm font-semibold text-white opacity-0 shadow-xl transition-all duration-200" role="status" aria-live="polite"></div>
   <script src="assets/postprep-config.js"></script>
-  <script src="assets/postprep.js?v=20260920-ui"></script>
+  <script src="assets/postprep.js?v=20261030-v3"></script>
 </body>
 </html>

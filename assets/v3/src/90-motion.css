@@ -1,0 +1,28 @@
+/* ---------- cross-document view transitions ---------- */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: v3-vt-out .28s cubic-bezier(.4, 0, 1, 1) both; }
+::view-transition-new(root) { animation: v3-vt-in .52s cubic-bezier(.2, .9, .25, 1) both; }
+::view-transition-group(v3-surface) { animation-duration: .6s; animation-timing-function: cubic-bezier(.2, .9, .25, 1); }
+::view-transition-old(v3-surface), ::view-transition-new(v3-surface) { height: 100%; object-fit: cover; }
+::view-transition-group(v3-header) { animation-duration: .4s; }
+@keyframes v3-vt-out { to { opacity: 0; transform: scale(.985); } }
+@keyframes v3-vt-in { from { opacity: 0; transform: translateY(14px) scale(1.01); } }
+
+/* language switch: postprep.js toggles .is-content-switching on <main> */
+$G main.is-content-switching { opacity: .35; transform: translateY(4px); transition: opacity .11s, transform .11s; }
+$G main { transition: opacity .3s ease, transform .45s var(--v3-ease); }
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html.v3 *, html.v3 *::before, html.v3 *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .v3-hero-inner, .v3-eq, .v3-scroll-cue { animation: none !important; }
+  .v3-hero-wrap { height: auto; }
+  .v3-hero { position: relative; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html.v3 { --g-back: rgb(16 22 38 / .96); --g-blur: none; }
+}
+
+/* ---------- print ---------- */
+@media print { .v3-glass-canvas, .v3-orb, .v3-eq { display: none !important; } html.v3 body { background: #fff !important; color: #000; } }
