@@ -33,7 +33,8 @@ function createGlass() {
   const lenses = new Map();
   const io = new IntersectionObserver(entries => { for (const e of entries) { const L = lenses.get(e.target); if (L) L.visible = e.isIntersecting; } wake(); }, { rootMargin: '80px' });
   let measureQueued = 0;
-  const remeasure = () => { if (measureQueued) return; measureQueued = requestAnimationFrame(() => { measureQueued = 0; for (const L of lenses.values()) L.measure(); renderer.dirty = true; wake(); }); };
+  const measurers = new Set();
+  const remeasure = () => { if (measureQueued) return; measureQueued = requestAnimationFrame(() => { measureQueued = 0; for (const L of lenses.values()) L.measure(); for (const fn of measurers) fn(); renderer.dirty = true; wake(); }); };
   const ro = new ResizeObserver(remeasure);
   ro.observe(document.body);
   const api = {
@@ -48,6 +49,7 @@ function createGlass() {
     drop(el) { const L = lenses.get(el); if (L) { renderer.remove(L); io.unobserve(el); lenses.delete(el); } },
     wake: () => { renderer.dirty = true; wake(); },
     remeasure,
+    onMeasure(fn) { measurers.add(fn); },
   };
   addTask((now, dt) => renderer.frame(now, dt, scrollY));
   addEventListener('resize', () => { renderer.resize(); remeasure(); }, { passive: true });
@@ -79,7 +81,7 @@ function initPointer() {
       hovered.style.setProperty('--hy', ((qy - r.top) / r.height * 100).toFixed(1) + '%');
     });
   }, { passive: true });
-  document.addEventListener('pointerleave', () => { if (glass) glass.renderer.pointer.active = false; });
+  addEventListener('pointerout', e => { if (!e.relatedTarget && glass) glass.renderer.pointer.active = false; });
   // touch devices: slowly orbiting light
   if (!fine && glass && !reduced.matches) {
     addTask(now => { const P = glass.renderer.pointer; if (P.active) return false; P.tx = innerWidth * (.5 + .4 * Math.cos(now / 2600)); P.ty = innerHeight * (.25 + .2 * Math.sin(now / 3100)); return false; });

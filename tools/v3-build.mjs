@@ -7,7 +7,9 @@ import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const tw = readFileSync(join(root, 'assets/postprep-tailwind.css'), 'utf8');
-const P = 'html.v3[data-ui="glass"]';
+// v3 skin applies in the default "glass" UI; the home and 404 pages exist only in v3,
+// so they keep the skin even when the visitor chose the paper (classic) UI elsewhere.
+const P = 'html.v3s.v3s'; // .v3s is kept in sync by the inline boot script (see tools/v3-inject.mjs)
 
 function parseColor(v) {
   let m = v.match(/rgb\((\d+)\s+(\d+)\s+(\d+)(?:\s*\/\s*([\d.]+|var\([^)]*\)))?\)/);

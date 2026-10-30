@@ -44,7 +44,7 @@ $G body::before {
     linear-gradient(180deg, #060912, #0a1120);
   animation: none; opacity: 1; filter: none; transform: none;
 }
-.v3-glass-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: 0; transition: opacity .6s ease; contain: strict; }
+.v3-glass-canvas { position: fixed; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0; transition: opacity .6s ease; contain: strict; }
 html[data-gfx-ready="webgl"] .v3-glass-canvas { opacity: 1; }
 html[data-ui="classic"] .v3-glass-canvas { display: none; }
 $G :is(#site-header, main, #site-footer) { position: relative; z-index: 1; }

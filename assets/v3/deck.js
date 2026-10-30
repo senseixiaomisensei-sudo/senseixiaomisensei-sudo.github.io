@@ -32,6 +32,8 @@ export class Deck {
     this.layout(true);
     this.wake();
     new ResizeObserver(() => this.layout(false)).observe(root.parentElement);
+    glass?.onMeasure(() => this.measure());
+    document.addEventListener('postprep:languagechange', () => setTimeout(() => this.layout(false), 140));
   }
 
   depthOf(i) { return this.order.indexOf(i); }
@@ -39,13 +41,17 @@ export class Deck {
   layout(first) {
     const W = this.root.parentElement.clientWidth;
     if (!W) return;
-    const cardW = Math.min(W, 392);
+    const gap = 16;
+    let cardW = Math.min(W, 392);
+    if (this.mode === 'grid') {
+      this.cols = Math.min(4, Math.max(1, Math.floor((W + gap) / (270 + gap))));
+      cardW = Math.min(392, Math.floor((W - gap * (this.cols - 1)) / this.cols));
+    } else this.cols = 1;
     if (cardW !== this.cardW) { this.cardW = cardW; this.cards.forEach(c => { c.style.width = cardW + 'px'; }); }
+    this.cards.forEach(c => { c.style.height = ''; });
     this.cardH = Math.max(...this.cards.map(c => c.offsetHeight));
     this.cards.forEach(c => { c.style.height = this.cardH + 'px'; });
     this.W = W;
-    const gap = 16;
-    this.cols = Math.max(1, Math.floor((W + gap) / (cardW + gap)));
     const rows = Math.ceil(this.cards.length / this.cols);
     const h = this.mode === 'stack' ? this.cardH + GAP_Y * 3 + 36 : rows * this.cardH + (rows - 1) * gap;
     if (this.height !== h) { this.height = h; this.root.style.height = h + 'px'; }

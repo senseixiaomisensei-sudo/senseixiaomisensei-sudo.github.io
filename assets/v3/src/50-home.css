@@ -47,7 +47,7 @@ $G .v3-orb { position: absolute; left: 0; top: 0; width: clamp(128px, 17vw, 236p
   box-shadow: 0 1px 1px rgb(255 255 255 / .7) inset, 0 -10px 24px rgb(94 234 212 / .18) inset, 0 30px 60px -20px rgb(0 0 0 / .7), 0 0 0 1px rgb(255 255 255 / .22) inset; }
 $G .v3-orb.is-held { cursor: grabbing; }
 $G .v3-orb-shine { position: absolute; inset: 10% 18% auto auto; width: 34%; height: 18%; border-radius: 50%; background: radial-gradient(closest-side, rgb(255 255 255 / .7), transparent); transform: rotate(-30deg); filter: blur(1px); }
-html.v3[data-ui="glass"][data-gfx-ready="webgl"] .v3-orb { background: radial-gradient(circle at 30% 24%, rgb(255 255 255 / .35), rgb(255 255 255 / 0) 20%); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 30px 60px -24px rgb(0 0 0 / .6); }
+html.v3s.v3s[data-gfx-ready="webgl"] .v3-orb { background: radial-gradient(circle at 30% 24%, rgb(255 255 255 / .35), rgb(255 255 255 / 0) 20%); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 30px 60px -24px rgb(0 0 0 / .6); }
 $G .v3-orb-hint { position: absolute; top: calc(var(--hint-y, 30%)); right: 6%; margin: 0; display: inline-flex; gap: 8px; align-items: center; font: 700 12px/1 var(--v3-font); color: var(--v3-ink-2); opacity: 0; transform: translateY(6px); transition: opacity .6s, transform .6s var(--v3-ease); }
 $G .v3-hero.hint:not(.has-played) .v3-orb-hint { opacity: .9; transform: none; }
 $G .v3-hero.has-played .v3-orb-hint { opacity: 0; }
@@ -100,7 +100,7 @@ $G .v3-card {
   -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur);
   box-shadow: var(--g-shadow); transition: opacity .4s ease, box-shadow .3s;
 }
-html.v3[data-ui="glass"][data-gfx-ready="webgl"] .v3-card { background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--tone) 16%, transparent), transparent 60%), linear-gradient(160deg, rgb(255 255 255 / .08), rgb(255 255 255 / .02) 50%, rgb(255 255 255 / .05)), rgb(10 14 26 / .22); }
+html.v3s.v3s[data-gfx-ready="webgl"] .v3-card { background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--tone) 16%, transparent), transparent 60%), linear-gradient(160deg, rgb(255 255 255 / .08), rgb(255 255 255 / .02) 50%, rgb(255 255 255 / .05)), rgb(10 14 26 / .22); }
 $G .v3-card[data-tone="coral"] { --tone: #fb7185; --tone-2: #fdba74; }
 $G .v3-card[data-tone="sky"] { --tone: #38bdf8; --tone-2: #a5f3fc; }
 $G .v3-card[data-tone="violet"] { --tone: #a78bfa; --tone-2: #f0abfc; }
@@ -187,6 +187,15 @@ $G .v3-bento-cell i { font-size: 26px; color: var(--v3-brand-2); }
 $G .v3-bento-cell:nth-child(3) i { color: var(--v3-violet); } .v3-bento-cell:nth-child(4) i { color: var(--v3-coral); } .v3-bento-cell:nth-child(5) i { color: var(--v3-amber); }
 $G .v3-bento-cell p { margin: 0; font-size: 16px; line-height: 1.55; font-weight: 650; color: var(--v3-ink); }
 @media (max-width: 860px) { $G .v3-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } $G .v3-bento-main { grid-column: 1 / -1; grid-row: auto; } }
+
+/* ---------- hero entrance (opacity never 0, so LCP is not delayed) ---------- */
+$G .v3-eyebrow, $G .v3-display > span, $G .v3-lead, $G .v3-hero-cta, $G .v3-facts { animation: v3-rise 1s var(--v3-ease) both; }
+$G .v3-display > span:first-child { animation-delay: .06s; }
+$G .v3-display > .v3-grad { animation: v3-rise 1s var(--v3-ease) .14s both, v3-sheen 3.6s var(--v3-ease) .3s 1 both; }
+$G .v3-lead { animation-delay: .24s; } $G .v3-hero-cta { animation-delay: .32s; } $G .v3-facts { animation-delay: .4s; }
+$G .v3-orb { animation: v3-drop 1.3s var(--v3-spring) .2s both; }
+@keyframes v3-rise { from { opacity: .01; transform: translate3d(0, .5em, 0); } }
+@keyframes v3-drop { from { opacity: .01; scale: .4; } }
 
 /* ---------- reveal ---------- */
 html.v3.v3-ready:not([data-motion="reduced"]) [data-reveal]:not(.is-in) { opacity: 0; transform: translate3d(0, 34px, 0) scale(.985); }

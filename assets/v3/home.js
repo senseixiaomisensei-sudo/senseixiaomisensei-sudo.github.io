@@ -58,7 +58,9 @@ function initHero(hero, ctx, audio) {
   const cta = hero.querySelector('.v3-hero-cta .v3-btn-primary');
   let progress = 0; // 0..1 scroll-out of the pinned hero
   let ctaLens = null, orbLens = null;
-  if (glass && cta) { ctaLens = glass.lens(cta, { fixed: true, strength: 16 }); }
+  // hero lenses are viewport-fixed while the hero is pinned; only measure them at the top
+  const atTop = () => scrollY < 2;
+  if (glass && cta) { ctaLens = glass.lens(cta, { fixed: true, strength: 16 }); ctaLens.canMeasure = atTop; }
   if (!orb || !stage) return;
   const R = () => orb.offsetWidth / 2;
   const x = new Spring(0, { stiffness: 120, damping: 14 }), y = new Spring(0, { stiffness: 120, damping: 14 });
@@ -69,9 +71,11 @@ function initHero(hero, ctx, audio) {
     const s = stage.getBoundingClientRect();
     home = { x: s.width * (innerWidth < 720 ? .72 : .78) - R(), y: s.height * (innerWidth < 720 ? .1 : .2) - R() };
     if (!drag) { x.target = home.x; y.target = home.y; }
-    if (orbLens) { orbLens.setLayout(s.left, s.top, orb.offsetWidth, orb.offsetHeight); }
+    if (orbLens && atTop()) { orbLens.setLayout(s.left, s.top, orb.offsetWidth, orb.offsetHeight); }
     if (ctaLens) ctaLens.measure();
   };
+  let wasTop = atTop();
+  ctx.scrollListeners.add(() => { const t = atTop(); if (t && !wasTop) place(); wasTop = t; });
   if (glass) { orbLens = glass.lens(orb, { fixed: true, managed: true, strength: 30, radius: 999 }); }
   place(); x.set(home.x); y.set(home.y);
   new ResizeObserver(place).observe(stage);

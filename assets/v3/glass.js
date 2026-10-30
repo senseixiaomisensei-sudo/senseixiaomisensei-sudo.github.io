@@ -66,7 +66,8 @@ float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32);
 vec3 scene(vec2 p, float blur){
   vec2 uv = p / uRes;
   vec3 col = mix(vec3(.018, .027, .055), vec3(.028, .045, .085), uv.y);
-  vec2 pp = p + vec2(0., uScrollY * .18);
+  // no scroll parallax: rendering pauses while scrolling, so the backdrop must not depend on it
+  vec2 pp = p;
   for (int i = 0; i < 4; i++){
     vec4 b = uBlob[i];
     vec2 dv = (pp - b.xy) / b.z;
@@ -209,6 +210,8 @@ export class GlassRenderer {
     this.vw = innerWidth; this.vh = innerHeight;
     const w = Math.max(1, Math.round(this.vw * this.scale)), h = Math.max(1, Math.round(this.vh * this.scale));
     if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; }
+    // size the element to the same viewport the shader uses (mobile URL bars change innerHeight)
+    this.canvas.style.width = this.vw + 'px'; this.canvas.style.height = this.vh + 'px';
     this.gl.viewport(0, 0, w, h);
     this.dirty = true;
   }
@@ -305,6 +308,7 @@ export class Lens {
     this.radius = this.radiusOverride ?? (parseFloat(cs.borderTopLeftRadius) || 0);
     // JS-driven (transformed) surfaces report their untransformed box via setLayout.
     if (this.managed) return;
+    if (this.canMeasure && !this.canMeasure()) return;
     this.doc = { x: r.left, y: r.top + sy, w: r.width, h: r.height };
   }
   setLayout(x, y, w, h) { this.doc = { x, y: y + (this.fixed ? 0 : scrollY), w, h }; this.baseW = w; this.baseH = h; }
