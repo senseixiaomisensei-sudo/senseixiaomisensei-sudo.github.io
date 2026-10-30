@@ -131,7 +131,7 @@ $G [data-page="rvc"] .community-toolbar, $G .community-close, $G .community-load
 .v3-studio[data-busy="true"] .v3-ring svg { animation: v3-spin 2.4s linear infinite; }
 @keyframes v3-spin { to { rotate: 270deg; } }
 .v3-transport { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
-.v3-transport .v3-chip { min-height: 42px; padding: 0 10px; font-size: 13px; }
+.v3-transport .v3-chip { min-height: 42px; padding: 0 10px; font-size: 13px; white-space: nowrap; gap: 6px; }
 .v3-transport [data-play="swap"] { grid-column: 1 / -1; }
 .v3-transport .v3-chip:disabled { opacity: .45; cursor: not-allowed; }
 .v3-transport .v3-chip[aria-pressed="true"] { box-shadow: 0 1px 0 rgb(255 255 255 / .3) inset, 0 0 0 1px rgb(94 234 212 / .6) inset !important; }
