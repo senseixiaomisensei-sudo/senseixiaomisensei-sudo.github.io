@@ -226,7 +226,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--name', required=True)
     p.add_argument('--vocal', required=True)
-    p.add_argument('--accompaniment', required=True)
+    p.add_argument('--accompaniment', help='default: mix - vocal')
     p.add_argument('--mix', required=True)
     p.add_argument('--converted')
     p.add_argument('--separated', help='real separated vocal of the same mix (optional)')
@@ -239,8 +239,13 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     rate = 44100
     vocal = load(a.vocal, a.offset, a.seconds, rate)
-    acc = load(a.accompaniment, a.offset, a.seconds, rate)
     mix = load(a.mix, a.offset, a.seconds, rate)
+    if a.accompaniment:
+        acc = load(a.accompaniment, a.offset, a.seconds, rate)
+    else:
+        n = min(len(mix), len(vocal))
+        mix, vocal = mix[:n], vocal[:n]
+        acc = mix - vocal
     conv = load(a.converted, a.offset, a.seconds, rate) if a.converted else None
     sep = load(a.separated, a.offset, a.seconds, rate) if a.separated else None
     post, post_files = postprocess_ab(a.name, vocal, acc, mix, rate, out, conv)

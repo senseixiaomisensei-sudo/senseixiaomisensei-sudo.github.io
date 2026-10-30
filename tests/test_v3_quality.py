@@ -31,11 +31,23 @@ class SwitchTests(unittest.TestCase):
             self.assertFalse(any(q.status()['stages'].values()))
         env = {**env, 'RVC_V3': '1'}
         with patch.dict(os.environ, env, clear=True):
-            self.assertTrue(q.enabled('OCTAVE_FIX'))
+            # only the stages that passed the lite A/B are on by default
+            on = {k for k, v in q.status()['stages'].items() if v}
+            self.assertEqual(on, {'loudness', 'limiter'})
             self.assertFalse(q.enabled('PHRASE_OCTAVE'))  # opt-in only
-        with patch.dict(os.environ, {**env, 'RVC_V3_HARSH': '0'}, clear=True):
-            self.assertFalse(q.enabled('HARSH'))
+        with patch.dict(os.environ, {**env, 'RVC_V3_DEESS': '1', 'RVC_V3_LIMITER': '0'}, clear=True):
             self.assertTrue(q.enabled('DEESS'))
+            self.assertFalse(q.enabled('HARSH'))
+            self.assertFalse(q.enabled('LIMITER'))
+
+    def test_model_auto_fetch_is_opt_in(self):
+        from app import v3_models
+        env = {k: v for k, v in os.environ.items() if not k.startswith('RVC_V3')}
+        with patch.object(v3_models.threading, 'Thread') as thread:
+            for extra in ({}, {'RVC_V3': '1'}, {'RVC_V3_AUTO_FETCH': '1'}):
+                with patch.dict(os.environ, {**env, **extra}, clear=True):
+                    self.assertFalse(v3_models.start_background_fetch())
+            thread.assert_not_called()
 
     def test_disabled_finish_returns_input_unchanged(self):
         x = np.random.default_rng(1).standard_normal(48000) * .1

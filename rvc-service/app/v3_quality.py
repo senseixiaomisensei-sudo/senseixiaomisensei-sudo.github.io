@@ -26,19 +26,22 @@ import numpy as np
 
 REVISION = 'rvc-v3-quality-1'
 
-# name -> default when RVC_V3 is enabled
+# name -> default when RVC_V3 is enabled.  Only stages that did not regress
+# on every clip of the lite A/B (docs/rvc-v3-quality.md, 2026-10-31) default
+# to on; everything else is an explicit opt-in (RVC_V3_<NAME>=1) until a
+# full-RVC A/B on the GPU host says otherwise.
 DEFAULTS = {
-    'SEPARATOR': '1',       # v3 separation chain (main model + lead/backing + dereverb)
-    'KARAOKE': '1',         # convert only the lead vocal, keep backing harmony
-    'DEREVERB': '1',        # dry lead into RVC
-    'REVERB_RETURN': '1',   # re-apply a matched synthetic room to the converted lead
-    'OCTAVE_FIX': '1',      # short octave-island / spike repair on the F0 timeline
-    'RANGE_GUARD': '1',     # automatic register adaptation beyond the character range
-    'DEESS': '1',           # sibilance control on the converted vocal
-    'HARSH': '1',           # dynamic 4-10 kHz excess suppression vs. source
-    'LOUDNESS': '1',        # vocal/accompaniment + master loudness match
-    'LIMITER': '1',         # look-ahead 4x oversampled true-peak limiter
-    'HIRES': '1',           # 48 kHz / 24-bit WAV output (MP3 at 48 kHz)
+    'SEPARATOR': '0',       # opt-in (not A/B'd): v3 separation chain (main + lead/backing + dereverb)
+    'KARAOKE': '0',         # opt-in (not A/B'd): convert only the lead vocal, keep backing harmony
+    'DEREVERB': '0',        # opt-in (not A/B'd): dry lead into RVC
+    'REVERB_RETURN': '0',   # opt-in (not A/B'd): matched synthetic room on the converted lead
+    'OCTAVE_FIX': '0',      # opt-in (regressed on lite A/B): octave-island / spike repair on F0
+    'RANGE_GUARD': '0',     # opt-in (not A/B'd): automatic register adaptation beyond range
+    'DEESS': '0',           # opt-in (regressed on lite A/B): sibilance control vs. source
+    'HARSH': '0',           # opt-in (regressed on lite A/B): dynamic 4-10 kHz excess cut vs. source
+    'LOUDNESS': '1',        # passed lite A/B: master loudness match to the upload
+    'LIMITER': '1',         # passed lite A/B: look-ahead 4x oversampled true-peak limiter
+    'HIRES': '0',           # opt-in (not A/B'd): 48 kHz / 24-bit WAV output
     'PHRASE_OCTAVE': '0',   # opt-in: per-phrase octave transposition beyond range
 }
 
