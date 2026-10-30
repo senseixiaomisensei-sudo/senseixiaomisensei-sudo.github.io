@@ -11,7 +11,7 @@ import tempfile
 import threading
 import time
 
-TTL_SECONDS = 3600
+TTL_SECONDS = max(600, min(int(os.getenv('RVC_SEPARATION_CACHE_TTL', '3600') or 3600), 7 * 86400))
 MAX_BYTES = 512 * 1024 * 1024
 _lock = threading.RLock()
 _resource_hashes = {}
@@ -109,7 +109,20 @@ def restore(key: str, destination: Path) -> int | None:
             return None
 
 
-def store(key: str, vocals: Path, instrumental: Path, sample_rate: int) -> None:
+def restore_extra(key: str) -> dict:
+    """Small JSON side information stored with an entry (v3 stage report)."""
+    root = cache_root()
+    if root is None:
+        return {}
+    try:
+        meta = json.loads((root / key / 'manifest.json').read_text(encoding='utf8'))
+        extra = meta.get('extra') or {}
+        return extra if isinstance(extra, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def store(key: str, vocals: Path, instrumental: Path, sample_rate: int, extra: dict | None = None) -> None:
     root = cache_root()
     if root is None or vocals.stat().st_size + instrumental.stat().st_size > MAX_BYTES - 4096:
         return
@@ -124,6 +137,8 @@ def store(key: str, vocals: Path, instrumental: Path, sample_rate: int) -> None:
                 shutil.copyfile(source, target)
                 files[name] = {'bytes': target.stat().st_size, 'sha256': digest(target)}
             meta = {'key': key, 'createdAt': time.time(), 'sampleRate': sample_rate, 'files': files}
+            if extra:
+                meta['extra'] = extra
             (temporary / 'manifest.json').write_text(json.dumps(meta), encoding='utf8')
             entry = root / key
             if entry.exists():

@@ -53,6 +53,7 @@ from app.separation_runtime import (
     separation_status,
 )
 from app.training_runtime import TrainingRuntimeError, run_training
+from app import v3_quality
 
 try:
     from edge_tts import Communicate
@@ -99,7 +100,8 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
                   "timeline_synthesis.py", "timeline_rendering.py", "register_adaptation.py", "speech_runtime.py", "speech_worker.py", "speech_parameters.py",
                   "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py", "tts_runtime.py",
-                  "tts_engines.py", "tts_models.py", "tts_worker.py", "tts_pack.py", "tts_catalog.json")
+                  "tts_engines.py", "tts_models.py", "tts_worker.py", "tts_pack.py", "tts_catalog.json",
+                  "v3_quality.py", "v3_models.py", "separation_worker_v3.py")
 
 
 def source_revision() -> str:
@@ -107,6 +109,10 @@ def source_revision() -> str:
     for name in PIPELINE_FILES:
         digest.update(name.encode("utf-8"))
         digest.update((Path(__file__).parent / name).read_bytes())
+    # Switching the v3 stages changes the produced audio: make it part of the
+    # revision (and therefore of every job fingerprint).
+    digest.update(json.dumps(__import__("app.v3_quality", fromlist=["status"]).status(),
+                             sort_keys=True).encode("utf-8"))
     return digest.hexdigest()[:16]
 
 
@@ -643,6 +649,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
     TRAIN_ROOT.mkdir(parents=True, exist_ok=True)
     require_config()
+    try:
+        # One-time download of the v3 separation models (ModelScope first).
+        # Conversion keeps working on the legacy chain until they are ready.
+        from app.v3_models import start_background_fetch
+        start_background_fetch()
+    except Exception:  # optional quality assets must never block startup
+        logger.exception("v3 model fetch could not start")
     load_training_records()
     load_output_records()
     loop = asyncio.get_running_loop()
@@ -1471,6 +1484,8 @@ async def healthz(request: Request) -> dict[str, object]:
         "half": info.is_half,
         "training": bool(active_training_job_id),
         "separation": separator,
+        "quality": {**v3_quality.status(),
+                    "models": await asyncio.to_thread(__import__('app.v3_models', fromlist=['status']).status)},
     }
 
 
@@ -2243,6 +2258,7 @@ async def process_conversion_job(
     activity_details: dict[str, object] = {}
     stage_times: dict[str, float] = {}
     speech_evidence: dict = {}
+    v3_report: dict = {"revision": v3_quality.REVISION}
     stage_started = asyncio.get_running_loop().time()
     def mark_stage(name: str) -> None:
         nonlocal stage_started
@@ -2297,8 +2313,15 @@ async def process_conversion_job(
                                    diagnostic_dir/'dynamics.npz' if diagnostic_dir else None)
             mark_stage("dynamics")
             snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-dynamics.wav")
+            # v3: de-ess / remove 4-10 kHz excess the separated source did
+            # not have (relative, bounded). RVC_V3_DEESS/HARSH=0 bypass it.
+            await asyncio.to_thread(v3_quality.apply_finish_file, converted_vocals, stems.vocals,
+                                    v3_report.setdefault("finish", {}))
+            mark_stage("v3Finish")
             auto_vocal_gain = await asyncio.to_thread(calibrate_song_vocals, stems.vocals, converted_vocals)
             mark_stage("vocalBalance")
+            await asyncio.to_thread(v3_quality.apply_reverb_return_file, converted_vocals, stems.stages,
+                                    v3_report.setdefault("reverbReturn", {}))
             snapshot_diagnostic_audio(converted_vocals, diagnostic_dir, "vocals-balanced.wav")
             async with outputs_lock:
                 record = outputs.get(job_id)
@@ -2314,7 +2337,7 @@ async def process_conversion_job(
                 converted_vocals,
                 output_wav,
                 duration_seconds,
-                stems.sample_rate,
+                v3_quality.hires_rate(stems.sample_rate),
                 vocal_gain_db,
                 accompaniment_gain_db,
                 vocal_mute,
@@ -2322,6 +2345,12 @@ async def process_conversion_job(
             )
             mark_stage("remix")
             snapshot_diagnostic_audio(output_wav, diagnostic_dir, "remixed.wav")
+            await asyncio.to_thread(
+                v3_quality.master_file, output_wav, input_raw,
+                -1.5 if output_format == "mp3" else -1.0,
+                vocal_gain_db == 0 and accompaniment_gain_db == 0 and not vocal_mute and not accompaniment_mute,
+                v3_report.setdefault("master", {}))
+            mark_stage("v3Master")
         else:
             async with outputs_lock:
                 record = outputs.get(job_id)
@@ -2384,7 +2413,7 @@ async def process_conversion_job(
         snapshot_diagnostic_audio(output_wav, diagnostic_dir, "final-true-peak.wav")
         if output_format == "mp3":
             await asyncio.to_thread(transcode_mp3_true_peak_safe, output_wav, output_path)
-        else:
+        elif not (audio_mode == "song" and await asyncio.to_thread(v3_quality.encode_wav, output_wav, output_path)):
             shutil.copyfile(output_wav, output_path)
         mark_stage("encoding")
         if not output_path.is_file() or output_path.stat().st_size < 1:
@@ -2403,7 +2432,8 @@ async def process_conversion_job(
                 record.expires_at = job_expiry()
                 record.remix_available = remix_available
                 record.source_duration_seconds = duration_seconds
-                record.stem_sample_rate = stems.sample_rate if audio_mode == "song" else 0
+                record.stem_sample_rate = (v3_quality.hires_rate(stems.sample_rate)
+                                           if audio_mode == "song" else 0)
         persist_output_records()
         logger.info(
             "conversion completed request_id=%s job_id=%s model=%s mode=%s f0=%s vocal_gain=%.3f seconds=%.2f",
@@ -2483,6 +2513,9 @@ async def process_conversion_job(
                         "separationCacheHit": stems.cache_hit if audio_mode == "song" else False,
                         "registerAdaptation": register_strength,
                         "registerPitch": register_pitch,
+                        "v3": {**v3_report, "status": v3_quality.status(),
+                               "separationChain": stems.chain if audio_mode == "song" else None,
+                               "separationStages": stems.stages if audio_mode == "song" else None},
                     }
                     await asyncio.to_thread(capture_job, root, job_id, job_root, output_path, metadata)
             except (OSError, RuntimeError, ValueError):
@@ -2819,6 +2852,9 @@ async def remix_output(
                 remix_song, stems[1], stems[0], mix_wav,
                 record.source_duration_seconds, record.stem_sample_rate, *mix,
             )
+            await asyncio.to_thread(
+                v3_quality.master_file, mix_wav, None,
+                -1.5 if record.format == "mp3" else -1.0, False, None)
             await asyncio.to_thread(
                 finalize_true_peak_safe, mix_wav,
                 -1.5 if record.format == "mp3" else -1.0,

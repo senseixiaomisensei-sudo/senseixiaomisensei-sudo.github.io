@@ -82,6 +82,15 @@ if (-not $healthy) {
   # character switches on this 8 GiB device. Eager inference is the stable
   # default; an operator may explicitly opt back in for a controlled trial.
   if (-not (Test-Path Env:RVC_CUDA_GRAPH)) { $env:RVC_CUDA_GRAPH = "0" }
+  # v3 cover-quality chain (docs/rvc-v3-quality.md). Safe default is OFF
+  # (RVC_V3=0 = exact legacy chain) until a full-RVC A/B on this GPU host
+  # confirms it. Opt in for a trial: set RVC_V3=1 before starting (then only
+  # loudness match + true-peak limiter are on; other stages via
+  # RVC_V3_<STAGE>=1, see the doc).
+  if (-not (Test-Path Env:RVC_V3)) { $env:RVC_V3 = "0" }
+  # Model auto-download is a separate opt-in (default OFF even with RVC_V3=1;
+  # without the models the v3 separator falls back to the legacy one).
+  if (-not (Test-Path Env:RVC_V3_AUTO_FETCH)) { $env:RVC_V3_AUTO_FETCH = "0" }
   $env:CUBLAS_WORKSPACE_CONFIG = ":4096:8"
   $ServiceAppDir = Join-Path $SiteDir "rvc-service"
   $ServiceLog = Join-Path $Root "gpu-service-runtime.log"

@@ -63,7 +63,9 @@ def main() -> None:
         inference_params={
             "batch_size": 1,
             "chunk_size": 352800,
-            "overlap_size": 264600,
+            # Production keeps the validated 264600 overlap; the CPU bench
+            # may lower it via RVC_SEPARATOR_OVERLAP for both chains alike.
+            "overlap_size": int(__import__("os").getenv("RVC_SEPARATOR_OVERLAP", "264600") or 264600),
             "standardize": False,
             "normalize": False,
             "use_amp": device == "cuda",
