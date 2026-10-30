@@ -30,7 +30,7 @@ $G #length-progress { background: var(--v3-ink) !important; }
 $G main [role="status"][class*="border"] { border-radius: 14px; }
 $G main .tabular-nums, $G main [class*="font-mono"] { font-variant-numeric: tabular-nums; }
 /* large stat numbers on tool pages */
-$G main :is(#char-count, #word-count, #line-count) { font-size: clamp(30px, 3vw, 40px) !important; font-weight: 600 !important; letter-spacing: -.03em; }
+
 
 /* ---------- 404 ---------- */
 .v3-404 { min-height: calc(100svh - 200px); display: grid; align-items: center; padding: 40px 0 80px; }

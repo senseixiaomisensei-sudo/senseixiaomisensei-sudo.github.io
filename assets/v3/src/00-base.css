@@ -40,7 +40,7 @@ html.v3 {
     --v3-ink-3: #8e8e95;
     --v3-line: rgb(255 255 255 / .12);
     --v3-line-2: rgb(255 255 255 / .2);
-    --v3-accent: #3d8bff; --v3-accent-rgb: 61 139 255; --v3-accent-ink: #6aa6ff;
+    --v3-accent: #1a6ff0; --v3-accent-rgb: 61 139 255; --v3-accent-ink: #6aa6ff;
     --v3-ok: #30c46c; --v3-ok-rgb: 48 196 108; --v3-ok-ink: #5ad68c;
     --v3-warn: #ffad33; --v3-warn-rgb: 255 173 51; --v3-warn-ink: #ffc061;
     --v3-bad: #ff5a52; --v3-bad-rgb: 255 90 82; --v3-bad-ink: #ff8079;

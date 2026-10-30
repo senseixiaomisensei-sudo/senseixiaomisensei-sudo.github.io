@@ -80,15 +80,15 @@ $G [data-page="rvc"] .community-toolbar, $G .community-close, $G .community-load
 /* ==========================================================================
    v3 studio monitor: a dark machine sitting on the paper page, in both modes.
    ========================================================================== */
-.v3-studio {
+html.v3 #v3-studio {
   --m-bg: #0b0b0d; --m-well: #141417; --m-ink: #f5f5f7; --m-ink-2: #a1a1a6; --m-ink-3: #86868b; --m-line: rgb(255 255 255 / .1); --m-accent: #3d8bff;
-  position: relative; margin: 0 0 24px; padding: clamp(16px, 2.2vw, 24px); border-radius: 28px; background: var(--m-bg); color: var(--m-ink);
-  box-shadow: inset 0 .5px 0 rgb(255 255 255 / .14), 0 0 0 .5px rgb(0 0 0 / .4), 0 40px 80px -40px rgb(0 0 0 / .55);
+  position: relative; margin: 0 0 24px; padding: clamp(16px, 2.2vw, 24px) !important; border-radius: 28px !important; background: var(--m-bg) !important; color: var(--m-ink); border: 0 !important;
+  box-shadow: inset 0 .5px 0 rgb(255 255 255 / .14), 0 0 0 .5px rgb(0 0 0 / .4), 0 40px 80px -40px rgb(0 0 0 / .55) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
   color-scheme: dark;
 }
 .v3-studio-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 2px 4px 0; }
 .v3-studio-head .v3-kicker { margin: 0 0 4px; font: 600 12px/1.2 var(--v3-mono); letter-spacing: .08em; color: var(--m-ink-3); }
-.v3-studio-title { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; font: 600 clamp(20px, 2vw, 26px)/1.2 var(--v3-font); letter-spacing: -.02em; color: var(--m-ink) !important; }
+html.v3 .v3-studio-title { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; font: 600 clamp(20px, 2vw, 26px)/1.2 var(--v3-font); letter-spacing: -.02em; color: var(--m-ink) !important; }
 .v3-studio-voice { font-style: normal; font-weight: 500; font-size: .62em; color: var(--m-ink-2); letter-spacing: 0; }
 .v3-studio-state { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 15px; font: 500 13px/1 var(--v3-font); background: rgb(255 255 255 / .08); color: var(--m-ink-2); white-space: nowrap; }
 .v3-studio-state i { width: 7px; height: 7px; border-radius: 50%; background: var(--m-ink-3); }
@@ -123,7 +123,7 @@ $G [data-page="rvc"] .community-toolbar, $G .community-close, $G .community-load
 html.v3[data-gfx="lite"] .v3-transport { background: #2c2c30; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .v3-transport.has-gl { background: rgb(44 44 48 / .18); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .v3-transport > canvas.v3-lens-cv { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; border-radius: inherit; pointer-events: none; }
-html.v3 .v3-transport .v3-chip { min-height: 36px; padding: 0 12px; border-radius: 18px !important; font-size: 13px; gap: 6px; white-space: nowrap; background: transparent !important; color: var(--m-ink) !important; box-shadow: none !important; }
+html.v3 .v3-transport .v3-chip { display: inline-flex; align-items: center; justify-content: center; border: 0; font-family: var(--v3-font); font-weight: 500; cursor: pointer; transition: background-color .2s, scale .5s var(--v3-spring); min-height: 36px; padding: 0 12px; border-radius: 18px !important; font-size: 13px; gap: 6px; white-space: nowrap; background: transparent !important; color: var(--m-ink) !important; box-shadow: none !important; }
 html.v3 .v3-transport .v3-chip i { color: inherit !important; }
 html.v3 .v3-transport .v3-chip:hover { background: rgb(255 255 255 / .1) !important; }
 html.v3 .v3-transport .v3-chip[aria-pressed="true"] { background: rgb(255 255 255 / .92) !important; color: #111 !important; }
@@ -135,7 +135,7 @@ html.v3 .v3-transport .v3-chip:disabled { opacity: .4; cursor: not-allowed; }
 .v3-ring .trk { stroke: rgb(255 255 255 / .1); }
 .v3-ring .val { stroke: var(--m-accent); stroke-linecap: round; transition: stroke-dashoffset .5s var(--v3-ease); }
 .v3-ring > div { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; }
-.v3-ring strong { font: 600 36px/1 var(--v3-font); letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--m-ink); }
+html.v3 .v3-ring strong { font: 600 36px/1 var(--v3-font); letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--m-ink); }
 .v3-ring small { font-size: 16px; color: var(--m-ink-2); font-weight: 500; }
 .v3-ring span { font-size: 12px; color: var(--m-ink-3); }
 .v3-readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 0; border-radius: 14px; overflow: hidden; background: var(--m-line); }

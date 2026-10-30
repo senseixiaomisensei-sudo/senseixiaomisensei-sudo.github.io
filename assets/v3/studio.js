@@ -241,6 +241,12 @@ export function initStudio(ctx) {
     };
     gradB = '#3d8bff';
     const hasA = !!S.A?.peaks, hasB = !!S.B?.peaks;
+    if (!hasA && !hasB) {
+      // empty track: a timeline ruler and a hairline, like an empty lane in a DAW
+      g.fillStyle = 'rgba(255,255,255,.16)'; g.fillRect(0, Math.round(h / 2), w, Math.max(1, k));
+      g.fillStyle = 'rgba(255,255,255,.22)';
+      for (let i = 0, x = 0; x < w; i++, x += 24 * k) g.fillRect(Math.round(x), 0, Math.max(1, k), (i % 5 ? 5 : 11) * k);
+    }
     if (hasA && hasB) { lane(S.A, 0, split, '#8e8e93'); lane(S.B, split, w, gradB); }
     else if (hasA) lane(S.A, 0, w, '#8e8e93');
     else if (hasB) lane(S.B, 0, w, gradB);

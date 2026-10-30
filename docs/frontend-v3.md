@@ -1,37 +1,48 @@
-# PostPrep 前端 v3 · 液态玻璃
+# PostPrep 前端 v3
 
 v3 是叠加在现有站点之上的一层：页面结构、所有 id / `data-*` 钩子、`postprep.js` / `rvc.js` 的逻辑与网关协议都不变，只多加载 `assets/v3/`。纸面（classic）模式仍可从页头切换；首页和 404 只有 v3 外观。
+
+设计方向见 `docs/frontend-v3-direction.md`（"内容是主角，玻璃只是手"）；性能实测见 `docs/frontend-v3-perf.md`。
 
 ## 文件
 
 | 文件 | 作用 |
 | --- | --- |
-| `assets/v3/v3.js` | 入口（ES module，defer）：设备分级、滚动/指针状态、玻璃面注册、揭示动画、磁吸按钮、按压涟漪、跨页转场；按页面动态加载 `home.js` / `studio.js` |
-| `assets/v3/glass.js` | 液态玻璃渲染器：一块固定 WebGL 画布绘制背景（极光、音频波形带、点阵）和所有玻璃面：SDF 圆角形状平滑融合、边缘折射、RGB 色散、磨砂、随指针的高光边、接触阴影 |
-| `assets/v3/motion.js` | 单一 rAF 调度器、固定 1/240 s 子步的弹簧（30/60/120 Hz 手感一致）、速度追踪 |
-| `assets/v3/deck.js` | 首页工具卡组：堆叠 ⇄ 网格、拖动/甩出/洗牌、悬停扇开、键盘、后排卡 `inert` |
-| `assets/v3/home.js` | 首页：可拖动液态水滴（速度挤压形变）、滚动叙事、合成频谱、数字滚动 |
-| `assets/v3/studio.js` | 变声器"录音棚监视器"：波形、频谱、A/B 对比滑块、播放切换、进度环（只读 UI） |
-| `assets/v3/src/*.css` | 手写样式源（`$G` = v3 作用域前缀） |
-| `assets/v3/v3.css` | 构建产物：`tools/v3-build.mjs` = Tailwind 颜色类的深色玻璃重映射 + 源样式 |
+| `assets/v3/v3.js` | 入口（ES module，defer，约 3 KB gz）：导航液滴、揭示动画降级、SVG 透镜（CSS 档折射）、跨页标题变形、按页懒加载 `home.js` / `studio.js` |
+| `assets/v3/motion.js` | 单一 rAF 调度器（空闲时零帧）、固定 1/240 s 子步弹簧、速度追踪、`Pill`（三段式液滴胶囊）、`Seg`（分段控件：点按 / 拖动滑块 / 键盘） |
+| `assets/v3/home.js` | 首页：真实文案的实时检查编辑器（超限、极限词、重复话题、隐形字符、多余空格/空行，一键整理）、首次扫描演示、四工序分镜、录音棚预告 |
+| `assets/v3/studio.js` | 变声器"录音棚监视器"：波形、频谱、A/B 分割、播放条、进度环（只读 UI） |
+| `assets/v3/lens.js` | WebGL 透镜：只给录音棚播放条用，首次交互后才加载；画布 = 播放条包围盒，只采样它下方那一条波形 |
+| `assets/v3/src/*.css` | 手写样式源（`$G` = v3 作用域前缀）：`00-base` 色板/字体/玻璃，`10-chrome` 页头/表单/按钮/分段，`50-home`，`60-pages`，`70-rvc`，`90-motion` |
+| `assets/v3/v3.css` | 构建产物：`tools/v3-build.mjs` = Tailwind 颜色类的中性重映射（亮色纸面 + 深色 OLED）+ 源样式 |
 | `tools/v3-inject.mjs` | 给所有根目录页面写入/刷新 `<!-- v3:head -->` 块（幂等，不碰 `community/`、`hoshino/`） |
 
 构建：`npm run build:styles`（Tailwind 之后自动跑 `tools/v3-build.mjs`）。新增页面后跑 `node tools/v3-inject.mjs`。
+`glass.js`（全屏 WebGL 背景+玻璃）与 `deck.js`（卡组）已移除：全屏画布是手机卡死的主因，卡组的 DOM 与每帧样式写入也不再需要。
+
+## 色彩与模式
+
+- 亮色默认（暖纸 `#f5f4f0`），`prefers-color-scheme: dark` 为纯黑 OLED；唯一强调色为系统蓝。状态色（红/黄/绿）只用于内容检查结果。
+- 录音棚面板在两种模式下都是深色"机器"。
 
 ## 玻璃分级
 
-- `webgl`：真折射。`<head>` 内联脚本只做廉价判断（不建 WebGL 上下文，不阻塞首屏），`v3.js` 建上下文时再检查 GPU，软件光栅（SwiftShader/llvmpipe）自动降级。
-- `css`：`backdrop-filter` 模糊 + 渐变边缘高光。
-- `lite`：`prefers-reduced-transparency` 或省流量模式，不透明面板。
+只用在控件层（页头、首页编辑器工具栏、分段控件、播放条、浮动 dock），内容永远是不透明纸面。
+
+- `css`（默认，所有设备）：`backdrop-filter: blur + saturate` + 0.5px 内高光边。
+- CSS 透镜：Chromium + 精细指针时，`v3.js` 在空闲时为每个玻璃控件生成与其尺寸一致的位移贴图，`backdrop-filter: url(#lens)` 真实折射下方的 DOM 文字；页面滚动时（一次写入开始、一次写入结束，不是每帧）暂停。
+- `webgl`：仅录音棚播放条，首次 pointerdown/keydown 后 `requestIdleCallback` 再加载；DPR ≤ 2（触屏 ≤ 1.5）；只在播放、拖动 A/B、指针在波形上时渲染，离屏/隐藏即停；软件光栅（SwiftShader/llvmpipe）自动放弃。
+- `lite`：`prefers-reduced-transparency` 或省流量：不透明面板。
 - 调试：`?gfx=webgl|css|lite`（本次会话记住）。
 
 ## 性能约定
 
-- 每帧一次 draw call，无回读；玻璃面位置缓存为文档坐标，帧内不读布局。
-- 页面滚动时，跟随文档滚动的玻璃面在 ~80 ms 内淡出折射，之后完全停止重绘（只剩视口固定的玻璃，如首页水滴）；停止滚动 170 ms 后恢复。滚动期间不在 `<html>` 上切换任何类（v2 的样式失效风暴）。
-- 动态分辨率：按帧间隔 p80 调整画布缩放（0.38–0.8×DPR）；空闲时背景降到 30 fps；标签页隐藏即停。
-- 卡组/水滴：只写 `transform`，字符串缓存去重；无 3D 透视；抓取时冻结当前绘制位置；旋转以抓取点为轴（手指下的点不漂移）；只认第一根手指；`pointercancel` 回弹。
-- `prefers-reduced-motion`：弹簧直接到位、背景静止只绘一帧、滚动叙事与视图转场关闭。
+- 动画只动 `transform` / `opacity`；液滴胶囊由三个只写 transform 的部件组成（无 width/left 写入）。
+- 滚动叙事：`[data-reveal]` 用 `animation-timeline: view()`；不支持时 IntersectionObserver 一次性触发。分镜状态由 IntersectionObserver 写在分镜容器自身的 `data-step` 上。没有任何 scroll 监听写样式；滚动中不在 `<html>` 上切类。
+- 首屏以下区块 `content-visibility: auto` + `contain-intrinsic-size: auto`；设备画面 `contain: layout paint`。
+- 首屏文案直接写在 HTML 里（它就是 LCP 文本），JS 只做扫描演示；页头容器预留高度（CLS）。
+- 拖动（分段滑块、A/B）：只认第一根手指、`pointercancel` 回弹、无 3D 透视；移动端 `touch-action: pan-y`。
+- `prefers-reduced-motion`：弹簧直接到位、分镜改为静态、扫描演示跳过。
 - 不引用任何外部 CDN；字体用系统字体栈 + 仓库内 Font Awesome。（原有的 AdSense 异步脚本保留未动。）
 
 ## 录音棚（rvc.html）
@@ -40,4 +51,4 @@ v3 是叠加在现有站点之上的一层：页面结构、所有 id / `data-*`
 
 ## 验证
 
-`npm run build:styles && npm test`；截图与帧时间脚本见交付说明。
+`npm run build:styles && npm test`；截图：`/workspace/work/v3-qa/sections.mjs`、`shoot.mjs`；性能：`perf2.mjs`（见 perf 文档）。
