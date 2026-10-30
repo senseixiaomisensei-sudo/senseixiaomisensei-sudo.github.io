@@ -7,7 +7,7 @@ const context = { window: {} };
 vm.runInNewContext(fs.readFileSync(new URL("../assets/rvc-schools.js", import.meta.url), "utf8"), context);
 const directory = context.window.PostPrepSchools;
 test("school directory does not invent installed voices", () => {
-  assert.equal(directory.schools.length, 8);
+  assert.equal(directory.schools.length, 10);
   assert.equal(directory.schoolFor({ id: "ayane" }), "abydos");
   assert.equal(directory.schoolFor({ id: "hikari" }), "highlander");
   assert.equal(directory.schoolFor({ id: "eri" }), "wildhunt");

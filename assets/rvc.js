@@ -3484,6 +3484,582 @@
       "enabled": false,
       "reason": "No verified original character speech reference supplied; use RVC compatibility"
     }
+  },
+  {
+    "id": "akane",
+    "name": "室笠茜 (Akane)",
+    "nameEn": "Murokasa Akane",
+    "avatarText": "茜",
+    "aliases": [
+      "室笠アカネ",
+      "Murokasa Akane"
+    ],
+    "description": "千年科学学园 · 社区 RVC v2 音色",
+    "descriptionEn": "Millennium Science School · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/MurokasaAkane.zip",
+    "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+    "publisher": "LordDavis778",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "5746e9f31f46bd89c6e9013a4fab9227f8dfbe75ecfbd214600c11a7f609d090",
+    "indexSha256": "d89ea3ed7db76fe3c6cf304998ccff46a08093f6fd2b54130b5bb641d91bba18",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/akane/revisions/e5dd73b1968b1bfa/chunk_0.bin",
+      "models/characters/akane/revisions/e5dd73b1968b1bfa/chunk_1.bin",
+      "models/characters/akane/revisions/e5dd73b1968b1bfa/chunk_2.bin",
+      "models/characters/akane/revisions/e5dd73b1968b1bfa/chunk_3.bin",
+      "models/characters/akane/revisions/e5dd73b1968b1bfa/chunk_4.bin",
+      "models/characters/akane/revisions/e5dd73b1968b1bfa/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "c65af6414ad72be5e54d4c623b39bee68870700b0cedf77130cad74028a16dd8",
+      "bf8bb1dcd258e7d8d7f1316e407f1babfa600660cf7b402b6cee78e8f34262c8",
+      "f1775f3eed6016c75a439c53616d227dd1d5f36aa1041a60d1d872e41f13b283",
+      "34ba49e69550d5b24adfc928b605bbf270e1f7984c95c7149b03313ca5f25188",
+      "3a7ef96ae6f1b17645b39ba7a1628d2c0c2e8ee8e9f52bbf679a3197778b283f",
+      "6af45f2afb14837117212644e52aa1840fb2348c651a8d02f6004717c42836e3"
+    ],
+    "totalSize": 110427461,
+    "sha256": "e5dd73b1968b1bfa9d4a6a10f451d3866197cb6adb4e53682f0a4c796ad7c9ec",
+    "resourceRevision": "e5dd73b1968b1bfa9d4a6a10f451d3866197cb6adb4e53682f0a4c796ad7c9ec",
+    "retrieval": "models/characters/akane/revisions/e5dd73b1968b1bfa/retrieval.bin",
+    "retrievalSha256": "34b2aca3e0b1301e0b8412d32c43a1de87d4aad4a93569fb75306179ef686ce6",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
+  },
+  {
+    "id": "ako",
+    "name": "天雨亚子 (Ako)",
+    "nameEn": "Amau Ako",
+    "avatarText": "亚子",
+    "aliases": [
+      "天雨アコ（ドレス）",
+      "Amau Ako"
+    ],
+    "description": "格黑娜学园 · 社区 RVC v2 音色",
+    "descriptionEn": "Gehenna Academy · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "格黑娜"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 48000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/TokiBotan/AmauAkoRVCV2/blob/99f3f95cba108c58a5b0e65a640dd7de9f15f0c0/AmauAko.zip",
+    "sourceRevision": "99f3f95cba108c58a5b0e65a640dd7de9f15f0c0",
+    "publisher": "TokiBotan",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "7e88de7f18780a39404fdefbbd963905497c621efa37edae9617f1579a98ecb8",
+    "indexSha256": "41a2941677a5d0cea9d3393599ba85366eb9d5607991e645572604e1aa7a4b7e",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/ako/revisions/a0fc370bb8b8dff4/chunk_0.bin",
+      "models/characters/ako/revisions/a0fc370bb8b8dff4/chunk_1.bin",
+      "models/characters/ako/revisions/a0fc370bb8b8dff4/chunk_2.bin",
+      "models/characters/ako/revisions/a0fc370bb8b8dff4/chunk_3.bin",
+      "models/characters/ako/revisions/a0fc370bb8b8dff4/chunk_4.bin",
+      "models/characters/ako/revisions/a0fc370bb8b8dff4/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "0cb732e2490b2b7de4578e406a8f6686ae95b59e35dfb02b98d6e8edddbb0471",
+      "b6a6a2fc0941d046a264026e6149785e525c545ec71ff6012d93fb1addc8e949",
+      "303c30fed6f1f667418726152de96b735c96c6afe06af84c3881ae9d14b33719",
+      "ed8ec895dce15b0c9c8c604dedff3649a82d2f05f4c7b5f71d70f18e6cb31df2",
+      "8dc6a6d8f427a15946a8aa0ff5f2e058704a0fa6931ceae918bfd63ed0cc7726",
+      "9b0edb3c892273ee21647592948b4f1a04a7bb80629e9517cc1e24e802b20c4e"
+    ],
+    "totalSize": 115146053,
+    "sha256": "a0fc370bb8b8dff4a719109d533c3175dcac5b421067c7b5bb527f449a180295",
+    "resourceRevision": "a0fc370bb8b8dff4a719109d533c3175dcac5b421067c7b5bb527f449a180295",
+    "retrieval": "models/characters/ako/revisions/a0fc370bb8b8dff4/retrieval.bin",
+    "retrievalSha256": "75c6aa7b86559c3fe5d26368224a2c981326958e807cb2ecb660de536508764f",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
+  },
+  {
+    "id": "haruna",
+    "name": "黑馆晴奈 (Haruna)",
+    "nameEn": "Kurodate Haruna",
+    "avatarText": "晴奈",
+    "aliases": [
+      "黒舘ハルナ",
+      "Kurodate Haruna"
+    ],
+    "description": "格黑娜学园 · 社区 RVC v2 音色",
+    "descriptionEn": "Gehenna Academy · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "格黑娜"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 48000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/TokiBotan/KurodateHarunaRVCV2/blob/576faab3cbc9b08577af2bdf85a4703ffc617042/KurodateHaruna.zip",
+    "sourceRevision": "576faab3cbc9b08577af2bdf85a4703ffc617042",
+    "publisher": "TokiBotan",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "872f7fe71e18d9963abf44c6996092447b72c85d952dd24c381a09271434b679",
+    "indexSha256": "b1a52718cb9ba027995f486a2dff3f371b00e359c0523881230f6f289d1dd50a",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/haruna/revisions/9206df4806420210/chunk_0.bin",
+      "models/characters/haruna/revisions/9206df4806420210/chunk_1.bin",
+      "models/characters/haruna/revisions/9206df4806420210/chunk_2.bin",
+      "models/characters/haruna/revisions/9206df4806420210/chunk_3.bin",
+      "models/characters/haruna/revisions/9206df4806420210/chunk_4.bin",
+      "models/characters/haruna/revisions/9206df4806420210/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "a51a6b4709ff604a866ba5fc513387f7c7b6ef1a9d80c5d7d42691863142c496",
+      "dca5be1cd5f21ef1ce22eb29268883b485d3d24f0c2f01117d0fd34b4977d4bf",
+      "ec1dcfc1b06575af5726e4f56ec385dc15fbf201ef949ef9ce8023d6b8cd6821",
+      "1239c482526934bc3198e2e4cba5673c41b0d5cbe8835bd1802f5837c0c61a0b",
+      "2efc385f74d4f8ffea91ffb3a6100e83d721c5edf01281b01ae5c74c678ab4fb",
+      "0efeec45fc717be72ba6a0f297ab036ecbbe95c0ec7d5cf1b8f5ca4af3cf55ec"
+    ],
+    "totalSize": 115146053,
+    "sha256": "9206df48064202107c61865ab7f09f6c142c2173268e85aa2d0bc95194ede9df",
+    "resourceRevision": "9206df48064202107c61865ab7f09f6c142c2173268e85aa2d0bc95194ede9df",
+    "retrieval": "models/characters/haruna/revisions/9206df4806420210/retrieval.bin",
+    "retrievalSha256": "893c24cc2ca651554c9bd33b975bf0bcde5041093c63f50e12cfeb962d5cfcd9",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
+  },
+  {
+    "id": "himari",
+    "name": "明星日鞠 (Himari)",
+    "nameEn": "Akeboshi Himari",
+    "avatarText": "日鞠",
+    "aliases": [
+      "明星ヒマリ",
+      "Akeboshi Himari"
+    ],
+    "description": "千年科学学园 · 社区 RVC v2 音色",
+    "descriptionEn": "Millennium Science School · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/blob/78ebb8fe3e14088eedcdfe67b4a235a742f2bf17/AkeboshiHimari.zip",
+    "sourceRevision": "78ebb8fe3e14088eedcdfe67b4a235a742f2bf17",
+    "publisher": "ryzusaku",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "f0e2a07f2709582c5ce50b20b034dda5bcc1a3520c92b0ae68af2b27e78d14e5",
+    "indexSha256": "1b9106b99fad3553cd07ae240b5eb655e102347a9cdb9da92fc6a7744c8312d4",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/himari/revisions/96ba10b135f72ef3/chunk_0.bin",
+      "models/characters/himari/revisions/96ba10b135f72ef3/chunk_1.bin",
+      "models/characters/himari/revisions/96ba10b135f72ef3/chunk_2.bin",
+      "models/characters/himari/revisions/96ba10b135f72ef3/chunk_3.bin",
+      "models/characters/himari/revisions/96ba10b135f72ef3/chunk_4.bin",
+      "models/characters/himari/revisions/96ba10b135f72ef3/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "9f6348d0ed0b4a93fdfbed22f865a0f134253b51c2ed43b9bd5380130b22edcd",
+      "aa33c498ede61662c7d20acc92da0c44d82102a541a5b3bfa1a175fd2b94a98c",
+      "dca30c71a03269d01f326aeb369ce674d0d75745903eae787e99b39ded9c761a",
+      "59c591011f073983e2f55ef1fc8f1daaa0dd45e343947128fc68081a8291756e",
+      "092adf947ed217a1287349cb718a15e4c7ea9599e639ef538dd4818e3a6c165d",
+      "25118e58a11dfcc720570e61e9205fac52c43b826765ffaea5cc9c00813712de"
+    ],
+    "totalSize": 110427461,
+    "sha256": "96ba10b135f72ef3fa029d1b5c33cd4f4cb2310db35d98c2a462eddace4a7c95",
+    "resourceRevision": "96ba10b135f72ef3fa029d1b5c33cd4f4cb2310db35d98c2a462eddace4a7c95",
+    "retrieval": "models/characters/himari/revisions/96ba10b135f72ef3/retrieval.bin",
+    "retrievalSha256": "5687ed56833fac45d290e73ef3e60e9a20a89e8b0ed2288167bdefb9a0c7333f",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
+  },
+  {
+    "id": "iori",
+    "name": "银镜伊织 (Iori)",
+    "nameEn": "Shiromi Iori",
+    "avatarText": "伊织",
+    "aliases": [
+      "銀鏡イオリ",
+      "Shiromi Iori"
+    ],
+    "description": "格黑娜学园 · 社区 RVC v2 音色",
+    "descriptionEn": "Gehenna Academy · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "格黑娜"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/ryzusaku/rvc_v2_models/blob/78ebb8fe3e14088eedcdfe67b4a235a742f2bf17/ShiromiIori.zip",
+    "sourceRevision": "78ebb8fe3e14088eedcdfe67b4a235a742f2bf17",
+    "publisher": "ryzusaku",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "21037106266bfeb392d8fd4a319f0fc627e20b1fa7ab623929ef9648736c254f",
+    "indexSha256": "f4955df2c43ee4111534e9e970b2b814276db90eab130aa9a82eb09a074b72d3",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/iori/revisions/bd9a583d83776999/chunk_0.bin",
+      "models/characters/iori/revisions/bd9a583d83776999/chunk_1.bin",
+      "models/characters/iori/revisions/bd9a583d83776999/chunk_2.bin",
+      "models/characters/iori/revisions/bd9a583d83776999/chunk_3.bin",
+      "models/characters/iori/revisions/bd9a583d83776999/chunk_4.bin",
+      "models/characters/iori/revisions/bd9a583d83776999/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "2412315804fde185810876f1fa5c0763ec75d4ff71a132ada46ea003ab8b1820",
+      "532d49b2010fe002fb36cd17cf160d61d695fc6031f0af863529ac7fd275a957",
+      "d0e4f274700b0f6c72e3e208990ea6a92266b383d14d1621a4f74d5a34ad7d30",
+      "9386643c496f5dc7d01381700a9bd2f6d7ce0e971d04435adec3ece29463287f",
+      "01676f0998b3b4404d89b3e290b522287a53e97264828470ba4590ad673c219e",
+      "ffbb2f86bdbc640071dcb15ff13a1340c4e2ca7112dd460f5e6941586281e4ac"
+    ],
+    "totalSize": 110427461,
+    "sha256": "bd9a583d8377699964e37f659f29588f383eb10990b9dadcd32bb97045a976e0",
+    "resourceRevision": "bd9a583d8377699964e37f659f29588f383eb10990b9dadcd32bb97045a976e0",
+    "retrieval": "models/characters/iori/revisions/bd9a583d83776999/retrieval.bin",
+    "retrievalSha256": "cd63face07830462a1579eafa93770c7c1167cd8718cb6e5ee7d4081f82a8109",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
+  },
+  {
+    "id": "karin",
+    "name": "角楯花凛 (Karin)",
+    "nameEn": "Kakudate Karin",
+    "avatarText": "花凛",
+    "aliases": [
+      "角楯カリン（バニーガール）",
+      "Kakudate Karin"
+    ],
+    "description": "千年科学学园 · 社区 RVC v2 音色",
+    "descriptionEn": "Millennium Science School · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/LordDavis778/BlueArchivevoicemodels/blob/263891b78604c12149b92678354c23a2590d39f0/KakudateKarin.zip",
+    "sourceRevision": "263891b78604c12149b92678354c23a2590d39f0",
+    "publisher": "LordDavis778",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "20fe45d60851d0c7731a31e17b6bb9bccb67d5ebe62a8065a609f12398a958d3",
+    "indexSha256": "6e933bc9d9982f4c142c8b90ba28b6b97ffbbd40364c9d04717ec5a1b7082c00",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/karin/revisions/3198a890ff7595ab/chunk_0.bin",
+      "models/characters/karin/revisions/3198a890ff7595ab/chunk_1.bin",
+      "models/characters/karin/revisions/3198a890ff7595ab/chunk_2.bin",
+      "models/characters/karin/revisions/3198a890ff7595ab/chunk_3.bin",
+      "models/characters/karin/revisions/3198a890ff7595ab/chunk_4.bin",
+      "models/characters/karin/revisions/3198a890ff7595ab/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "4a8da6c1975694b58ece20e54d2896db6937ff8763ac350de3e47c9f6cb3f2cd",
+      "0a28e7d0a866e7ecd307ca7f765698e58868ffdd3abb5346ddabb4fc2ccddff0",
+      "45ef30a0ce8c03f23e2a28658b9188c193570bbdc2fda143c9e1173ea8e29dab",
+      "a8721891acbdb633c25e81d97f0e079c23dd2730232e57fef7c7def42595ed59",
+      "027b41c5209fa1e44d57c12332aa1412eeb1b4cc0fdf31eb23c7fdce988d8eb8",
+      "892deb3b3d98269c655be23fed7e888159a1b283031895e6d220870d45bb46d9"
+    ],
+    "totalSize": 110427461,
+    "sha256": "3198a890ff7595abf37cf96eb2b9a343eead0d52466674a704e623353f7165c8",
+    "resourceRevision": "3198a890ff7595abf37cf96eb2b9a343eead0d52466674a704e623353f7165c8",
+    "retrieval": "models/characters/karin/revisions/3198a890ff7595ab/retrieval.bin",
+    "retrievalSha256": "ff5ab3ef09f08066cb4e98c4a634fa7a471ed317888304382d27540598dc7f7e",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
+  },
+  {
+    "id": "miyako",
+    "name": "月雪宫子 (Miyako)",
+    "nameEn": "Tsukiyuki Miyako",
+    "avatarText": "宫子",
+    "aliases": [
+      "月雪ミヤコ",
+      "Tsukiyuki Miyako"
+    ],
+    "description": "SRT特殊学园 · 社区 RVC v2 音色",
+    "descriptionEn": "SRT Special Academy · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "SRT"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 48000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/pipatmaeng25/NoaFromBluearchive/blob/5c63487fd7ae0bf1ec89d90cd3ee9476851d1c54/Miyako.zip",
+    "sourceRevision": "5c63487fd7ae0bf1ec89d90cd3ee9476851d1c54",
+    "publisher": "pipatmaeng25",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "aad505a9709f6f1aa8b240c73556cdc4e3da66ede00f8bba71789e2868ebf937",
+    "indexSha256": "20fdfd198023456b648f8580415d0c18ac23c2913d3fd0e43eca18f7a7ee32b0",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/miyako/revisions/6972c752f24ad851/chunk_0.bin",
+      "models/characters/miyako/revisions/6972c752f24ad851/chunk_1.bin",
+      "models/characters/miyako/revisions/6972c752f24ad851/chunk_2.bin",
+      "models/characters/miyako/revisions/6972c752f24ad851/chunk_3.bin",
+      "models/characters/miyako/revisions/6972c752f24ad851/chunk_4.bin",
+      "models/characters/miyako/revisions/6972c752f24ad851/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "44fb5189813749cd156ffe8af4cc4fd999698d996271417c2f588ed3c47e9be5",
+      "29bad4d5257b0c00198edbad99c39ca6b214d18e3e4de791cf9733ec3790e863",
+      "96493299a596144442e0c2ba70c4eff63fb6f66035824a6f2528f58b37e576d7",
+      "72f940a782badabb74188ee3f43b958f37db169e54428e621f27b31c2c58edb4",
+      "17f3c0be4cec87246e1c5886109935b8c01290b6db32956a40afd6328b6f2838",
+      "48cefc2ecbb2e1a766d3fff112110ae6a536dca9a97e46c730da1ba6775fd929"
+    ],
+    "totalSize": 115146053,
+    "sha256": "6972c752f24ad851d19b2926b608f32298e7436f8da3c29c859699917cd9e85d",
+    "resourceRevision": "6972c752f24ad851d19b2926b608f32298e7436f8da3c29c859699917cd9e85d",
+    "retrieval": "models/characters/miyako/revisions/6972c752f24ad851/retrieval.bin",
+    "retrievalSha256": "b09083f66ee3b1273e61b18c956d65490f98e4787415a042cc3cbd778c3ae02b",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
+  },
+  {
+    "id": "mutsuki",
+    "name": "浅黄睦月 (Mutsuki)",
+    "nameEn": "Asagi Mutsuki",
+    "avatarText": "睦月",
+    "aliases": [
+      "浅黄ムツキ（正月）",
+      "Asagi Mutsuki"
+    ],
+    "description": "格黑娜学园 · 社区 RVC v2 音色",
+    "descriptionEn": "Gehenna Academy · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "格黑娜"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/Timur04129/Asagi-Mutsuki/blob/13fca36dcf8e10679b2dadb50fb02b7a8c516380/Asagi-Mutsuki.zip",
+    "sourceRevision": "13fca36dcf8e10679b2dadb50fb02b7a8c516380",
+    "publisher": "Timur04129",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "a8a39d07590631f2b8dd39c93bd5538e37faa1db61b3e7c1742c3e24e406eddb",
+    "indexSha256": "14e24cefcf5d4d3a88c5296f982ff167a41d72c58769fb47c4d23e3eaaf7aa00",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/mutsuki/revisions/7d2853b331abda71/chunk_0.bin",
+      "models/characters/mutsuki/revisions/7d2853b331abda71/chunk_1.bin",
+      "models/characters/mutsuki/revisions/7d2853b331abda71/chunk_2.bin",
+      "models/characters/mutsuki/revisions/7d2853b331abda71/chunk_3.bin",
+      "models/characters/mutsuki/revisions/7d2853b331abda71/chunk_4.bin",
+      "models/characters/mutsuki/revisions/7d2853b331abda71/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "a6324a952059a470c8cd78d101a6c6d57dd93f70b1bb691052a5b02cd3e1c24a",
+      "d22b943d7cf048a20111413bf7e62127331f75ad0a5f2c4b9a7cab829ebab2e9",
+      "c77bc9ab9bcb877350d42482931bde2959e435f2b1c059108fa8834901242455",
+      "ece480d6ba965343c48221f3f14cc391e617aada266f0339983dac2cabedf7bd",
+      "c070b9d01bab76077292eb4bba5ed2488f704fdce4c7942e42f8ab868773b9a7",
+      "181ad6877a7e5abea7ea469eb8b9bfb3ece9c6e35848e4d2c90737011e7f10cf"
+    ],
+    "totalSize": 110427461,
+    "sha256": "7d2853b331abda71d1d4cd3d640d07e3fff006d99a7acae26a06e951f1d1cb7e",
+    "resourceRevision": "7d2853b331abda71d1d4cd3d640d07e3fff006d99a7acae26a06e951f1d1cb7e",
+    "retrieval": "models/characters/mutsuki/revisions/7d2853b331abda71/retrieval.bin",
+    "retrievalSha256": "3ee2d255ddfc27b95512f6d90acc0cbdb9bb186dca367256fd1469d40cb0eeef",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
+  },
+  {
+    "id": "rio",
+    "name": "调月莉音 (Rio)",
+    "nameEn": "Tsukatsuki Rio",
+    "avatarText": "莉音",
+    "aliases": [
+      "調月リオ（臨戦）",
+      "Tsukatsuki Rio"
+    ],
+    "description": "千年科学学园 · 社区 RVC v2 音色",
+    "descriptionEn": "Millennium Science School · community RVC v2 voice",
+    "tags": [
+      "女声",
+      "蔚蓝档案",
+      "千年"
+    ],
+    "collectionId": "blue-archive",
+    "defaultPitch": 0,
+    "pitchNote": "默认保留原调；跨音域请试听后微调",
+    "sampleRate": 40000,
+    "noiseScale": 0.35,
+    "defaultIndexRate": 0.35,
+    "source": "https://huggingface.co/TokiBotan/TsukatsukiRio_RVCV2/blob/208cf000794d2a55b9a2ccadc50a52adfe310819/TsukatsukiRio.zip",
+    "sourceRevision": "208cf000794d2a55b9a2ccadc50a52adfe310819",
+    "publisher": "TokiBotan",
+    "license": "openrail (repository metadata; character/performer authorization not independently verified)",
+    "checkpointSha256": "b04232abb4696a2dde088e1279ae57dd67add26b67508984b36461c5a3d43e50",
+    "indexSha256": "41a9b8ddf074d1c0944eac98b5f9efdccc8fc1904ffb17d2f9327d9d80e9b540",
+    "rvcVersion": "v2",
+    "contentEncoder": {
+      "name": "hubert_base",
+      "outputLayer": 12,
+      "featureDimension": 768
+    },
+    "excitationContract": "explicit-source-v1",
+    "speakerCount": 109,
+    "f0Enabled": true,
+    "chunks": [
+      "models/characters/rio/revisions/b2219facf100a3c0/chunk_0.bin",
+      "models/characters/rio/revisions/b2219facf100a3c0/chunk_1.bin",
+      "models/characters/rio/revisions/b2219facf100a3c0/chunk_2.bin",
+      "models/characters/rio/revisions/b2219facf100a3c0/chunk_3.bin",
+      "models/characters/rio/revisions/b2219facf100a3c0/chunk_4.bin",
+      "models/characters/rio/revisions/b2219facf100a3c0/chunk_5.bin"
+    ],
+    "chunkSha256": [
+      "481eb7b006564b92d49bee824977403d55e0184b550248a350c44b79a0d73ef3",
+      "86ef9ce7dbc613d5dbbabb86530bdad2198d18090cca8714eaaa7f0d91b79623",
+      "8d364529e1e33d9cdebd03a5512faca453dc95dfab823781af729a4bdfb3ac9c",
+      "4ac0dfb733c2d6ebb09ebc2d336a32c1dd75b0ab9f5de878df6dc37544b5a63c",
+      "a8fd183c796f29e421ae823e779427d7d098fbdfca8599d1f434be15c36b7415",
+      "35bf327f50cb8946b2233245cd7bc9dfa13336d2bfd2b7c04ad60313a6ebc4f2"
+    ],
+    "totalSize": 110427461,
+    "sha256": "b2219facf100a3c0b58492addf5e11f12405f0b6271fb94711b8df84dfce7fef",
+    "resourceRevision": "b2219facf100a3c0b58492addf5e11f12405f0b6271fb94711b8df84dfce7fef",
+    "retrieval": "models/characters/rio/revisions/b2219facf100a3c0/retrieval.bin",
+    "retrievalSha256": "4dc7c67736cd0ebecebeaaad37f46b7d400d83e215f4c6228be7318d994a1769",
+    "qualityValidation": "New resource: safe structure/index, 11.444 s official end-to-end signal gate and real-feature native/ONNX parity verified; perceptual quality unverified",
+    "speechProfile": {
+      "enabled": false,
+      "reason": "No verified seed-vc speech reference packaged for this role; use RVC compatibility"
+    }
   }
 ];
 

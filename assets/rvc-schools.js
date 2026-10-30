@@ -55,6 +55,8 @@
     ["millennium", "千年科学学园", "Millennium Science School", "千年"],
     ["gehenna", "格黑娜学园", "Gehenna Academy", "格黑娜"],
     ["trinity", "三一综合学园", "Trinity General School", "三一", "圣三一"],
+    ["srt", "SRT特殊学园", "SRT Special Academy", "SRT"],
+    ["arius", "阿里乌斯分校", "Arius Branch School", "阿里乌斯"],
     ["shittim", "什亭之匣（其他）", "Shittim Chest (Other)", "什亭之匣"],
   ];
   for (const [id, name, en, tag, alias] of installedSchools) {
