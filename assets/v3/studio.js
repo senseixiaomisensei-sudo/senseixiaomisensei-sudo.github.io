@@ -226,9 +226,10 @@ export function initStudio(ctx) {
     g.clearRect(0, 0, w, h);
     const k = dpr();
     // grid
+    const idle = !S.A?.peaks && !S.B?.peaks;
     g.fillStyle = 'rgba(255,255,255,.045)';
-    for (let x = 0; x < w; x += 40 * k) g.fillRect(Math.round(x), 0, 1, h);
-    g.fillRect(0, Math.round(h / 2), w, 1);
+    for (let x = 0; x < w; x += (idle ? 24 : 40) * k) g.fillRect(Math.round(x), 0, 1, h);
+    if (!idle) g.fillRect(0, Math.round(h / 2), w, 1);
     const split = S.split * w;
     const lane = (data, x0, x1, style, glow) => {
       if (!data?.peaks) return;
@@ -249,9 +250,20 @@ export function initStudio(ctx) {
     const hasA = !!S.A?.peaks, hasB = !!S.B?.peaks;
     if (!hasA && !hasB) {
       // empty track: a timeline ruler and a hairline, like an empty lane in a DAW
-      g.fillStyle = 'rgba(255,255,255,.16)'; g.fillRect(0, Math.round(h / 2), w, Math.max(1, k));
-      g.fillStyle = 'rgba(255,255,255,.22)';
-      for (let i = 0, x = 0; x < w; i++, x += 24 * k) g.fillRect(Math.round(x), 0, Math.max(1, k), (i % 5 ? 5 : 11) * k);
+      // Logic-style: a darker ruler strip with bar numbers, an empty region lane, the playhead parked at 1
+      const rh = 22 * k, lw = Math.max(1, k);
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(0, 0, w, rh);
+      g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, rh, w, lw);
+            g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(0, Math.round((h + rh) / 2), w, lw);
+      g.font = `500 ${10 * k}px ui-monospace, Menlo, monospace`; g.textBaseline = 'middle';
+      for (let i = 0, x = 0; x < w; i++, x += 24 * k) {
+        const bar = i % 5 === 0;
+        g.fillStyle = bar ? 'rgba(255,255,255,.34)' : 'rgba(255,255,255,.16)';
+        g.fillRect(Math.round(x), bar ? 0 : rh - 6 * k, lw, bar ? rh : 6 * k);
+        if (bar) { g.fillStyle = 'rgba(255,255,255,.5)'; g.fillText(String(i / 5 + 1), x + 5 * k, rh / 2 - k); }
+      }
+      g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(Math.round(12 * k), rh, Math.max(1, 1.5 * k), h - rh);
+      g.beginPath(); g.moveTo(12 * k - 5 * k, rh - 7 * k); g.lineTo(12 * k + 6 * k, rh - 7 * k); g.lineTo(12 * k + .75 * k, rh); g.closePath(); g.fill();
     }
     if (hasA && hasB) { lane(S.A, 0, split, '#8e8e93'); lane(S.B, split, w, gradB); }
     else if (hasA) lane(S.A, 0, w, '#8e8e93');
