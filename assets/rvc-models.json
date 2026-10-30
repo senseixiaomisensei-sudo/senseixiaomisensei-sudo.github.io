@@ -3,6 +3,27 @@
   "updatedAt": "2026-09-27",
   "_readme": "新增模型通过安全权重加载、结构、索引和真实音频信号检查。信号检查不代表主观音色质量或角色授权。真纪 V1 使用独立的本地 HuBERT V1 特征模型。",
   "baseModels": {
+    "songSeparator": {
+      "name": "Kim_Vocal_2.onnx",
+      "manifestKey": "song-separator-kim-vocal-2.onnx",
+      "architecture": "UVR MDX-Net (n_fft 7680, hop 1024, dim_f 3072, dim_t 256, compensate 1.009)",
+      "source": "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/Kim_Vocal_2.onnx",
+      "license": "MIT",
+      "purpose": "Offline song-cover fallback: on-device vocal/accompaniment separation when the cloud engine is unreachable",
+      "sha256": "ce74ef3b6a6024ce44211a07be9cf8bc6d87728cc852a68ab34eb8e58cde9c8b",
+      "chunks": [
+        "models/base/separator/chunk_0.bin",
+        "models/base/separator/chunk_1.bin",
+        "models/base/separator/chunk_2.bin",
+        "models/base/separator/chunk_3.bin"
+      ],
+      "chunkSha256": [
+        "be40109cfdc45fc947a2364d5be10f960ea3289be59ba87ccbd720951814d32d",
+        "5db8cec0f5b6cb1ccc1c1589febb50ec45dd325098e17cb248b9c74763bed734",
+        "8b6f9b694e1e22673e5fb462455bd0b5e81f1c396afaf64c1bbfc665d1add19c",
+        "bb5933fe5a82f4ad4c8db72be2c5e7532b61cb315a8760f0d2485fd57129e9ab"
+      ]
+    },
     "hubertV1": {
       "name": "hubert-v1.onnx",
       "manifestKey": "hubert-v1.onnx",
