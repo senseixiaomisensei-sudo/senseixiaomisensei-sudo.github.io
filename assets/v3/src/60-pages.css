@@ -31,3 +31,12 @@ $G main .tabular-nums { font-variant-numeric: tabular-nums; }
 /* classic (paper) mode keeps v3 pages legible */
 html.v3[data-ui="classic"] body:is([data-page="home"], [data-page="404"]) { background: #070a14; color: #eef2f8; }
 html.v3[data-ui="classic"] body:is([data-page="home"], [data-page="404"]) main { --v3-ink: #eef2f8; }
+
+/* cards rendered inside tool pages (skills library, passport report…) */
+$G main article:not(.v3-card) {
+  background: linear-gradient(160deg, rgb(255 255 255 / .09), rgb(255 255 255 / .025)), rgb(10 14 26 / .35) !important;
+  border: 0 !important; border-radius: 22px !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  box-shadow: 0 1px 0 rgb(255 255 255 / .14) inset, 0 0 0 1px rgb(255 255 255 / .07) inset, 0 16px 36px -20px rgb(0 0 0 / .7) !important;
+  color: var(--v3-ink);
+}
+$G main article:not(.v3-card) :is(h2, h3, h4) { color: var(--v3-ink) !important; }
