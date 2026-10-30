@@ -94,7 +94,11 @@ function initEditor() {
     sum.textContent = todo ? L.todo(todo) : L.ready;
     fix.disabled = !(r.dups || r.zw || r.sp || r.blank);
   }
-  const stopDemo = () => { if (!typing) return; clearTimeout(typing.t); typing = null; dev.classList.add('is-live'); render(); };
+  const scan = dev.querySelector('.h-scan');
+  // glass ruler follows the caret line (transform only; one layout read per tick of a contained box)
+  const follow = () => { const c = scan && mirror.querySelector('.m-caret'); if (c) scan.style.transform = `translate3d(0,${c.offsetTop - 7}px,0)`; };
+  const land = () => { dev.classList.remove('is-scanning'); dev.classList.add('is-landed'); };
+  const stopDemo = () => { if (!typing) return; clearTimeout(typing.t); typing = null; land(); dev.classList.add('is-live'); render(); };
   ta.addEventListener('input', () => { userEdited = true; render(); });
   ta.addEventListener('focus', () => stopDemo());
   ta.addEventListener('pointerdown', () => stopDemo());
@@ -118,11 +122,11 @@ function initEditor() {
       if (!typing) return;
       const c = ta.value[typing.i] || '';
       typing.i = Math.min(len, typing.i + (c === '\n' ? 1 : 3));
-      render(typing.i);
-      if (typing.i >= len) { const touched = typing.touched; typing = null; dev.classList.add('is-live'); render(); if (!touched && !userEdited) showcase(); return; }
+      render(typing.i); follow();
+      if (typing.i >= len) { const touched = typing.touched; typing = null; land(); dev.classList.add('is-live'); render(); if (!touched && !userEdited) showcase(); return; }
       typing.t = setTimeout(tick, ta.value[typing.i - 1] === '\n' ? 140 : 22);
     };
-    render(0);
+    render(0); follow(); dev.classList.add('is-scanning');
     typing.t = setTimeout(tick, 260);
   };
   // one unattended pass of the platform switch, so the liquid control explains itself
