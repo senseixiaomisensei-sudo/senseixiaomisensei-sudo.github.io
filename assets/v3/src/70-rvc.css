@@ -151,4 +151,10 @@ html.v3 .v3-ring strong { font: 600 36px/1 var(--v3-font); letter-spacing: -.03e
   .v3-transport { left: 8px; right: 8px; translate: none; justify-content: center; }
   html.v3 .v3-transport .v3-chip { padding: 0 9px; font-size: 12px; }
 }
-html[data-ui="classic"] .v3-studio { display: none; }
+html[data-ui="classic"] .v3-studio, html:not(.v3) .v3-studio { display: none; }
+/* the shell is static HTML: keep its box stable while JS fills names and numbers (CLS) */
+.v3-studio-head > div { min-width: 0; }
+html.v3 .v3-studio-title { flex-wrap: nowrap; min-width: 0; }
+.v3-studio-title > span { flex: none; }
+.v3-studio-voice { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v3-ring .val { stroke-dasharray: 326.73; stroke-dashoffset: 326.73; }

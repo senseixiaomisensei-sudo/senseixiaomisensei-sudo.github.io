@@ -52,6 +52,37 @@
       </div>
     </details>
 
+    <!-- v3 studio monitor shell: static so the page does not shift when studio.js wakes it (CLS) -->
+    <section id="v3-studio" class="v3-studio" aria-label="录音棚监视器">
+      <div class="v3-studio-head">
+        <div><p class="v3-kicker" data-t="kicker">STUDIO MONITOR</p><h2 class="v3-studio-title"><span data-t="title">录音棚监视器</span><em class="v3-studio-voice"></em></h2></div>
+        <span class="v3-studio-state" data-state="idle"><i></i><b data-t="idle">待命</b></span>
+      </div>
+      <div class="v3-studio-body">
+        <div class="v3-scope">
+          <div class="v3-scope-labels"><span class="la" data-t="a">原声 A</span><span class="v3-scope-time">--:-- / --:--</span><span class="lb" data-t="b">转换 B</span></div>
+          <div class="v3-scope-wave">
+            <canvas aria-hidden="true"></canvas>
+            <div class="v3-ab" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span class="v3-ab-line"></span><span class="v3-ab-knob"><i class="fa-solid fa-left-right" aria-hidden="true"></i></span></div>
+            <p class="v3-scope-empty">载入音频后显示波形</p>
+            <div class="v3-transport">
+              <button type="button" class="v3-chip" data-play="a"><i class="fa-solid fa-play" aria-hidden="true"></i><span data-t="playA">播放原声</span></button>
+              <button type="button" class="v3-chip" data-play="b" disabled><i class="fa-solid fa-play" aria-hidden="true"></i><span data-t="playB">播放结果</span></button>
+              <button type="button" class="v3-chip" data-play="swap" disabled><i class="fa-solid fa-right-left" aria-hidden="true"></i><span data-t="swap">A/B 切换</span></button>
+            </div>
+          </div>
+          <canvas class="v3-scope-spec" aria-hidden="true"></canvas>
+        </div>
+        <div class="v3-studio-side">
+          <div class="v3-ring" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="trk" cx="60" cy="60" r="52"/><circle class="val" cx="60" cy="60" r="52"/></svg>
+            <div><strong>0<small>%</small></strong><span data-t="progress">处理进度</span></div>
+          </div>
+          <dl class="v3-readouts"><div><dt data-t="duration">时长</dt><dd class="r-dur">--:--</dd></div><div><dt data-t="rate">峰值电平</dt><dd class="r-rate">--</dd></div></dl>
+        </div>
+      </div>
+    </section>
+
     <div class="rvc-workspace mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.74fr)]">
       <section class="rvc-workflow rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-7" aria-labelledby="rvc-workflow-heading">
         <div class="studio-workflow-title flex flex-wrap items-start justify-between gap-4 border-b border-line pb-5">

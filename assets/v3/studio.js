@@ -27,11 +27,15 @@ const appleMobile = /iPhone|iPad|iPod/iu.test(navigator.userAgent) || (navigator
 export function initStudio(ctx) {
   const main = document.querySelector('main');
   const workflow = document.querySelector('[aria-labelledby="rvc-workflow-heading"]') || main?.querySelector('main > div, main > section');
-  if (!main || document.getElementById('v3-studio')) return;
+  if (!main) return;
+  // rvc.html ships the shell statically (reserves its height: no layout shift); fall back to building it.
+  let el = document.getElementById('v3-studio');
+  if (el?.dataset.live) return;
   const lang = () => (document.documentElement.lang.startsWith('en') ? 'en' : 'zh');
   const t = k => T[lang()][k];
 
-  const el = document.createElement('section');
+  if (!el) {
+  el = document.createElement('section');
   el.id = 'v3-studio'; el.className = 'v3-studio';
   el.innerHTML = `
     <div class="v3-studio-head">
@@ -61,8 +65,10 @@ export function initStudio(ctx) {
         <dl class="v3-readouts"><div><dt data-t="duration"></dt><dd class="r-dur">--:--</dd></div><div><dt data-t="rate"></dt><dd class="r-rate">--</dd></div></dl>
       </div>
     </div>`;
+  }
+  el.dataset.live = '1';
   let anchor = workflow; while (anchor && anchor.parentElement !== main) anchor = anchor.parentElement;
-  main.insertBefore(el, anchor || null);
+  if (el.parentElement !== main || el.nextElementSibling !== (anchor || null)) main.insertBefore(el, anchor || null);
 
   const $ = s => el.querySelector(s);
   const waveBox = $('.v3-scope-wave'), waveCv = waveBox.querySelector('canvas'), specCv = $('.v3-scope-spec');
