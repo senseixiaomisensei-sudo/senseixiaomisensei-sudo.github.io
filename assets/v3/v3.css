@@ -748,7 +748,7 @@ background: url(img/amb-light.webp) 62% 0 / cover no-repeat;
 @media (min-width: 901px) { html.v3s.v3s .h-hero-grid { grid-template-columns: minmax(0, 1.04fr) minmax(0, 1.1fr); } }
 html.v3s.v3s .h-hero .v3-display { font-size: clamp(54px, 7.3vw, 112px); line-height: .98; letter-spacing: -.045em; font-weight: 700; }
 html.v3[lang^="zh"] .h-hero .v3-display { letter-spacing: -.035em; }
-html.v3[lang^="en"] .h-hero .v3-display { font-size: clamp(46px, 5.7vw, 86px); line-height: 1; }
+html.v3[lang^="en"] .h-hero .v3-display { font-size: clamp(44px, 4.5vw, 72px); line-height: 1; text-wrap: balance; }
 html.v3s.v3s .h-hero .v3-display > span:first-child { color: var(--v3-ink-3); font-weight: 600; }
 html.v3s.v3s .h-hero .v3-lead { font-size: clamp(17px, 1.45vw, 21px); color: var(--v3-ink-2); }
 html.v3s.v3s .h-hero .v3-eyebrow { display: inline-flex; align-items: center; gap: 10px; }
