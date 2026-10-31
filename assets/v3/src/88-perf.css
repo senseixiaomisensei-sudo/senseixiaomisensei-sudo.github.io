@@ -123,3 +123,17 @@ $G .h-screen-tabs em, $G .h-s-title mark, $G .h-s-check i, $G .h-screen-tabs::af
   $G body:not([data-page="home"]) main :is(section, aside, article).bg-surface, $G body:not([data-page="home"]) main :is(section, aside, article).bg-white {
     box-shadow: 0 0 0 .5px rgb(255 255 255 / .1), 0 6px 12px -6px #000 !important; }
 }
+
+/* ---------- load budget (phones): below-the-fold machinery is skipped until it nears the screen ----------
+   content-visibility keeps the storyboard pin, the tool index and the studio rack out of the first
+   style + layout pass (that pass ran inside the DOMContentLoaded task and was the load-time long task).
+   Sizes: the pin has an explicit 100svh height (no size change when it renders); the index and the
+   studio carry their measured phone heights, and `auto` keeps the real size once laid out. */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  $G .h-flow-pin { content-visibility: auto; contain-intrinsic-size: auto 100svh; }
+}
+@media (max-width: 600px) {
+  $G .h-tools { content-visibility: auto; contain-intrinsic-size: auto 930px; }
+  $G .h-studio { content-visibility: auto; contain-intrinsic-size: auto 836px; }
+}
+@media (prefers-reduced-motion: reduce) { $G .h-flow-pin { content-visibility: visible; } }

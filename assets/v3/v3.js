@@ -42,14 +42,24 @@ function initReveal() {
   // phones: one-shot IO reveals instead of view timelines (those tick style on every scrolled frame)
   if (CSS.supports?.('animation-timeline: view()') && fine) return;
   if (!('IntersectionObserver' in window)) return;
-  const below = [...els].filter(e => e.getBoundingClientRect().top > innerHeight);
-  if (!below.length) return;
-  root.classList.add('v3-io');
-  els.forEach(e => { if (!below.includes(e)) e.classList.add('is-in'); });
+  // No layout reads at boot (a getBoundingClientRect here forced the whole page, including the
+  // content-visibility sections below the fold, through style + layout in the DCL task). The
+  // observer's first report says where each element starts: on screen -> shown at once; below
+  // the fold, or not laid out yet (skipped section, empty rect) -> armed for the one-shot reveal.
+  const seen = new WeakSet(); let armed = false;
   const io = new IntersectionObserver(entries => {
-    for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+    for (const e of entries) {
+      const el = e.target;
+      if (!seen.has(el)) {
+        seen.add(el);
+        const r = e.boundingClientRect;
+        if ((r.width || r.height) && r.top <= innerHeight) { el.classList.add('is-in'); io.unobserve(el); continue; }
+      }
+      if (e.isIntersecting) { el.classList.add('is-in'); io.unobserve(el); }
+    }
+    if (!armed) { armed = true; root.classList.add('v3-io'); }
   }, { rootMargin: '0px 0px -8% 0px' });
-  below.forEach(e => io.observe(e));
+  els.forEach(e => io.observe(e));
 }
 
 // ---------------------------------------------------------------- SVG lens (CSS tier refraction)

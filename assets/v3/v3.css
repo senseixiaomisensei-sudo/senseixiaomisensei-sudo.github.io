@@ -1301,6 +1301,14 @@ html.v3s.v3s .h-doc-pass { box-shadow: 0 0 0 .5px rgb(255 255 255 / .12), inset 
 html.v3s.v3s body:not([data-page="home"]) main :is(section, aside, article).bg-surface, html.v3s.v3s body:not([data-page="home"]) main :is(section, aside, article).bg-white {
 box-shadow: 0 0 0 .5px rgb(255 255 255 / .1), 0 6px 12px -6px #000 !important; }
 }
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+html.v3s.v3s .h-flow-pin { content-visibility: auto; contain-intrinsic-size: auto 100svh; }
+}
+@media (max-width: 600px) {
+html.v3s.v3s .h-tools { content-visibility: auto; contain-intrinsic-size: auto 930px; }
+html.v3s.v3s .h-studio { content-visibility: auto; contain-intrinsic-size: auto 836px; }
+}
+@media (prefers-reduced-motion: reduce) { html.v3s.v3s .h-flow-pin { content-visibility: visible; } }
 @view-transition { navigation: auto; }
 ::view-transition-old(root) { animation: v3-vt-out .2s cubic-bezier(.4, 0, 1, 1) both; }
 ::view-transition-new(root) { animation: v3-vt-in .5s cubic-bezier(.16, 1, .3, 1) both; }
