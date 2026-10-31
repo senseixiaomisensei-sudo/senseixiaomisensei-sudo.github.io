@@ -39,7 +39,8 @@ function initNav() {
 function initReveal() {
   const els = document.querySelectorAll('[data-reveal]');
   if (!els.length || reduced.matches) return;
-  if (CSS.supports?.('animation-timeline: view()')) return;
+  // phones: one-shot IO reveals instead of view timelines (those tick style on every scrolled frame)
+  if (CSS.supports?.('animation-timeline: view()') && fine) return;
   if (!('IntersectionObserver' in window)) return;
   const below = [...els].filter(e => e.getBoundingClientRect().top > innerHeight);
   if (!below.length) return;
@@ -153,5 +154,8 @@ function boot() {
   if (page === 'home') import('./home.js?v=20261031-v3c').then(m => m.initHome({ fine, gfx, idle }));
   if (page === 'rvc') import('./studio.js?v=20261031-v3c').then(m => m.initStudio({ fine, gfx, idle }));
   root.classList.add('v3-ready');
+  // window light is decoration: fetched and painted only after load + idle, never before first paint
+  const lit = () => idle(() => root.classList.add('v3-lit'), 2000);
+  if (document.readyState === 'complete') lit(); else addEventListener('load', lit, { once: true });
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

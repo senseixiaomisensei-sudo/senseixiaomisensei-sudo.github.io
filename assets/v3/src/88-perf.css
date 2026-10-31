@@ -1,0 +1,75 @@
+/* ==========================================================================
+   Perf budget for the rich pass (docs/frontend-v3-perf.md):
+   - the window light is fetched/painted only after load + idle (html.v3-lit, set by v3.js),
+     and fades in by opacity; no mask on phones (the fade is a gradient layer instead);
+   - at most two blurred shadow layers per surface, smaller radii on phones;
+   - phones / coarse pointers drop the paper grain tile, the masked bezel rim and the
+     brushed-metal hairlines (each forces a full-area raster on every new tile);
+   - no colour/box-shadow transitions in the scroll-driven storyboard (main-thread work).
+   ========================================================================== */
+html.v3 {
+  --drop-deep: 0 2px 6px -1px rgb(60 40 20 / .1), 0 40px 70px -32px rgb(60 40 20 / .32);
+  --card-drop: 0 0 0 .5px rgb(0 0 0 / .07), 0 14px 28px -18px rgb(60 40 20 / .22);
+  --card-lift: 0 0 0 .5px rgb(0 0 0 / .07), 0 30px 50px -24px rgb(60 40 20 / .32);
+}
+@media (prefers-color-scheme: dark) {
+  html.v3 { --drop-deep: 0 2px 4px rgb(0 0 0 / .5), 0 50px 90px -34px rgb(0 0 0 / .95); }
+}
+
+/* light: deferred, faded in */
+$G .h-amb, $G body:not([data-page="home"]):not([data-page="404"]) main::before, .v3-404::before { opacity: 0; transition: opacity 1.2s var(--v3-ease); }
+html.v3:not(.v3-lit) .h-amb, html.v3:not(.v3-lit) body main::before, html.v3:not(.v3-lit) .v3-404::before { background-image: none !important; }
+html.v3.v3-lit .h-amb, html.v3.v3-lit body:not([data-page="home"]):not([data-page="404"]) main::before, html.v3.v3-lit .v3-404::before { opacity: 1; }
+
+/* storyboard: colour changes snap (they ride on opacity/transform that do animate) */
+$G .h-screen-tabs em, $G .h-s-title mark, $G .h-s-check i, $G .h-screen-tabs::after { transition-property: transform, opacity; }
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  html.v3 {
+    --drop-deep: 0 1px 3px rgb(60 40 20 / .1), 0 20px 34px -18px rgb(60 40 20 / .3);
+    --card-drop: 0 0 0 .5px rgb(0 0 0 / .08), 0 8px 18px -12px rgb(60 40 20 / .2);
+  }
+  $G body { background: var(--v3-bg) !important; }
+  /* the rack transport sits over a static dark well: a solid face reads the same and skips the backdrop pass */
+  $G .h-rack-transport.v3-glass { --g-tint: #2c2c30; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  $G .h-amb { -webkit-mask-image: none; mask-image: none; bottom: 0;
+    background: linear-gradient(rgb(var(--v3-bg-rgb) / 0) 50%, var(--v3-bg)), url(img/amb-light.webp) 62% 0 / cover no-repeat; }
+  $G body:not([data-page="home"]):not([data-page="404"]) main::before, .v3-404::before { -webkit-mask-image: none; mask-image: none;
+    background: linear-gradient(rgb(var(--v3-bg-rgb) / 0) 35%, var(--v3-bg)), url(img/amb-light.webp) 70% 0 / cover no-repeat; }
+  $G .h-obj::after { display: none; }
+  $G .h-rack { background: linear-gradient(180deg, #2a2a2f 0%, #18181b 9%, #101012 100%); }
+  html.v3 #v3-studio { background:
+    radial-gradient(circle at 18px 18px, #5c5c63 0 2.5px, #1d1d21 3px 5px, transparent 5.5px),
+    radial-gradient(circle at calc(100% - 18px) 18px, #5c5c63 0 2.5px, #1d1d21 3px 5px, transparent 5.5px),
+    linear-gradient(180deg, #2a2a2f 0%, #18181b 8%, #0f0f12 100%) !important; }
+  $G body:not([data-page="home"]) main :is(section, aside, article).bg-surface, $G body:not([data-page="home"]) main :is(section, aside, article).bg-white {
+    box-shadow: 0 0 0 .5px rgb(0 0 0 / .07), 0 12px 26px -18px rgb(60 40 20 / .24) !important; }
+}
+@media (max-width: 900px) and (prefers-color-scheme: dark), (hover: none) and (pointer: coarse) and (prefers-color-scheme: dark) {
+  html.v3 { --drop-deep: 0 1px 3px rgb(0 0 0 / .6), 0 24px 40px -20px rgb(0 0 0 / .9); --card-drop: 0 0 0 .5px rgb(255 255 255 / .09), 0 14px 28px -20px rgb(0 0 0 / .9); }
+  $G .h-amb { background: linear-gradient(rgb(var(--v3-bg-rgb) / 0) 50%, var(--v3-bg)), url(img/amb-dark.webp) 62% 0 / cover no-repeat; }
+  $G body:not([data-page="home"]):not([data-page="404"]) main::before, .v3-404::before { background: linear-gradient(rgb(var(--v3-bg-rgb) / 0) 35%, var(--v3-bg)), url(img/amb-dark.webp) 70% 0 / cover no-repeat; }
+  $G body:not([data-page="home"]) main :is(section, aside, article).bg-surface, $G body:not([data-page="home"]) main :is(section, aside, article).bg-white {
+    box-shadow: 0 0 0 .5px rgb(255 255 255 / .1), 0 16px 30px -20px #000 !important; }
+}
+@media (prefers-reduced-motion: reduce) { $G .h-amb, $G body main::before, .v3-404::before { transition: none; } }
+/* the reading ruler moves every typing tick: on phones its glass is a tint, not a backdrop pass */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  $G .h-scan { -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+/* phones: no view timelines (each one recalcs style on every scrolled frame); reveals are
+   one-shot (v3.js adds html.v3-io), the flow rail steps with data-step */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  $G [data-reveal] { animation: none; }
+  $G .h-rail > i { animation: none; transition: transform .5s var(--v3-out); }
+}
+/* low tier on phones (data-gfx="css": <4 cores or <4 GB, set by the boot script): glass becomes a
+   dense tint with no backdrop pass (header, editor bar, footer, toast), the reading ruler steps aside */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  html.v3[data-gfx="css"] { --g-blur: none; --g-tint: rgb(var(--v3-paper-rgb) / .94); }
+  html.v3[data-gfx="css"] #site-footer > footer { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  html.v3[data-gfx="css"] .h-scan { display: none; }
+}
+@media (max-width: 900px) and (prefers-color-scheme: dark), (hover: none) and (pointer: coarse) and (prefers-color-scheme: dark) {
+  html.v3[data-gfx="css"] { --g-tint: rgb(24 24 27 / .94); }
+}

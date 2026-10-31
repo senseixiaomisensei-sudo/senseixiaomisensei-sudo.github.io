@@ -62,6 +62,7 @@ export function tidy(text) {
 }
 
 function initEditor() {
+  const d0 = document.documentElement;
   const dev = document.getElementById('h-device'); if (!dev) return;
   const ta = dev.querySelector('.h-input'), mirror = dev.querySelector('.h-mirror'), scroller = dev.querySelector('.h-scroll');
   const meterN = dev.querySelector('.h-meter-n'), meterMax = dev.querySelector('.h-meter-max'), meter = dev.querySelector('.h-meter');
@@ -96,7 +97,9 @@ function initEditor() {
   }
   const scan = dev.querySelector('.h-scan');
   // glass ruler follows the caret line (transform only; one layout read per tick of a contained box)
-  const follow = () => { const c = scan && mirror.querySelector('.m-caret'); if (c) scan.style.transform = `translate3d(0,${c.offsetTop - 7}px,0)`; };
+  // low tier on phones: no ruler (hidden by CSS), so no caret read; the pass types in bigger steps
+  let useScan = true; const lowPhone = d0.dataset.gfx !== 'webgl' && matchMedia('(hover: none), (max-width: 900px)').matches;
+  const follow = () => { const c = useScan && scan && mirror.querySelector('.m-caret'); if (c) scan.style.transform = `translate3d(0,${c.offsetTop - 7}px,0)`; };
   const land = () => { dev.classList.remove('is-scanning'); dev.classList.add('is-landed'); };
   const stopDemo = () => { if (!typing) return; clearTimeout(typing.t); typing = null; land(); dev.classList.add('is-live'); render(); };
   ta.addEventListener('input', () => { userEdited = true; render(); });
@@ -121,11 +124,12 @@ function initEditor() {
     const tick = () => {
       if (!typing) return;
       const c = ta.value[typing.i] || '';
-      typing.i = Math.min(len, typing.i + (c === '\n' ? 1 : 3));
+      typing.i = Math.min(len, typing.i + (c === '\n' ? 1 : lowPhone ? 6 : 3));
       render(typing.i); follow();
       if (typing.i >= len) { const touched = typing.touched; typing = null; land(); dev.classList.add('is-live'); render(); if (!touched && !userEdited) showcase(); return; }
       typing.t = setTimeout(tick, ta.value[typing.i - 1] === '\n' ? 140 : 22);
     };
+    useScan = !!scan && getComputedStyle(scan).display !== 'none';
     render(0); follow(); dev.classList.add('is-scanning');
     typing.t = setTimeout(tick, 260);
   };
@@ -141,7 +145,11 @@ function initEditor() {
   if (lang() === 'en' && ta.value.startsWith('秋天')) ta.value = DEMO.en;
   render();
   // start only once the editor is on screen and the main thread is idle
-  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); (window.requestIdleCallback || setTimeout)(demo, { timeout: 900 }); } }, { threshold: .35 });
+  let started = false;
+  const io = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) { if (!started) { started = true; (window.requestIdleCallback || setTimeout)(demo, { timeout: 900 }); } }
+    else if (started) { io.disconnect(); stopDemo(); } // scrolled away mid-pass: land at once, no typing while the page moves
+  }, { threshold: .35 });
   io.observe(dev);
   document.addEventListener('postprep:languagechange', () => setTimeout(() => {
     if (!userEdited) { stopDemo(); ta.value = DEMO[lang()]; }
