@@ -1203,6 +1203,8 @@ background: repeating-conic-gradient(rgb(255 255 255 / .22) 0 .6deg, transparent
 -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 6px), #000 calc(100% - 5px)); mask: radial-gradient(closest-side, transparent calc(100% - 6px), #000 calc(100% - 5px)); }
 .v3-readouts dd { color: #ffd9a8 !important; }
 .v3-studio-head .v3-kicker { color: #ffd9a8; opacity: .8; }
+@media (min-width: 768px) { html.v3 #skills-library:empty { min-height: 320px; } }
+@media (min-width: 768px) and (max-width: 1100px) { html.v3 #skills-library:empty { min-height: 372px; } }
 html.v3 {
 --drop-deep: 0 2px 6px -1px rgb(60 40 20 / .1), 0 40px 70px -32px rgb(60 40 20 / .32);
 --card-drop: 0 0 0 .5px rgb(0 0 0 / .07), 0 14px 28px -18px rgb(60 40 20 / .22);
@@ -1257,6 +1259,47 @@ html.v3[data-gfx="css"] .h-scan { display: none; }
 }
 @media (max-width: 900px) and (prefers-color-scheme: dark), (hover: none) and (pointer: coarse) and (prefers-color-scheme: dark) {
 html.v3[data-gfx="css"] { --g-tint: rgb(24 24 27 / .94); }
+}
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+html.v3 {
+--drop-deep: 0 1px 2px rgb(60 40 20 / .1), 0 8px 12px -6px rgb(60 40 20 / .24);
+--card-drop: 0 0 0 .5px rgb(0 0 0 / .08), 0 4px 10px -6px rgb(60 40 20 / .2);
+--card-lift: var(--card-drop);
+--v3-shadow: 0 0 0 .5px rgb(0 0 0 / .08), 0 4px 10px -6px rgb(0 0 0 / .16);
+--g-drop: 0 0 0 .5px rgb(0 0 0 / .1), 0 4px 12px -6px rgb(0 0 0 / .22);
+}
+html.v3s.v3s a.h-tool::before, html.v3s.v3s a.h-tool::after { display: none; }
+html.v3s.v3s .h-tool-ic { background: var(--m); box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), 0 0 0 .5px color-mix(in srgb, var(--m) 70%, #000); }
+html.v3s.v3s a.h-tool.c-rvc { background: #1a1a1d; box-shadow: inset 0 1px 0 rgb(255 255 255 / .12), 0 0 0 .5px rgb(0 0 0 / .5), 0 6px 12px -6px rgb(0 0 0 / .5); }
+html.v3s.v3s .h-doc-pass { box-shadow: 0 0 0 .5px rgb(0 0 0 / .1), 0 8px 12px -6px rgb(0 0 0 / .22); }
+html.v3s.v3s .h-rack { background: #141417; }
+html.v3s.v3s .h-rack-wave { background: #0d0d0f; box-shadow: inset 0 0 0 .5px rgb(0 0 0 / .9), 0 .5px 0 rgb(255 255 255 / .08); }
+html.v3s.v3s .h-rack-side { background: #18181b; }
+html.v3s.v3s .h-screw { background: #4a4a51; }
+html.v3s.v3s .h-knob::before { background: #303036; box-shadow: inset 0 1px 0 rgb(255 255 255 / .18), 0 0 0 .5px #000, 0 0 0 4px #141417, 0 0 0 4.5px rgb(255 255 255 / .06); }
+html.v3 #v3-studio { background: #141417 !important; }
+html.v3 .v3-studio-side, html.v3 .v3-scope-wave { background-image: none !important; }
+html.v3s.v3s :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"]):not([role="tab"]):not([aria-pressed="true"]), html.v3s.v3s .v3-btn-primary {
+box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), 0 0 0 .5px color-mix(in srgb, var(--v3-accent) 70%, #000), 0 4px 10px -4px color-mix(in srgb, var(--v3-accent) 60%, transparent) !important; }
+html.v3s.v3s body[data-page] main > header:first-child::before { box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), 0 0 0 .5px color-mix(in srgb, var(--m) 70%, #000), 0 4px 10px -4px color-mix(in srgb, var(--m) 70%, transparent); }
+html.v3s.v3s .h-rack-transport, html.v3 .v3-transport { --g-drop: 0 6px 12px -6px rgb(0 0 0 / .7); }
+html.v3 .v3-transport { box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), inset 0 0 0 .5px rgb(255 255 255 / .14), 0 6px 12px -6px rgb(0 0 0 / .7) !important; }
+html.v3s.v3s .h-rack-transport { box-shadow: var(--g-edge), 0 6px 12px -6px rgb(0 0 0 / .7); }
+html.v3 .v3-ab-knob { box-shadow: 0 3px 8px rgb(0 0 0 / .5); }
+html.v3s.v3s .h-pass-stamp > i { box-shadow: inset 0 1px 0 rgb(255 255 255 / .35), 0 4px 10px -4px color-mix(in srgb, var(--s3) 70%, transparent); }
+html.v3s.v3s body:not([data-page="home"]) main :is(section, aside, article).bg-surface, html.v3s.v3s body:not([data-page="home"]) main :is(section, aside, article).bg-white {
+box-shadow: 0 0 0 .5px rgb(0 0 0 / .07), 0 6px 12px -8px rgb(60 40 20 / .22) !important; }
+}
+@media (max-width: 900px) and (prefers-color-scheme: dark), (hover: none) and (pointer: coarse) and (prefers-color-scheme: dark) {
+html.v3 {
+--drop-deep: 0 1px 3px rgb(0 0 0 / .6), 0 8px 12px -6px rgb(0 0 0 / .8);
+--card-drop: 0 0 0 .5px rgb(255 255 255 / .09), 0 6px 12px -6px rgb(0 0 0 / .8);
+--v3-shadow: 0 0 0 .5px rgb(255 255 255 / .09), 0 6px 12px -6px rgb(0 0 0 / .7);
+--g-drop: 0 0 0 .5px rgb(255 255 255 / .1), 0 4px 12px -6px rgb(0 0 0 / .7);
+}
+html.v3s.v3s .h-doc-pass { box-shadow: 0 0 0 .5px rgb(255 255 255 / .12), inset 0 .5px 0 rgb(255 255 255 / .12), 0 8px 12px -6px #000; }
+html.v3s.v3s body:not([data-page="home"]) main :is(section, aside, article).bg-surface, html.v3s.v3s body:not([data-page="home"]) main :is(section, aside, article).bg-white {
+box-shadow: 0 0 0 .5px rgb(255 255 255 / .1), 0 6px 12px -6px #000 !important; }
 }
 @view-transition { navigation: auto; }
 ::view-transition-old(root) { animation: v3-vt-out .2s cubic-bezier(.4, 0, 1, 1) both; }
