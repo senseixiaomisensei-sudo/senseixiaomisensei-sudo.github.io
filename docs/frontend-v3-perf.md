@@ -26,6 +26,30 @@
 - `prefers-reduced-motion`：标尺不渲染，文案直接显示终态；`prefers-reduced-transparency` / `gfx=lite`：标尺与播放条去掉 backdrop-filter。
 - 变声器空状态的标尺刻度/播放头只在 canvas 现有的 `drawWave()` 内绘制，不增加帧循环。
 
+## 2026-10-31 收尾：手机快速甩动预算 + 合并音质分支
+
+改动（只在 `max-width: 900px` 或 `hover: none and pointer: coarse` 下生效，桌面不变）：
+- 所有模糊阴影 blur ≤ 12px（`--drop-deep` / `--card-drop` / `--card-lift` / `--v3-shadow` / `--g-drop` 重定义，另覆盖主按钮、页头图标块、播放条、A/B 旋钮、通过章）。`v3-qa/blurscan.mjs` 扫 11 个 v3 页面 × 浅/深色：blur > 12px 的表面 0 个。
+- 工具卡：卡面纯色、图标块纯色、去掉悬停光带与抬升伪元素；变声卡 `#1a1a1d` 纯色。
+- 首页录音棚机架、波形井、侧栏、螺丝、旋钮，以及 rvc.html 的 `#v3-studio` 面板：各自单一纯色（只保留 1px 内高光）。
+- `skills.html`：`#skills-library` 由 postprep.js 载入后填充，空时预留行高 → 桌面 CLS 0.0654 → 0。
+- 合并 `v3-audio2`（514b546）无冲突；`assets/rvc.js` 中 `assets/rvc-engine/v3-master.mjs?v=20261031-v3q2` 的动态 import 与 `tools/v3-inject.mjs`（只注入 v3.css / v3.js 的 `?v=`）互不相干，两个文件均 200 可取。
+
+测量（412×915、DPR 2、CPU 4×、swiftshader；与旧版 e56d1e3 导出交替运行。沙箱同时有 juicefs 同步与其他项目渲染，单次数值抖动大，以中位数为准）：
+
+| 指标 | 旧版 e56d1e3 | 本版 | 说明 |
+|---|---|---|---|
+| 甩动 p95（perf2，载入后首甩，6 轮中位） | 41.6 ms | 33.3 ms | 两边都有 50–67 ms 的噪声轮 |
+| 甩动 p95（fling.mjs 热身后，10 次中位） | 16.8 ms | 16.8 ms | 达标 ≤25 ms |
+| 读速滚动 p95（6 轮） | 16.7–16.8 ms | 16.7–16.8 ms | 达标 ≤20 ms |
+| FCP（6 轮中位） | 1939 ms | 1521 ms | 不劣于旧版 |
+| TBT（6 轮中位） | 21 ms | 374 ms | **未解决**：载入期长任务比旧版多（见下） |
+| DOM | 361 | 507 | < 800 |
+| 首屏 JS gz | 72.0 KB | 73.2 KB | +1.2 KB ≤ 8 KB |
+| CLS（12 路由 × 桌面/手机） | — | 全部 < 0.01 | skills 已修 |
+
+遗留：首页载入期（load 后 0–1 s）有 2 个 200–300 ms 的长任务（旧版 216 + 138 ms），偶发一次 700 ms+；屏蔽窗光图后不变，来源应是富材质首帧样式/栅格，而不是 v3-lit。不影响甩动/读速指标，但 TBT 不如旧版，下一轮用 trace 定位。
+
 ## 原始数据（logs/perf-night.jsonl，perftable.py 生成）
 
 | 版本 | 路由 | CPU | FCP ms | LCP ms | CLS | TBT ms | 长任务数 | 最长任务 ms | DOM | JS gz KB |
