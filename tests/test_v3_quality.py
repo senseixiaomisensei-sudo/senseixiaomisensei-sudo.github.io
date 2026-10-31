@@ -25,20 +25,30 @@ class SwitchTests(unittest.TestCase):
 
     def test_defaults_and_individual_override(self):
         env = {k: v for k, v in os.environ.items() if not k.startswith('RVC_V3')}
+        expected = {'octave_fix', 'harsh', 'loudness', 'limiter'}
         with patch.dict(os.environ, env, clear=True):
-            # unset master switch = legacy chain (safe default)
-            self.assertFalse(q.status()['master'])
-            self.assertFalse(any(q.status()['stages'].values()))
+            # unset master switch = v3 default chain (passed the e2e RVC A/B)
+            self.assertTrue(q.status()['master'])
+            self.assertEqual({k for k, v in q.status()['stages'].items() if v}, expected)
+        for off in ('0', 'false', 'off'):
+            with patch.dict(os.environ, {**env, 'RVC_V3': off}, clear=True):
+                # explicit RVC_V3=0 = exact legacy chain
+                self.assertFalse(q.status()['master'])
+                self.assertFalse(any(q.status()['stages'].values()))
         env = {**env, 'RVC_V3': '1'}
         with patch.dict(os.environ, env, clear=True):
-            # only the stages that passed the lite A/B are on by default
+            # only the stages that did not regress on the e2e A/B are on by default
             on = {k for k, v in q.status()['stages'].items() if v}
-            self.assertEqual(on, {'loudness', 'limiter'})
-            self.assertFalse(q.enabled('PHRASE_OCTAVE'))  # opt-in only
-        with patch.dict(os.environ, {**env, 'RVC_V3_DEESS': '1', 'RVC_V3_LIMITER': '0'}, clear=True):
+            self.assertEqual(on, expected)
+            for name in ('DEESS', 'RANGE_GUARD', 'DEREVERB', 'PHRASE_OCTAVE', 'SEPARATOR'):
+                self.assertFalse(q.enabled(name), name)  # opt-in only
+        with patch.dict(os.environ, {**env, 'RVC_V3_DEESS': '1', 'RVC_V3_HARSH': '0',
+                                     'RVC_V3_LIMITER': '0', 'RVC_V3_OCTAVE_FIX': '0'}, clear=True):
             self.assertTrue(q.enabled('DEESS'))
             self.assertFalse(q.enabled('HARSH'))
             self.assertFalse(q.enabled('LIMITER'))
+            self.assertFalse(q.enabled('OCTAVE_FIX'))
+            self.assertTrue(q.enabled('LOUDNESS'))
 
     def test_model_auto_fetch_is_opt_in(self):
         from app import v3_models
@@ -55,44 +65,45 @@ class SwitchTests(unittest.TestCase):
 
 
 class PitchRepairTests(unittest.TestCase):
-    def test_short_octave_island_is_folded_but_sustained_leap_is_kept(self):
+    def test_low_confidence_octave_island_is_folded_but_sustained_leap_is_kept(self):
         f0 = np.full(400, 220.0)
-        f0[100:108] = 440.0           # 80 ms island: tracker error
+        conf = np.full(400, .9)
+        f0[100:108] = 440.0           # 80 ms island RMVPE was unsure about
+        conf[100:108] = .3
         f0[200:300] = 440.0           # 1 s real octave leap: music
-        out, report = q.repair_pitch(f0)
+        conf[200:300] = .3            # even if unsure, too long to be an island
+        out, report = q.repair_pitch(f0, confidence=conf)
         np.testing.assert_allclose(out[100:108], 220.0)
         np.testing.assert_allclose(out[200:300], 440.0)
         self.assertEqual(report['octaveIslands'], 1)
+        self.assertEqual(report['changedFrames'], 8)
 
-    def test_unvoiced_frames_never_become_voiced_without_audio(self):
+    def test_confident_island_and_missing_confidence_are_left_alone(self):
+        f0 = np.full(400, 220.0)
+        f0[100:108] = 440.0
+        out, report = q.repair_pitch(f0, confidence=np.full(400, .9))
+        np.testing.assert_array_equal(out, f0)     # RMVPE was sure: an ornament
+        self.assertEqual(report['rejectedConfidence'], 1)
+        out, report = q.repair_pitch(f0)           # no salience: never guess
+        np.testing.assert_array_equal(out, f0)
+        self.assertEqual(report['skipped'], 'no-confidence')
+
+    def test_unvoiced_frames_never_become_voiced(self):
         f0 = np.full(200, 300.0)
         f0[50:60] = 0
         f0[120] = 0
-        out, _ = q.repair_pitch(f0)
+        out, _ = q.repair_pitch(f0, confidence=np.full(200, .2))
         self.assertTrue(np.all(out[50:60] == 0))
         self.assertEqual(out[120], 0)
 
-    def test_dropout_bridge_requires_waveform_support(self):
-        rate, hop = 16000, 160
-        t = np.arange(rate) / rate
-        f0 = np.full(100, 200.0)
-        f0[50] = 0
-        noise = np.random.default_rng(0).standard_normal(rate) * .2
-        out_noise, rep = q.repair_pitch(f0, noise, rate, hop)
-        self.assertEqual(out_noise[50], 0)
-        vowel = .3 * np.sin(2 * np.pi * 200 * t)
-        out_vowel, rep = q.repair_pitch(f0, vowel, rate, hop)
-        self.assertAlmostEqual(out_vowel[50], 200.0, delta=1)
-        self.assertEqual(rep['bridged'], 1)
-
-    def test_single_frame_spike_removed_vibrato_kept(self):
+    def test_vibrato_spikes_and_fifths_are_not_touched(self):
         frames = np.arange(300)
         f0 = 300 * 2 ** (.5 * np.sin(2 * np.pi * 5.5 * frames / 100) / 12)  # +-50 cent vibrato
-        f0[150] *= 2 ** (5 / 12)
-        out, report = q.repair_pitch(f0)
-        self.assertEqual(report['spikes'], 1)
-        keep = np.r_[0:149, 152:300]
-        np.testing.assert_allclose(out[keep], f0[keep])
+        f0[150] *= 2 ** (5 / 12)     # spike: no longer smoothed (regressed in r1)
+        f0[200:206] *= 2 ** (7 / 12)  # a fifth is never an octave error
+        out, report = q.repair_pitch(f0, confidence=np.full(300, .2))
+        np.testing.assert_array_equal(out, f0)
+        self.assertEqual(report['changedFrames'], 0)
 
     def test_phrase_octave_plan_moves_only_whole_out_of_range_phrases(self):
         f0 = np.zeros(600)
@@ -130,9 +141,37 @@ class FinishingTests(unittest.TestCase):
             f = np.fft.rfftfreq(len(x), 1 / rate)
             return 10 * np.log10(spec[(f > 4500) & (f < 9500)].sum())
         self.assertLess(hf(out), hf(vowel + buzz) - 2)          # excess cut
-        self.assertLessEqual(report['maxHarshDb'], 6.0 + 1e-6)  # bounded
+        self.assertLessEqual(report['maxHarshDb'], 4.0 + 1e-6)  # bounded
         same = q.finish_vocal(vowel, rate, vowel, rate)
-        self.assertLess(np.max(np.abs(same - vowel)), 0.02)     # no excess -> ~unchanged
+        np.testing.assert_array_equal(same, vowel)              # no excess -> exactly unchanged
+
+    def test_deess_touches_only_the_excess_sibilant_and_keeps_vowels_exact(self):
+        rate = 40000
+        t = np.arange(rate * 2) / rate
+        vowel = sum(.25 / k * np.sin(2 * np.pi * 200 * k * t) for k in range(1, 10))
+        from scipy.signal import butter, sosfilt
+        hiss = sosfilt(butter(4, 6000, 'highpass', fs=rate, output='sos'),
+                       np.random.default_rng(5).standard_normal(len(t)))
+        burst = slice(int(1.0 * rate), int(1.12 * rate))       # 120 ms "s"
+        source = vowel.copy()
+        source[burst] = .05 * hiss[burst]
+        converted = vowel.copy()
+        converted[burst] = .2 * hiss[burst]                    # +12 dB harsher "s"
+        report = {}
+        out = q.finish_vocal(converted, rate, source, rate, harsh=False, report=report)
+        # r2 de-esses the zero-phase 5-11 kHz band only (the "air" above it is
+        # never touched), so judge the cut inside that band
+        def e(x):
+            spec = np.abs(np.fft.rfft(x[burst])) ** 2
+            f = np.fft.rfftfreq(burst.stop - burst.start, 1 / rate)
+            return 10 * np.log10(spec[(f > 5500) & (f < 10500)].sum())
+        self.assertLess(e(out), e(converted) - 3)               # sibilant reduced
+        self.assertGreater(e(out), e(converted) - 6.5)          # by at most the 6 dB bound
+        self.assertLessEqual(report['maxDeessDb'], 6.0 + 1e-6)
+        far = np.r_[0:int(.8 * rate), int(1.4 * rate):len(t)]
+        self.assertLess(np.max(np.abs(out[far] - converted[far])), 1e-6)  # vowels untouched
+        same = q.finish_vocal(source, rate, source, rate, harsh=False)
+        np.testing.assert_array_equal(same, source)             # source-like "s" kept
 
     def test_true_peak_limiter_reaches_ceiling_and_leaves_quiet_audio(self):
         rate = 48000

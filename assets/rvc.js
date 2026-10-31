@@ -7891,7 +7891,7 @@
   // Mix the converted vocal (any rate, mono) over the separated accompaniment
   // with the same gain/mute controls the cloud remix uses. Peaks are scaled,
   // never clipped.
-  async function mixDeviceSongCover(vocalWav, instrumental, sampleRate, mix) {
+  async function mixDeviceSongCover(vocalWav, instrumental, sampleRate, mix, sourceVocals = null) {
     const ctx = offlineContext(1, 1, sampleRate);
     const decoded = await decodeWithContext(ctx, await vocalWav.arrayBuffer());
     const vocal = decoded.getChannelData(0);
@@ -7906,6 +7906,27 @@
       left[i] = instrumental[0][i] * ga + v;
       right[i] = instrumental[1][i] * ga + v;
       peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+    }
+    // v3 master (docs/rvc-v3-quality.md): loudness match to the upload +
+    // true-peak limiter, in a Worker; any failure keeps the legacy mix.
+    try {
+      const v3 = await import(new URL("assets/rvc-engine/v3-master.mjs?v=20261031-v3q2", window.location.href).href);
+      if (v3.v3MasterEnabled(window)) {
+        const untouched = !mix.vocalMute && !mix.accompanimentMute && !mix.vocalGainDb && !mix.accompanimentGainDb;
+        const reference = sourceVocals ? [0, 1].map((c) => {
+          const r = new Float32Array(n);
+          for (let i = 0; i < n; i += 1) r[i] = instrumental[c][i] + (sourceVocals[c][i] || 0);
+          return r;
+        }) : null;
+        const mastered = await v3.masterMixInWorker([left, right], sampleRate, reference,
+          { matchLoudness: untouched && !!reference, ceilingDb: -1 });
+        if (!mastered.report?.skipped) {
+          console.info("[v3-master]", mastered.report);
+          return encodeStereoWav16(mastered.channels[0], mastered.channels[1], sampleRate);
+        }
+      }
+    } catch (error) {
+      console.warn("[v3-master] skipped:", error);
     }
     if (peak > 0.98) {
       const scale = 0.98 / peak;
@@ -7994,7 +8015,7 @@
       state.busy = false;
       state.pendingDeviceSongCover = {
         vocal: vocal16k,
-        finalize: (wav) => mixDeviceSongCover(wav, instrumental, sampleRate, mix),
+        finalize: (wav) => mixDeviceSongCover(wav, instrumental, sampleRate, mix, vocals),
         metaSuffix: l(
           ` · 电脑离线兜底：本机 MDX 分离（${backendLabel}，${separationSeconds}s）+ 原伴奏回混`,
           ` · Offline fallback: on-device MDX separation (${backendLabel}, ${separationSeconds}s) + backing remix`,
