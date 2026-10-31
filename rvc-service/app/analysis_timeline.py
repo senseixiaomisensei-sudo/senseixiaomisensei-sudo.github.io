@@ -223,11 +223,12 @@ def prepare_analysis(model, source, method, diagnostics=None, consensus=True, fi
         actual=median_smooth_pitch(actual,1)
     from app.v3_quality import enabled as v3_enabled
     if v3_enabled('OCTAVE_FIX') and bool(model._vc.if_f0):
-        # v3: short octave islands / 1-2 frame spikes / <=20 ms supported
-        # dropouts. Sustained leaps and unvoiced consonants are untouched.
+        # v3 (rvc-v3-quality-2): only short octave islands that RMVPE itself
+        # was unsure about (low max-salience vs. its context). Sustained
+        # leaps, ornaments and unvoiced consonants are untouched.
         from app.v3_quality import repair_pitch
         before=actual.copy()
-        actual,report=repair_pitch(actual,audio,16000,HOP)
+        actual,report=repair_pitch(actual,audio,16000,HOP,confidence=salience)
         evidence['v3PitchRepair']=report
         evidence['beforeV3Repair']=before
     evidence['corrected'] = actual

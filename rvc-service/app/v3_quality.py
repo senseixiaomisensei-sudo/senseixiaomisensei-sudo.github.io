@@ -3,7 +3,7 @@
 Every stage has its own environment switch and the master switch
 ``RVC_V3=0`` restores the exact legacy chain (each helper below returns its
 input unchanged when disabled).  The defaults are the stages that did not
-regress on the objective A/B bench (docs/rvc-v3-quality.md).
+regress on the end-to-end RVC A/B (docs/rvc-v3-quality.md).
 
 Design rules carried over from the R41/R42 history:
 * never mix the original singer's waveform into the converted vocal;
@@ -24,31 +24,36 @@ from pathlib import Path
 
 import numpy as np
 
-REVISION = 'rvc-v3-quality-1'
+REVISION = 'rvc-v3-quality-2'
 
-# name -> default when RVC_V3 is enabled.  Only stages that did not regress
-# on every clip of the lite A/B (docs/rvc-v3-quality.md, 2026-10-31) default
-# to on; everything else is an explicit opt-in (RVC_V3_<NAME>=1) until a
-# full-RVC A/B on the GPU host says otherwise.
+# name -> default when RVC_V3 is enabled.  Decided on the end-to-end A/B
+# through a real RVC conversion (tools/rvc_v3_e2e.py, CPU ONNX, arona v2,
+# 3 songs x {clean stem, separated vocal} x {auto shift, +12 st},
+# docs/rvc-v3-quality.md, 2026-10-31).  A stage defaults to on only when no
+# case got worse on the decision metrics (RMVPE F0 error, breakup, voicing,
+# HF excess, loudness, true peak, clipping).  Everything else stays an
+# explicit opt-in (RVC_V3_<NAME>=1).
 DEFAULTS = {
     'SEPARATOR': '0',       # opt-in (not A/B'd): v3 separation chain (main + lead/backing + dereverb)
     'KARAOKE': '0',         # opt-in (not A/B'd): convert only the lead vocal, keep backing harmony
     'DEREVERB': '0',        # opt-in (not A/B'd): dry lead into RVC
     'REVERB_RETURN': '0',   # opt-in (not A/B'd): matched synthetic room on the converted lead
-    'OCTAVE_FIX': '0',      # opt-in (regressed on lite A/B): octave-island / spike repair on F0
+    'OCTAVE_FIX': '1',      # protective (r2): 0/12 worse; ~no-op on real input, repairs injected octave islands
     'RANGE_GUARD': '0',     # opt-in (not A/B'd): automatic register adaptation beyond range
-    'DEESS': '0',           # opt-in (regressed on lite A/B): sibilance control vs. source
-    'HARSH': '0',           # opt-in (regressed on lite A/B): dynamic 4-10 kHz excess cut vs. source
-    'LOUDNESS': '1',        # passed lite A/B: master loudness match to the upload
-    'LIMITER': '1',         # passed lite A/B: look-ahead 4x oversampled true-peak limiter
+    'DEESS': '0',           # opt-in: 0/12 worse but tiny effect; with HARSH Mallory F0 RMSE +2.1 cents (over tol.)
+    'HARSH': '1',           # e2e A/B 0/12 worse, 12/12 better: HF excess -2.3..-3.4 dB
+    'LOUDNESS': '1',        # e2e A/B: |delta LU| vs upload 0.0-3.9 -> <=0.002
+    'LIMITER': '1',         # e2e A/B: true peak never above legacy -1 dBTP trim, 0 clipped samples
     'HIRES': '0',           # opt-in (not A/B'd): 48 kHz / 24-bit WAV output
     'PHRASE_OCTAVE': '0',   # opt-in: per-phrase octave transposition beyond range
 }
 
 
 def master_enabled() -> bool:
-    """Master switch; unset means OFF so the legacy chain is the safe default."""
-    return os.getenv('RVC_V3', '0').strip() == '1'
+    """Master switch.  Default ON since the 2026-10-31 end-to-end A/B (the
+    default stage set did not regress on any case); ``RVC_V3=0`` restores the
+    exact legacy chain."""
+    return os.getenv('RVC_V3', '1').strip().lower() not in ('0', 'false', 'off', 'no')
 
 
 def enabled(name: str) -> bool:
@@ -71,9 +76,84 @@ def _runs(mask):
     return list(zip(edges[::2], edges[1::2]))
 
 
-def repair_pitch(f0, audio=None, rate=16000, hop=160, max_island=12, context=12,
-                 bridge=2, spike_semitones=3.0):
-    """Repair short octave islands, 1-2 frame spikes and tiny dropouts.
+def repair_pitch(f0, audio=None, rate=16000, hop=160, confidence=None, max_island=12,
+                 context=15, low_confidence=.6, confidence_margin=.1, octave_tolerance=1.0,
+                 context_agreement=2.0):
+    """rvc-v3-quality-2 F0 repair: only low-confidence isolated octave islands.
+
+    A frame run is repaired only when ALL of these hold (conservative gate):
+    * it is voiced throughout, <= ``max_island`` frames (120 ms) long, entered
+      and left by a >= 9 st jump;
+    * >= 4 voiced frames of context on each side (within ``context`` frames)
+      and the two contexts agree within ``context_agreement`` st;
+    * the island sits 12 +- ``octave_tolerance`` st from that context;
+    * RMVPE's own salience (``confidence``, max over bins per frame) is low on
+      the island (< ``low_confidence``) AND lower than the context's median
+      salience by ``confidence_margin``.
+    Without salience nothing is changed: geometry alone mistook real ornaments
+    and register flips for errors in rvc-v3-quality-1.  No spike smoothing and
+    no dropout bridging (both regressed on the r1 A/B).  ``audio``/``rate``/
+    ``hop`` are accepted for call compatibility and unused.
+    """
+    f0 = np.asarray(f0, dtype=np.float64).copy()
+    report = dict(octaveIslands=0, octaveFrames=0, candidates=0, rejectedConfidence=0,
+                  changedFrames=0, revision=REVISION)
+    if confidence is None:
+        report['skipped'] = 'no-confidence'
+        return f0, report
+    conf = np.asarray(confidence, dtype=np.float64)
+    n = len(f0)
+    if len(conf) < n:
+        conf = np.pad(conf, (0, n - len(conf)), constant_values=1.0)
+    conf = np.where(np.isfinite(conf), conf, 1.0)
+    voiced = f0 > 0
+    if voiced.sum() < 9:
+        return f0, report
+    st = np.where(voiced, 12 * np.log2(np.maximum(f0, 1e-6)), np.nan)
+    i = 1
+    while i < n - 1:
+        if not (voiced[i] and voiced[i - 1]) or abs(st[i] - st[i - 1]) < 9:
+            i += 1
+            continue
+        base = st[i - 1]
+        direction = np.sign(st[i] - base)
+        j = i
+        while j < n and voiced[j] and j - i <= max_island and (st[j] - base) * direction >= 9:
+            j += 1
+        if j - i > max_island or j >= n or not voiced[j] or abs(st[j] - base) >= 9:
+            i = max(j, i + 1)
+            continue
+        report['candidates'] += 1
+        lidx = [k for k in range(max(0, i - context), i) if voiced[k]]
+        ridx = [k for k in range(j, min(n, j + context)) if voiced[k]]
+        if len(lidx) < 4 or len(ridx) < 4:
+            i = j
+            continue
+        lm, rm = np.median(st[lidx]), np.median(st[ridx])
+        island = np.median(st[i:j])
+        level = (lm + rm) / 2
+        if abs(lm - rm) > context_agreement or abs(abs(island - level) - 12) > octave_tolerance:
+            i = j
+            continue
+        ic = float(np.mean(conf[i:j]))
+        cc = float(np.median(conf[lidx + ridx]))
+        if not (ic < low_confidence and ic < cc - confidence_margin):
+            report['rejectedConfidence'] += 1
+            i = j
+            continue
+        f0[i:j] *= 2.0 ** (-direction)
+        st[i:j] -= 12 * direction
+        report['octaveIslands'] += 1
+        report['octaveFrames'] += int(j - i)
+        i = j
+    report['changedFrames'] = report['octaveFrames']
+    return f0, report
+
+
+def _repair_pitch_r1(f0, audio=None, rate=16000, hop=160, max_island=12, context=12,
+                     bridge=2, spike_semitones=3.0):
+    """rvc-v3-quality-1 repair, kept only as the A/B reference (not called by
+    the service).  Repair short octave islands, 1-2 frame spikes and tiny dropouts.
 
     Returns (repaired_f0, report). ``audio`` (same 100 Hz clock, already
     padded like the timeline) enables waveform support for dropout bridging.
@@ -264,9 +344,127 @@ def _smooth_gain_db(gain_db, hop_s, attack=.003, release=.06):
     return out
 
 
+def _align_source(source, source_rate, rate, length):
+    from scipy.signal import resample_poly
+    src = np.asarray(source, dtype=np.float64)
+    if src.ndim > 1:
+        src = src.mean(axis=1)
+    if source_rate != rate:
+        g = math.gcd(int(rate), int(source_rate))
+        src = resample_poly(src, int(rate) // g, int(source_rate) // g)
+    src = src[:length]
+    if len(src) < length:
+        src = np.pad(src, (0, length - len(src)))
+    return src
+
+
+def _band(x, rate, low, high=None, order=4):
+    """Zero-phase band (sosfiltfilt): no group delay, so x - band is the exact
+    complementary remainder and a unity gain reconstructs x bit-for-bit."""
+    from scipy.signal import butter, sosfiltfilt
+    nyq = rate / 2
+    if high is None or high >= nyq * .98:
+        sos = butter(order, low, 'highpass', fs=rate, output='sos')
+    else:
+        sos = butter(order, [low, high], 'bandpass', fs=rate, output='sos')
+    return sosfiltfilt(sos, x)
+
+
+def _block_db(x, block):
+    n = len(x) // block
+    e = np.mean(x[:n * block].reshape(n, block) ** 2, axis=1) if n else np.zeros(0)
+    return 10 * np.log10(e + 1e-14)
+
+
+def _envelope_to_samples(gain_db, block, length):
+    centers = (np.arange(len(gain_db)) + .5) * block
+    g = np.interp(np.arange(length), centers, gain_db, left=gain_db[0] if len(gain_db) else 0,
+                  right=gain_db[-1] if len(gain_db) else 0)
+    return 10 ** (g / 20)
+
+
+def _dynamic_gain(excess_db, hop_s, max_db, lookahead_s, attack_s, release_s):
+    """Bounded cut with look-ahead (min over the next window, so the gain is
+    already down when the event starts), then attack/release smoothing."""
+    cut = -np.clip(np.asarray(excess_db, dtype=np.float64), 0, max_db)
+    if not len(cut):
+        return cut
+    la = max(1, int(round(lookahead_s / hop_s)))
+    # forward-looking minimum: block t sees blocks t..t+la
+    padded = np.r_[cut, np.zeros(la)]
+    cut = np.lib.stride_tricks.sliding_window_view(padded, la + 1).min(axis=1)[:len(cut)]
+    return _smooth_gain_db(cut, hop_s, attack_s, release_s)
+
+
 def finish_vocal(converted, rate, source, source_rate, deess=True, harsh=True,
-                 max_deess_db=8.0, max_harsh_db=6.0, report=None):
-    """De-ess and remove 4-10 kHz excess that the source vocal did not have."""
+                 max_deess_db=6.0, max_harsh_db=4.0, report=None):
+    """rvc-v3-quality-2 finishing: band-split, relative to the source vocal.
+
+    * DEESS: a zero-phase 5 kHz+ band is turned down only on *sibilant* 2.5 ms
+      blocks (that band louder than the 1-4 kHz body by >= 3 dB, i.e. not a
+      vowel) where the converted vocal's sibilance exceeds the source's own by
+      more than 2 dB.  5 ms look-ahead, 1 ms attack / 30 ms release, <= 6 dB.
+    * HARSH: a zero-phase 4-10 kHz band is turned down only on vowel blocks
+      (300-3000 Hz dominant) where its ratio to the mids exceeds the source's
+      by more than 4 dB.  10 ms look-ahead, 10/120 ms, <= 4 dB.
+    The output is ``x + band * (gain - 1)``: blocks with unity gain are
+    returned exactly, the low band (F0 and its first harmonics) is never
+    touched, and there is no STFT overlap-add smearing of transients.
+    """
+    converted = np.asarray(converted, dtype=np.float64)
+    if converted.ndim != 1 or not converted.size or not (deess or harsh):
+        return converted
+    src = _align_source(source, source_rate, rate, len(converted))
+    block = max(1, int(round(rate * .0025)))
+    hop_s = block / rate
+    top = min(11000.0, rate / 2 * .95)
+    body_c = _block_db(_band(converted, rate, 1000, 4000), block)
+    body_s = _block_db(_band(src, rate, 1000, 4000), block)
+    total_c = _block_db(converted, block)
+    active = total_c > (np.percentile(total_c, 95) - 45 if len(total_c) else 0)
+    stats = dict(deessBlocks=0, harshBlocks=0, maxDeessDb=0.0, maxHarshDb=0.0, revision=REVISION)
+    out = converted.copy()
+    if harsh:
+        hi_c_sig = _band(converted, rate, 4000, min(10000.0, top))
+        mid_c = _block_db(_band(converted, rate, 300, 3000), block)
+        mid_s = _block_db(_band(src, rate, 300, 3000), block)
+        hi_c = _block_db(hi_c_sig, block)
+        hi_s = _block_db(_band(src, rate, 4000, min(10000.0, top)), block)
+        vowel = active & (mid_c - total_c > -6) & (mid_s - _block_db(src, block) > -6)
+        excess = np.where(vowel, (hi_c - mid_c) - (hi_s - mid_s) - 4.0, 0.0)
+        gdb = _dynamic_gain(excess, hop_s, max_harsh_db, .010, .010, .120)
+        stats['harshBlocks'] = int(np.count_nonzero(gdb < -.5))
+        stats['maxHarshDb'] = float(-gdb.min()) if len(gdb) else 0.0
+        if stats['harshBlocks']:
+            g = _envelope_to_samples(gdb, block, len(out))
+            out = out + hi_c_sig * (g - 1.0)
+    if deess:
+        sib_c_sig = _band(out, rate, 5000, top)
+        sib_c = _block_db(sib_c_sig, block)
+        sib_s = _block_db(_band(src, rate, 5000, top), block)
+        from scipy.ndimage import maximum_filter1d
+        # sibilant level relative to the surrounding sung body (+-150 ms
+        # loudest 1-4 kHz block), in the conversion and in the source: an
+        # "s" that RVC made louder *than the singer did* is the excess.
+        radius = max(1, int(round(.15 / hop_s)))
+        ctx_c = maximum_filter1d(body_c, 2 * radius + 1, mode='nearest')
+        ctx_s = maximum_filter1d(body_s, 2 * radius + 1, mode='nearest')
+        sibilant = active & (sib_c - body_c > 3.0)
+        excess = np.where(sibilant, (sib_c - ctx_c) - (sib_s - ctx_s) - 2.0, 0.0)
+        gdb = _dynamic_gain(excess, hop_s, max_deess_db, .005, .001, .030)
+        stats['deessBlocks'] = int(np.count_nonzero(gdb < -.5))
+        stats['maxDeessDb'] = float(-gdb.min()) if len(gdb) else 0.0
+        if stats['deessBlocks']:
+            g = _envelope_to_samples(gdb, block, len(out))
+            out = out + sib_c_sig * (g - 1.0)
+    if report is not None:
+        report.update(stats)
+    return out
+
+
+def _finish_vocal_stft_r1(converted, rate, source, source_rate, deess=True, harsh=True,
+                          max_deess_db=8.0, max_harsh_db=6.0, report=None):
+    """rvc-v3-quality-1 STFT finishing, kept only as the A/B reference."""
     converted = np.asarray(converted, dtype=np.float64)
     if converted.ndim != 1 or not converted.size or not (deess or harsh):
         return converted
