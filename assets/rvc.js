@@ -4735,13 +4735,17 @@
     const stalled = new Promise((_, reject) => { stallReject = reject; });
     stalled.catch(() => {});
 
-    const reportProgress = () => {
+    // UI updates are throttled (every stream read used to repaint the page).
+    let lastReportAt = 0;
+    const reportProgress = (force = false) => {
       let totalLoaded = 0;
       for (let i = 0; i < totalCount; i++) totalLoaded += chunkBytesLoaded[i];
       if (totalLoaded > lastLoaded) {
         lastLoaded = totalLoaded;
         lastProgressAt = Date.now();
       }
+      if (!force && Date.now() - lastReportAt < 250) return;
+      lastReportAt = Date.now();
       if (typeof onProgress === "function") {
         const shownTotal = Math.max(estimatedTotalBytes, totalLoaded);
         const msg = l(
@@ -4784,7 +4788,7 @@
         chunkBytesLoaded[idx] = buffer.byteLength;
         completedCount++;
         lastProgressAt = Date.now();
-        reportProgress();
+        reportProgress(true);
       });
     });
 
@@ -4832,8 +4836,226 @@
     };
   }
 
+  // freeze1: chunked models are fetched, verified, cached and assembled in a
+  // dedicated worker. The page thread only formats throttled progress and
+  // receives one transferred ArrayBuffer, so scrolling the character gallery
+  // during a download no longer competes with 20 MB copies, SHA-256 hashing,
+  // IndexedDB serialisation and a 360 MB Blob build.
+  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261101-freeze1";
+  const MODEL_FETCH = { progressMs: 250, probeMs: 7000, connectMs: 12000, inactivityMs: 15000, quietHintMs: 6000 };
+  let modelFetchWorker = null;
+  let modelFetchBroken = false;
+  let modelFetchSeq = 0;
+  const modelFetchJobs = new Map();
+
+  function getModelFetchWorker() {
+    if (modelFetchBroken || typeof Worker !== "function") return null;
+    if (modelFetchWorker) return modelFetchWorker;
+    try {
+      const worker = new Worker(new URL(MODEL_FETCH_WORKER_URL, window.location.href).href);
+      worker.onmessage = (event) => modelFetchJobs.get(event.data?.id)?.(event.data);
+      worker.onerror = (event) => {
+        event.preventDefault?.();
+        modelFetchBroken = true;
+        modelFetchWorker = null;
+        try { worker.terminate(); } catch {}
+        for (const handler of [...modelFetchJobs.values()]) handler({ type: "worker-error", message: event.message || "worker failed" });
+      };
+      modelFetchWorker = worker;
+      return worker;
+    } catch {
+      modelFetchBroken = true;
+      return null;
+    }
+  }
+
+  function modelFetchStatus(displayName, info) {
+    const mb = (bytes) => (bytes / 1024 / 1024).toFixed(1);
+    const waited = Math.round((info.quietMs || 0) / 1000);
+    if (info.phase === "cache") {
+      return l(` [1/4] 正在检查本地缓存：${displayName}…`, ` [1/4] Checking local storage for ${displayName}…`);
+    }
+    if (info.phase === "probe") {
+      return info.note === "retry"
+        ? l(` [1/4] ${displayName}：所有模型镜像都没有应答，正在重新探测…`, ` [1/4] ${displayName}: no model mirror answered; probing again…`)
+        : l(` [1/4] 正在连接模型镜像（同时测速 ${info.mirrorCount} 个节点，选最快的）…`, ` [1/4] Connecting to model mirrors (testing ${info.mirrorCount} at once, picking the fastest)…`);
+    }
+    if (info.switchNote) return info.switchNote;
+    const via = info.host ? l(` · 节点 ${info.host}`, ` · via ${info.host}`) : "";
+    if (info.loaded <= 0 && waited >= MODEL_FETCH.quietHintMs / 1000) {
+      return l(` [1/4] 已连接${info.host ? ` ${info.host}` : "镜像"}，等待 ${displayName} 数据（${waited} 秒）…网络较慢时会自动切换节点`,
+        ` [1/4] Connected${info.host ? ` to ${info.host}` : ""}; waiting for ${displayName} data (${waited}s)… switching mirrors automatically if it stays slow`);
+    }
+    return l(
+      ` [1/4] 正在下载 ${displayName}: ${mb(info.loaded)}MB / ${mb(info.total)}MB · 分片 ${info.completed}/${info.count}${via} · 可断点续传`,
+      ` [1/4] Downloading ${displayName}: ${mb(info.loaded)} MB / ${mb(info.total)} MB · chunk ${info.completed}/${info.count}${via} · resumable`,
+    );
+  }
+
+  // Resolves to a file-like { name, size, type, arrayBuffer() }, or rejects
+  // with { workerUnavailable: true } so the caller can use the page-thread path.
+  function fetchChunkedModelInWorker(chunkUrls, name, displayName, mimeType, onProgress, integrity, options = {}) {
+    const worker = getModelFetchWorker();
+    if (!worker) return Promise.reject(Object.assign(new Error("model worker unavailable"), { workerUnavailable: true }));
+    const signal = options.signal;
+    const returnBytes = options.returnBytes !== false;
+    const urls = Array.isArray(chunkUrls) ? chunkUrls : [chunkUrls];
+    const chunks = urls.map((path, index) => ({
+      cacheKey: `chunk:${path}`,
+      mirrors: getChunkMirrorUrls(path),
+      sha256: integrity?.chunkSha256?.[index] || "",
+    }));
+    const declaredTotal = Number(integrity?.totalSize) || 0;
+    const estimatedTotal = declaredTotal > 0 ? declaredTotal : urls.length * 20 * 1024 * 1024;
+    const id = ++modelFetchSeq;
+    const mb = (bytes) => (bytes / 1024 / 1024).toFixed(1);
+    return new Promise((resolve, reject) => {
+      const info = { phase: "cache", note: "", loaded: 0, completed: 0, count: urls.length, total: estimatedTotal,
+        mirrorCount: chunks[0]?.mirrors.length || 0, host: "", switchNote: "", quietMs: 0 };
+      let lastActivityAt = Date.now();
+      let phaseStartedAt = Date.now();
+      let settled = false;
+      let lastShown = "";
+      let ticker = 0;
+      const show = (force = false) => {
+        if (typeof onProgress !== "function") return;
+        const msg = modelFetchStatus(displayName, info);
+        if (!force && msg === lastShown) return;
+        lastShown = msg;
+        onProgress(info.loaded, Math.max(info.total, info.loaded), info.completed, info.count, false, msg);
+      };
+      const finish = (fn, value) => {
+        if (settled) return;
+        settled = true;
+        clearInterval(ticker);
+        modelFetchJobs.delete(id);
+        signal?.removeEventListener?.("abort", onAbort);
+        fn(value);
+      };
+      const cancel = () => { try { worker.postMessage({ type: "cancel", id }); } catch {} };
+      const onAbort = () => { cancel(); finish(reject, signal.reason instanceof Error ? signal.reason : new DOMException("Aborted", "AbortError")); };
+      if (signal?.aborted) return onAbort();
+      signal?.addEventListener?.("abort", onAbort, { once: true });
+
+      // One-second ticker: no-progress watchdog plus a visible "still
+      // connecting / waiting" line, so the status changes within seconds.
+      ticker = setInterval(() => {
+        const idleMs = Date.now() - lastActivityAt;
+        info.quietMs = info.loaded <= 0 ? Date.now() - phaseStartedAt : 0;
+        if (idleMs >= RVC_STALL.downloadNoProgressMs) {
+          cancel();
+          const seconds = Math.round(idleMs / 1000);
+          finish(reject, new RvcStallError("download",
+            `下载${displayName}已 ${seconds} 秒没有任何进展（已完成 ${mb(info.loaded)}MB / ${mb(estimatedTotal)}MB）。网络或模型镜像无响应；已下载的分片已保存，重试会从断点继续。`,
+            `Downloading ${displayName} made no progress for ${seconds}s (${mb(info.loaded)} MB / ${mb(estimatedTotal)} MB done). The network or model mirrors are not responding; finished chunks are saved and a retry resumes from there.`,
+            "RVC_DOWNLOAD_STALLED"));
+          return;
+        }
+        show();
+      }, 1000);
+
+      modelFetchJobs.set(id, (msg) => {
+        if (msg.type === "progress") {
+          if (msg.phase !== info.phase) { phaseStartedAt = Date.now(); lastActivityAt = Date.now(); }
+          if (msg.loaded > info.loaded || msg.completed > info.completed) { lastActivityAt = Date.now(); info.switchNote = ""; }
+          info.phase = msg.phase;
+          info.note = msg.note || "";
+          info.loaded = msg.loaded;
+          info.completed = msg.completed;
+          if (String(info.note).startsWith("via:")) info.host = info.note.slice(4);
+          show();
+        } else if (msg.type === "probe") {
+          lastActivityAt = Date.now();
+          const ok = (msg.results || []).filter((r) => r.ok).sort((a, b) => a.ms - b.ms);
+          if (ok.length) info.host = ok[0].host;
+          console.info(`[rvc] mirror probe ${name}:`, msg.results);
+        } else if (msg.type === "switch") {
+          lastActivityAt = Date.now();
+          info.host = msg.to || info.host;
+          info.switchNote = msg.to
+            ? l(` [1/4] 节点 ${msg.from} 不可达或太慢（${msg.reason}），已切换到 ${msg.to}…`, ` [1/4] Mirror ${msg.from} unreachable or too slow (${msg.reason}); switched to ${msg.to}…`)
+            : l(` [1/4] 节点 ${msg.from} 不可达（${msg.reason}）…`, ` [1/4] Mirror ${msg.from} unreachable (${msg.reason})…`);
+          show();
+        } else if (msg.type === "done") {
+          let buffer = msg.buffer || null;
+          const size = Number(msg.size) || buffer?.byteLength || 0;
+          if (typeof onProgress === "function") {
+            onProgress(size, size, info.count, info.count, Boolean(msg.fromCache), msg.fromCache
+              ? l(` ${displayName} 已从本地闪存就绪`, ` ${displayName} loaded from local storage`)
+              : l(` [1/4] ${displayName} 下载完成（${mb(size)}MB），已存入本地缓存`, ` [1/4] ${displayName} downloaded (${mb(size)} MB) and saved locally`));
+          }
+          finish(resolve, {
+            name, size, type: mimeType, fromCache: Boolean(msg.fromCache),
+            async arrayBuffer() {
+              // The bytes are transferred to the inference worker (detached);
+              // a second read comes back from the verified chunk cache.
+              if (buffer && buffer.byteLength) return buffer;
+              buffer = null;
+              const again = await fetchChunkedModelInWorker(chunkUrls, name, displayName, mimeType, null, integrity, { checkWhole: true });
+              return again.arrayBuffer();
+            },
+          });
+        } else if (msg.type === "error" || msg.type === "worker-error") {
+          if (msg.type === "worker-error" && info.loaded <= 0 && info.completed === 0) {
+            finish(reject, Object.assign(new Error(msg.message || "model worker failed"), { workerUnavailable: true }));
+          } else if (msg.code === "RVC_MIRRORS_UNREACHABLE") {
+            finish(reject, new RvcStallError("download",
+              `所有模型镜像都连接不上（已同时测试 ${info.mirrorCount} 个节点两轮），可能是网络断开或被拦截。请检查网络后点「重试」，或点「改用云端」`,
+              `None of the ${info.mirrorCount} model mirrors answered (two rounds). The network may be offline or blocked. Check it and Retry, or use the cloud`,
+              "RVC_MIRRORS_UNREACHABLE"));
+          } else if (msg.code === "ABORTED") {
+            finish(reject, signal?.reason instanceof Error ? signal.reason : new DOMException("Aborted", "AbortError"));
+          } else {
+            finish(reject, new Error(l(`下载${displayName}失败：${msg.message || "网络错误"}`, `Downloading ${displayName} failed: ${msg.message || "network error"}`)));
+          }
+        }
+      });
+
+      show(true);
+      try {
+        worker.postMessage({
+          type: "load", id, name, chunks, sha256: integrity?.sha256 || "", totalSize: declaredTotal,
+          checkWhole: options.checkWhole !== false, returnBytes,
+          concurrency: activeModelDownloadConcurrency,
+          progressMs: MODEL_FETCH.progressMs, probeMs: MODEL_FETCH.probeMs,
+          connectMs: MODEL_FETCH.connectMs, inactivityMs: MODEL_FETCH.inactivityMs,
+          db: { dbName: DB_NAME, storeName: STORE_NAME, openMs: RVC_STALL.cacheOpenMs, readMs: RVC_STALL.cacheReadMs, writeBaseMs: RVC_STALL.cacheWriteBaseMs },
+        });
+      } catch (error) {
+        finish(reject, Object.assign(error instanceof Error ? error : new Error(String(error)), { workerUnavailable: true }));
+      }
+    });
+  }
+
+  function resolveModelChunks(modelConfig, name) {
+    let chunks = modelConfig?.chunks;
+    if (!Array.isArray(chunks) || chunks.length === 0) {
+      if (name.includes("hubert")) chunks = EMBEDDED_BASE_MODELS.hubert.chunks;
+      else if (name.includes("rmvpe")) chunks = EMBEDDED_BASE_MODELS.rmvpe.chunks;
+      else {
+        const found = EMBEDDED_RVC_CATALOG.find((m) => name.includes(m.id));
+        if (found) chunks = found.chunks;
+      }
+    }
+    if (!Array.isArray(chunks) || chunks.length === 0) return null;
+    const isPublishedCharacter = Boolean(modelConfig?.id) && !String(modelConfig.id).startsWith("own:");
+    return isPublishedCharacter ? chunks.map((path) => versionCharacterChunkPath(path, modelConfig)) : chunks;
+  }
+
+  // options.returnBytes === false only warms the cache (preload button): the
+  // worker keeps nothing in memory and transfers nothing back.
   async function loadModelAuto(modelConfig, name, displayName, mimeType, onProgress, options = {}) {
     const signal = options.signal;
+    const fetchChunks = resolveModelChunks(modelConfig, name);
+    if (fetchChunks) {
+      try {
+        return await fetchChunkedModelInWorker(fetchChunks, name, displayName || name, mimeType, onProgress, modelConfig,
+          { signal, checkWhole: true, returnBytes: options.returnBytes !== false });
+      } catch (error) {
+        if (!error?.workerUnavailable) throw error;
+        console.warn("Model worker unavailable; downloading on the page thread:", error);
+      }
+    }
     if (typeof onProgress === "function") {
       onProgress(0, Number(modelConfig?.totalSize) || 0, 0, 1, false,
         l(` [1/4] 正在检查本地缓存：${displayName || name}…`,` [1/4] Checking local storage for ${displayName || name}…`));
@@ -4851,21 +5073,7 @@
       return cached;
     }
 
-    let chunks = modelConfig?.chunks;
-    if (!Array.isArray(chunks) || chunks.length === 0) {
-      if (name.includes("hubert")) chunks = EMBEDDED_BASE_MODELS.hubert.chunks;
-      else if (name.includes("rmvpe")) chunks = EMBEDDED_BASE_MODELS.rmvpe.chunks;
-      else {
-        const found = EMBEDDED_RVC_CATALOG.find((m) => name.includes(m.id));
-        if (found) chunks = found.chunks;
-      }
-    }
-
-    if (Array.isArray(chunks) && chunks.length > 0) {
-      const isPublishedCharacter = Boolean(modelConfig?.id) && !String(modelConfig.id).startsWith("own:");
-      const fetchChunks = isPublishedCharacter
-        ? chunks.map((path) => versionCharacterChunkPath(path, modelConfig))
-        : chunks;
+    if (fetchChunks) {
       return await fetchChunkedModel(fetchChunks, name, displayName || name, mimeType, onProgress, modelConfig,
         { signal, skipWholeCheck: true });
     }
@@ -5846,18 +6054,29 @@
 
   async function checkCacheStatus() {
     try {
-      const hubertCached = await getCachedItem("hubert.onnx");
-      const rmvpeCached = await getCachedItem("rmvpe.onnx");
-      const isHubertReady = hubertCached instanceof Blob && hubertCached.size > 1024 * 1024;
-      const isRmvpeReady = rmvpeCached instanceof Blob && rmvpeCached.size > 1024 * 1024;
+      // freeze1+: the model worker keeps verified chunks plus a small
+      // `ready:<name>` marker instead of a second whole-model Blob.
+      const readySize = async (key) => {
+        const whole = await getCachedItem(key);
+        if (whole instanceof Blob && whole.size > 1024 * 1024) return whole.size;
+        const marker = await getCachedItem(`ready:${key}`);
+        return marker && Number(marker.size) > 1024 * 1024 ? Number(marker.size) : 0;
+      };
+      const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
+      let hubertKey = "hubert.onnx";
+      try { if (selectedModel) hubertKey = resolveContentEncoder(selectedModel, state.baseModels).cacheKey; } catch {}
+      const hubertSize = await readySize(hubertKey);
+      const rmvpeSize = await readySize("rmvpe.onnx");
+      const hubertCached = { size: hubertSize };
+      const rmvpeCached = { size: rmvpeSize };
+      const isHubertReady = hubertSize > 0;
+      const isRmvpeReady = rmvpeSize > 0;
 
       // Also check selected character model cache
-      const selectedModel = state.catalog.find((m) => m.id === state.selectedModelId);
       let isCharReady = false;
       let charName = "";
       if (selectedModel) {
-        const charCached = await getCachedItem(characterModelCacheKey(selectedModel));
-        isCharReady = charCached instanceof Blob && charCached.size > 1024 * 1024;
+        isCharReady = (await readySize(characterModelCacheKey(selectedModel))) > 0;
         charName = selectedModel.name;
       }
 
@@ -5934,30 +6153,26 @@
         if (statusText && msg) statusText.textContent = msg;
       };
 
-      const tasks = [
-        loadModelAuto(hubertCfg, encoder.cacheKey, "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
-          hubertLoaded = loaded;
-          if (total) hubertTotal = total;
-          updatePreloadUI(msg || ` 正在缓存 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
-        }),
-        loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE 音高模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
-          rmvpeLoaded = loaded;
-          if (total) rmvpeTotal = total;
-          updatePreloadUI(msg || ` 正在缓存 RMVPE 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
-        }),
-      ];
-
+      // Sequential and cache-only: warming three models at once used to hold
+      // ~850 MB of chunk copies on the page thread of a tablet.
+      document.body?.classList.add("rvc-downloading");
+      await loadModelAuto(hubertCfg, encoder.cacheKey, "HuBERT 语义特征模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
+        hubertLoaded = loaded;
+        if (total) hubertTotal = total;
+        updatePreloadUI(msg || ` 正在缓存 HuBERT 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+      }, { returnBytes: false });
+      await loadModelAuto(rmvpeCfg, "rmvpe.onnx", "RMVPE 音高模型", "application/onnx", (loaded, total, c, t, cached, msg) => {
+        rmvpeLoaded = loaded;
+        if (total) rmvpeTotal = total;
+        updatePreloadUI(msg || ` 正在缓存 RMVPE 模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+      }, { returnBytes: false });
       if (selectedModel) {
-        tasks.push(
-          loadModelAuto(selectedModel, characterModelCacheKey(selectedModel), selectedModel.name, "application/onnx", (loaded, total, c, t, cached, msg) => {
-            charLoaded = loaded;
-            if (total) charTotal = total;
-            updatePreloadUI(msg || ` 正在缓存 ${selectedModel.name} 角色模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
-          })
-        );
+        await loadModelAuto(selectedModel, characterModelCacheKey(selectedModel), selectedModel.name, "application/onnx", (loaded, total, c, t, cached, msg) => {
+          charLoaded = loaded;
+          if (total) charTotal = total;
+          updatePreloadUI(msg || ` 正在缓存 ${selectedModel.name} 角色模型 (${(loaded/1024/1024).toFixed(1)}MB / ${(total/1024/1024).toFixed(1)}MB)`);
+        }, { returnBytes: false });
       }
-
-      await Promise.all(tasks);
 
       if (progressBar) progressBar.style.width = `100%`;
       if (percentText) percentText.textContent = `100%`;
@@ -5977,6 +6192,8 @@
         preloadBtn.disabled = false;
         preloadBtn.innerHTML = `<i class="fa-solid fa-rotate-right mr-1"></i><span>重新预热</span>`;
       }
+    } finally {
+      if (!state.busy) document.body?.classList.remove("rvc-downloading");
     }
   }
 
@@ -5984,9 +6201,18 @@
     try {
       await removeCachedItem("hubert.onnx");
       await removeCachedItem("rmvpe.onnx");
+      for (const key of ["hubert.onnx", "rmvpe.onnx"]) await removeCachedItem(`ready:${key}`);
+      for (const base of Object.values(state.baseModels || (typeof EMBEDDED_BASE_MODELS === "object" ? EMBEDDED_BASE_MODELS : {}))) {
+        for (const chunkPath of base?.chunks || []) await removeCachedItem(`chunk:${chunkPath}`);
+        if (base?.name) {
+          await removeCachedItem(`ready:${base.name}`);
+          if (base.sha256) await removeCachedItem(`ready:${base.name.replace(/\.onnx$/, "")}.${base.sha256}.onnx`);
+        }
+      }
       for (const m of state.catalog) {
         await removeCachedItem(`${m.id}.onnx`);
         await removeCachedItem(characterModelCacheKey(m));
+        await removeCachedItem(`ready:${characterModelCacheKey(m)}`);
         await removeCachedItem(retrievalCacheKey(m));
         await removeCachedItem(`${m.id}.${characterAssetVersion(m.id)}.onnx`);
         await removeCachedItem(`${m.id}.${characterAssetVersion(m.id)}.retrieval.bin`);
@@ -6409,18 +6635,27 @@
   }
 
   function updateStatusDisplay(msg) {
-    state.modelExportController?.refresh();
-    state.syncTtsControls?.();
-    chorusController?.refresh();
-    state.autoParameterController?.refresh();
+    // freeze1: progress text arrives several times a second while models
+    // load; re-syncing every panel (export / TTS / chorus / auto-tune) on
+    // each tick kept the character area dirty and re-laid out while scrolling.
+    const now = Date.now();
+    if (!msg || !state.busy || now - (state.lastPanelSyncAt || 0) >= 1000) {
+      state.lastPanelSyncAt = now;
+      state.modelExportController?.refresh();
+      state.syncTtsControls?.();
+      chorusController?.refresh();
+      state.autoParameterController?.refresh();
+    }
     const statusEl = document.getElementById("rvc-service-status");
     const convertBtn = document.getElementById("rvc-convert");
     const convertLabel = document.getElementById("rvc-convert-label");
 
     if (msg) {
       if (statusEl) {
-        if (statusEl.textContent !== msg) state.lastConversionActivityAt = Date.now();
-        statusEl.textContent = msg;
+        if (statusEl.textContent !== msg) {
+          state.lastConversionActivityAt = Date.now();
+          statusEl.textContent = msg;
+        }
       }
       return;
     }
@@ -7463,13 +7698,15 @@
     const runSignal = runController.signal;
     const stageStall = (stage, zh, en, code) => () => new RvcStallError(stage, zh, en, code);
     let loadingModels = true;
+    // Lighter page paint (no backdrop blur / transitions) while models load.
+    document.body?.classList.add("rvc-downloading");
 
     const startTime = Date.now();
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay(l(" 正在初始化本地推理引擎..."," Initializing the on-device engine\u2026"));
       const runtimeModule = await withDeadline(
-        import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20261101-stall1", window.location.href).href),
+        import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20261101-freeze1", window.location.href).href),
         RVC_STALL.importMs,
         stageStall("engine-import", "本地推理引擎脚本 30 秒内没有加载完成（网络或缓存异常）",
           "The on-device engine script did not load within 30s (network or cache problem)", "RVC_ENGINE_IMPORT_STALLED"),
@@ -7558,6 +7795,7 @@
       }
 
       loadingModels = false;
+      document.body?.classList.remove("rvc-downloading");
       updateProgressBar(100);
       setTimeout(() => showProgressBar(false), 800);
       checkCacheStatus();
@@ -7722,6 +7960,7 @@
       return false;
     } finally {
       if (state.localRunController === runController) state.localRunController = null;
+      document.body?.classList.remove("rvc-downloading");
       state.conversionStallLimitMs = 0;
       state.busy = false;
       if (convertBtn) {
@@ -9558,7 +9797,44 @@
 
   document.addEventListener("postprep:languagechange", applyRvcLanguage);
 
+  // freeze1: a tab left open (or a browser that keeps an old copy of the page)
+  // keeps running an old rvc.js. Compare with the published build and reload
+  // once onto a cache-busted URL; never while a conversion is running.
+  const RVC_BUILD = "20261101-freeze1";
+  async function checkRvcBuild({ reason = "boot" } = {}) {
+    let remote = "";
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(new URL(`assets/rvc-version.json?t=${Date.now()}`, window.location.href).href,
+        { cache: "no-store", signal: controller.signal });
+      clearTimeout(timer);
+      if (res.ok) remote = String((await res.json())?.version || "");
+    } catch {}
+    if (!/^\d{8}-[\w.-]+$/u.test(remote) || remote <= RVC_BUILD) return false;
+    const key = `rvc-reloaded-for-${remote}`;
+    let tried = false;
+    try { tried = sessionStorage.getItem(key) === "1"; } catch {}
+    if (tried || state.busy) {
+      showToast(l(`变声页有新版本（${remote}），请关闭此标签页后重新打开`, `A newer voice changer (${remote}) is available. Close this tab and open it again.`));
+      return false;
+    }
+    try { sessionStorage.setItem(key, "1"); } catch {}
+    console.info(`[rvc] build ${RVC_BUILD} -> ${remote} (${reason}); reloading`);
+    const next = new URL(window.location.href);
+    next.searchParams.set("v", remote);
+    window.location.replace(next.href);
+    return true;
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
+    setTimeout(() => { checkRvcBuild().catch(() => {}); }, 1500);
+    let lastBuildCheckAt = Date.now();
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden || state.busy || Date.now() - lastBuildCheckAt < 10 * 60 * 1000) return;
+      lastBuildCheckAt = Date.now();
+      checkRvcBuild({ reason: "resume" }).catch(() => {});
+    });
     state.lang = resolveRvcLanguage();
     loadCustomCollections();
     setupEventListeners();

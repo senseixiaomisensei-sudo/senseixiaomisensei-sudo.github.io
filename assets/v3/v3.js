@@ -162,7 +162,7 @@ function boot() {
   const p404 = document.querySelector('[data-404-path]');
   if (p404) p404.textContent = location.pathname + location.search;
   if (page === 'home') import('./home.js?v=20261031-v3d').then(m => m.initHome({ fine, gfx, idle }));
-  if (page === 'rvc') import('./studio.js?v=20261031-v3d').then(m => m.initStudio({ fine, gfx, idle }));
+  if (page === 'rvc') import('./studio.js?v=20261101-freeze1').then(m => m.initStudio({ fine, gfx, idle }));
   root.classList.add('v3-ready');
   // window light is decoration: fetched and painted only after load + idle, never before first paint
   const lit = () => idle(() => root.classList.add('v3-lit'), 2000);

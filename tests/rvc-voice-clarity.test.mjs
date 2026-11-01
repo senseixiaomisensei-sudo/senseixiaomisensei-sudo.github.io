@@ -242,8 +242,8 @@ test("local engine and rvc client cache versions are bumped for the workspace re
   const runtimeSource = await readFile(new URL("assets/rvc-engine/rvc-web-runtime.js", root), "utf8");
   const htmlSource = await readFile(new URL("rvc.html", root), "utf8");
   assert.match(runtimeSource, /inference\.worker\.js\?v=20260930-fractional-r42/u);
-  assert.match(clientSource, /rvc-web-runtime\.js\?v=20261101-stall1/u);
-  assert.match(htmlSource, /assets\/rvc\.js\?v=20261101-stall1/u);
+  assert.match(clientSource, /rvc-web-runtime\.js\?v=20261101-freeze1/u);
+  assert.match(htmlSource, /assets\/rvc\.js\?v=20261101-freeze1/u);
 });
 
 test("container sniff relabels mp4-in-mp3 uploads so the GPU accepts them", async () => {

@@ -220,8 +220,28 @@ export function initStudio(ctx) {
 
   // ------------------------------------------------------------- drawing
   const dpr = () => Math.min(2, devicePixelRatio || 1);
-  function fit(cv) { const r = cv.getBoundingClientRect(), w = Math.max(1, Math.round(r.width * dpr())), h = Math.max(1, Math.round(r.height * dpr())); if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } return [w, h]; }
-  new ResizeObserver(() => draw()).observe(waveBox);
+  // freeze1: canvas sizes come from ResizeObserver, not getBoundingClientRect
+  // per frame (that forced a synchronous layout on every animation frame
+  // while a conversion ran, freezing scroll on phones), and nothing is drawn
+  // while the monitor is off-screen.
+  const boxes = new WeakMap();
+  function fit(cv) {
+    let r = boxes.get(cv);
+    if (!r) { const b = cv.getBoundingClientRect(); r = { width: b.width, height: b.height }; boxes.set(cv, r); }
+    const w = Math.max(1, Math.round(r.width * dpr())), h = Math.max(1, Math.round(r.height * dpr()));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    return [w, h];
+  }
+  new ResizeObserver(entries => {
+    for (const e of entries) boxes.set(e.target, { width: e.contentRect.width, height: e.contentRect.height });
+    draw();
+  }).observe(waveCv);
+  new ResizeObserver(entries => { for (const e of entries) boxes.set(e.target, { width: e.contentRect.width, height: e.contentRect.height }); }).observe(specCv);
+  let onScreen = true;
+  if (typeof IntersectionObserver === 'function') new IntersectionObserver(entries => {
+    onScreen = entries.some(e => e.isIntersecting);
+    if (onScreen) { draw(); if (S.busy || S.playing) addTask(tick); }
+  }).observe(el);
   let gradB = null;
   function drawWave() {
     const [w, h] = fit(waveCv), g = waveCv.getContext('2d');
@@ -278,8 +298,10 @@ export function initStudio(ctx) {
       g.fillStyle = '#fff'; g.globalAlpha = .9; g.fillRect(Math.round(x), 0, Math.max(1, k * 1.5), h); g.globalAlpha = 1;
       timeEl.textContent = `${fmt(ref.currentTime)} / ${fmt(ref.duration)}`;
     }
-    empty.hidden = hasA || hasB;
-    el.dataset.compare = String(hasA && hasB);
+    // Write only on change: these ran every animation frame and re-styled
+    // the whole monitor subtree (freeze1).
+    if (empty.hidden !== (hasA || hasB)) empty.hidden = hasA || hasB;
+    if (el.dataset.compare !== String(hasA && hasB)) el.dataset.compare = String(hasA && hasB);
     waveCv.dispatchEvent(new Event('v3-drawn'));
   }
   // radix-2 FFT magnitude → log bands
@@ -322,9 +344,9 @@ export function initStudio(ctx) {
     return moving;
   }
   let queued = 0;
-  function draw() { if (queued) return; queued = requestAnimationFrame(now => { queued = 0; drawWave(); if (drawSpec(now)) addTask(tick); }); }
+  function draw() { if (queued || !onScreen) return; queued = requestAnimationFrame(now => { queued = 0; drawWave(); if (drawSpec(now)) addTask(tick); }); }
   function tick(now) {
-    if (document.hidden) return false;
+    if (document.hidden || !onScreen) return false;
     drawWave(); const m = drawSpec(now);
     return !!S.playing || S.busy || m;
   }
@@ -340,7 +362,7 @@ export function initStudio(ctx) {
     ring.setAttribute('aria-valuenow', String(Math.round(pct)));
     const st = busy ? 'running' : pct >= 100 || S.B?.peaks || S.B?.remote ? 'done' : 'idle';
     if (state.dataset.state !== st) { state.dataset.state = st; state.querySelector('b').textContent = t(st); }
-    el.dataset.busy = String(busy);
+    if (el.dataset.busy !== String(busy)) el.dataset.busy = String(busy);
     if (busy) addTask(tick);
   }
   if (bar) new MutationObserver(syncProgress).observe(bar, { attributes: true, attributeFilter: ['style'] });

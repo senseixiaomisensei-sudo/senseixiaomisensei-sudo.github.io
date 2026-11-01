@@ -283,3 +283,26 @@ html[data-ui="glass"] body[data-page="rvc"] #toast { z-index: var(--z-toast); bo
   html[data-ui="glass"] body[data-page="rvc"] :is(#site-header > header,#mobile-navigation,.rvc-workflow,.studio-monitor.glass-only,#rvc-result) { background: #f7faf8; }
   html[data-ui="glass"] body[data-page="rvc"] .rvc-mix-panel { background: #f7faf8; }
 }
+
+/* freeze1 (2026-11-01): while models download, phones drop the costly paint
+   (backdrop blur re-rasterised under every scroll frame, card transitions). */
+body.rvc-downloading *,
+body.rvc-downloading *::before,
+body.rvc-downloading *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+body.rvc-downloading :is(#rvc-model-gallery, #rvc-trained-model-gallery) * {
+  transition: none !important;
+  animation: none !important;
+}
+body.rvc-downloading :is(#rvc-model-gallery, #rvc-trained-model-gallery) :is(.rvc-model-card, img) {
+  filter: none !important;
+}
+/* freeze1: only cards near the viewport are laid out. Switching to the big
+   collection used to lay out every card (~0.8 s on a throttled phone). */
+:is(#rvc-model-gallery, #rvc-trained-model-gallery):not(.is-character-stack) { contain: layout paint; }
+:is(#rvc-model-gallery, #rvc-trained-model-gallery):not(.is-character-stack) [role="group"] > [role="option"] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 118px;
+}
