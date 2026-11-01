@@ -142,6 +142,14 @@
       modelPick: "已选择",
       stepAudio: "2. 上传或录制你的声音",
       localDirectConvert: "转为本地直接变声（不分离伴奏）",
+      stallRetry: "重试",
+      stallUseCloud: "改用云端",
+      stallUseLocal: "改用本机处理",
+      stallTitle: "处理已停止",
+      stallRetry: "重试",
+      stallUseCloud: "改用云端",
+      stallUseLocal: "改用本机处理",
+      stallTitle: "处理已停止",
       stepAudioHint: "纯人声最长 20 分钟，云端翻唱最长 15 分钟；文件限 25 MB。",
       sourceUpload: "上传音频",
       sourceUploadHint: "从设备选择文件。",
@@ -269,6 +277,14 @@
       modelPick: "Selected",
       stepAudio: "2. Upload or record your voice",
       localDirectConvert: "Convert on-device (no backing-track separation)",
+      stallRetry: "Retry",
+      stallUseCloud: "Use cloud",
+      stallUseLocal: "Use this device",
+      stallTitle: "Processing stopped",
+      stallRetry: "Retry",
+      stallUseCloud: "Use cloud",
+      stallUseLocal: "Use this device",
+      stallTitle: "Processing stopped",
       stepAudioHint: "Published on-device voices accept 20 minutes of dry vocals; cloud covers accept 15 minutes. Files must be under 25 MB. Prefer MP3/M4A; keep the local page in the foreground with enough memory.",
       sourceUpload: "Upload audio",
       sourceUploadHint: "Choose an existing audio file from your device.",
@@ -4231,6 +4247,76 @@
   const activeModelDownloadConcurrency = modelDownloadConcurrency();
   const globalDownloadPool = new ConcurrencyPool(activeModelDownloadConcurrency);
 
+  // Stall guards: every stage that waits on the browser, the network or a
+  // worker has a finite deadline or a no-progress watchdog. A stalled stage
+  // rejects with RvcStallError so the page restores the convert button and
+  // offers retry / switch instead of waiting forever.
+  const RVC_STALL = {
+    cacheOpenMs: 5000,
+    cacheReadMs: 8000,
+    cacheWriteBaseMs: 20000,
+    cacheBlobReadBaseMs: 15000,
+    downloadNoProgressMs: 45000,
+    importMs: 30000,
+    decodeMs: 90000,
+    workerStartMs: 45000,
+    workerFetchMs: 20000,
+    cloudProbeMs: 6000,
+    cloudReplyAfterUploadMs: 95000,
+    mixMs: 180000,
+    separatorNoProgressMs: 180000,
+    globalNoProgressMs: 180000,
+    cloudRecheckMs: 60000,
+  };
+
+  class RvcStallError extends Error {
+    constructor(stage, zh, en, code = "RVC_STALLED") {
+      super(state.lang === "en" ? en : zh);
+      this.name = "RvcStallError";
+      this.code = code;
+      this.stage = stage;
+      this.stalled = true;
+      this.zh = zh;
+      this.en = en;
+    }
+  }
+
+  // Resolve/reject with the promise, or reject with makeError() after ms, or
+  // with the abort reason as soon as signal aborts.
+  function withDeadline(promise, ms, makeError, signal) {
+    return new Promise((resolve, reject) => {
+      let done = false;
+      let timer = 0;
+      const finish = (fn, value) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        signal?.removeEventListener?.("abort", onAbort);
+        fn(value);
+      };
+      const onAbort = () => finish(reject, signal.reason instanceof Error
+        ? signal.reason : new RvcStallError("aborted", "已停止本次处理", "This run was stopped"));
+      if (signal?.aborted) return onAbort();
+      signal?.addEventListener?.("abort", onAbort, { once: true });
+      if (Number.isFinite(ms) && ms > 0) {
+        timer = setTimeout(() => finish(reject, typeof makeError === "function" ? makeError() : makeError), ms);
+      }
+      Promise.resolve(promise).then((value) => finish(resolve, value), (error) => finish(reject, error));
+    });
+  }
+
+  // Like withDeadline, but a timeout settles with fallbackValue instead of failing.
+  function settleWithin(promise, ms, fallbackValue = null) {
+    return withDeadline(promise, ms, () => ({ __rvcTimedOut: true })).catch((error) =>
+      error && error.__rvcTimedOut ? fallbackValue : Promise.reject(error));
+  }
+
+  function throwIfAborted(signal) {
+    if (signal?.aborted) {
+      throw signal.reason instanceof Error ? signal.reason : new RvcStallError("aborted", "已停止本次处理", "This run was stopped");
+    }
+  }
+
   // IndexedDB Persistent Storage for Instant 0-second reloads & Resumable Downloads
   const DB_NAME = "rvc_web_models_v5_db";
   const STORE_NAME = "model_blobs";
@@ -4285,45 +4371,122 @@
     return hash >>> 0 || 20260821;
   }
 
+  // One shared connection. Opening is bounded (blocked/never-answering
+  // IndexedDB on some Android browsers used to hang the whole pipeline).
+  let modelDbPromise = null;
+  let modelDbUnavailableUntil = 0;
   function openModelDB() {
-    return new Promise((resolve) => {
+    if (modelDbPromise) return modelDbPromise;
+    // After an open that timed out, skip IndexedDB for a minute instead of
+    // paying the open budget again for every chunk.
+    if (Date.now() < modelDbUnavailableUntil) return Promise.resolve(null);
+    const attempt = new Promise((resolve) => {
       if (!window.indexedDB) return resolve(null);
-      const req = indexedDB.open(DB_NAME, 1);
+      let settled = false;
+      let timer = 0;
+      const done = (db) => {
+        if (settled) {
+          if (db) try { db.close(); } catch {}
+          return;
+        }
+        settled = true;
+        clearTimeout(timer);
+        resolve(db);
+      };
+      timer = setTimeout(() => {
+        modelDbUnavailableUntil = Date.now() + 60000;
+        done(null);
+      }, RVC_STALL.cacheOpenMs);
+      let req;
+      try {
+        req = indexedDB.open(DB_NAME, 1);
+      } catch {
+        return done(null);
+      }
       req.onupgradeneeded = (e) => {
         const db = e.target.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME);
         }
       };
-      req.onsuccess = (e) => resolve(e.target.result);
-      req.onerror = () => resolve(null);
+      req.onsuccess = (e) => {
+        const db = e.target.result;
+        db.onversionchange = () => {
+          try { db.close(); } catch {}
+          modelDbPromise = null;
+        };
+        db.onclose = () => { modelDbPromise = null; };
+        done(db);
+      };
+      req.onerror = () => done(null);
+      req.onblocked = () => done(null);
     });
+    modelDbPromise = attempt;
+    attempt.then((db) => { if (!db && modelDbPromise === attempt) modelDbPromise = null; });
+    return attempt;
   }
 
   async function getCachedItem(key) {
     try {
       const db = await openModelDB();
       if (!db) return null;
-      return new Promise((resolve) => {
-        const tx = db.transaction(STORE_NAME, "readonly");
-        const store = tx.objectStore(STORE_NAME);
-        const req = store.get(key);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => resolve(null);
+      return await new Promise((resolve) => {
+        let settled = false;
+        const done = (value) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        };
+        const timer = setTimeout(() => done(null), RVC_STALL.cacheReadMs);
+        try {
+          const tx = db.transaction(STORE_NAME, "readonly");
+          const req = tx.objectStore(STORE_NAME).get(key);
+          req.onsuccess = () => done(req.result || null);
+          req.onerror = () => done(null);
+          tx.onabort = () => done(null);
+        } catch (e) {
+          modelDbPromise = null;
+          done(null);
+        }
       });
     } catch (e) {
       return null;
     }
   }
 
+  // Resolves true only after the write transaction committed, false on
+  // error/abort/quota or when the commit does not finish within a size-based
+  // budget (4 MB/s floor). Callers must not delete fallback copies on false.
   async function setCachedItem(key, val) {
     try {
       const db = await openModelDB();
-      if (!db) return;
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
-      store.put(val, key);
-    } catch (e) {}
+      if (!db) return false;
+      const bytes = Number(val?.size ?? val?.byteLength) || 0;
+      const budgetMs = RVC_STALL.cacheWriteBaseMs + Math.ceil(bytes / (4 * 1024 * 1024)) * 1000;
+      return await new Promise((resolve) => {
+        let settled = false;
+        const done = (value) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        };
+        const timer = setTimeout(() => done(false), budgetMs);
+        try {
+          const tx = db.transaction(STORE_NAME, "readwrite");
+          tx.oncomplete = () => done(true);
+          tx.onerror = () => done(false);
+          tx.onabort = () => done(false);
+          tx.objectStore(STORE_NAME).put(val, key);
+        } catch (e) {
+          modelDbPromise = null;
+          done(false);
+        }
+      });
+    } catch (e) {
+      return false;
+    }
   }
 
   async function removeCachedItem(key) {
@@ -4364,7 +4527,8 @@
     if (actual !== expectedHash) throw new Error(l("模型资源校验失败，请重新下载","Model resource verification failed. Download again."));
   }
 
-  async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress, expectedHash) {
+  async function fetchSingleChunkWithFallback(chunkPath, chunkIndex, totalChunks, onChunkProgress, expectedHash, stallSignal) {
+    throwIfAborted(stallSignal);
     const chunkCacheKey = `chunk:${chunkPath}`;
     const cachedBuf = await getCachedItem(chunkCacheKey);
     if (cachedBuf instanceof ArrayBuffer && cachedBuf.byteLength > 0) {
@@ -4457,6 +4621,9 @@
     const raceMirrorGroup = async (indices) => {
       const controller = new AbortController();
       const delays = [0, 450, 1200];
+      const abortFromStall = () => controller.abort();
+      if (stallSignal?.aborted) controller.abort();
+      else stallSignal?.addEventListener("abort", abortFromStall, { once: true });
       try {
         const buffer = await Promise.any(indices.map((index, order) => (
           delayedFetch(mirrors[index], delays[order] || 0, controller.signal)
@@ -4465,6 +4632,7 @@
         return buffer;
       } finally {
         controller.abort();
+        stallSignal?.removeEventListener("abort", abortFromStall);
       }
     };
 
@@ -4476,6 +4644,7 @@
     // two duplicate 20 MiB downloads running for every winning fragment.
     const mirrorGroups = [[0, 1, 5], [2, 3, 4], [6, 7, 0]];
     for (let attempt = 0; attempt < mirrorGroups.length; attempt++) {
+      throwIfAborted(stallSignal);
       try {
         winningBuffer = await raceMirrorGroup(mirrorGroups[attempt]);
         if (winningBuffer && winningBuffer.byteLength > 0) break;
@@ -4487,11 +4656,13 @@
       }
     }
 
+    throwIfAborted(stallSignal);
     if (!winningBuffer || winningBuffer.byteLength === 0) {
-      throw new Error(`无法从所有镜像节点下载分片 ${chunkIndex + 1}/${totalChunks} (${lastError?.message || "网络波动"})`);
+      throw new Error(l(`无法从所有镜像节点下载分片 ${chunkIndex + 1}/${totalChunks} (${lastError?.message || "网络波动"})`,
+        `Could not download chunk ${chunkIndex + 1}/${totalChunks} from any mirror (${lastError?.message || "network error"})`));
     }
 
-    // Persist chunk immediately for resumable downloads
+    // Persist chunk immediately for resumable downloads (bounded commit wait).
     await setCachedItem(chunkCacheKey, winningBuffer);
 
     if (typeof onChunkProgress === "function") {
@@ -4500,49 +4671,104 @@
     return { buffer: winningBuffer, fromCache: false };
   }
 
-  async function readableCachedModel(name, expectedHash) {
-    const cached = await getCachedItem(name);
+  // Reading a large cached Blob (and hashing it) is bounded by a size-based
+  // budget (6 MB/s floor). A read that stalls is treated as a broken cache
+  // entry: it is dropped and the resumable chunk download takes over.
+  async function readableCachedModel(name, expectedHash, onReading, signal) {
+    const cached = await withDeadline(getCachedItem(name), RVC_STALL.cacheOpenMs + RVC_STALL.cacheReadMs + 1000, () => null, signal)
+      .catch((error) => { if (signal?.aborted) throw error; return null; });
     if (!(cached instanceof Blob) || cached.size <= 1024 * 1024) return null;
+    if (typeof onReading === "function") onReading(cached.size);
+    const budgetMs = RVC_STALL.cacheBlobReadBaseMs + Math.ceil(cached.size / (6 * 1024 * 1024)) * 1000;
     try {
-      const bytes = await cached.arrayBuffer();
-      await verifyModelBytes(bytes, expectedHash);
+      const bytes = await withDeadline((async () => {
+        const buffer = await cached.arrayBuffer();
+        await verifyModelBytes(buffer, expectedHash);
+        return buffer;
+      })(), budgetMs, () => new RvcStallError("cache-read",
+        `读取本地缓存的模型超过 ${Math.round(budgetMs / 1000)} 秒没有完成，已丢弃该缓存并改为重新下载`,
+        `Reading the cached model did not finish within ${Math.round(budgetMs / 1000)}s; dropping it and downloading again`,
+        "RVC_CACHE_READ_STALLED"), signal);
       return { name, size: bytes.byteLength, arrayBuffer: async () => bytes };
-    } catch {
-      await removeCachedItem(name);
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      console.warn(`Cached model ${name} unreadable, re-downloading:`, error);
+      removeCachedItem(name).catch(() => {});
       return null;
     }
   }
 
-  // Fetch Chunked Model with Concurrency Pool & Real-Time Granular Progress
-  async function fetchChunkedModel(chunkUrls, name, displayName, mimeType, onProgress, integrity) {
-    const cached = await readableCachedModel(name, integrity?.sha256);
-    if (cached) {
-      if (typeof onProgress === "function") {
-        onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true, ` ${displayName} 已从本地闪存极速就绪`);
+  // Fetch Chunked Model with Concurrency Pool & Real-Time Granular Progress.
+  // Progress is reported in real bytes against the manifest totalSize; a
+  // no-progress watchdog (bytes, completed chunks or cache hits) aborts every
+  // in-flight transfer after RVC_STALL.downloadNoProgressMs, so a slow but
+  // moving network is never cut off while a dead one fails within ~45 s.
+  async function fetchChunkedModel(chunkUrls, name, displayName, mimeType, onProgress, integrity, options = {}) {
+    const outerSignal = options.signal;
+    throwIfAborted(outerSignal);
+    if (!options.skipWholeCheck) {
+      const cached = await readableCachedModel(name, integrity?.sha256, null, outerSignal);
+      if (cached) {
+        if (typeof onProgress === "function") {
+          onProgress(cached.size, cached.size, chunkUrls.length, chunkUrls.length, true, l(` ${displayName} 已从本地闪存极速就绪`,` ${displayName} loaded from local storage`));
+        }
+        return cached;
       }
-      return cached;
     }
 
     const urls = Array.isArray(chunkUrls) ? chunkUrls : [chunkUrls];
     const totalCount = urls.length;
     const blobParts = new Array(totalCount);
-    const chunkBytesLoaded = new Float32Array(totalCount);
+    const chunkBytesLoaded = new Float64Array(totalCount);
     let completedCount = 0;
-    const estimatedTotalBytes = totalCount * 20 * 1024 * 1024;
+    const declaredTotal = Number(integrity?.totalSize) || 0;
+    const estimatedTotalBytes = declaredTotal > 0 ? declaredTotal : totalCount * 20 * 1024 * 1024;
+    const mb = (bytes) => (bytes / 1024 / 1024).toFixed(1);
+
+    const stallController = new AbortController();
+    const onOuterAbort = () => stallController.abort(outerSignal.reason);
+    if (outerSignal?.aborted) stallController.abort(outerSignal.reason);
+    else outerSignal?.addEventListener?.("abort", onOuterAbort, { once: true });
+    let lastProgressAt = Date.now();
+    let lastLoaded = -1;
+    let stallReject = null;
+    const stalled = new Promise((_, reject) => { stallReject = reject; });
+    stalled.catch(() => {});
 
     const reportProgress = () => {
       let totalLoaded = 0;
       for (let i = 0; i < totalCount; i++) totalLoaded += chunkBytesLoaded[i];
+      if (totalLoaded > lastLoaded) {
+        lastLoaded = totalLoaded;
+        lastProgressAt = Date.now();
+      }
       if (typeof onProgress === "function") {
-        const msg = ` [1/4] 正在下载 ${displayName}: 分片 ${completedCount}/${totalCount} (${(totalLoaded/1024/1024).toFixed(1)}MB / ${(estimatedTotalBytes/1024/1024).toFixed(1)}MB) · ${activeModelDownloadConcurrency} 线程断点极速加速中`;
-        onProgress(totalLoaded, estimatedTotalBytes, completedCount, totalCount, false, msg);
+        const shownTotal = Math.max(estimatedTotalBytes, totalLoaded);
+        const msg = l(
+          ` [1/4] 正在下载 ${displayName}: ${mb(totalLoaded)}MB / ${mb(shownTotal)}MB · 分片 ${completedCount}/${totalCount} · ${activeModelDownloadConcurrency} 线程，可断点续传`,
+          ` [1/4] Downloading ${displayName}: ${mb(totalLoaded)} MB / ${mb(shownTotal)} MB · chunk ${completedCount}/${totalCount} · ${activeModelDownloadConcurrency} streams, resumable`,
+        );
+        onProgress(totalLoaded, shownTotal, completedCount, totalCount, false, msg);
       }
     };
+
+    const watchdog = setInterval(() => {
+      const idleMs = Date.now() - lastProgressAt;
+      if (idleMs < RVC_STALL.downloadNoProgressMs) return;
+      const seconds = Math.round(idleMs / 1000);
+      const error = new RvcStallError("download",
+        `下载${displayName}已 ${seconds} 秒没有任何进展（已完成 ${mb(Math.max(0, lastLoaded))}MB / ${mb(estimatedTotalBytes)}MB）。网络或模型镜像无响应；已下载的分片已保存，重试会从断点继续。`,
+        `Downloading ${displayName} made no progress for ${seconds}s (${mb(Math.max(0, lastLoaded))} MB / ${mb(estimatedTotalBytes)} MB done). The network or model mirrors are not responding; finished chunks are saved and a retry resumes from there.`,
+        "RVC_DOWNLOAD_STALLED");
+      stallController.abort(error);
+      stallReject(error);
+    }, 1000);
 
     reportProgress();
 
     const tasks = urls.map((u, idx) => {
       return globalDownloadPool.run(async () => {
+        throwIfAborted(stallController.signal);
         const { buffer } = await fetchSingleChunkWithFallback(
           u,
           idx,
@@ -4551,23 +4777,41 @@
             chunkBytesLoaded[idx] = Math.max(chunkBytesLoaded[idx], bytesLoaded);
             reportProgress();
           },
-          integrity?.chunkSha256?.[idx]
+          integrity?.chunkSha256?.[idx],
+          stallController.signal
         );
         blobParts[idx] = buffer;
         chunkBytesLoaded[idx] = buffer.byteLength;
         completedCount++;
+        lastProgressAt = Date.now();
         reportProgress();
       });
     });
 
-    await Promise.all(tasks);
+    try {
+      await Promise.race([Promise.all(tasks), stalled]);
+    } catch (error) {
+      stallController.abort(error);
+      tasks.forEach((task) => task.catch(() => {}));
+      throw stallController.signal.reason instanceof Error ? stallController.signal.reason : error;
+    } finally {
+      clearInterval(watchdog);
+      outerSignal?.removeEventListener?.("abort", onOuterAbort);
+    }
 
     const fullBlob = new Blob(blobParts, { type: mimeType });
+    // Commit the assembled model before dropping the per-chunk copies, so a
+    // failed/quota-limited/slow write never throws away resumable progress.
+    if (typeof onProgress === "function") {
+      onProgress(fullBlob.size, fullBlob.size, totalCount, totalCount, false,
+        l(` [1/4] ${displayName} 下载完成，正在写入本地缓存（${mb(fullBlob.size)}MB）…`,` [1/4] ${displayName} downloaded. Saving to local storage (${mb(fullBlob.size)} MB)…`));
+    }
     try {
-      await setCachedItem(name, fullBlob);
-      // Clean up individual chunk entries to keep storage compact
-      for (const u of urls) {
-        removeCachedItem(`chunk:${u}`).catch(() => {});
+      const saved = await setCachedItem(name, fullBlob);
+      if (saved) {
+        for (const u of urls) removeCachedItem(`chunk:${u}`).catch(() => {});
+      } else {
+        console.warn(`Could not commit ${name} to IndexedDB; keeping its chunks for the next run.`);
       }
     } catch (e) {
       console.warn("Could not save to IndexedDB cache:", e);
@@ -4588,11 +4832,21 @@
     };
   }
 
-  async function loadModelAuto(modelConfig, name, displayName, mimeType, onProgress) {
-    const cached = await readableCachedModel(name, modelConfig?.sha256);
+  async function loadModelAuto(modelConfig, name, displayName, mimeType, onProgress, options = {}) {
+    const signal = options.signal;
+    if (typeof onProgress === "function") {
+      onProgress(0, Number(modelConfig?.totalSize) || 0, 0, 1, false,
+        l(` [1/4] 正在检查本地缓存：${displayName || name}…`,` [1/4] Checking local storage for ${displayName || name}…`));
+    }
+    const cached = await readableCachedModel(name, modelConfig?.sha256, (size) => {
+      if (typeof onProgress === "function") {
+        onProgress(0, size, 0, 1, true,
+          l(` [1/4] 正在读取本地缓存的 ${displayName || name}（${(size / 1024 / 1024).toFixed(0)}MB）…`,` [1/4] Reading cached ${displayName || name} (${(size / 1024 / 1024).toFixed(0)} MB)…`));
+      }
+    }, signal);
     if (cached) {
       if (typeof onProgress === "function") {
-        onProgress(cached.size, cached.size, 1, 1, true, ` ${displayName} 已从本地闪存秒级就绪`);
+        onProgress(cached.size, cached.size, 1, 1, true, l(` ${displayName} 已从本地闪存秒级就绪`,` ${displayName} loaded from local storage`));
       }
       return cached;
     }
@@ -4612,16 +4866,19 @@
       const fetchChunks = isPublishedCharacter
         ? chunks.map((path) => versionCharacterChunkPath(path, modelConfig))
         : chunks;
-      return await fetchChunkedModel(fetchChunks, name, displayName || name, mimeType, onProgress, modelConfig);
+      return await fetchChunkedModel(fetchChunks, name, displayName || name, mimeType, onProgress, modelConfig,
+        { signal, skipWholeCheck: true });
     }
 
     const urls = modelConfig?.urls || (typeof modelConfig === "string" ? [modelConfig] : [name]);
-    return await fetchWithCache(urls, name, mimeType, onProgress);
+    return await fetchWithCache(urls, name, mimeType, onProgress, { signal });
   }
 
-  async function fetchWithCache(urlOrUrls, name, mimeType, onProgress) {
+  async function fetchWithCache(urlOrUrls, name, mimeType, onProgress, options = {}) {
+    const signal = options.signal;
     const urls = Array.isArray(urlOrUrls) ? urlOrUrls.filter(Boolean) : [urlOrUrls];
     for (const u of urls) {
+      throwIfAborted(signal);
       const cached = await getCachedItem(u);
       if (cached instanceof Blob) {
         return new File([cached], name, { type: mimeType });
@@ -4630,17 +4887,26 @@
 
     let lastErr = null;
     for (const u of urls) {
+      throwIfAborted(signal);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      // Inactivity watchdog: armed for the headers and re-armed per body read.
+      let timeoutId = setTimeout(() => controller.abort(), 10000);
+      const rearm = () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => controller.abort(), 18000);
+      };
+      const onAbort = () => controller.abort();
+      signal?.addEventListener?.("abort", onAbort, { once: true });
       try {
         const res = await fetch(u, { signal: controller.signal });
-        clearTimeout(timeoutId);
+        rearm();
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const contentLength = res.headers.get("content-length");
         const total = contentLength ? parseInt(contentLength, 10) : 0;
 
         if (!res.body || !total) {
           const blob = await res.blob();
+          clearTimeout(timeoutId);
           await setCachedItem(u, blob);
           return new File([blob], name, { type: mimeType });
         }
@@ -4649,6 +4915,7 @@
         let loaded = 0;
         const chunks = [];
         while (true) {
+          rearm();
           const { done, value } = await reader.read();
           if (done) break;
           chunks.push(value);
@@ -4657,15 +4924,19 @@
             onProgress(loaded, total);
           }
         }
+        clearTimeout(timeoutId);
         const blob = new Blob(chunks, { type: mimeType });
         await setCachedItem(u, blob);
         return new File([blob], name, { type: mimeType });
       } catch (err) {
-        clearTimeout(timeoutId);
         lastErr = err;
         console.warn(`Fetch ${name} from ${u} failed:`, err);
+      } finally {
+        clearTimeout(timeoutId);
+        signal?.removeEventListener?.("abort", onAbort);
       }
     }
+    throwIfAborted(signal);
     throw new Error(`Failed to fetch ${name} from available sources (${lastErr?.message || "network error"})`);
   }
 
@@ -5330,7 +5601,9 @@
   function updateProgressBar(percent) {
     const bar = document.getElementById("rvc-progress-bar");
     if (bar) {
-      bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+      const width = `${Math.max(0, Math.min(100, percent))}%`;
+      if (bar.style.width !== width) state.lastConversionActivityAt = Date.now();
+      bar.style.width = width;
     }
   }
 
@@ -6145,7 +6418,10 @@
     const convertLabel = document.getElementById("rvc-convert-label");
 
     if (msg) {
-      if (statusEl) statusEl.textContent = msg;
+      if (statusEl) {
+        if (statusEl.textContent !== msg) state.lastConversionActivityAt = Date.now();
+        statusEl.textContent = msg;
+      }
       return;
     }
 
@@ -7180,12 +7456,24 @@
       convertBtn.disabled = true;
       convertBtn.setAttribute("aria-busy", "true");
     }
+    // Abort handle for this run: the per-stage guards and the page-level
+    // no-progress supervisor both stop the run through it.
+    const runController = new AbortController();
+    state.localRunController = runController;
+    const runSignal = runController.signal;
+    const stageStall = (stage, zh, en, code) => () => new RvcStallError(stage, zh, en, code);
+    let loadingModels = true;
 
     const startTime = Date.now();
     try {
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay(l(" 正在初始化本地推理引擎..."," Initializing the on-device engine\u2026"));
-      const runtimeModule = await import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20260930-fractional-r42", window.location.href).href);
+      const runtimeModule = await withDeadline(
+        import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20261101-stall1", window.location.href).href),
+        RVC_STALL.importMs,
+        stageStall("engine-import", "本地推理引擎脚本 30 秒内没有加载完成（网络或缓存异常）",
+          "The on-device engine script did not load within 30s (network or cache problem)", "RVC_ENGINE_IMPORT_STALLED"),
+        runSignal);
       const { createRVC, runPipelineInWorker } = runtimeModule;
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
@@ -7207,15 +7495,19 @@
       showProgressBar(true);
 
       updateStatusDisplay(l(" [1/4] 正在加载基础语义模型 (HuBERT)..."," [1/4] Loading the semantic model (HuBERT)\u2026"));
+      // Progress callbacks use (loaded, total, ...) bytes; the old parameter
+      // name `l` shadowed the language helper and threw when msg was empty.
+      const byteShare = (loaded, total, cur, tot) => (total > 0 ? loaded / total : (tot > 0 ? cur / tot : 0));
       const hubertFile = await loadModelAuto(
         hubertCfg,
         encoder.cacheKey,
         "HuBERT 语义特征模型",
         "application/onnx",
-        (l, t, cur, tot, fromCache, msg) => {
-          updateProgressBar(Math.min(33, Math.round((cur / tot) * 33)));
+        (loaded, total, cur, tot, fromCache, msg) => {
+          updateProgressBar(5 + Math.min(28, Math.round(byteShare(loaded, total, cur, tot) * 28)));
           updateStatusDisplay(msg || l(` [1/4] 正在加载 HuBERT 语义模型: 分片 ${cur}/${tot}`,` [1/4] Loading HuBERT: chunk ${cur}/${tot}`));
-        }
+        },
+        { signal: runSignal }
       );
       updateProgressBar(33);
 
@@ -7225,10 +7517,11 @@
         "rmvpe.onnx",
         "RMVPE 音高模型",
         "application/onnx",
-        (l, t, cur, tot, fromCache, msg) => {
-          updateProgressBar(33 + Math.min(33, Math.round((cur / tot) * 33)));
+        (loaded, total, cur, tot, fromCache, msg) => {
+          updateProgressBar(33 + Math.min(33, Math.round(byteShare(loaded, total, cur, tot) * 33)));
           updateStatusDisplay(msg || l(` [1/4] 正在加载 RMVPE 音高模型: 分片 ${cur}/${tot}`,` [1/4] Loading RMVPE: chunk ${cur}/${tot}`));
-        }
+        },
+        { signal: runSignal }
       );
       updateProgressBar(66);
 
@@ -7238,10 +7531,11 @@
         characterModelCacheKey(selectedModel),
         selectedModel.name,
         "application/onnx",
-        (l, t, cur, tot, fromCache, msg) => {
-          updateProgressBar(66 + Math.min(34, Math.round((cur / tot) * 34)));
+        (loaded, total, cur, tot, fromCache, msg) => {
+          updateProgressBar(66 + Math.min(34, Math.round(byteShare(loaded, total, cur, tot) * 34)));
           updateStatusDisplay(msg || l(` [1/4] 正在加载 ${selectedModel.name} 角色模型: 分片 ${cur}/${tot}`,` [1/4] Loading ${voiceName(selectedModel)}: chunk ${cur}/${tot}`));
-        }
+        },
+        { signal: runSignal }
       );
 
       let retrievalFile;
@@ -7253,14 +7547,17 @@
             getChunkMirrorUrls(retrievalPath),
             retrievalCacheKey(selectedModel),
             "application/octet-stream",
-            () => {}
+            () => {},
+            { signal: runSignal }
           );
         } catch (error) {
+          if (runSignal.aborted) throw error;
           console.warn(`音色检索码本不可用，已回退到无检索变声: ${error instanceof Error ? error.message : error}`);
           retrievalFile = undefined;
         }
       }
 
+      loadingModels = false;
       updateProgressBar(100);
       setTimeout(() => showProgressBar(false), 800);
       checkCacheStatus();
@@ -7268,7 +7565,9 @@
       // Ensure audio float32 buffer is valid (and not detached from any previous operations)
       if (!songVocal && (!state.audio.float32 || state.audio.float32.byteLength === 0)) {
         if (state.audio.file) {
-          const decoded = await decodeAudioFileTo16kMono(state.audio.file);
+          const decoded = await withDeadline(decodeAudioFileTo16kMono(state.audio.file), RVC_STALL.decodeMs,
+            stageStall("decode", "音频解码 90 秒内没有完成，请换一个 WAV/MP3 文件重试", "Decoding the audio did not finish within 90s. Retry with a WAV/MP3 file.", "RVC_DECODE_STALLED"),
+            runSignal);
           state.audio.float32 = decoded.float32;
         } else {
           throw new Error(l("音频数据已失效，请重新选择或录制音频","Audio has expired. Select or record it again."));
@@ -7280,6 +7579,7 @@
       // fixed-frame worker windows, but receive a duration-aware deadline so
       // a three-minute phone conversion is not killed by the old 120s cap.
       const localTimeoutMs = localInferenceTimeoutMs(state.audio.duration, allowLong);
+      state.conversionStallLimitMs = localTimeoutMs + 15000;
       updateStatusDisplay(fallback
         ? " 云端暂时不可达，正在切换到用户设备端分段推理；请保持页面在前台…"
         : " [2/4] 本地 WebAssembly SIMD 推理开始 (完全在您的设备上运行)...");
@@ -7340,6 +7640,11 @@
           // Healthy WASM inference can exceed the estimate on slower devices.
           // Extend only while milestones advance, with a finite total ceiling.
           maxTotalTimeout: Math.min(4 * 60 * 60 * 1000, localTimeoutMs * 4),
+          // The worker must report its first milestone quickly; a worker or
+          // ORT/WASM bootstrap that never answers fails instead of idling.
+          startupTimeout: RVC_STALL.workerStartMs,
+          fetchTimeout: RVC_STALL.workerFetchMs,
+          signal: runSignal,
         }
       );
 
@@ -7349,7 +7654,10 @@
       }
       // Offline song covers remix the converted vocal with the locally
       // separated accompaniment before anything reaches the player.
-      const finalWav = finalize ? await finalize(result.outputWav) : result.outputWav;
+      const finalWav = finalize
+        ? await withDeadline(finalize(result.outputWav), RVC_STALL.mixMs,
+          stageStall("mix", "本机回混伴奏 3 分钟内没有完成", "On-device remixing did not finish within 3 minutes", "RVC_MIX_STALLED"), runSignal)
+        : result.outputWav;
       const elapsedTotalSec = ((Date.now() - startTime) / 1000).toFixed(1);
 
       // 4. Attach generated audio to UI
@@ -7384,7 +7692,24 @@
       return true;
     } catch (err) {
       console.error("RVC Inference Error:", err);
+      const stall = stallFromError(err, runSignal);
+      if (stall) {
+        showProgressBar(false);
+        reportConversionStall(stall, { mode: "local", fallback });
+        return false;
+      }
       const rawMessage = String(err?.message || err || "");
+      if (loadingModels) {
+        // Model download/cache failure (all mirrors failed): say so, keep the
+        // saved chunks, and offer retry / cloud instead of an inference error.
+        const reasonZh = `模型下载失败（${rawMessage || "网络错误"}）。已下载的分片已保存，点「重试」会从断点继续，或点「改用云端」。`;
+        const reasonEn = `Model download failed (${rawMessage || "network error"}). Finished chunks are saved; Retry resumes from there, or use the cloud.`;
+        showToast(l(reasonZh, reasonEn));
+        updateStatusDisplay(` ${l(reasonZh, reasonEn)}`);
+        showProgressBar(false);
+        showStallActions({ mode: "local", reasonZh, reasonEn });
+        return false;
+      }
       const message = /ReshapeHelper|requested_shape_size|cannot be reshaped/iu.test(rawMessage)
         ? l("设备端推理组件仍在使用旧缓存，请刷新页面后重新变声。","The on-device engine is using an old cache. Refresh and convert again.")
         : allowLong
@@ -7392,8 +7717,12 @@
           : l("本机变声处理失败，请重新选择一段较短的纯人声音频后重试。","On-device conversion failed. Retry with a shorter dry-vocal recording.");
       showToast(message);
       updateStatusDisplay(` ${message}`);
+      showProgressBar(false);
+      showStallActions({ mode: "local", reasonZh: message, reasonEn: message });
       return false;
     } finally {
+      if (state.localRunController === runController) state.localRunController = null;
+      state.conversionStallLimitMs = 0;
       state.busy = false;
       if (convertBtn) {
         convertBtn.disabled = false;
@@ -7558,6 +7887,15 @@
       const uploadAndInfer = (routes, attempt) => new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         const uploadStartedAt = Date.now();
+        // forcedError: set by the post-upload reply watchdog or the page
+        // supervisor; an abort carrying it is final (no silent retry).
+        let forcedError = null;
+        let replyTimer = 0;
+        const stopReplyWatch = () => { if (replyTimer) clearTimeout(replyTimer); replyTimer = 0; };
+        state.cloudRunAbort = (error) => {
+          forcedError = error;
+          try { xhr.abort(); } catch {}
+        };
         xhr.open("POST", routes.convertUrl, true);
         xhr.timeout = requestTimeoutMs;
 
@@ -7570,6 +7908,17 @@
         xhr.upload.onload = () => {
           updateProgressBar(46);
           updateStatusDisplay(l(" [1/3] 音频传输已结束，正在等待云端确认并启动推理…"," [1/3] Upload sent. Waiting for cloud confirmation and inference\u2026"));
+          // The job endpoint answers with a job id right after accepting the
+          // upload; no answer at all for this long means the PC/tunnel is gone.
+          const replyWatchMs = typeof RVC_STALL === "object" ? RVC_STALL.cloudReplyAfterUploadMs : 95000;
+          stopReplyWatch();
+          replyTimer = setTimeout(() => {
+            const error = new Error(l(`云端 ${Math.round(replyWatchMs / 1000)} 秒没有确认任务，云端电脑可能离线`,`The cloud did not acknowledge the job within ${Math.round(replyWatchMs / 1000)}s; the cloud PC may be offline`));
+            error.code = "RVC_BACKEND_TIMEOUT";
+            error.retryable = false;
+            forcedError = error;
+            try { xhr.abort(); } catch {}
+          }, replyWatchMs);
           if (ticker) clearInterval(ticker);
           ticker = setInterval(() => {
             const sec = Math.round((Date.now() - startedAt) / 1000);
@@ -7581,6 +7930,7 @@
 
         xhr.onload = () => {
           if (ticker) clearInterval(ticker);
+          stopReplyWatch();
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const resJson = JSON.parse(xhr.responseText);
@@ -7623,6 +7973,11 @@
 
         const rejectNetworkFailure = () => {
           if (ticker) clearInterval(ticker);
+          stopReplyWatch();
+          if (forcedError) {
+            reject(forcedError);
+            return;
+          }
           const error = new Error(attempt < 2
             ? "网络连接暂时中断，准备自动重试"
             : "网络连接连续两次中断");
@@ -7635,6 +7990,7 @@
 
         xhr.ontimeout = () => {
           if (ticker) clearInterval(ticker);
+          stopReplyWatch();
           const error = new Error(l(`上传或推理超时 (${Math.round(requestTimeoutMs / 1000)}s)，建议裁短音频后重试`,`Upload or inference timed out (${Math.round(requestTimeoutMs / 1000)}s). Try a shorter clip.`));
           error.code = "RVC_BACKEND_TIMEOUT";
           error.retryable = false;
@@ -7744,8 +8100,13 @@
         ? (state.lang === "en" ? " · This voice is cloud-only; choose an on-device voice to continue locally." : " · 该角色仅支持云端；如需本地接续，请更换支持设备端的角色。") : "";
       updateStatusDisplay(` ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}${deviceHint}${songFallbackHint}`);
       showToast(` ${failureMessage}`);
+      if (typeof showStallActions === "function") {
+        const reason = `${error?.stalled ? l("云端处理卡住，已自动停止：","Cloud processing stalled and was stopped: ") : ""}${failureMessage}${error?.code ? `（${error.code}）` : ""}`;
+        showStallActions({ mode: "official", reasonZh: reason, reasonEn: reason });
+      }
       return false;
     } finally {
+      state.cloudRunAbort = null;
       state.busy = false;
       syncMixControls();
       setTimeout(() => showProgressBar(false), 800);
@@ -7910,7 +8271,7 @@
     // v3 master (docs/rvc-v3-quality.md): loudness match to the upload +
     // true-peak limiter, in a Worker; any failure keeps the legacy mix.
     try {
-      const v3 = await import(new URL("assets/rvc-engine/v3-master.mjs?v=20261031-v3q2", window.location.href).href);
+      const v3 = await import(new URL("assets/rvc-engine/v3-master.mjs?v=20261101-stall1", window.location.href).href);
       if (v3.v3MasterEnabled(window)) {
         const untouched = !mix.vocalMute && !mix.accompanimentMute && !mix.vocalGainDb && !mix.accompanimentGainDb;
         const reference = sourceVocals ? [0, 1].map((c) => {
@@ -7935,17 +8296,37 @@
     return encodeStereoWav16(left, right, sampleRate);
   }
 
-  function runSongSeparationWorker(modelBytes, left, right, onMessage) {
+  // No-progress watchdog: the separator posts progress per window; silence
+  // for RVC_STALL.separatorNoProgressMs (or an abort) terminates the worker.
+  function runSongSeparationWorker(modelBytes, left, right, signal, onMessage) {
     return new Promise((resolve, reject) => {
       const worker = new Worker(
         new URL(`assets/rvc-engine/separator.worker.js?v=${SONG_SEPARATOR_WORKER_VERSION}`, window.location.href),
         { type: "module" },
       );
+      let settled = false;
+      let idleTimer = 0;
+      const onAbort = () => finish(signal.reason instanceof Error ? signal.reason : new Error("separation stopped"));
       const finish = (error, value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(idleTimer);
+        signal?.removeEventListener?.("abort", onAbort);
         worker.terminate();
         if (error) reject(error); else resolve(value);
       };
+      const armIdle = () => {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => finish(new RvcStallError("separation",
+          `本机人声分离 ${Math.round(RVC_STALL.separatorNoProgressMs / 1000)} 秒没有进展（设备算力或内存不足）`,
+          `On-device vocal separation made no progress for ${Math.round(RVC_STALL.separatorNoProgressMs / 1000)}s (device compute or memory limit)`,
+          "RVC_SEPARATION_STALLED")), RVC_STALL.separatorNoProgressMs);
+      };
+      if (signal?.aborted) return onAbort();
+      signal?.addEventListener?.("abort", onAbort, { once: true });
+      armIdle();
       worker.onmessage = (event) => {
+        armIdle();
         const message = event.data || {};
         if (message.type === "done") finish(null, message);
         else if (message.type === "error") finish(new Error(message.message || "separation failed"));
@@ -7979,12 +8360,18 @@
         " 电脑端云引擎离线，正在本机完成带伴奏翻唱：[1/3] 下载人声分离模型（首次约 67MB，之后走缓存）…",
         " Cloud engine is offline. Covering on this device: [1/3] downloading the separator (about 67 MB the first time)…",
       ));
+      const songController = new AbortController();
+      state.localRunController = songController;
       const modelFile = await loadModelAuto(
         state.baseModels.songSeparator,
         "song-separator-kim-vocal-2.onnx",
         l("人声分离模型","Vocal separator"),
         "application/onnx",
-        (loaded, total, current, count) => updateProgressBar(Math.min(10, Math.round((current / Math.max(1, count)) * 10))),
+        (loaded, total, current, count, fromCache, msg) => {
+          updateProgressBar(1 + Math.min(9, Math.round((total > 0 ? loaded / total : current / Math.max(1, count)) * 9)));
+          if (msg) updateStatusDisplay(msg);
+        },
+        { signal: songController.signal },
       );
       const modelBytes = await modelFile.arrayBuffer();
       updateStatusDisplay(l(" [2/3] 正在本机解码歌曲…"," [2/3] Decoding the song on this device…"));
@@ -7993,7 +8380,7 @@
       const left = new Float32Array(decoded.getChannelData(0));
       const right = decoded.numberOfChannels > 1 ? new Float32Array(decoded.getChannelData(1)) : new Float32Array(left);
       const sampleRate = decoded.sampleRate;
-      separation = await runSongSeparationWorker(modelBytes, left, right, (message) => {
+      separation = await runSongSeparationWorker(modelBytes, left, right, songController.signal, (message) => {
         if (message.type === "progress") {
           updateProgressBar(10 + Math.round((message.current / Math.max(1, message.total)) * 50));
           updateStatusDisplay(l(
@@ -8024,6 +8411,11 @@
       return await runWebRvcInference({ allowLong: true, fallback: true });
     } catch (error) {
       console.error("Device song cover failed:", error);
+      if (error?.stalled) {
+        showProgressBar(false);
+        reportConversionStall(error, { mode: "local" });
+        return false;
+      }
       const message = l(
         "本机带伴奏翻唱失败（设备内存或算力不足时常见）；请稍后电脑端云引擎上线再试，或裁剪成更短的片段。",
         "On-device song cover failed (usually memory or compute limits). Try again when the cloud engine is back, or use a shorter clip.",
@@ -8031,8 +8423,10 @@
       showToast(message);
       updateStatusDisplay(` ${message}`);
       showProgressBar(false);
+      showStallActions({ mode: "local", reasonZh: message, reasonEn: message });
       return false;
     } finally {
+      if (separation === undefined || state.busy) state.localRunController = null;
       if (separation === undefined || state.busy) {
         state.busy = false;
         if (convertBtn) { convertBtn.disabled = false; convertBtn.setAttribute("aria-busy", "false"); }
@@ -8051,18 +8445,21 @@
     if (state.inferenceMode === "local") {
       return runWebRvcInference({ allowLong: true });
     }
-    if (!isAppleMobile() && state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && state.engineReady === false) {
-      const cloudReady = await refreshOfficialService();
-      if (cloudReady === false) {
-        updateStatusDisplay(l(" 检测到电脑端云引擎离线，正在使用当前用户设备处理纯人声…"," Cloud engine is offline. Processing dry vocals on your device\u2026"));
+    if (!isAppleMobile() && state.audioMode === "voice" && hasDeviceFallbackModel(selectedModel) && state.engineReady !== true) {
+      // Single bounded probe (RVC_STALL.cloudProbeMs, <= 8 s) instead of the
+      // 2 x 15 s status retry, so an offline home PC falls back quickly.
+      const cloudReady = await quickCloudProbe();
+      if (cloudReady !== true) {
+        updateStatusDisplay(l(" 云端电脑离线，正在使用本机处理（云端恢复后会自动改回云端）…"," The cloud PC is offline. Processing on this device (cloud is used again automatically once it is back)\u2026"));
         setInferenceMode("local");
+        state.autoLocalFallback = true;
         return runWebRvcInference({ allowLong: true, fallback: true });
       }
     }
     // Song covers: cloud first; only when the home-PC engine is unreachable
     // does the cover run fully on this device.
     if (state.audioMode === "song" && state.engineReady !== true && canRunDeviceSongCover(selectedModel)) {
-      const cloudReady = await refreshOfficialService();
+      const cloudReady = await quickCloudProbe();
       if (cloudReady !== true) return runDeviceSongCover();
     }
     const cloudResult = await runOfficialRvcInference({ allowDeviceFallback: !isAppleMobile() });
@@ -8071,9 +8468,162 @@
     }
     if (cloudResult?.fallback) {
       setInferenceMode("local");
+      state.autoLocalFallback = true;
       return runWebRvcInference({ allowLong: true, fallback: true });
     }
     return cloudResult;
+  }
+
+  // ---- Conversion supervisor, stall actions and cloud recovery ----
+  function stallFromError(error, signal) {
+    const reason = signal?.aborted && signal.reason instanceof Error ? signal.reason : null;
+    if (reason?.stalled) return reason;
+    if (error?.stalled) return error;
+    const code = String(error?.code || "");
+    if (code === "WORKER_TIMEOUT" || code === "WORKER_START_TIMEOUT" || code === "WORKER_FETCH_TIMEOUT") {
+      return new RvcStallError("worker",
+        `本机推理引擎没有响应（${code}）。可能是设备内存不足或页面被切到后台`,
+        `The on-device engine stopped responding (${code}). The device may be low on memory or the page went to the background`,
+        code);
+    }
+    return null;
+  }
+
+  function hideStallActions() {
+    const panel = document.getElementById("rvc-stall-actions");
+    if (panel) panel.hidden = true;
+  }
+
+  // Shows the reason plus Retry and (when it applies) a switch to the other
+  // engine. Never leaves the page waiting: the convert button is re-enabled.
+  function showStallActions({ mode = state.inferenceMode, reasonZh = "", reasonEn = "" } = {}) {
+    const panel = document.getElementById("rvc-stall-actions");
+    const message = document.getElementById("rvc-stall-message");
+    const retry = document.getElementById("rvc-stall-retry");
+    const swap = document.getElementById("rvc-stall-switch");
+    const convertBtn = document.getElementById("rvc-convert");
+    if (convertBtn && !state.busy) {
+      convertBtn.disabled = false;
+      convertBtn.setAttribute("aria-busy", "false");
+    }
+    if (!panel) return;
+    if (message) message.textContent = l(reasonZh, reasonEn || reasonZh);
+    if (retry) retry.textContent = t("stallRetry");
+    const selectedModel = state.catalog.find((model) => model.id === state.selectedModelId);
+    const isLocal = mode === "local";
+    const canSwitch = isLocal
+      ? !String(selectedModel?.id || "").startsWith(OWN_MODEL_PREFIX)
+      : hasDeviceFallbackModel(selectedModel) && !isAppleMobile();
+    if (swap) {
+      swap.hidden = !canSwitch;
+      swap.dataset.target = isLocal ? "official" : "local";
+      swap.textContent = t(isLocal ? "stallUseCloud" : "stallUseLocal");
+    }
+    panel.hidden = false;
+  }
+
+  function reportConversionStall(error, { mode = state.inferenceMode } = {}) {
+    const zh = String(error?.zh || error?.message || error || "处理没有进展").replace(/[。.\s]+$/u, "");
+    const en = String(error?.en || error?.message || error || "No progress").replace(/[。.\s]+$/u, "");
+    const isLocal = mode === "local";
+    const reasonZh = `${isLocal ? "本机处理卡住，已自动停止" : "云端处理卡住，已自动停止"}：${zh}。可点「重试」${isLocal ? "或「改用云端」" : "或「改用本机」"}。`;
+    const reasonEn = `${isLocal ? "On-device processing stalled and was stopped" : "Cloud processing stalled and was stopped"}: ${en}. Use Retry${isLocal ? " or Use cloud" : " or Use this device"}.`;
+    updateStatusDisplay(` ${l(reasonZh, reasonEn)}`);
+    showToast(l(reasonZh, reasonEn));
+    showStallActions({ mode, reasonZh, reasonEn });
+  }
+
+  // Single status request bounded by RVC_STALL.cloudProbeMs. Anything but a
+  // ready answer (timeout, 5xx/530 from the relay, network/CORS error) counts
+  // as offline so the caller can fall back immediately.
+  async function quickCloudProbe() {
+    try {
+      const statusUrl = new URL(OFFICIAL_RVC_STATUS_ENDPOINT, window.location.href);
+      if (state.selectedModelId) statusUrl.searchParams.set("modelId", state.selectedModelId);
+      const status = await fetchJsonWithTimeout(statusUrl.href, RVC_STALL.cloudProbeMs);
+      state.engineReady = status?.ready === true;
+      state.engineInfo = state.engineReady ? status : null;
+    } catch (error) {
+      console.warn("Quick cloud probe: offline", error);
+      state.engineReady = false;
+      state.engineInfo = null;
+    }
+    state.engineCheckedAt = Date.now();
+    return state.engineReady;
+  }
+
+  // After an automatic switch to on-device processing, use the cloud again
+  // as soon as the home PC answers (checked before each run and every 60 s).
+  async function maybeReturnToCloud({ announce = true } = {}) {
+    if (!state.autoLocalFallback || state.inferenceMode !== "local" || state.busy) return false;
+    const ready = await quickCloudProbe();
+    if (ready !== true || state.busy || state.inferenceMode !== "local") return false;
+    state.autoLocalFallback = false;
+    setInferenceMode("official");
+    const message = l(" 云端电脑已恢复在线，已自动改回云端 GPU 处理。"," The cloud PC is back online. Switched back to the cloud GPU.");
+    if (announce) {
+      updateStatusDisplay(message);
+      showToast(message);
+    }
+    return true;
+  }
+
+  function cloudRecheckTick() {
+    if (!state.autoLocalFallback || state.busy) return;
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+    maybeReturnToCloud().catch(() => {});
+  }
+
+  function forceRestoreAfterStall(error) {
+    state.busy = false;
+    const convertBtn = document.getElementById("rvc-convert");
+    const convertLabel = document.getElementById("rvc-convert-label");
+    if (convertBtn) {
+      convertBtn.disabled = false;
+      convertBtn.setAttribute("aria-busy", "false");
+    }
+    if (convertLabel) convertLabel.textContent = t("convert");
+    showProgressBar(false);
+    reportConversionStall(error, { mode: state.inferenceMode });
+  }
+
+  // Every entry point runs through here: a page-level no-progress watchdog
+  // (status text or progress bar unchanged for RVC_STALL.globalNoProgressMs,
+  // or the worker's own longer idle limit during inference) aborts the run
+  // and restores the page even if some stage forgot its own timeout.
+  async function startConversion(run = () => runRvcInference()) {
+    if (state.busy) return false;
+    hideStallActions();
+    try {
+      await maybeReturnToCloud();
+    } catch {}
+    state.lastConversionActivityAt = Date.now();
+    let finished = false;
+    let forcedTimer = 0;
+    const supervisor = setInterval(() => {
+      if (finished || !state.busy) return;
+      const limit = Math.max(RVC_STALL.globalNoProgressMs, state.conversionStallLimitMs || 0);
+      const idle = Date.now() - (state.lastConversionActivityAt || 0);
+      if (idle < limit) return;
+      const seconds = Math.round(idle / 1000);
+      const error = new RvcStallError("supervisor",
+        `已 ${seconds} 秒没有任何进展`, `No progress for ${seconds}s`, "RVC_NO_PROGRESS");
+      clearInterval(supervisor);
+      state.localRunController?.abort(error);
+      state.cloudRunAbort?.(error);
+      forcedTimer = setTimeout(() => {
+        if (finished) return;
+        finished = true;
+        forceRestoreAfterStall(error);
+      }, 3000);
+    }, 2000);
+    try {
+      return await run();
+    } finally {
+      finished = true;
+      clearInterval(supervisor);
+      clearTimeout(forcedTimer);
+    }
   }
 
   document.getElementById("rvc-song-local-fallback")?.addEventListener("click", () => {
@@ -8086,8 +8636,25 @@
     if (state.audioMode === "song") showToast(l("本地直接变声不分离伴奏，伴奏也会一起变声。","Direct local conversion does not separate accompaniment; it will also be converted."));
     setAudioMode("voice");
     setInferenceMode("local");
-    runRvcInference();
+    state.autoLocalFallback = false;
+    startConversion();
   });
+
+  document.getElementById("rvc-stall-retry")?.addEventListener("click", () => {
+    if (state.busy) return;
+    startConversion();
+  });
+
+  document.getElementById("rvc-stall-switch")?.addEventListener("click", (event) => {
+    if (state.busy) return;
+    const target = event.currentTarget?.dataset?.target === "local" ? "local" : "official";
+    if (target === "official") state.engineReady = null;
+    setInferenceMode(target);
+    state.autoLocalFallback = false;
+    startConversion();
+  });
+
+  setInterval(cloudRecheckTick, RVC_STALL.cloudRecheckMs);
 
   window.addEventListener("pagehide", () => {
     if (state.resultUrl) URL.revokeObjectURL(state.resultUrl);
@@ -8652,7 +9219,7 @@
     // Convert Button
     const convertBtn = document.getElementById("rvc-convert");
     if (convertBtn) {
-      convertBtn.addEventListener("click", () => runRvcInference());
+      convertBtn.addEventListener("click", () => startConversion());
     }
 
     // Preload & Cache Management Buttons

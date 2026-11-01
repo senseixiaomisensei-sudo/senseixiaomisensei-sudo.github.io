@@ -25,20 +25,39 @@ class RvcError extends Error {
     Object.setPrototypeOf(this, RvcError.prototype);
   }
 }
-async function createWorkerUrl(workerScriptUrl, signal) {
-  const response = await fetch(workerScriptUrl, { signal });
+async function createWorkerUrl(workerScriptUrl, signal, fetchTimeout = 0) {
+  // Bounded worker-script fetch: a stalled connection fails instead of hanging.
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener?.("abort", onAbort, { once: true });
+  let timedOut = false;
+  const timer = fetchTimeout > 0 ? setTimeout(() => { timedOut = true; controller.abort(); }, fetchTimeout) : 0;
+  let response;
+  let code;
+  try {
+    response = await fetch(workerScriptUrl, { signal: controller.signal });
+    if (response.ok) code = await response.text();
+  } catch (error) {
+    if (timedOut) {
+      throw new RvcError("WORKER_FETCH_TIMEOUT", `Inference worker script did not load within ${fetchTimeout}ms`, error);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener?.("abort", onAbort);
+  }
   if (!response.ok) {
     throw new RvcError(
       "WORKER_FETCH_FAILED",
       `Failed to fetch worker script from ${workerScriptUrl}: ${response.status}`
     );
   }
-  const code = await response.text();
   const blob = new Blob([code], { type: "application/javascript" });
   return URL.createObjectURL(blob);
 }
 async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callbacks = {}, options = {}) {
-  const { timeout = 3e5, maxTotalTimeout = timeout, signal, ...pipelineOptions } = options;
+  const { timeout = 3e5, maxTotalTimeout = timeout, startupTimeout = 0, fetchTimeout = 0, signal, ...pipelineOptions } = options;
   const [modelBuf, contentVecBuf, rmvpeBuf, indexBuf] = await Promise.all([
     files.model.arrayBuffer(),
     files.contentVec.arrayBuffer(),
@@ -46,11 +65,12 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
     files.index?.arrayBuffer()
   ]);
   if (signal?.aborted) throw new RvcError("WORKER_CANCELLED", "Pipeline was cancelled");
-  const workerUrl = await createWorkerUrl(ctx.workerUrl, signal);
+  const workerUrl = await createWorkerUrl(ctx.workerUrl, signal, fetchTimeout);
   return new Promise((resolve, reject) => {
     let worker;
     let timeoutId;
     let deadlineId;
+    let startupId;
     let settled = false;
     const progressSeen = new Set();
     const onAbort = () => finish(new RvcError("WORKER_CANCELLED", "Pipeline was cancelled"));
@@ -59,6 +79,7 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
       settled = true;
       clearTimeout(timeoutId);
       clearTimeout(deadlineId);
+      clearTimeout(startupId);
       signal?.removeEventListener("abort", onAbort);
       if (worker) {
         worker.onmessage = null;
@@ -91,7 +112,16 @@ async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callb
     deadlineId = setTimeout(() => {
       finish(new RvcError("WORKER_TIMEOUT", `Pipeline exceeded its ${maxTotalTimeout}ms total deadline`));
     }, Math.max(timeout, maxTotalTimeout));
+    // Startup watchdog: the worker must answer (any EVENT/LOG/result) within
+    // startupTimeout, otherwise a module/ORT/WASM bootstrap that never
+    // reports an error would idle until the long pipeline timeout.
+    if (startupTimeout > 0) {
+      startupId = setTimeout(() => {
+        finish(new RvcError("WORKER_START_TIMEOUT", `Inference worker did not respond within ${startupTimeout}ms`));
+      }, startupTimeout);
+    }
     worker.onmessage = (event) => {
+      clearTimeout(startupId);
       try {
         const { type } = event.data;
         switch (type) {

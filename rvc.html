@@ -539,6 +539,14 @@
         <div class="studio-convert mt-7 border-t border-line pt-6">
           <p id="rvc-service-status" class="break-words rounded-lg border border-line bg-canvas px-4 py-3 text-sm leading-6 text-muted" role="status" aria-live="polite" data-rvc-i18n="checkingService">正在就绪变声引擎；此检查不会上传音频。</p>
           <button id="rvc-song-local-fallback" type="button" class="mt-3 rounded-lg border border-brand px-4 py-3 text-sm text-brand" data-rvc-i18n="localDirectConvert">转为本地直接变声（不分离伴奏）</button>
+          <div id="rvc-stall-actions" class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800" role="alert" hidden>
+            <p class="font-bold" data-rvc-i18n="stallTitle">处理已停止</p>
+            <p id="rvc-stall-message" class="mt-1 break-words"></p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button id="rvc-stall-retry" type="button" class="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-white" data-rvc-i18n="stallRetry">重试</button>
+              <button id="rvc-stall-switch" type="button" class="rounded-lg border border-brand bg-white px-4 py-2 text-sm font-bold text-brand" data-target="official" data-rvc-i18n="stallUseCloud" hidden>改用云端</button>
+            </div>
+          </div>
           <div id="rvc-progress-bar-wrap" class="mt-3 hidden">
             <div class="h-2.5 w-full overflow-hidden rounded-full bg-zinc-200">
               <div id="rvc-progress-bar" class="h-full rounded-full bg-brand transition-all duration-200" style="width: 0%"></div>
@@ -590,6 +598,6 @@
   <script src="assets/postprep.js?v=20261004-storage-1"></script>
   <script src="assets/rvc-language.js?v=20261004-chorus-2"></script>
   <script src="assets/rvc-schools.js?v=20261004-chorus-2"></script>
-  <script src="assets/rvc.js?v=20261031-v3q2"></script>
+  <script src="assets/rvc.js?v=20261101-stall1"></script>
 </body>
 </html>

@@ -237,25 +237,37 @@ export function v3MasterEnabled(scope = globalThis) {
 export function masterMixInWorker(mix, rate, reference, options = {}, workerUrl = new URL("./v3-master.worker.js", import.meta.url)) {
   return new Promise((resolve) => {
     let worker;
+    let timer = 0;
+    let settled = false;
+    const done = (value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      try { worker?.terminate(); } catch {}
+      resolve(value);
+    };
     try {
       worker = new Worker(workerUrl, { type: "module" });
     } catch (error) {
-      resolve({ channels: mix, report: { skipped: "worker-unavailable", error: String(error) } });
+      done({ channels: mix, report: { skipped: "worker-unavailable", error: String(error) } });
       return;
     }
+    // Deadline: a worker that never answers keeps the legacy mix instead of
+    // hanging the cover (30 s + 1x the audio duration).
+    const seconds = rate > 0 && mix?.[0]?.length ? mix[0].length / rate : 0;
+    const { timeoutMs = 30000 + seconds * 1000, ...workerOptions } = options || {};
+    timer = setTimeout(() => done({ channels: mix, report: { skipped: "worker-timeout", timeoutMs } }), timeoutMs);
     worker.onmessage = (event) => {
-      worker.terminate();
       const data = event.data || {};
-      resolve(data.ok ? { channels: data.channels, report: data.report }
+      done(data.ok ? { channels: data.channels, report: data.report }
         : { channels: mix, report: { skipped: "worker-failed", error: data.error } });
     };
     worker.onerror = (event) => {
-      worker.terminate();
-      resolve({ channels: mix, report: { skipped: "worker-error", error: event.message } });
+      done({ channels: mix, report: { skipped: "worker-error", error: event.message } });
     };
     const copy = mix.map((c) => Float32Array.from(c));
     const ref = reference ? reference.map((c) => Float32Array.from(c)) : null;
-    worker.postMessage({ type: "MASTER", mix: copy, rate, reference: ref, options },
+    worker.postMessage({ type: "MASTER", mix: copy, rate, reference: ref, options: workerOptions },
       [...copy.map((c) => c.buffer), ...(ref ? ref.map((c) => c.buffer) : [])]);
   });
 }

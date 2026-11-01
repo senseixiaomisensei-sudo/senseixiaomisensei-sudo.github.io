@@ -42,8 +42,11 @@ test("unreadable model cache is evicted, readable cache retains exact bytes", as
   const bytes = new Uint8Array(1024 * 1024 + 1).fill(31);
   const blob = new Blob([bytes]);
   let removed = "";
-  const read = Function("getCachedItem", "removeCachedItem", "verifyModelBytes", `return (${functionSource("readableCachedModel", true)});`)(
-    async () => blob, async key => { removed = key; }, verify,
+  const withDeadline = Function("RvcStallError", `return (${functionSource("withDeadline", false)});`)(Error);
+  const read = Function("getCachedItem", "removeCachedItem", "verifyModelBytes", "withDeadline", "RvcStallError", "RVC_STALL", "console",
+    `return (${functionSource("readableCachedModel", true)});`)(
+    async () => blob, async key => { removed = key; }, verify, withDeadline, Error,
+    { cacheOpenMs: 5000, cacheReadMs: 8000, cacheBlobReadBaseMs: 15000 }, { warn() {} },
   );
   assert.deepEqual(new Uint8Array(await (await read("model")).arrayBuffer()), bytes);
   const validHash = createHash("sha256").update(bytes).digest("hex");
