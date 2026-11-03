@@ -51,8 +51,9 @@ test('local server uses its own directory, serves theme assets and rejects path 
     assert.equal((await request(port, '/%E0%A4')).status, 400);
     if (symlinkAvailable) assert.equal((await request(port, '/assets/outside.txt')).status, 403);
   } finally {
-    child.kill();
-    await new Promise(resolve => child.once('exit', resolve));
+    if (child.exitCode === null && child.signalCode === null) {
+      await new Promise(resolve => { child.once('exit', resolve); child.kill(); });
+    }
     await rm(temp, { recursive: true, force: true });
   }
 });
