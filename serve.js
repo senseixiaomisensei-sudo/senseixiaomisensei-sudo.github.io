@@ -1,9 +1,11 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const PORT = 8124;
-const ROOT = "E:\\大肥鱼\\site";
+const configuredPort = Number(process.env.PORT ?? 8124);
+const PORT = Number.isInteger(configuredPort) && configuredPort >= 0 && configuredPort <= 65535 ? configuredPort : 8124;
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
 // 本机 rvc-service（edge-tts 文本朗读）的目标地址。
 // serve.js 会把 /v1/tts* 反向代理到这里，从而同一 Wi-Fi 下所有设备只需连 8124 页面即可，
 // 点「一键适配」走同源即可自动配置成功，无需知道这个 8080、也无需跨域。
@@ -19,6 +21,11 @@ const MIME_MAP = {
   ".wasm": "application/wasm",
   ".png": "image/png",
   ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".otf": "font/otf",
   ".svg": "image/svg+xml",
   ".onnx": "application/octet-stream",
   ".bin": "application/octet-stream",
@@ -43,7 +50,14 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  let reqPath = decodeURIComponent(req.url.split("?")[0]);
+  let reqPath;
+  try {
+    reqPath = decodeURIComponent(req.url.split("?")[0]);
+    if (reqPath.includes("\0")) throw new Error("Invalid path");
+  } catch {
+    res.writeHead(400).end("Invalid request path");
+    return;
+  }
   if (reqPath.startsWith('/rvc/chorus/')) {
     proxy(req, res, req.url.replace(/^\/rvc\/chorus\//, '/v1/chorus/'), RVC_INFERENCE_TARGET);
     return;
@@ -61,17 +75,25 @@ const server = http.createServer((req, res) => {
   }
 
   if (reqPath === "/") reqPath = "/rvc.html";
-  const filePath = path.join(ROOT, reqPath.replace(/^\//, ""));
-
-  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-    res.statusCode = 404;
-    res.end("Not Found: " + reqPath);
+  if (reqPath.split(/[\\/]/).some(segment => segment.startsWith("."))) {
+    res.writeHead(403).end("Forbidden");
     return;
   }
+  const filePath = path.resolve(ROOT, "." + reqPath);
+  const insideRoot = file => file === ROOT || file.startsWith(ROOT + path.sep);
+  if (!insideRoot(filePath)) {
+    res.writeHead(403).end("Forbidden");
+    return;
+  }
+  let resolved;
+  try { resolved = fs.realpathSync(filePath); }
+  catch { res.writeHead(404).end("Not Found"); return; }
+  if (!insideRoot(resolved)) { res.writeHead(403).end("Forbidden"); return; }
+  if (!fs.statSync(resolved).isFile()) { res.writeHead(404).end("Not Found"); return; }
 
-  const ext = path.extname(filePath).toLowerCase();
+  const ext = path.extname(resolved).toLowerCase();
   res.setHeader("Content-Type", MIME_MAP[ext] || "application/octet-stream");
-  fs.createReadStream(filePath).pipe(res);
+  fs.createReadStream(resolved).pipe(res);
 });
 
 // 把请求转发到目标服务；请求体原样转发，响应原样回传（含 CORS）。
@@ -105,8 +127,9 @@ function proxy(req, res, targetPath, baseTarget) {
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`====================================================`);
   console.log(`  RVC AI 变声器网站服务已启动 (支持局域网多设备访问)`);
-  console.log(`  电脑本机访问: http://localhost:${PORT}/rvc.html`);
-  console.log(`  手机访问 (同Wi-Fi): http://192.168.1.3:${PORT}/rvc.html`);
+  const activePort = server.address().port;
+  console.log(`  电脑本机访问: http://localhost:${activePort}/rvc.html`);
+  console.log(`  手机访问: http://<电脑局域网地址>:${activePort}/rvc.html`);
   console.log(`  文本朗读代理: /v1/tts → ${TTS_PROXY_TARGET} (一键适配走同源，全机可用)`);
   console.log(`====================================================`);
 });

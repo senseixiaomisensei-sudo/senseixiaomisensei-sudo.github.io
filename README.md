@@ -10,6 +10,10 @@ AI 变声器（RVC）提供角色声音选择、上传或录制自己的声音�
 
 <https://senseixiaomisensei-sudo.github.io/>
 
+## 界面风格
+
+页头的图层按钮可在液态玻璃、纸面和洛可可信笺之间切换，选择会在页面和浏览器标签间保留。洛可可主题的资源、维护和本地预览说明见 [ROCOCO_THEME.md](docs/ROCOCO_THEME.md)。
+
 ## 本地预览
 
 ```bash

@@ -7,6 +7,10 @@ documentation. It does not replace licenses attached to third-party materials.
   CC BY 4.0, SIL OFL 1.1, and MIT. See <https://fontawesome.com/license/free>.
 - **Tailwind CSS 3.4.17** is a build dependency distributed under the MIT
   license.
+- The Rococo theme bundles subsets of **Pinyon Script**, **Cormorant Garamond**,
+  **DM Mono**, **Noto Serif SC**, and **Playfair Display**, all under SIL OFL 1.1.
+  The modified Playfair subset is renamed PostPrep Display. Copyright notices,
+  source links and the complete license are in `assets/rococo/fonts/LICENSE-OFL.txt`.
 - **Hero image** `assets/hero-postprep-original.png` was generated for this
   repository on 2026-08-12 without an external image input. It replaces the
   prior hero asset whose redistribution rights were not established.

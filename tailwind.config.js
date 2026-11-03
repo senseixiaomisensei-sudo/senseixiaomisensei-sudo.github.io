@@ -2,7 +2,7 @@
 module.exports = {
   // This presentation layer has its own scoped CSS. Keep its optical/SVG text
   // out of the utility scanner so the second UI's shared CSS stays identical.
-  content: ["./*.html", "./assets/**/*.js", "!./assets/classic-glass.js", "!./assets/classic-glass/**/*.js"],
+  content: ["./*.html", "./assets/**/*.js", "!./assets/classic-glass.js", "!./assets/classic-glass/**/*.js", "!./assets/rococo/**/*.js"],
   theme: {
     extend: {
       colors: {

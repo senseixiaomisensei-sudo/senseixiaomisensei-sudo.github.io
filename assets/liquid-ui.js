@@ -2,7 +2,9 @@
   "use strict";
   const key = "postprep-ui-style";
   const root = document.documentElement;
-  try { root.dataset.ui = localStorage.getItem(key) === "classic" ? "classic" : "glass"; }
+  const styles = ["glass", "classic", "rococo"];
+  const normalizeStyle = value => styles.includes(value) ? value : "glass";
+  try { root.dataset.ui = normalizeStyle(localStorage.getItem(key)); }
   catch { root.dataset.ui = "glass"; }
 
   function init() {
@@ -19,10 +21,14 @@
     toggle.className = "style-toggle";
     toggle.innerHTML = '<i class="fa-solid fa-layer-group" aria-hidden="true"></i>';
     function labelToggle() {
-      const glass = root.dataset.ui === "glass";
-      const label = glass ? text("切换至纸面风格", "Switch to Paper") : text("切换至液态玻璃", "Switch to Liquid Glass");
+      const style = normalizeStyle(root.dataset.ui);
+      const labels = {
+        glass: ["切换至纸面风格", "Switch to Paper"],
+        classic: ["切换至洛可可信笺", "Switch to Rococo stationery"],
+        rococo: ["切换至液态玻璃", "Switch to Liquid Glass"],
+      };
+      const label = text(...labels[style]);
       toggle.setAttribute("aria-label", label);
-      toggle.setAttribute("aria-pressed", String(glass));
       toggle.dataset.tooltip = label;
       toggle.title = label;
     }
@@ -37,15 +43,16 @@
     measureHeader();
     if (header) new MutationObserver(mountToggle).observe(header, { childList: true, subtree: true });
     toggle.addEventListener("click", () => {
-      root.dataset.ui = root.dataset.ui === "glass" ? "classic" : "glass";
+      root.dataset.ui = styles[(styles.indexOf(normalizeStyle(root.dataset.ui)) + 1) % styles.length];
       try { localStorage.setItem(key, root.dataset.ui); } catch { /* Private browsing still allows a session toggle. */ }
       labelToggle();
       if (root.dataset.ui !== "glass") document.getElementById("studio-input-audio")?.pause();
     });
     window.addEventListener("storage", (event) => {
       if (event.key === key) {
-        root.dataset.ui = event.newValue === "classic" ? "classic" : "glass";
+        root.dataset.ui = normalizeStyle(event.newValue);
         labelToggle();
+        if (root.dataset.ui !== "glass") document.getElementById("studio-input-audio")?.pause();
       }
     });
     new MutationObserver(labelToggle).observe(root, { attributes: true, attributeFilter: ["lang"] });
