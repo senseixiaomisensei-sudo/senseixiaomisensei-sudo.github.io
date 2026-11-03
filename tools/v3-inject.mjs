@@ -23,7 +23,10 @@ for (const name of readdirSync(root).filter(n => n.endsWith('.html'))) {
   src = src.replace(/<meta name="theme-color" content="[^"]*">/, '<meta name="theme-color" content="#f5f4f0">');
   if (!/<meta name="color-scheme"/.test(src)) src = src.replace(/(<meta name="theme-color"[^>]*>)/, '$1\n  <meta name="color-scheme" content="light dark">');
   src = src.replace(/<meta name="color-scheme" content="[^"]*">/, '<meta name="color-scheme" content="light dark">');
-  src = src.replace('</head>', `  ${blockFor(name === '404.html' ? '/' : '')}\n</head>`);
+  const block = `  ${blockFor(name === '404.html' ? '/' : '')}\n`;
+  src = src.includes('<!-- rococo:head -->')
+    ? src.replace(/(?=\s*<!-- rococo:head -->)/, `\n${block}`)
+    : src.replace('</head>', `${block}</head>`);
   writeFileSync(file, src);
   console.log('v3 head →', name);
 }

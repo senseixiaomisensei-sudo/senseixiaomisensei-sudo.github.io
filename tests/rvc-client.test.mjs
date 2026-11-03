@@ -190,12 +190,14 @@ test("RVC watchdog automatically recovers the local service and public tunnel", 
   const watchdog = await readFile(new URL("rvc-service/watchdog.ps1", root), "utf8");
   assert.match(watchdog, /FailureThreshold = 2/u);
   assert.match(watchdog, /postprep-ae6\.pages\.dev\/rvc-api\/status/u);
-  assert.match(watchdog, /start-all\.ps1/u);
+  assert.match(watchdog, /start-local-stack\.ps1/u);
   assert.match(watchdog, /-NoWatchdog/u);
   assert.match(watchdog, /-WindowStyle Hidden/u);
-  assert.match(watchdog, /Local\\PostPrepRvcWatchdog/u);
+  assert.match(watchdog, /Global\\PostPrepRvcWatchdog/u);
   assert.match(watchdog, /local service is offline; immediate startup recovery/u);
   assert.match(watchdog, /\$failures = \$FailureThreshold/u);
+  assert.match(watchdog, /\$RecoveryTimeoutSeconds = 600/u);
+  assert.match(watchdog, /Stop-Process -Id \$recoveryProcess\.Id/u);
 });
 
 test("GitHub interface uses the existing model CDN while other hosts keep their own assets", async () => {
