@@ -3,7 +3,7 @@ const DEFAULT_ORT_CDN_BASE = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${"1.
 function createRVC(config = {}) {
   const rawAsset = config.assetBaseUrl ?? DEFAULT_CDN_BASE;
   const assetBaseUrl = rawAsset.endsWith("/") ? rawAsset : `${rawAsset}/`;
-  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20260930-fractional-r42`;
+  const workerUrl = `${assetBaseUrl}inference.worker.js?v=20261104-audio1`;
   const rawWasm = config.wasmBaseUrl ?? DEFAULT_ORT_CDN_BASE;
   const wasmBaseUrl = typeof rawWasm === "string"
     ? (rawWasm.endsWith("/") ? rawWasm : `${rawWasm}/`)
@@ -58,11 +58,13 @@ async function createWorkerUrl(workerScriptUrl, signal, fetchTimeout = 0) {
 }
 async function runPipelineInWorker(ctx, files, audioData, audioSampleRate, callbacks = {}, options = {}) {
   const { timeout = 3e5, maxTotalTimeout = timeout, startupTimeout = 0, fetchTimeout = 0, signal, ...pipelineOptions } = options;
+  // Blobs are structured-cloned without first materializing every model on
+  // the main thread. The worker loads them one at a time, reducing the peak
+  // memory that can terminate mobile browsers during long conversions.
+  const workerFile = async (file) => file instanceof Blob ? file : file?.arrayBuffer();
   const [modelBuf, contentVecBuf, rmvpeBuf, indexBuf] = await Promise.all([
-    files.model.arrayBuffer(),
-    files.contentVec.arrayBuffer(),
-    files.rmvpe.arrayBuffer(),
-    files.index?.arrayBuffer()
+    workerFile(files.model), workerFile(files.contentVec),
+    workerFile(files.rmvpe), workerFile(files.index)
   ]);
   if (signal?.aborted) throw new RvcError("WORKER_CANCELLED", "Pipeline was cancelled");
   const workerUrl = await createWorkerUrl(ctx.workerUrl, signal, fetchTimeout);

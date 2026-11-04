@@ -746,9 +746,10 @@ def probe_duration(path: Path) -> float:
         duration = float(result.stdout.strip())
     except (TypeError, ValueError):
         duration = 0.0
-    if result.returncode == 0 and (not math.isfinite(duration) or duration <= 0):
-        # MediaRecorder WebM streams often have no container duration. Decode
-        # a bounded mono stream so valid recordings work without trusting tags.
+    if result.returncode == 0 and (path.suffix.lower() == ".mp3" or not math.isfinite(duration) or duration <= 0):
+        # MP3 Xing tags can contain a stale frame count even when the complete
+        # audio is still present. MediaRecorder streams may have no duration.
+        # Count bounded decoded samples, retaining the existing maximum guard.
         decoded = subprocess.run(
             ["ffmpeg", "-nostdin", "-v", "error", "-i", str(path),
              "-t", str(MAX_AUDIO_SECONDS + 1), "-vn", "-ac", "1", "-ar", "8000",

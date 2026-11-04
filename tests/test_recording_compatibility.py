@@ -11,6 +11,27 @@ from app.main import analyze_audio_profile, probe_duration, safe_extension, norm
 
 
 class RecordingCompatibilityTests(unittest.TestCase):
+    def test_mp3_stale_xing_duration_does_not_truncate_the_real_input(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "stale-header.mp3"
+            subprocess.run(["ffmpeg", "-nostdin", "-v", "error", "-f", "lavfi", "-i",
+                            "sine=frequency=260:duration=8", "-c:a", "libmp3lame",
+                            "-b:a", "96k", "-write_xing", "1", str(path)],
+                           capture_output=True, check=True)
+            content = bytearray(path.read_bytes())
+            positions = [content.find(marker, 0, 2048) for marker in (b"Xing", b"Info")]
+            position = min(pos for pos in positions if pos >= 0)
+            self.assertTrue(int.from_bytes(content[position+4:position+8], "big") & 1)
+            frames = int.from_bytes(content[position+8:position+12], "big")
+            content[position+8:position+12] = (frames // 4).to_bytes(4, "big")
+            path.write_bytes(content)
+            metadata = float(subprocess.check_output([
+                "ffprobe", "-v", "error", "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1", str(path)
+            ], text=True))
+            self.assertLess(metadata, 3)
+            self.assertAlmostEqual(probe_duration(path), 8, delta=.1)
+
     def test_mobile_audio_metadata(self):
         for name, mime in [
             ("speech.mp3", "audio/mp3"),

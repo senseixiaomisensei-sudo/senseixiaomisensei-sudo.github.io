@@ -4841,7 +4841,7 @@
   // receives one transferred ArrayBuffer, so scrolling the character gallery
   // during a download no longer competes with 20 MB copies, SHA-256 hashing,
   // IndexedDB serialisation and a 360 MB Blob build.
-  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261101-freeze1";
+  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261104-audio1";
   const MODEL_FETCH = { progressMs: 250, probeMs: 7000, connectMs: 12000, inactivityMs: 15000, quietHintMs: 6000 };
   let modelFetchWorker = null;
   let modelFetchBroken = false;
@@ -5729,7 +5729,39 @@
     return select.value;
   }
 
+  let modelGalleryPointer = null;
+  let modelGalleryRenderPending = false;
+
+  // An async catalog/language refresh must not replace the button between a
+  // user's pointerdown and click, otherwise a tap can silently select nothing.
+  function protectModelGalleryClick() {
+    document.addEventListener("pointerdown", (event) => {
+      if (event.target.closest?.("#rvc-model-gallery [data-model-id], #rvc-trained-model-gallery [data-model-id]")) {
+        modelGalleryPointer = { id: event.pointerId };
+      }
+    }, true);
+    const release = (held) => {
+      if (!held || held !== modelGalleryPointer) return;
+      modelGalleryPointer = null;
+      if (modelGalleryRenderPending) setTimeout(() => {
+        if (modelGalleryRenderPending) renderModelGallery();
+      }, 0);
+    };
+    document.addEventListener("click", () => release(modelGalleryPointer), true);
+    document.addEventListener("pointerup", (event) => {
+      const held = modelGalleryPointer;
+      if (held && held.id === event.pointerId) setTimeout(() => release(held), 250);
+    }, true);
+    document.addEventListener("pointercancel", () => release(modelGalleryPointer), true);
+    window.addEventListener("blur", () => release(modelGalleryPointer));
+  }
+
   function renderModelGallery() {
+    if (modelGalleryPointer) {
+      modelGalleryRenderPending = true;
+      return;
+    }
+    modelGalleryRenderPending = false;
     syncSpeechControls();
     const container = document.getElementById("rvc-model-gallery");
     const trainedContainer = document.getElementById("rvc-trained-model-gallery");
@@ -7178,7 +7210,7 @@
   }
 
   function probeAudioDuration(file) {
-    return new Promise((resolve) => {
+    const metadata = new Promise((resolve) => {
       const audio = document.createElement("audio");
       const url = URL.createObjectURL(file);
       const finish = (duration = 0) => {
@@ -7193,6 +7225,23 @@
       audio.addEventListener("loadedmetadata", () => finish(audio.duration), { once: true });
       audio.addEventListener("error", () => finish(0), { once: true });
       audio.src = url;
+    });
+    const isMp3 = /\.mp3$/iu.test(String(file?.name || ""))
+      || /^audio\/(?:mpeg|mp3|x-mp3)(?:;|$)/iu.test(String(file?.type || ""));
+    if (!isMp3) return metadata;
+    // Some converted MP3s retain a stale Xing frame count: metadata can say
+    // 1:28 even when the decoder returns the complete three-minute song.
+    // Count actual frames in bounded slices; never allocate a full PCM copy on
+    // the mobile/cloud selection path. Keep metadata when inspection cannot
+    // prove a complete MP3 stream.
+    const measured = settleWithin(
+      import(new URL("assets/rvc-mp3-duration.mjs?v=20261104-audio1", window.location.href).href)
+        .then(({ inspectMp3Duration }) => inspectMp3Duration(file)),
+      20000, null,
+    ).catch(() => null);
+    return Promise.all([metadata, measured]).then(([reported, result]) => {
+      const actual = Number(result?.duration) || 0;
+      return actual > 0 && (!reported || Math.abs(actual - reported) > 0.15) ? actual : reported;
     });
   }
 
@@ -7698,6 +7747,7 @@
     const runSignal = runController.signal;
     const stageStall = (stage, zh, en, code) => () => new RvcStallError(stage, zh, en, code);
     let loadingModels = true;
+    let activeLocalStage = "engine";
     // Lighter page paint (no backdrop blur / transitions) while models load.
     document.body?.classList.add("rvc-downloading");
 
@@ -7706,12 +7756,13 @@
       // 1. Dynamic import of rvc-web-runtime
       updateStatusDisplay(l(" 正在初始化本地推理引擎..."," Initializing the on-device engine\u2026"));
       const runtimeModule = await withDeadline(
-        import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20261101-freeze1", window.location.href).href),
+        import(new URL("assets/rvc-engine/rvc-web-runtime.js?v=20261104-audio1", window.location.href).href),
         RVC_STALL.importMs,
         stageStall("engine-import", "本地推理引擎脚本 30 秒内没有加载完成（网络或缓存异常）",
           "The on-device engine script did not load within 30s (network or cache problem)", "RVC_ENGINE_IMPORT_STALLED"),
         runSignal);
       const { createRVC, runPipelineInWorker } = runtimeModule;
+      activeLocalStage = "download";
 
       const wasmAssetBase = new URL("assets/rvc-engine/ort126/", window.location.href);
       const rvc = createRVC({
@@ -7801,22 +7852,34 @@
       checkCacheStatus();
 
       // Ensure audio float32 buffer is valid (and not detached from any previous operations)
+      activeLocalStage = "decode";
       if (!songVocal && (!state.audio.float32 || state.audio.float32.byteLength === 0)) {
         if (state.audio.file) {
           const decoded = await withDeadline(decodeAudioFileTo16kMono(state.audio.file), RVC_STALL.decodeMs,
             stageStall("decode", "音频解码 90 秒内没有完成，请换一个 WAV/MP3 文件重试", "Decoding the audio did not finish within 90s. Retry with a WAV/MP3 file.", "RVC_DECODE_STALLED"),
             runSignal);
+          // AudioContext supplies the decoded frame length, which is more
+          // reliable than container tags and controls the worker deadline.
+          state.audio.duration = decoded.duration;
+          if (decoded.duration > audioDurationLimit("local", state.selectedModelId)) {
+            const error = new Error(t("audioTooLong"));
+            error.code = "RVC_AUDIO_TOO_LONG";
+            throw error;
+          }
           state.audio.float32 = decoded.float32;
         } else {
           throw new Error(l("音频数据已失效，请重新选择或录制音频","Audio has expired. Select or record it again."));
         }
       }
-      const freshAudioInput = songVocal ? songVocal : new Float32Array(state.audio.float32);
+      // The runtime makes the one transfer copy, leaving the selected input
+      // available for retry without an additional full-duration allocation.
+      const freshAudioInput = songVocal || state.audio.float32;
 
       // 3. Run Pipeline in Web Worker. Long fallback jobs use the existing
       // fixed-frame worker windows, but receive a duration-aware deadline so
       // a three-minute phone conversion is not killed by the old 120s cap.
       const localTimeoutMs = localInferenceTimeoutMs(state.audio.duration, allowLong);
+      activeLocalStage = "worker";
       state.conversionStallLimitMs = localTimeoutMs + 15000;
       updateStatusDisplay(fallback
         ? " 云端暂时不可达，正在切换到用户设备端分段推理；请保持页面在前台…"
@@ -7834,6 +7897,7 @@
         {
           onEvent: (e) => {
             if (e.type === "stage") {
+              activeLocalStage = e.stage;
               const stageMap = {
                 input_preparation: "正在预处理输入音频...",
                 model_parsing: "正在解析神经生成器模型...",
@@ -7846,7 +7910,11 @@
                 success: "变声完成，准备输出...",
               };
               updateStatusDisplay(` [3/4] ${stageMap[e.stage] || e.stage}`);
+            } else if (e.type === "pitch_analysis") {
+              activeLocalStage = "pitch_estimation";
+              updateStatusDisplay(l(` [3/4] 正在分析音高：已处理 ${e.current} 个片段…`,` [3/4] Analyzing pitch: ${e.current} windows processed…`));
             } else if (e.type === "chunk_step") {
+              activeLocalStage = e.step === "feature" ? "feature_extraction" : e.step === "pitch" ? "pitch_estimation" : "voice_synthesis";
               const stepMap = {
                 feature: `[4/4] 提取人声语义 (${e.current}/${e.total})`,
                 pitch: `[4/4] 音高神经追踪 (${e.current}/${e.total})`,
@@ -7892,6 +7960,7 @@
       }
       // Offline song covers remix the converted vocal with the locally
       // separated accompaniment before anything reaches the player.
+      activeLocalStage = "mix";
       const finalWav = finalize
         ? await withDeadline(finalize(result.outputWav), RVC_STALL.mixMs,
           stageStall("mix", "本机回混伴奏 3 分钟内没有完成", "On-device remixing did not finish within 3 minutes", "RVC_MIX_STALLED"), runSignal)
@@ -7940,23 +8009,55 @@
       if (loadingModels) {
         // Model download/cache failure (all mirrors failed): say so, keep the
         // saved chunks, and offer retry / cloud instead of an inference error.
-        const reasonZh = `模型下载失败（${rawMessage || "网络错误"}）。已下载的分片已保存，点「重试」会从断点继续，或点「改用云端」。`;
-        const reasonEn = `Model download failed (${rawMessage || "network error"}). Finished chunks are saved; Retry resumes from there, or use the cloud.`;
+        const reasonZh = activeLocalStage === "engine"
+          ? "本地推理组件加载失败，请检查网络后重试或改用云端。"
+          : `模型下载失败（${rawMessage || "网络错误"}）。已下载的分片已保存，点「重试」会从断点继续，或点「改用云端」。`;
+        const reasonEn = activeLocalStage === "engine"
+          ? "The on-device engine failed to load. Check the connection and retry, or use the cloud."
+          : `Model download failed (${rawMessage || "network error"}). Finished chunks are saved; Retry resumes from there, or use the cloud.`;
         showToast(l(reasonZh, reasonEn));
         updateStatusDisplay(` ${l(reasonZh, reasonEn)}`);
         showProgressBar(false);
         showStallActions({ mode: "local", reasonZh, reasonEn });
         return false;
       }
-      const message = /ReshapeHelper|requested_shape_size|cannot be reshaped/iu.test(rawMessage)
-        ? l("设备端推理组件仍在使用旧缓存，请刷新页面后重新变声。","The on-device engine is using an old cache. Refresh and convert again.")
-        : allowLong
-          ? l("设备端长音频分段推理失败，请保持页面前台并换一段纯人声重试。","On-device segmented inference failed. Keep this page in the foreground and retry with dry vocals.")
-          : l("本机变声处理失败，请重新选择一段较短的纯人声音频后重试。","On-device conversion failed. Retry with a shorter dry-vocal recording.");
+      const stageNames = {
+        decode: ["音频解码", "audio decoding"],
+        worker: ["推理组件启动", "inference startup"],
+        input_preparation: ["输入准备", "input preparation"],
+        model_parsing: ["角色模型加载", "voice-model loading"],
+        feature_model_loading: ["语义模型加载", "semantic-model loading"],
+        pitch_model_loading: ["音高模型加载", "pitch-model loading"],
+        feature_extraction: ["语义特征提取", "feature extraction"],
+        pitch_estimation: ["音高分析", "pitch analysis"],
+        voice_synthesis: ["分段合成", "segment synthesis"],
+        post_processing: ["输出处理", "output processing"],
+        mix: ["本地回混", "on-device mixing"],
+      };
+      const [stageZh, stageEn] = stageNames[activeLocalStage] || ["本地推理", "on-device inference"];
+      let reasonZh = `${stageZh}失败，已保留所选音频和参数。可点「重试」或「改用云端」。`;
+      let reasonEn = `${stageEn} failed. The selected audio and settings are preserved. Retry or use the cloud.`;
+      if (err?.code === "RVC_AUDIO_TOO_LONG") {
+        reasonZh = "解码后的音频超过当前模式时长上限，请切换模式或裁剪后重试。";
+        reasonEn = "The decoded audio exceeds this mode's duration limit. Change mode or trim it and retry.";
+      } else if (/ReshapeHelper|requested_shape_size|cannot be reshaped/iu.test(rawMessage)) {
+        reasonZh = "设备端推理组件缓存不匹配，请刷新页面后重试。";
+        reasonEn = "The on-device engine cache does not match. Refresh and retry.";
+      } else if (/out of memory|allocation failed|memory access out of bounds|cannot enlarge memory/iu.test(rawMessage)) {
+        reasonZh = `${stageZh}时设备内存不足；请关闭其他页面后重试，或改用云端。`;
+        reasonEn = `The device ran out of memory during ${stageEn}. Close other tabs and retry, or use the cloud.`;
+      } else if (activeLocalStage === "decode") {
+        reasonZh = "音频解码失败；请重试或使用云端处理原文件。";
+        reasonEn = "Audio decoding failed. Retry or process the original file in the cloud.";
+      }
+      const code = /^[A-Z][A-Z0-9_]{1,63}$/u.test(String(err?.code || "")) ? ` (${err.code})` : "";
+      reasonZh += code;
+      reasonEn += code;
+      const message = l(reasonZh, reasonEn);
       showToast(message);
       updateStatusDisplay(` ${message}`);
       showProgressBar(false);
-      showStallActions({ mode: "local", reasonZh: message, reasonEn: message });
+      showStallActions({ mode: "local", reasonZh, reasonEn });
       return false;
     } finally {
       if (state.localRunController === runController) state.localRunController = null;
@@ -9134,6 +9235,7 @@
   function setupEventListeners() {
     // Microphone controls must not depend on optional TTS/training initialization.
     setupRecording();
+    protectModelGalleryClick();
     // Mode Switcher (Official PyTorch vs Local WebAssembly)
     const btnOfficial = document.getElementById("rvc-mode-official");
     const btnLocal = document.getElementById("rvc-mode-local");
@@ -9800,7 +9902,7 @@
   // freeze1: a tab left open (or a browser that keeps an old copy of the page)
   // keeps running an old rvc.js. Compare with the published build and reload
   // once onto a cache-busted URL; never while a conversion is running.
-  const RVC_BUILD = "20261101-freeze1";
+  const RVC_BUILD = "20261104-audio1";
   async function checkRvcBuild({ reason = "boot" } = {}) {
     let remote = "";
     try {

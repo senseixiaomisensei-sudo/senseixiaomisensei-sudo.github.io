@@ -54,6 +54,37 @@ test("worker releases URL and timers on success, error, timeout, cancellation an
   }
 });
 
+test("model blobs go to the worker without main-thread copies and input remains retryable", async () => {
+  const saved = { fetch: globalThis.fetch, Worker: globalThis.Worker,
+    create: URL.createObjectURL, revoke: URL.revokeObjectURL };
+  const files = {};
+  for (const key of ["model", "contentVec", "rmvpe", "index"]) {
+    const blob = new Blob([key]);
+    blob.arrayBuffer = () => { throw new Error("main thread read a model"); };
+    files[key] = blob;
+  }
+  const input = new Float32Array([0.25, -0.5]);
+  try {
+    globalThis.fetch = async () => new Response("", { status: 200 });
+    URL.createObjectURL = () => "blob:worker-test";
+    URL.revokeObjectURL = () => {};
+    globalThis.Worker = class {
+      terminate() {}
+      postMessage(payload, transfers) {
+        for (const key of Object.keys(files)) assert.equal(payload.files[key], files[key]);
+        assert.equal(transfers.length, 1);
+        assert.notEqual(payload.audio.data.buffer, input.buffer);
+        queueMicrotask(() => this.onmessage({ data: { type: "COMPLETE", result: { ok: true } } }));
+      }
+    };
+    await runPipelineInWorker({ workerUrl: "/worker" }, files, input, 16000, {}, { timeout: 50 });
+    assert.deepEqual(Array.from(input), [0.25, -0.5]);
+  } finally {
+    globalThis.fetch = saved.fetch; globalThis.Worker = saved.Worker;
+    URL.createObjectURL = saved.create; URL.revokeObjectURL = saved.revoke;
+  }
+});
+
 test("real progress may extend inference; duplicate events and total deadline stay bounded", async (t) => {
   const saved = { fetch: globalThis.fetch, Worker: globalThis.Worker,
     create: URL.createObjectURL, revoke: URL.revokeObjectURL };

@@ -9,8 +9,8 @@ import { readFile } from "node:fs/promises";
 import { runPipelineInWorker } from "../assets/rvc-engine/rvc-web-runtime.js";
 import { masterMixInWorker } from "../assets/rvc-engine/v3-master.mjs";
 
-const source = await readFile(new URL("../assets/rvc.js", import.meta.url), "utf8");
-const html = await readFile(new URL("../rvc.html", import.meta.url), "utf8");
+const source = (await readFile(new URL("../assets/rvc.js", import.meta.url), "utf8")).replace(/\r\n/g, "\n");
+const html = (await readFile(new URL("../rvc.html", import.meta.url), "utf8")).replace(/\r\n/g, "\n");
 
 function body(name) {
   const marker = `function ${name}(`;

@@ -40,6 +40,9 @@ html[data-ui] body[data-page="rvc"] #rvc-school-filter { margin-top: 5px; min-he
 html[data-ui] body[data-page="rvc"] #rvc-model-gallery:not(.is-character-stack) { max-height: 330px; padding: 2px; margin: 12px 0 0; scrollbar-width: thin; overscroll-behavior-y: contain; }
 #rvc-model-gallery:not(.is-character-stack) > [role="group"] { grid-template-columns: minmax(0, 1fr); gap: 7px; }
 html[data-ui] body[data-page="rvc"] #rvc-model-gallery:not(.is-character-stack) [data-model-id] { min-height: 64px; padding: 10px 12px; border-radius: 12px; }
+/* Match the compact card's real content height before content-visibility
+   paints it; the old 118px estimate could shrink during a tap. */
+html[data-ui] body[data-page="rvc"] #rvc-model-gallery:not(.is-character-stack) [data-model-id] { contain-intrinsic-size: auto 44px; }
 #rvc-model-gallery:not(.is-character-stack) p.truncate { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
 /* Descriptions are available on selection/focus; stacks keep every card's text. */
 html[data-ui] body[data-page="rvc"] #rvc-model-gallery [data-model-id][aria-selected="true"] > p,

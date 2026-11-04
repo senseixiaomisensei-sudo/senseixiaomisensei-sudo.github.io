@@ -6,6 +6,8 @@ import { chromium } from "file:///E:/大肥鱼/rvc-local/convert/node_modules/pl
 
 const PORT = Number(process.env.POSTPREP_RVC_TEST_PORT) || 8126;
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
+// Sparse test checkouts reuse the existing read-only local model CDN.
+const modelRoot = process.env.POSTPREP_RVC_MODEL_ROOT || ROOT;
 const candidateManifest = process.env.POSTPREP_RVC_CANDIDATE_MANIFEST;
 const candidates = candidateManifest
   ? JSON.parse(fs.readFileSync(candidateManifest, "utf8")) : [];
@@ -40,7 +42,7 @@ const server = http.createServer((req, res) => {
     fs.createReadStream(candidate.candidatePath).pipe(res);
     return;
   }
-  const filePath = path.join(ROOT, reqPath.replace(/^\//, ""));
+  const filePath = path.join(reqPath.startsWith("/models/") ? modelRoot : ROOT, reqPath.replace(/^\//, ""));
 
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     res.statusCode = 404;
@@ -97,6 +99,7 @@ server.listen(PORT, "127.0.0.1", async () => {
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,
+    ...(process.env.POSTPREP_RVC_TEST_USER_AGENT ? { userAgent: process.env.POSTPREP_RVC_TEST_USER_AGENT } : {}),
   } : {});
 
   page.on("console", (msg) => {
@@ -120,6 +123,7 @@ server.listen(PORT, "127.0.0.1", async () => {
     await page.goto(process.env.POSTPREP_RVC_TEST_URL || `http://127.0.0.1:${PORT}/rvc.html`, { waitUntil: "domcontentloaded", timeout: 20000 });
     await page.waitForTimeout(1500);
     if (process.env.POSTPREP_RVC_FORCE_LOCAL === "1") {
+      await page.locator(".rvc-mode-panel summary").click();
       await page.locator("#rvc-mode-local").click();
     }
     if (process.env.POSTPREP_RVC_TEST_SONG === "1") {
@@ -130,9 +134,35 @@ server.listen(PORT, "127.0.0.1", async () => {
 
     const requestedModelId = process.argv[3];
     if (requestedModelId) {
+      await page.locator("#rvc-model-search").fill(requestedModelId);
       const modelCard = page.locator(`[data-model-id="${requestedModelId}"]`);
       if ((await modelCard.count()) !== 1) throw new Error(`Unknown model id: ${requestedModelId}`);
-      await modelCard.click();
+      if (process.env.POSTPREP_RVC_DEBUG_SELECTION === "1") await page.evaluate(() => {
+        for (const type of ["pointerdown", "pointerup", "click"]) {
+          document.addEventListener(type, event => console.log("SELECTION-TRACE", type,
+            event.target.closest?.("[data-model-id]")?.dataset.modelId || "-", event.defaultPrevented), true);
+        }
+      });
+      if (process.env.POSTPREP_RVC_TEST_SELECTION_RACE === "1") {
+        await modelCard.scrollIntoViewIfNeeded();
+        const box = await modelCard.boundingBox();
+        if (process.env.POSTPREP_RVC_DEBUG_SELECTION === "1") console.log("Before card:", await modelCard.evaluate(card => ({ui: document.documentElement.dataset.ui, cls: document.documentElement.className, rect: card.getBoundingClientRect().toJSON(), style: card.getAttribute("style")})));
+        const handle = await modelCard.elementHandle();
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.evaluate(() => document.dispatchEvent(new Event("postprep:languagechange")));
+        if (process.env.POSTPREP_RVC_DEBUG_SELECTION === "1") console.log("Card during click:", await handle.evaluate(card => ({connected: card.isConnected, ui: document.documentElement.dataset.ui, cls: document.documentElement.className, rect: card.getBoundingClientRect().toJSON(),style:card.getAttribute("style")})), "original:", box);
+        await page.mouse.up();
+      } else {
+        await modelCard.click();
+      }
+      try {
+        await page.waitForFunction((id) => document.querySelector(`[data-model-id="${id}"]`)?.getAttribute("aria-selected") === "true", requestedModelId, { timeout: 5000 });
+      } catch (error) {
+        console.error("Model selection state:", await page.locator(`[data-model-id="${requestedModelId}"]`).evaluateAll(cards => cards.map(card => ({ selected: card.getAttribute("aria-selected"), text: card.innerText, disabled: card.disabled }))));
+        throw error;
+      }
+      console.log(`Selected model: ${requestedModelId}`);
     }
 
     // Set input file using test audio
@@ -166,6 +196,21 @@ server.listen(PORT, "127.0.0.1", async () => {
     }
     const audioStatus = await page.locator("#rvc-audio-status").textContent();
     console.log("Audio status:", audioStatus);
+    if (requestedModelId) {
+      const selected = await page.locator(`[data-model-id="${requestedModelId}"]`).getAttribute("aria-selected");
+      if (selected !== "true") throw new Error(`Requested model ${requestedModelId} is no longer selected`);
+    }
+    if (process.env.POSTPREP_RVC_EXPECT_DURATION) {
+      const observed = Number(audioStatus.match(/(\d+(?:\.\d+)?)s/)?.[1]);
+      const expected = Number(process.env.POSTPREP_RVC_EXPECT_DURATION);
+      if (!Number.isFinite(observed) || Math.abs(observed - expected) > 0.3) {
+        throw new Error(`Incorrect selected duration ${observed}; expected ${expected}`);
+      }
+    }
+    if (process.env.POSTPREP_RVC_DURATION_ONLY === "1") {
+      console.log("Selected duration verified in the real page.");
+      return;
+    }
 
     const convertBtn = await page.locator("#rvc-convert");
     const isEnabled = await convertBtn.isEnabled();
@@ -187,6 +232,9 @@ server.listen(PORT, "127.0.0.1", async () => {
         const currentStatus = await page.locator("#rvc-service-status").textContent();
         if (currentStatus.startsWith("❌") || /推理失败|inference failed/i.test(currentStatus)) {
           throw new Error(currentStatus);
+        }
+        if (await page.locator("#rvc-stall-actions").isVisible()) {
+          throw new Error(await page.locator("#rvc-stall-message").textContent());
         }
         console.log(`[${Math.round((Date.now() - start)/1000)}s] Status:`, currentStatus);
 
@@ -210,17 +258,11 @@ server.listen(PORT, "127.0.0.1", async () => {
       if (finished) {
         const outputPath = process.argv[2];
         if (outputPath && outputPath !== "-") {
-          const outputBase64 = await page.evaluate(async () => {
-            const audio = document.getElementById("rvc-result-audio");
-            const response = await fetch(audio.src);
-            const bytes = new Uint8Array(await response.arrayBuffer());
-            let binary = "";
-            for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-              binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-            }
-            return btoa(binary);
-          });
-          fs.writeFileSync(outputPath, Buffer.from(outputBase64, "base64"));
+          const [download] = await Promise.all([
+            page.waitForEvent("download", { timeout: 30000 }),
+            page.locator("#rvc-result-download").click(),
+          ]);
+          await download.saveAs(outputPath);
           console.log(`Saved converted WAV: ${outputPath}`);
         }
         console.log("✅ FULL END-TO-END RVC IN-BROWSER INFERENCE PASSED!");

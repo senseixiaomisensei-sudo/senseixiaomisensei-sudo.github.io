@@ -14048,19 +14048,17 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     ctx.inputAudio = audio;
     ctx.sampleRate = sampleRate;
     emitStage(PIPELINE_STAGES[1]);
-    const modelBuffer = files.model instanceof ArrayBuffer ? files.model : (files.model instanceof Blob ? await files.model.arrayBuffer() : files.model);
-    const { onnxBuffer, metaData } = await prepareModel(modelBuffer);
-    ctx.onnxBuffer = onnxBuffer;
-    ctx.modelMetaData = metaData;
+    let modelBuffer = files.model instanceof ArrayBuffer ? files.model : (files.model instanceof Blob ? await files.model.arrayBuffer() : files.model);
+    let preparedModel = await prepareModel(modelBuffer);
+    ctx.modelMetaData = preparedModel.metaData;
     // A standard WASM binary has no JSEP: do not ask it for WebGPU and then
     // misreport a silently downgraded CPU session as accelerated.
     const generatorBackends = ne.wasm.wasmPaths?.wasm?.includes("ort-wasm-simd-threaded.wasm")
       ? ["wasm"] : await resolveInferenceBackends();
-    const [rvcSessionResult, contentVecBuffer, rmvpeBuffer] = await Promise.all([
-      createSessionFromOnnxBuffer(onnxBuffer, { preferredBackends: generatorBackends }),
-      files.contentVec instanceof ArrayBuffer ? files.contentVec : files.contentVec.arrayBuffer(),
-      files.rmvpe instanceof ArrayBuffer ? files.rmvpe : files.rmvpe.arrayBuffer()
-    ]);
+    const rvcSessionResult = await createSessionFromOnnxBuffer(preparedModel.onnxBuffer, { preferredBackends: generatorBackends });
+    preparedModel = null;
+    modelBuffer = null;
+    files.model = null;
     const rvcSession = rvcSessionResult.session;
     let priorSession=null;
     if(rvcSession.inputNames.includes('prior_mean')) {
@@ -14070,15 +14068,21 @@ async function runPipeline(files, callbacks = {}, options = {}, preDecodedAudio)
     }
     // Compile the two large encoders sequentially to bound mobile peak memory.
     emitStage("feature_model_loading");
-    const contentVecSession = await qu.create(contentVecBuffer, {
+    let encoderBuffer = files.contentVec instanceof ArrayBuffer ? files.contentVec : await files.contentVec.arrayBuffer();
+    const contentVecSession = await qu.create(encoderBuffer, {
         executionProviders: ["wasm"],
         graphOptimizationLevel: "basic"
       });
+    encoderBuffer = null;
+    files.contentVec = null;
     emitStage("pitch_model_loading");
-    const rmvpeSession = await qu.create(rmvpeBuffer, {
+    encoderBuffer = files.rmvpe instanceof ArrayBuffer ? files.rmvpe : await files.rmvpe.arrayBuffer();
+    const rmvpeSession = await qu.create(encoderBuffer, {
         executionProviders: ["wasm"],
         graphOptimizationLevel: "basic"
       });
+    encoderBuffer = null;
+    files.rmvpe = null;
     let retrievalCodebook = null;
     if (files.index && Number(options.indexRate ?? 0) > 0) {
       try {
