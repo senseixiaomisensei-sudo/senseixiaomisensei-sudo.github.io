@@ -8,6 +8,7 @@ const PORT = Number(process.env.POSTPREP_RVC_TEST_PORT) || 8126;
 const ROOT = fileURLToPath(new URL("../", import.meta.url));
 // Sparse test checkouts reuse the existing read-only local model CDN.
 const modelRoot = process.env.POSTPREP_RVC_MODEL_ROOT || ROOT;
+const separatorRoot = process.env.POSTPREP_RVC_SEPARATOR_ROOT || modelRoot;
 const candidateManifest = process.env.POSTPREP_RVC_CANDIDATE_MANIFEST;
 const candidates = candidateManifest
   ? JSON.parse(fs.readFileSync(candidateManifest, "utf8")) : [];
@@ -42,7 +43,9 @@ const server = http.createServer((req, res) => {
     fs.createReadStream(candidate.candidatePath).pipe(res);
     return;
   }
-  const filePath = path.join(reqPath.startsWith("/models/") ? modelRoot : ROOT, reqPath.replace(/^\//, ""));
+  const sourceRoot = reqPath.startsWith("/models/base/separator/") ? separatorRoot
+    : reqPath.startsWith("/models/") ? modelRoot : ROOT;
+  const filePath = path.join(sourceRoot, reqPath.replace(/^\//, ""));
 
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     res.statusCode = 404;
@@ -120,6 +123,11 @@ server.listen(PORT, "127.0.0.1", async () => {
           body: JSON.stringify({ code: "UPSTREAM_UNAVAILABLE", message: "Injected test outage" }) });
       });
     }
+    if (process.env.POSTPREP_RVC_TEST_OFFLINE === "1") {
+      await page.route("**/rvc-api**", route => route.fulfill({ status: 503,
+        contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ code: "UPSTREAM_UNAVAILABLE", message: "Test cloud unavailable" }) }));
+    }
     await page.goto(process.env.POSTPREP_RVC_TEST_URL || `http://127.0.0.1:${PORT}/rvc.html`, { waitUntil: "domcontentloaded", timeout: 20000 });
     await page.waitForTimeout(1500);
     if (process.env.POSTPREP_RVC_FORCE_LOCAL === "1") {
@@ -174,7 +182,7 @@ server.listen(PORT, "127.0.0.1", async () => {
     await page.waitForFunction(() => {
       const status = document.getElementById("rvc-audio-status")?.textContent || "";
       const button = document.getElementById("rvc-convert");
-      return !status.includes("正在分析") && button && !button.disabled;
+      return (status.includes("已就绪") || /ready/i.test(status)) && button && !button.disabled;
     }, { timeout: 120000 });
     if (process.env.POSTPREP_RVC_INDEX_RATE) {
       await page.locator("#rvc-index-rate").evaluate((element, value) => {
@@ -248,6 +256,9 @@ server.listen(PORT, "127.0.0.1", async () => {
           }
           if (process.env.POSTPREP_RVC_REQUIRE_CLOUD === "1" && resultMeta.includes("用户设备端")) {
             throw new Error("Cloud acceptance unexpectedly fell back to the device");
+          }
+          if (process.env.POSTPREP_RVC_REQUIRE_SONG_FALLBACK === "1" && !resultMeta.includes("本机 MDX 分离")) {
+            throw new Error("Device song acceptance did not separate and remix the accompaniment");
           }
           finished = true;
           break;
