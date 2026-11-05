@@ -8,8 +8,10 @@ import argparse,functools,hashlib,importlib,json,os,sys,time
 import numpy as np,soundfile as sf,torch,yaml
 if __package__:
     from .speech_parameters import DEFAULT_STEPS, validate_speech_steps
+    from .runtime_cache import configure_numba_cache
 else:
     from speech_parameters import DEFAULT_STEPS, validate_speech_steps
+    from runtime_cache import configure_numba_cache
 
 def instantiate(node):
     if not isinstance(node,dict):return node
@@ -32,6 +34,7 @@ def checked_load(module,state,label,preloaded=()):
 
 def run(args):
     steps=validate_speech_steps(args.steps)
+    configure_numba_cache(Path(args.diagnostics).resolve().parents[1])
     started=time.monotonic();cfg=json.loads(Path(args.config).read_text(encoding='utf8'))
     for item in cfg['files']:
         p=Path(item['path'])

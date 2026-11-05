@@ -4172,6 +4172,7 @@
     rvcContext: null,
     resultUrl: "",
     latestSongJob: null,
+    cloudSubmission: null,
     resultMetaBase: "",
     trainingFiles: [],
     trainingJob: null,
@@ -4841,7 +4842,7 @@
   // receives one transferred ArrayBuffer, so scrolling the character gallery
   // during a download no longer competes with 20 MB copies, SHA-256 hashing,
   // IndexedDB serialisation and a 360 MB Blob build.
-  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261104-audio1";
+  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261105-cloud-recovery1";
   const MODEL_FETCH = { progressMs: 250, probeMs: 7000, connectMs: 12000, inactivityMs: 15000, quietHintMs: 6000 };
   let modelFetchWorker = null;
   let modelFetchBroken = false;
@@ -6338,6 +6339,18 @@
     }
   }
 
+  // Keep the idempotency key and accepted job across a user-initiated retry.
+  // File identity and every inference field must match before reusing it.
+  function cloudSubmissionFor(file, body) {
+    const key = JSON.stringify([...body.entries()].filter(([name]) => name !== "language"));
+    let submission = state.cloudSubmission;
+    if (!submission || submission.file !== file || submission.key !== key || submission.expiresAt <= Date.now()) {
+      submission = { file, key, requestId: createCloudRequestId(), accepted: null, expiresAt: Date.now() + 2 * 60 * 60 * 1000 };
+      state.cloudSubmission = submission;
+    }
+    return submission;
+  }
+
   const TRANSIENT_CLOUD_OUTPUT_CODES = new Set([
     "RATE_LIMITER_UNAVAILABLE",
     "RVC_BACKEND_TIMEOUT",
@@ -6357,75 +6370,100 @@
   }
 
   async function pollCloudOutput(url, timeoutMs, longJob = false) {
+    const startedAt = Date.now();
     const deadline = Date.now() + timeoutMs;
     let transientFailures = 0;
     let lastRequestId = "";
     const maxTransientFailures = longJob ? 30 : 4;
-    while (Date.now() < deadline) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), longJob ? 60000 : 45000);
-      try {
-        const response = await fetch(url, {
-          credentials: "omit",
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (response.status === 200) return response;
-        if (response.status === 202) {
-          transientFailures = 0;
-          const retryAfterSeconds = Math.max(longJob ? 8 : 4, Math.min(15, parseInt(response.headers.get("Retry-After") || "6", 10) || 6));
-          let processing = {};
-          try {
-            processing = await response.json();
-          } catch {}
-          updateProgressBar(55);
-          const longStage = String(processing?.stage || "");
-          const longStageLabel = {
-            separating: l("正在分离人声与伴奏","Separating vocals and accompaniment"),
-            converting: l("正在分段进行角色变声","Converting character voices in segments"),
-            remixing: l("正在回混原伴奏","Mixing with the original accompaniment"),
-            encoding: l("正在编码最终音频","Encoding the final audio"),
-          }[longStage] || l("正在后台处理长音频","Processing long audio in the background");
-          updateStatusDisplay(longJob
-            ? l(` [2/3] ${longStageLabel}；任务已保存在服务端，网络波动后会继续查询…`,` [2/3] ${longStageLabel}. The job is saved on the server; polling will resume after connection interruptions…`)
-            : state.audioMode === "song"
-              ? l(" [2/3] 云端正在分离人声、角色变声并回混原伴奏；网络短暂切换不会丢失任务…"," [2/3] Separating, converting and remixing on the cloud. Brief network changes will not lose the job…")
-              : l(" [2/3] 云端 GPU 正在后台处理；页面会自动查询结果，网络短暂切换不会丢失任务…"," [2/3] Processing on the cloud GPU. Results are checked automatically; brief network changes will not lose the job…"));
-          await waitFor(retryAfterSeconds * 1000);
-          continue;
-        }
-
-        let payload = {};
+    const runController = new AbortController();
+    const previousAbort = state.cloudRunAbort;
+    const abortRun = (error) => runController.abort(error);
+    state.cloudRunAbort = abortRun;
+    const timeoutError = () => {
+      const error = new Error(l("本次等待已结束，服务端任务可能仍在处理。点「重试」继续查询原任务", "This wait ended; the server job may still be running. Retry to check the same job."));
+      error.code = "RVC_BACKEND_TIMEOUT";
+      error.requestId = lastRequestId;
+      return error;
+    };
+    const deadlineTimer = setTimeout(() => abortRun(timeoutError()), timeoutMs);
+    const wait = (ms) => withDeadline(waitFor(Math.min(ms, Math.max(0, deadline - Date.now()))), 0, null, runController.signal);
+    try {
+      while (Date.now() < deadline) {
+        throwIfAborted(runController.signal);
+        const controller = new AbortController();
+        const onAbort = () => controller.abort(runController.signal.reason);
+        runController.signal.addEventListener("abort", onAbort, { once: true });
+        const timer = setTimeout(() => controller.abort(), Math.min(deadline - Date.now(), longJob ? 60000 : 45000));
         try {
-          payload = await response.json();
-        } catch (e) {}
-        const error = new Error(payload?.message || payload?.code || `HTTP ${response.status}`);
-        error.code = typeof payload?.code === "string" ? payload.code : "";
-        error.httpStatus = response.status;
-        const requestId = String(response.headers.get("X-PostPrep-Request-Id") || "").slice(0, 96);
-        if (requestId) lastRequestId = requestId;
-        error.requestId = requestId || lastRequestId;
-        if (response.status === 429) {
-          const retryAfterSeconds = Math.max(1, parseInt(response.headers.get("Retry-After") || "6", 10) || 6);
-          await waitFor(retryAfterSeconds * 1000);
-          continue;
+          const response = await withDeadline(fetch(url, {
+            credentials: "omit",
+            cache: "no-store",
+            signal: controller.signal,
+          }), 0, null, runController.signal);
+          throwIfAborted(runController.signal);
+          if (response.status === 200) return response;
+          if (response.status === 202) {
+            transientFailures = 0;
+            const retryAfterSeconds = Math.max(longJob ? 8 : 4, Math.min(15, parseInt(response.headers.get("Retry-After") || "6", 10) || 6));
+            const processing = await withDeadline(response.json(), Math.min(deadline - Date.now(), 15000), timeoutError, runController.signal);
+            throwIfAborted(runController.signal);
+            // A fresh 202 confirms the server still owns this job. Identical
+            // stage text is normal during a long GPU operation; it is not a
+            // page/network stall. The absolute job deadline remains in force.
+            state.lastConversionActivityAt = Date.now();
+            updateProgressBar(55);
+            const longStage = String(processing?.stage || "");
+            const longStageLabel = {
+              uploading: l("正在接收音频", "Receiving audio"),
+              preparing: l("正在准备音频", "Preparing audio"),
+              queued: l("正在等待 GPU", "Waiting for the GPU"),
+              separating: l("正在分离人声与伴奏","Separating vocals and accompaniment"),
+              converting: l("正在分段进行角色变声","Converting character voices in segments"),
+              remixing: l("正在回混原伴奏","Mixing with the original accompaniment"),
+              encoding: l("正在编码最终音频","Encoding the final audio"),
+            }[longStage] || l("正在后台处理音频","Processing audio in the background");
+            const elapsed = Math.round((Date.now() - startedAt) / 1000);
+            updateStatusDisplay(longJob
+              ? l(` [2/3] ${longStageLabel}；已等待 ${elapsed} 秒。服务端仍在线，网络波动后会继续查询…`,` [2/3] ${longStageLabel}. Waiting ${elapsed}s. The server is responding; polling will resume after connection interruptions…`)
+              : l(` [2/3] ${longStageLabel}；已等待 ${elapsed} 秒。服务端仍在线，完成后会自动显示结果…`,` [2/3] ${longStageLabel}. Waiting ${elapsed}s. The server is responding; results will appear automatically…`));
+            await wait(retryAfterSeconds * 1000);
+            continue;
+          }
+
+          let payload = {};
+          try {
+            payload = await withDeadline(response.json(), Math.min(deadline - Date.now(), 15000), timeoutError, runController.signal);
+          } catch (e) {}
+          const error = new Error(payload?.message || payload?.code || `HTTP ${response.status}`);
+          error.code = typeof payload?.code === "string" ? payload.code : "";
+          error.httpStatus = response.status;
+          const requestId = String(response.headers.get("X-PostPrep-Request-Id") || "").slice(0, 96);
+          if (requestId) lastRequestId = requestId;
+          error.requestId = requestId || lastRequestId;
+          if (response.status === 429) {
+            const retryAfterSeconds = Math.max(1, parseInt(response.headers.get("Retry-After") || "6", 10) || 6);
+            await wait(retryAfterSeconds * 1000);
+            continue;
+          }
+          throw error;
+        } catch (error) {
+          throwIfAborted(runController.signal);
+          transientFailures += 1;
+          if (error?.requestId) lastRequestId = error.requestId;
+          const retryableError = isTransientCloudOutputError(error);
+          if (!retryableError || transientFailures >= maxTransientFailures || Date.now() >= deadline) throw error;
+          updateStatusDisplay(l(` [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`,` [2/3] Network interrupted while checking results. Retrying (${transientFailures}/${maxTransientFailures - 1})…`));
+          await wait(Math.min(longJob ? 15000 : 8000, 1800 * transientFailures));
+        } finally {
+          clearTimeout(timer);
+          runController.signal.removeEventListener("abort", onAbort);
         }
-        throw error;
-      } catch (error) {
-        transientFailures += 1;
-        if (error?.requestId) lastRequestId = error.requestId;
-        const retryableError = isTransientCloudOutputError(error);
-        if (!retryableError || transientFailures >= maxTransientFailures || Date.now() >= deadline) throw error;
-        updateStatusDisplay(l(` [2/3] 查询结果时网络波动，正在恢复（${transientFailures}/${maxTransientFailures - 1}）…`,` [2/3] Network interrupted while checking results. Retrying (${transientFailures}/${maxTransientFailures - 1})…`));
-        await waitFor(Math.min(longJob ? 15000 : 8000, 1800 * transientFailures));
-      } finally {
-        clearTimeout(timer);
       }
+      throw timeoutError();
+    } finally {
+      clearTimeout(deadlineTimer);
+      if (state.cloudRunAbort === abortRun) state.cloudRunAbort = previousAbort;
     }
-    const timeout = new Error(l("云端后台处理超过等待时限，请重新提交","Cloud processing exceeded the wait limit. Submit again."));
-    timeout.code = "RVC_BACKEND_TIMEOUT";
-    timeout.requestId = lastRequestId;
-    throw timeout;
   }
 
   async function readCloudAudioBody(response, timeoutMs = 60000) {
@@ -8138,15 +8176,6 @@
       return;
     }
 
-    const cooldownRemainingMs = RVC_SUBMISSION_COOLDOWN_MS - (Date.now() - state.lastCloudSubmissionAt);
-    if (cooldownRemainingMs > 0) {
-      const seconds = Math.ceil(cooldownRemainingMs / 1000);
-      showToast(state.lang === "en" ? `Wait ${seconds}s before the next cloud audio` : `请等待 ${seconds} 秒后再提交下一条云端音频`);
-      return;
-    }
-    state.lastCloudSubmissionAt = Date.now();
-    persistCloudSubmissionTimestamp(state.lastCloudSubmissionAt);
-
     state.busy = true;
     syncMixControls();
     if (convertBtn) {
@@ -8179,7 +8208,6 @@
       }
 
       const body = new FormData();
-      const cloudRequestId = createCloudRequestId();
       body.set("modelId", selectedModel.id);
       body.set("model_id", selectedModel.id);
       body.set("voiceEngine", voiceEngine);
@@ -8216,6 +8244,18 @@
       body.set("language", state.lang === "en" ? "en" : "zh");
       body.set("audioMode", state.audioMode);
       body.set("audio_mode", state.audioMode);
+      const submission = cloudSubmissionFor(state.audio.file, body);
+      if (!submission.accepted) {
+        const cooldownRemainingMs = RVC_SUBMISSION_COOLDOWN_MS - (Date.now() - state.lastCloudSubmissionAt);
+        if (cooldownRemainingMs > 0) {
+          const seconds = Math.ceil(cooldownRemainingMs / 1000);
+          showToast(state.lang === "en" ? `Wait ${seconds}s before the next cloud audio` : `请等待 ${seconds} 秒后再提交下一条云端音频`);
+          return false;
+        }
+        state.lastCloudSubmissionAt = Date.now();
+        persistCloudSubmissionTimestamp(state.lastCloudSubmissionAt);
+      }
+      const cloudRequestId = submission.requestId;
       body.set("requestId", cloudRequestId);
       body.set("request_id", cloudRequestId);
       body.set("audio", uploadFile, uploadFile.name || `input.${extension}`);
@@ -8342,17 +8382,21 @@
 
       // Reuse this FormData/request ID across entry retries. Once accepted,
       // polling and downloading stay on that job and never resubmit the audio.
-      const { payload, routes } = await uploadWithRouteFallback(activeBases, uploadAndInfer, async (nextEntry, error) => {
+      const accepted = submission.accepted || await uploadWithRouteFallback(activeBases, uploadAndInfer, async (nextEntry, error) => {
         updateProgressBar(8);
         updateStatusDisplay(nextEntry
           ? " 当前云端入口不可达，正在尝试备用入口…"
           : " 云端连接短暂中断，正在重新连接同一入口并自动重试一次…");
         await waitFor(Math.min(15000, Math.max(1200, (error?.retryAfterSeconds || 0) * 1000)));
       });
+      const { payload, routes } = accepted;
       if (!payload || !payload.jobId || !payload.downloadToken) {
         throw new Error(payload?.message || payload?.code || l("未获取到任务标识","No job identifier was returned."));
       }
 
+      submission.accepted = accepted;
+      const expiresAt = Date.parse(payload.expiresAt);
+      if (Number.isFinite(expiresAt)) submission.expiresAt = expiresAt;
       const outputUrl = routes.outputUrl(payload.jobId, payload.downloadToken);
       updateProgressBar(52);
       updateStatusDisplay(state.audioMode === "song"
@@ -8424,15 +8468,21 @@
       updateProgressBar(100);
       updateStatusDisplay(l(` 云端 RVC 变声完成！用时 ${elapsed} 秒。${longJob ? "长音频稳定链路已完成可恢复处理与下载。" : ""}可在下方试听或下载。`,` Cloud RVC conversion complete in ${elapsed}s. ${longJob ? "Resumable processing and download completed. " : ""}Play or download below.`));
       showToast(l(" 云端 RVC 变声完成！可在下方试听或下载"," Cloud RVC conversion complete. Play or download below."));
+      if (state.cloudSubmission === submission) state.cloudSubmission = null;
       return true;
     } catch (error) {
       console.warn("Cloud RVC inference failed", error);
+      if (state.cloudSubmission && !error?.stalled && !isTransientCloudOutputError(error)) {
+        state.cloudSubmission = null;
+      }
       if (allowDeviceFallback && !modernSpeech && state.audioMode === "voice"
           && hasDeviceFallbackModel(selectedModel) && isDeviceFallbackEligible(error)) {
         updateStatusDisplay(l(" 云端 RVC 当前不可达，准备切换到用户设备端推理…"," Cloud RVC is unreachable. Preparing on-device inference\u2026"));
         return { fallback: true, error };
       }
-      const failureMessage = cloudRvcFailureMessage(error);
+      const failureMessage = state.cloudSubmission?.accepted
+        ? l("本次查询未完成。云端任务已保留，点「重试」继续查询，不会重复上传。", "This check did not finish. Your cloud job is retained; Retry checks it again without uploading twice.")
+        : cloudRvcFailureMessage(error);
       const songFallbackHint = state.audioMode === "song" && hasDeviceFallbackModel(selectedModel)
         ? l(" · 如接受伴奏也被处理，可自行点击「转为本地直接变声」。"," · To process the backing track too, select “Convert directly on device”.") : "";
       const diagnostic = error?.requestId ? l(` · 诊断号 ${error.requestId}`,` · Diagnostic ID ${error.requestId}`) : "";
@@ -8441,7 +8491,7 @@
       updateStatusDisplay(` ${failureMessage}${error?.code ? `（${error.code}）` : ""}${diagnostic}${deviceHint}${songFallbackHint}`);
       showToast(` ${failureMessage}`);
       if (typeof showStallActions === "function") {
-        const reason = `${error?.stalled ? l("云端处理卡住，已自动停止：","Cloud processing stalled and was stopped: ") : ""}${failureMessage}${error?.code ? `（${error.code}）` : ""}`;
+        const reason = `${error?.stalled && !state.cloudSubmission?.accepted ? l("云端等待已停止：","Cloud waiting stopped: ") : ""}${failureMessage}${error?.code ? `（${error.code}）` : ""}`;
         showStallActions({ mode: "official", reasonZh: reason, reasonEn: reason });
       }
       return false;
@@ -9902,7 +9952,7 @@
   // freeze1: a tab left open (or a browser that keeps an old copy of the page)
   // keeps running an old rvc.js. Compare with the published build and reload
   // once onto a cache-busted URL; never while a conversion is running.
-  const RVC_BUILD = "20261104-audio1";
+  const RVC_BUILD = "20261105-cloud-recovery1";
   async function checkRvcBuild({ reason = "boot" } = {}) {
     let remote = "";
     try {
