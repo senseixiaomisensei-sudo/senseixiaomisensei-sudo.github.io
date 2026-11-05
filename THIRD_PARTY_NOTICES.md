@@ -11,6 +11,10 @@ documentation. It does not replace licenses attached to third-party materials.
   **DM Mono**, **Noto Serif SC**, and **Playfair Display**, all under SIL OFL 1.1.
   The modified Playfair subset is renamed PostPrep Display. Copyright notices,
   source links and the complete license are in `assets/rococo/fonts/LICENSE-OFL.txt`.
+- The Blue Archive theme bundles subsets of **Barlow**, **Barlow Condensed** and
+  **Noto Sans SC** under SIL OFL 1.1; see `assets/ba/fonts/LICENSE-OFL.txt`.
+  Character artwork was supplied in the theme package; its inclusion does not
+  imply an official affiliation or endorsement.
 - **Hero image** `assets/hero-postprep-original.png` was generated for this
   repository on 2026-08-12 without an external image input. It replaces the
   prior hero asset whose redistribution rights were not established.
