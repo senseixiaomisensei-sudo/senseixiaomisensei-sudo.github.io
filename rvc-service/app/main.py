@@ -44,6 +44,7 @@ from app.inference_errors import PitchExtractionError
 from app.diagnostics import capture_job, configured_root
 from app.speech_runtime import ENGINE as SPEECH_ENGINE, render_speech, speech_profile, speech_status
 from app.speech_parameters import DEFAULT_STEPS, validate_speech_steps
+from app.runtime_cache import configure_numba_cache
 from app import tts_engines as tts_runtime, separation_cache
 from app.separation_runtime import (
     SeparationRuntimeError,
@@ -98,7 +99,7 @@ PIPELINE_FILES = ("main.py", "pitch_safety.py", "audio_dynamics.py", "audio_acti
                   "audio_repair.py", "separation_runtime.py", "separation_worker.py", "separation_cache.py", "official_runtime.py",
                   "upstream_pipeline.py", "stage_evidence.py", "inference_errors.py", "retrieval_safety.py",
                   "content_encoder.py", "pitch_consensus.py", "analysis_timeline.py",
-                  "timeline_synthesis.py", "timeline_rendering.py", "register_adaptation.py", "speech_runtime.py", "speech_worker.py", "speech_parameters.py",
+                  "timeline_synthesis.py", "timeline_rendering.py", "register_adaptation.py", "speech_runtime.py", "speech_worker.py", "speech_parameters.py", "runtime_cache.py",
                   "chorus_api.py", "chorus_runtime.py", "chorus_worker.py", "chorus_quality.py", "chorus_medley.py", "tts_runtime.py",
                   "tts_engines.py", "tts_models.py", "tts_worker.py", "tts_pack.py", "tts_catalog.json",
                   "v3_quality.py", "v3_models.py", "separation_worker_v3.py")
@@ -646,6 +647,7 @@ def load_output_records() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
+    configure_numba_cache(WORK_ROOT.parent)
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
     TRAIN_ROOT.mkdir(parents=True, exist_ok=True)
     require_config()

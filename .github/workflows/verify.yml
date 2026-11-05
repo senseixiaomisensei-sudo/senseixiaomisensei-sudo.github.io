@@ -19,5 +19,6 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: npm ci --ignore-scripts
       - run: npm test
+      - run: python3 -m unittest discover -s tests -p test_runtime_cache.py
       - run: npm run build:styles
       - run: git diff --exit-code -- assets/postprep-tailwind.css
