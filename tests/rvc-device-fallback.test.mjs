@@ -51,7 +51,7 @@ function cloudHarness(mode) {
     officialRoutes: () => ({ convertUrl: "/test" }), getOfficialEndpoint: () => "",
     cloudRequestTimeoutMs: () => 1000, cloudJobTimeoutMs: () => 1000,
     preferredCloudOutputFormat: () => "mp3", createCloudRequestId: () => "same-retry-id",
-    FormData: class { set() {} }, XMLHttpRequest: XHR, waitFor: async () => {},
+    FormData: class { fields = new Map(); set(k, v) { this.fields.set(k, v); } entries() { return this.fields.entries(); } }, XMLHttpRequest: XHR, waitFor: async () => {},
     console: { warn() {} }, setTimeout() {}, clearInterval() {},
     hasDeviceFallbackModel: m => m.chunks.length > 0,
     isDeviceFallbackEligible: eligible,
@@ -59,6 +59,10 @@ function cloudHarness(mode) {
     buildRvcEndpointCandidates: () => ["/test"],
     isEndpointNetworkError: () => false,
   };
+  dependencies.cloudSubmissionFor = Function("state", "createCloudRequestId",
+    `return (${source("cloudSubmissionFor")});`)(state, dependencies.createCloudRequestId);
+  dependencies.isTransientCloudOutputError = Function("TRANSIENT_CLOUD_OUTPUT_CODES", "TRANSIENT_CLOUD_OUTPUT_STATUSES",
+    `return (${source("isTransientCloudOutputError")});`)(codes, new Set([0, 408, 425, 429, 500, 502, 503, 504, 530]));
   dependencies.uploadWithRouteFallback = Function("officialRoutes", "isEndpointNetworkError",
     `return (${source("uploadWithRouteFallback")});`)(dependencies.officialRoutes, dependencies.isEndpointNetworkError);
   const run = Function(...Object.keys(dependencies), `return (${source("runOfficialRvcInference")});`)(...Object.values(dependencies));
