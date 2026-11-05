@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const VER = '20261103-rococo2';
+const VER = '20261105-rococo3';
 const PAGES = ['index.html', 'caption-formatter.html', 'hashtag-cleaner.html', 'idea-generator.html',
   'length-checker.html', 'publish-trust.html', 'skills.html', 'skill-passport.html', 'rvc.html',
   'privacy.html', '404.html'];
@@ -35,7 +35,9 @@ for (const name of PAGES) {
   let src = before.replace(RE, '');
   if (mode === 'add') {
     if (!src.includes('</head>')) { console.warn('no </head> in', name); continue; }
-    src = src.replace('</head>', `${blockFor(name === '404.html' ? '/' : '')}\n</head>`);
+    src = src.includes('<!-- ba:head -->')
+      ? src.replace(/(?=\s*<!-- ba:head -->)/, `\n${blockFor(name === '404.html' ? '/' : '')}`)
+      : src.replace('</head>', `${blockFor(name === '404.html' ? '/' : '')}\n</head>`);
   }
   if (src !== before) writeFileSync(file, src);
   console.log(`rococo ${mode === 'add' ? 'head →' : 'removed ←'}`, name, src === before ? '(unchanged)' : '');

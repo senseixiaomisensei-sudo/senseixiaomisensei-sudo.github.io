@@ -2,7 +2,7 @@
   "use strict";
   const key = "postprep-ui-style";
   const root = document.documentElement;
-  const styles = ["glass", "classic", "rococo"];
+  const styles = ["glass", "classic", "rococo", "ba"];
   const normalizeStyle = value => styles.includes(value) ? value : "glass";
   try { root.dataset.ui = normalizeStyle(localStorage.getItem(key)); }
   catch { root.dataset.ui = "glass"; }
@@ -25,7 +25,8 @@
       const labels = {
         glass: ["切换至纸面风格", "Switch to Paper"],
         classic: ["切换至洛可可信笺", "Switch to Rococo stationery"],
-        rococo: ["切换至液态玻璃", "Switch to Liquid Glass"],
+        rococo: ["切换至蔚蓝档案", "Switch to Blue Archive"],
+        ba: ["切换至液态玻璃", "Switch to Liquid Glass"],
       };
       const label = text(...labels[style]);
       toggle.setAttribute("aria-label", label);
@@ -55,7 +56,7 @@
         if (root.dataset.ui !== "glass") document.getElementById("studio-input-audio")?.pause();
       }
     });
-    new MutationObserver(labelToggle).observe(root, { attributes: true, attributeFilter: ["lang"] });
+    new MutationObserver(labelToggle).observe(root, { attributes: true, attributeFilter: ["lang", "data-ui"] });
     let highlightFrame = 0;
     document.addEventListener("pointermove", (event) => {
       if (root.dataset.ui !== "glass" || event.pointerType === "touch" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
