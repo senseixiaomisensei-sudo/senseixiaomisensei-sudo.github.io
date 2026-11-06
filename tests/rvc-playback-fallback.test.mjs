@@ -15,7 +15,7 @@ test("cloud output retains the server format and raw bytes", () => {
   assert.doesNotMatch(source, /await polishCloudVoiceAudio\(rawOutputBlob\)/);
 });
 
-test("protected media playback falls back to the downloaded blob", () => {
-  assert.match(source, /await attachResultAudio\(resultAudio, mediaUrl \|\| nextResultUrl, Boolean\(mediaUrl\)\)/);
-  assert.match(source, /await attachResultAudio\(resultAudio, nextResultUrl, false\)/);
+test("protected streaming playback can fall back to the job output route", () => {
+  assert.match(source, /await attachResultAudio\(resultAudio, mediaUrl, streaming\)/);
+  assert.match(source, /await attachResultAudio\(resultAudio, nextResultUrl, streaming\)/);
 });

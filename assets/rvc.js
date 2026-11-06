@@ -4842,7 +4842,7 @@
   // receives one transferred ArrayBuffer, so scrolling the character gallery
   // during a download no longer competes with 20 MB copies, SHA-256 hashing,
   // IndexedDB serialisation and a 360 MB Blob build.
-  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261106-cloud-speed1";
+  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261106-cover-playback1";
   const MODEL_FETCH = { progressMs: 250, probeMs: 7000, connectMs: 12000, inactivityMs: 15000, quietHintMs: 6000 };
   let modelFetchWorker = null;
   let modelFetchBroken = false;
@@ -8418,14 +8418,15 @@
         resultDownload.download = `postprep-rvc-${selectedModel.id}-${Date.now()}.${outputFormat}`;
       }
       if (resultAudio) {
-        const mediaUrl = officialMediaUrl(payload.jobId, payload.downloadToken);
+        const streaming = !nextResultUrl.startsWith("blob:");
+        const mediaUrl = streaming ? officialMediaUrl(payload.jobId, payload.downloadToken) || nextResultUrl : nextResultUrl;
         try {
-          await attachResultAudio(resultAudio, mediaUrl || nextResultUrl, Boolean(mediaUrl));
+          await attachResultAudio(resultAudio, mediaUrl, streaming);
         } catch (mediaError) {
           try {
-            if (!mediaUrl) throw mediaError;
-            console.warn("Protected media route failed; using the already downloaded result blob", mediaError);
-            await attachResultAudio(resultAudio, nextResultUrl, false);
+            if (mediaUrl === nextResultUrl) throw mediaError;
+            console.warn("Protected media route failed; using the output route", mediaError);
+            await attachResultAudio(resultAudio, nextResultUrl, streaming);
           } catch (error) {
             URL.revokeObjectURL(nextResultUrl);
             if (resultDownload) resultDownload.href = previousResultUrl || "#";
@@ -9954,7 +9955,7 @@
   // freeze1: a tab left open (or a browser that keeps an old copy of the page)
   // keeps running an old rvc.js. Compare with the published build and reload
   // once onto a cache-busted URL; never while a conversion is running.
-  const RVC_BUILD = "20261106-cloud-speed1";
+  const RVC_BUILD = "20261106-cover-playback1";
   async function checkRvcBuild({ reason = "boot" } = {}) {
     let remote = "";
     try {
@@ -9993,7 +9994,7 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261106-cloud-speed1');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261106-cover-playback1');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,
@@ -10013,7 +10014,7 @@
         readOwnModel:getCachedItem,cacheKey:characterModelCacheKey,verifyBytes:verifyModelBytes,
         loadModel:(model,onProgress)=>loadModelAuto(model,characterModelCacheKey(model),voiceName(model),'application/onnx',onProgress)});
     } catch (error) { console.warn('ONNX export could not initialize', error); }
-    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261106-cloud-speed1');
+    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261106-cover-playback1');
     state.autoParameterController=initRegularAutoParameters({state,getEndpoint:getOfficialEndpoint,getModel:getSelectedModel,
       prepareFile:fixUploadContainer,isModernSpeech:useNewSpeechEngine,createRequestId:createCloudRequestId,
       setBusy:value=>{state.busy=value;updateStatusDisplay();syncMixControls();}});
