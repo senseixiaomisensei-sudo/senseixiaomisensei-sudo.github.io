@@ -100,7 +100,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /pollCloudOutput\(outputUrl, jobTimeoutMs, longJob\)/u);
   assert.match(client, /cloudResultUrl\(outputUrl, outputResponse, outputFormat, jobTimeoutMs\)/u);
   assert.match(extractFunction(client, "cloudResultUrl"), /downloadLongCloudOutput\(outputUrl,response,format,timeoutMs\)/u);
-  assert.match(client, /Protected media route failed; using the already downloaded result blob/u);
+  assert.match(client, /Protected media route failed; using the output route/u);
   assert.match(client, /let base = OFFICIAL_RVC_MEDIA_ENDPOINT/u);
   assert.doesNotMatch(client, /setTimeout\(probeTts,\s*1000\)/u);
   assert.match(client, /OFFICIAL_RVC_TTS_BASE/u);

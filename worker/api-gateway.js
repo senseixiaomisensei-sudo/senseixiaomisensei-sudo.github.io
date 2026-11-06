@@ -418,8 +418,10 @@ export default {
     const origin = request.headers.get("Origin");
     const visitorIp = request.headers.get("CF-Connecting-IP");
     if (contentType && route.method === "POST") headers.set("Content-Type", contentType);
-    if (route.id === "rvc-chorus" && route.method === "GET" && request.headers.get("Range")) {
-      headers.set("Range", request.headers.get("Range"));
+    const range = request.headers.get("Range");
+    if (range && ((route.id === "rvc-chorus" && route.method === "GET") ||
+        (route.id === "rvc-output" && /^bytes=(?:\d+-\d*|-\d+)$/u.test(range)))) {
+      headers.set("Range", range);
     }
     headers.set("X-PostPrep-Request-Id", requestId);
     if (origin) headers.set("Origin", origin);

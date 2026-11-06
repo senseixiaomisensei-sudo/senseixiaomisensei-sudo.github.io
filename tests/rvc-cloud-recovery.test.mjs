@@ -108,10 +108,11 @@ test("a real inference failure stops polling without retrying a failed job", asy
   assert.equal(requests, 1);
 });
 
-function conversion() {
+function conversion(withPlayer = false) {
   const state = { audio: { file: new File(["test"], "voice.mp3", { type: "audio/mpeg" }), duration: 5 },
     catalog: [{ id: "hoshino", chunks: ["a"] }], selectedModelId: "hoshino", audioMode: "voice", lang: "zh", lastCloudSubmissionAt: 0 };
-  const uploadedIds = [], polledUrls = [], statuses = [];
+  const uploadedIds = [], polledUrls = [], statuses = [], playback = [];
+  const player = {};
   let nextError = Object.assign(new Error("connection lost"), { code: "RVC_BACKEND_TIMEOUT" });
   let nextId = 0;
   const createCloudRequestId = () => `request-${++nextId}`;
@@ -123,7 +124,7 @@ function conversion() {
     send(body) { uploadedIds.push(body.get("requestId")); queueMicrotask(() => this.onload()); }
   }
   const deps = {
-    state, l: zh => zh, document: { getElementById: () => null },
+    state, l: zh => zh, document: { getElementById: id => withPlayer && id === "rvc-result-audio" ? player : null },
     MAX_AUDIO_SECONDS: 900, MAX_AUDIO_BYTES: 25e6, DURABLE_CLOUD_JOB_SECONDS: 40, RVC_SUBMISSION_COOLDOWN_MS: 20000,
     useNewSpeechEngine: () => false, fixUploadContainer: async file => file,
     prepareCloudUploadAudio: audio => ({ file: audio.file }), selectedRmsMixRate: () => .5,
@@ -137,13 +138,22 @@ function conversion() {
     uploadWithRouteFallback: async (_bases, upload) => ({ payload: await upload(routes, 1), routes }),
     pollCloudOutput: async url => { polledUrls.push(url); if (nextError) throw nextError; return new Response("audio"); },
     cloudResultUrl: async () => "blob:result", isTransientCloudOutputError,
+    officialMediaUrl: () => { throw new Error("The result was already downloaded"); },
+    attachResultAudio: async (_player, url, streaming) => { playback.push([url, streaming]); },
     hasDeviceFallbackModel: () => true, isDeviceFallbackEligible: () => false,
     cloudRvcFailureMessage: error => error.message, showStallActions() {},
     console: { warn() {} }, setTimeout() {}, clearInterval() {},
   };
-  return { run: load("runOfficialRvcInference", deps), state, uploadedIds, polledUrls, statuses,
+  return { run: load("runOfficialRvcInference", deps), state, uploadedIds, polledUrls, statuses, playback,
     error: value => { nextError = value; } };
 }
+
+test("a downloaded cloud result is played from its blob without another network request", async () => {
+  const h = conversion(true);
+  h.error(null);
+  assert.equal(await h.run(), true);
+  assert.deepEqual(h.playback, [["blob:result", false]]);
+});
 
 test("Retry resumes an accepted cloud job immediately without a second upload", async () => {
   const h = conversion();

@@ -446,6 +446,27 @@ test("rvc output preserves an asynchronous processing response", async () => {
   }
 });
 
+test("rvc Pages output fallback preserves byte ranges for the audio player", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (_url, options) => {
+      assert.equal(options.headers.get("Range"), "bytes=20-21");
+      return new Response(new Uint8Array([6, 7]), { status: 206, headers: {
+        "Content-Type": "audio/mpeg", "Content-Range": "bytes 20-21/100", "Content-Length": "2", "Accept-Ranges": "bytes",
+      } });
+    };
+    const request = new Request(`https://postprep-ae6.pages.dev/api/rvc-output?job=${JOB_ID}&token=${DOWNLOAD_TOKEN}`, {
+      headers: { Origin: SITE_ORIGIN, "X-PostPrep-Gateway": "gateway-secret", Range: "bytes=20-21" },
+    });
+    const response = await rvcOutputRequest({ request, env: BASE_ENV });
+    assert.equal(response.status, 206);
+    assert.equal(response.headers.get("Content-Range"), "bytes 20-21/100");
+    assert.deepEqual(new Uint8Array(await response.arrayBuffer()), new Uint8Array([6, 7]));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("rvc media route streams only a constrained short-lived output capability", async () => {
   const originalFetch = globalThis.fetch;
   let forwarded;

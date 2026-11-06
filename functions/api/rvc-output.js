@@ -24,9 +24,12 @@ export async function onRequest(context) {
 
   const outputUrl = new URL(`/v1/output/${encodeURIComponent(job)}`, backend.url.origin);
   outputUrl.searchParams.set("token", token);
+  const upstreamHeaders = new Headers({ Authorization: `Bearer ${backend.token}` });
+  const range = request.headers.get("Range");
+  if (range && /^bytes=(?:\d+-\d*|-\d+)$/u.test(range)) upstreamHeaders.set("Range", range);
   let upstream;
   try {
-    upstream = await fetchWithTimeout(outputUrl.toString(), { headers: { Authorization: `Bearer ${backend.token}` } }, 30000);
+    upstream = await fetchWithTimeout(outputUrl.toString(), { headers: upstreamHeaders }, 30000);
   } catch (error) {
     return failure(request, env, error && error.name === "AbortError" ? 504 : 502, "RVC_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
   }
@@ -37,8 +40,18 @@ export async function onRequest(context) {
     headers.set("Retry-After", upstream.headers.get("Retry-After") || "6");
     return new Response(body, { status: 202, headers });
   }
+  if (upstream.status === 416) {
+    const headers = new Headers(responseHeaders(request, env));
+    const contentRange = upstream.headers.get("Content-Range");
+    if (contentRange) headers.set("Content-Range", contentRange);
+    return new Response(upstream.body, { status: 416, headers });
+  }
   if (!upstream.ok || !contentType.startsWith("audio/")) return failure(request, env, 502, "RVC_OUTPUT_UNAVAILABLE", "Voice output is temporarily unavailable");
   const headers = new Headers(responseHeaders(request, env, contentType));
+  for (const name of ["Accept-Ranges", "Content-Length", "Content-Range"]) {
+    const value = upstream.headers.get(name);
+    if (value) headers.set(name, value);
+  }
   headers.set("Content-Disposition", `attachment; filename="postprep-rvc-audio.${contentType.startsWith("audio/mpeg") ? "mp3" : "wav"}"`);
   const actualF0 = upstream.headers.get("X-RVC-F0-Method") || "";
   if (/^(rmvpe|fcpe|pm)(\+(rmvpe|fcpe|pm))*$/u.test(actualF0)) headers.set("X-RVC-F0-Method", actualF0);
@@ -51,5 +64,5 @@ export async function onRequest(context) {
   }
   headers.set("X-RVC-Remix-Available", upstream.headers.get("X-RVC-Remix-Available") === "true" ? "true" : "false");
   headers.set("Referrer-Policy", "no-referrer");
-  return new Response(upstream.body, { status: 200, headers });
+  return new Response(upstream.body, { status: upstream.status, headers });
 }

@@ -304,6 +304,29 @@ test("rvc output route rejects an arbitrary job address before any upstream fetc
   }
 });
 
+test("rvc output forwards a browser seek and preserves its partial response", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (_url, options) => {
+      assert.equal(options.headers.get("Range"), "bytes=4096-4097");
+      return new Response(new Uint8Array([4, 2]), { status: 206, headers: {
+        "Content-Type": "audio/mpeg", "Content-Range": "bytes 4096-4097/9000",
+      } });
+    };
+    const request = new Request("https://postprep-text-gateway.example.workers.dev/rvc/output/11111111-2222-4333-8444-555555555555?token=output-token-with-at-least-32-characters", {
+      headers: { Origin: SITE_ORIGIN, Range: "bytes=4096-4097" },
+    });
+    const response = await gateway.fetch(request, { ...BASE_ENV,
+      POSTPREP_RVC_DIRECT_BASE_URL: "https://voice-relay-example.trycloudflare.com",
+      POSTPREP_RVC_INFERENCE_TOKEN: "rvc-direct-token-with-at-least-32-characters" });
+    assert.equal(response.status, 206);
+    assert.equal(response.headers.get("Content-Range"), "bytes 4096-4097/9000");
+    assert.deepEqual(new Uint8Array(await response.arrayBuffer()), new Uint8Array([4, 2]));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("rvc remix route reaches only a token-bound job and exposes revision", async () => {
   const originalFetch = globalThis.fetch;
   let forwarded;
