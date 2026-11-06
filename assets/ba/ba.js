@@ -12,6 +12,7 @@
   var KEY = "postprep-ui-style", SUB_KEY = "postprep-ba", TIME_KEY = "postprep-ba-time";
   var NAMES = ["koyuki", "hoshino", "momoi", "kei", "shiroko"];
   var root = document.documentElement;
+  var compact = window.matchMedia ? matchMedia("(max-width: 760px)") : { matches: false };
   var reduced = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   var darkMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : { matches: false };
   function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -24,6 +25,15 @@
   var urlSub = (location.search.match(/[?&]ba=(koyuki|hoshino|momoi|kei|shiroko)\b/) || [])[1];
   if (urlSub) put(SUB_KEY, urlSub);
   root.dataset.ba = valid(urlSub) ? urlSub : valid(get(SUB_KEY)) ? get(SUB_KEY) : "koyuki";
+  var script = document.currentScript;
+  if (compact.matches && isBA() && script && /\/(?:index\.html|rvc\.html)?$/.test(location.pathname)) {
+    var preload = document.createElement("link");
+    preload.rel = "preload";
+    preload.as = "image";
+    preload.fetchPriority = "high";
+    preload.href = new URL("img/" + root.dataset.ba + "/portrait-mobile.webp", script.src).href;
+    document.head.appendChild(preload);
+  }
 
   var themeMeta = document.querySelector('meta[name="theme-color"]');
   var themeOriginal = themeMeta && (themeMeta.getAttribute("data-postprep-original") || themeMeta.getAttribute("content"));
@@ -86,9 +96,12 @@
     if (prev === name) { syncSwitch(); return true; }
     var fxOld = fxBefore();
     root.dataset.ba = name;
-    fxSwitch(fxOld);
-    root.classList.remove("ba-swap"); void root.offsetWidth; root.classList.add("ba-swap");
-    setTimeout(function () { root.classList.remove("ba-swap"); }, 620);
+    syncStage();
+    if (!calm()) {
+      fxSwitch(fxOld);
+      root.classList.remove("ba-swap"); void root.offsetWidth; root.classList.add("ba-swap");
+      setTimeout(function () { root.classList.remove("ba-swap"); }, 620);
+    }
     applyTime(); syncSwitch(); relabel();
     try { document.dispatchEvent(new CustomEvent("postprep:ba-change", { detail: { name: name, previous: prev } })); } catch (e) {}
     listeners.forEach(function (f) { try { f(name, prev, opts || {}); } catch (e) {} });
@@ -97,7 +110,7 @@
 
   /* ---------- 3b · transition choreography (see css/60-motion.css) ---------- */
   var motionMQ = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
-  function calm() { return motionMQ.matches || root.dataset.motion === "reduced" || !isBA() || document.hidden; }
+  function calm() { return compact.matches || motionMQ.matches || root.dataset.motion === "reduced" || !isBA() || document.hidden; }
   function fxLayer(ms) {
     var l = document.createElement("div"); l.className = "ba-fx-layer"; l.setAttribute("aria-hidden", "true");
     (document.body || root).appendChild(l);
@@ -244,16 +257,26 @@
     '<path d="' + M_ROUTE_D + '" stroke-dasharray="6 6"/></g><path class="m-a" d="M60 430 C120 415 130 360 190 352 S290 370 315 310"/>' +
     '<g class="m-cp"><circle cx="60" cy="430" r="5"/><circle cx="190" cy="352" r="5"/><circle cx="315" cy="310" r="5"/></g><circle class="m-f" cx="480" cy="130" r="5"/>' +
     '<text class="m-l" x="60" y="458">ABYDOS</text><text class="m-l e" x="480" y="106">SCHALE</text></svg>';
+  var stageSet;
+  var motifs = {
+    koyuki: '<span class="m-layer">' + M_DIAL_BEZEL + '</span><span class="m-layer m-turn">' + M_DIAL_RING + '</span>',
+    hoshino: '<span class="m-layer">' + M_SONAR + '</span><i class="m-sweep"></i>',
+    momoi: '<span class="m-layer">' + M_PIXEL + '</span><span class="m-heart">' + M_HEART + '</span>',
+    kei: '<span class="m-layer">' + M_CIRCUIT + '</span>',
+    shiroko: '<span class="m-layer">' + M_ROUTE + '</span><i class="m-beacon"></i>'
+  };
+  function syncStage() {
+    var name = root.dataset.ba;
+    if (!stageSet || stageSet.dataset.set === name) return;
+    stageSet.dataset.set = name;
+    stageSet.innerHTML = '<span class="ba-motif">' + motifs[name] + '</span>';
+  }
   function buildStage() {
-    var st = el("div", "ba-deco ba-stage");
-    st.innerHTML =
-      '<i class="ba-grid"></i><i class="ba-plane"></i>' +
-      '<div class="ba-set" data-set="koyuki"><span class="ba-motif"><span class="m-layer">' + M_DIAL_BEZEL + '</span><span class="m-layer m-turn">' + M_DIAL_RING + '</span></span></div>' +
-      '<div class="ba-set" data-set="hoshino"><span class="ba-motif"><span class="m-layer">' + M_SONAR + '</span><i class="m-sweep"></i></span></div>' +
-      '<div class="ba-set" data-set="momoi"><span class="ba-motif"><span class="m-layer">' + M_PIXEL + '</span><span class="m-heart">' + M_HEART + '</span></span></div>' +
-      '<div class="ba-set" data-set="kei"><span class="ba-motif"><span class="m-layer">' + M_CIRCUIT + '</span></span></div>' +
-      '<div class="ba-set" data-set="shiroko"><span class="ba-motif"><span class="m-layer">' + M_ROUTE + '</span><i class="m-beacon"></i></span></div>';
-    document.body.appendChild(st);
+    var stage = el("div", "ba-deco ba-stage", '<i class="ba-grid"></i><i class="ba-plane"></i>');
+    stageSet = el("div", "ba-set");
+    syncStage();
+    stage.appendChild(stageSet);
+    document.body.appendChild(stage);
   }
 
   /* ---------- 5 · page head: Kivotos tag chips + school emblem ---------- */
@@ -421,7 +444,7 @@
     new MutationObserver(function () { var was = lastUi; lastUi = root.dataset.ui; activate(); if (isBA() && was !== "ba") { fxEnter(); setTimeout(fxCards, 240); } }).observe(root, { attributes: true, attributeFilter: ["data-ui"] });
     new MutationObserver(function () { relabel(); }).observe(root, { attributes: true, attributeFilter: ["lang"] });
     document.addEventListener("visibilitychange", function () { root.classList.toggle("ba-hidden", document.hidden); });
-    if (isBA()) (window.requestIdleCallback || setTimeout)(activate, { timeout: 400 });
+    if (isBA()) activate();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true }); else init();
 })();
