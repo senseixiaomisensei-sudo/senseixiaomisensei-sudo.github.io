@@ -6,7 +6,7 @@ import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
 
 const PAGES = ['index.html', 'caption-formatter.html', 'hashtag-cleaner.html', 'idea-generator.html', 'length-checker.html',
   'publish-trust.html', 'skills.html', 'skill-passport.html', 'rvc.html', 'privacy.html', '404.html'];
-const NAMES = ['koyuki', 'hoshino', 'momoi', 'kei'];
+const NAMES = ['koyuki', 'hoshino', 'momoi', 'kei', 'shiroko'];
 const css = readFileSync('assets/ba/ba.css', 'utf8');
 const js = readFileSync('assets/ba/ba.js', 'utf8');
 
@@ -34,7 +34,7 @@ test('all ba rules are scoped to html[data-ui="ba"]', () => {
   assert.match(css, /\.ba-deco, \.ba-switch, \.ba-chibi-wrap, \.ba-tap \{ display: none; \}/, 'pack nodes must be inert outside data-ui="ba"');
 });
 
-test('assets are local, complete for all four students, and within budget', () => {
+test('assets are local, complete for all five students, and within budget', () => {
   assert.doesNotMatch(css, /url\((["']?)https?:/);
   assert.doesNotMatch(js, /https?:\/\/(?!www\.w3\.org)/);
   for (const m of css.matchAll(/url\((?!["']?data:)["']?([^)"'?]+)/g)) assert.ok(existsSync('assets/ba/' + m[1]), 'missing ' + m[1]);

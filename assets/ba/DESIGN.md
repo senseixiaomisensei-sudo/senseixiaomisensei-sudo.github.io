@@ -1,7 +1,7 @@
 # PostPrep · Blue Archive theme — design tokens
 
 One top-level skin `html[data-ui="ba"]` (fourth in the cycle glass → classic → rococo → ba) with a
-second-level student switch `html[data-ba="koyuki|hoshino|momoi|kei"]`. The shared shell copies the
+second-level student switch `html[data-ba="koyuki|hoshino|momoi|kei|shiroko"]`. The shared shell copies the
 Schale tablet UI of the game; each student changes palette, art, decor, motion and the RVC console.
 
 ## Shell (shared)
@@ -29,12 +29,19 @@ closest OFL match to the game's condensed italic UI face. Body: Barlow Medium + 
 Fonts are subset woff2 in `fonts/` with `LICENSE-OFL.txt`.
 
 ## Students (from `img/<name>/palette.json`, compiled into CSS variables by build.py)
-| student | primary | primary2 | accent | decor | motion | RVC console |
+| student | primary | primary2 | accent | background motif (one, line art) | motion | RVC console |
 |---|---|---|---|---|---|---|
-| koyuki 小雪 (Millennium · Seminar) | pink | purple | coin gold | stars, coins, keypad doodles, `PASSWORD ****` | twinkle + glitchy jitter | vault password lock: brushed lilac door, bolts, spinning wheel, keypad, combination-dial ring |
-| hoshino 星野 (Abydos · Foreclosure Task Force) | pink | ocean blue | sand | sea band, waves, rising bubbles, sand, whale pillow | slow float, sleepy sway, "z" | deep-sea sonar: navy screen with range rings, rotating sweep, bubbles |
-| momoi 小桃 (Millennium · Game Dev) | hot pink | coin yellow | 1UP green | pixel blocks, pixel hearts, gamepad, `PRESS START`, score | stepped 8-bit hops and blinks | handheld console: pink shell, green LCD with pixel grid, gamepad, HP bar, LV.99 |
-| kei 柯伊 (Millennium · Game Dev) | blue | cyan | violet | circuit traces, scanlines, data streams, holo rings | hologram flicker, scan sweep | holo terminal: translucent cyan frame, corner brackets, scanlines, hex data column |
+| koyuki 小雪 (Millennium · Seminar) | pink | purple | coin gold | vault combination dial: bezel + 100-tick number ring | ring turns +32° / −14° and back over 30 s | vault palette (lilac frame, plum screen); readout `LOCKED · 0000` |
+| hoshino 星野 (Abydos · Foreclosure Task Force) | pink | ocean blue | sand | sonar: 4 range rings, bearing cross + ticks | one soft sweep per 20 s | deep-sea palette; readout `DEPTH 0420 m` |
+| momoi 小桃 (Millennium · Game Dev) | hot pink | coin yellow | 1UP green | ordered-dither (Bayer 4×4) pixel field + one 1UP heart | heart breathes in opacity (6 s) | handheld palette (pink shell, green LCD); readout `PRESS START` |
+| kei 柯伊 (Millennium · Game Dev) | blue | cyan | violet | circuit traces converging on a square core | nodes light in sequence (8 s) | holo palette, 1px corner brackets; readout `AL-1S · LINK` |
+| shiroko 白子 / 砂狼白子 (Abydos · Foreclosure Task Force) | cyan | steel grey-blue | Abydos sand | route map: contour lines, Abydos → Schale route, checkpoints | the Schale marker breathes (5 s) | bike-computer palette; readout `41.6 km · ▲ 128 m` |
+
+**Background system (polish 2026-11).** Flat paper gradient (no colour blobs) · one 1px grid (40px) fading out of the
+top-left · one Schale cut: a skewed pale plane on the right with two 1px rules (hidden < 761px) · the student's one
+motif in a fixed bottom-right box `min(66vmin, 640px)`, partly off-canvas. Strokes: structure 1px at 24% of primary2,
+accent 1.5px at 50% of primary; tiny fills at 55%; labels Barlow 600 italic 12–13px. No props outside the RVC console
+frame, no blinking, no glow. Hero backdrop: a clean skewed plate with a 1px leading rule, fading out at the bottom.
 
 `palette.json` schema (all colours `#rrggbb`):
 ```json
