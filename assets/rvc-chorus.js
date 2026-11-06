@@ -20,13 +20,29 @@ export function chorusOutputUrl(base, job) {
 export async function fetchChorusJson(url,options={},fetcher=globalThis.fetch,timeout=210000) {
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
   try {
-    const response=await fetcher(url,{...options,cache:'no-store',signal:controller.signal});
+    let response;
+    try { response=await fetcher(url,{...options,cache:'no-store',signal:controller.signal}); }
+    catch (error) { throw Object.assign(error,{retryable:true}); }
+    const retryable=[408,429,500,502,503,504,520,521,522,523,524,525,526,530].includes(response.status);
     let data;
-    try { data=await response.json(); } catch { throw Object.assign(new Error(ct(`服务未返回任务状态（HTTP ${response.status}）`,`The service returned no job status (HTTP ${response.status})`)),{retryable:true}); }
+    try { data=await response.json(); } catch { throw Object.assign(new Error(ct(`服务未返回任务状态（HTTP ${response.status}）`,`The service returned no job status (HTTP ${response.status})`)),{retryable:response.ok||retryable,status:response.status}); }
     if(!response.ok)throw Object.assign(new Error(data.message || data.code || `HTTP ${response.status}`),
-      {retryable:[408,429,500,502,503,504,520,521,522,523,524].includes(response.status)});
+      {retryable,status:response.status});
     return data;
   } finally { clearTimeout(timer); }
+}
+
+export async function submitChorusJob(pending,request,wait) {
+  // Acknowledgement can be lost after the GPU accepted a POST. Keep its
+  // original body/request ID through automatic and manual retries.
+  const delays=[1200,5000,12000];
+  for(let attempt=0;;attempt++){
+    try { return await request(pending.url,pending.options); }
+    catch(error) {
+      if(error.retryable!==true || error.status===429 || attempt>=delays.length)throw error;
+      await wait(delays[attempt]);
+    }
+  }
 }
 
 export function readChorusTracks(job) {
@@ -95,11 +111,12 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
     if(sourceFile && state.audio?.file!==sourceFile && !busy)reset();
   }
   async function poll(base,job){
+    if(job.state==='completed')return job;
     const until=Date.now()+3600000;
     let interruptions=0;
     while(Date.now()<until){
       let v;
-      try { v=await request(`${base}/${job.jobId}?token=${encodeURIComponent(job.downloadToken)}`);interruptions=0; }
+      try { v=await request(`${base}/${job.jobId}?token=${encodeURIComponent(job.downloadToken)}`,{},globalThis.fetch,15000);interruptions=0; }
       catch(error){
         if(error.retryable===false || ++interruptions>6)throw error;
         message('网络暂时中断，正在继续查看同一个任务；不会重新分离或变声。','Network interrupted. Checking the same job again; separation and conversion will not restart.');
@@ -113,7 +130,7 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
     }
     throw new Error(ct('等待超时，可点击「继续查看任务」；已接受的任务仍在服务端运行。','Wait timed out. Select “Resume job”; the accepted job is still running on the server.'));
   }
-  function setProcessing(value){busy=value;panel.setAttribute('aria-busy',String(value));convertButton.textContent=value?ct('正在处理…','Processing…'):ct('确认声部并开始合唱','Confirm voices and convert');setBusy(value);refresh();}
+  function setProcessing(value){busy=value;state.chorusProcessing=value;panel.setAttribute('aria-busy',String(value));convertButton.textContent=value?ct('正在处理…','Processing…'):ct('确认声部并开始合唱','Confirm voices and convert');setBusy(value);refresh();}
   function render(base,job,converted=false){
     tracks.querySelectorAll('audio').forEach(a=>{a.pause();a.removeAttribute('src');a.load();});
     tracks.replaceChildren();
@@ -180,7 +197,9 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
     }
   }
   async function finishPending(){
-    const current=pending,job=await poll(current.base,current.job);
+    const current=pending;
+    current.job ??= await submitChorusJob(current,request,wait);
+    const job=await poll(current.base,current.job);
     if(current.kind==='analysis'){
       await rangesReady;
       readChorusTracks(job);session={...job,base:current.base};render(current.base,session);
@@ -205,7 +224,9 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
   function failure(error,label,labelEn=label){
     if(error.retryable===false)pending=null;
     resumeButton.hidden=!pending;
-    message(`${label}：${error.message}${pending?' 点击「继续查看任务」恢复；无需重新上传。':''}`,`${labelEn}: ${error.message}${pending?' Select “Resume job”; no upload is needed.':''}`);
+    const retry=pending?.job?' 点击「继续查看任务」恢复；无需重新上传。':pending?' 点击「继续查看任务」重试原请求。':'';
+    const retryEn=pending?.job?' Select “Resume job”; no upload is needed.':pending?' Select “Resume job” to retry the original request.':'';
+    message(`${label}：${error.message}${retry}`,`${labelEn}: ${error.message}${retryEn}`);
   }
   async function analyze(){
     if(state.busy || !state.audio?.file)return;
@@ -216,7 +237,7 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
       const body=new FormData();body.set('audio',upload,upload.name);
       body.set('singer_count',panel.querySelector('[data-count]').value);body.set('input_kind',panel.querySelector('[data-kind]').value);body.set('request_id',`chorus-${createRequestId()}`);
       const base=chorusBase(getEndpoint());message('上传并识别歌手…','Uploading and identifying singers…');
-      pending={base,kind:'analysis',job:await request(`${base}/analyze`,{method:'POST',body})};
+      pending={base,kind:'analysis',url:`${base}/analyze`,options:{method:'POST',body}};
       await finishPending();
     }catch(e){failure(e,'识别未完成','Analysis incomplete');}finally{setProcessing(false);}
   }
@@ -228,7 +249,7 @@ export function initChorus({state,getEndpoint,prepareFile=async file=>file,setMo
     try{
       const base=session.base;
       message('正在提交合唱任务，随后会显示转换进度；完成后直接打开播放与下载结果。','Submitting chorus conversion. Progress will appear, followed by playback and download.');
-      pending={base,kind:'conversion',job:await request(`${base}/${session.jobId}/convert?token=${encodeURIComponent(session.downloadToken)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tracks:params,accompanimentGainDb:Number(document.getElementById('rvc-accompaniment-gain')?.value || 0),accompanimentMute:Boolean(document.getElementById('rvc-accompaniment-mute')?.checked),requestId:`chorus-${createRequestId()}`})})};
+      pending={base,kind:'conversion',url:`${base}/${session.jobId}/convert?token=${encodeURIComponent(session.downloadToken)}`,options:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tracks:params,accompanimentGainDb:Number(document.getElementById('rvc-accompaniment-gain')?.value || 0),accompanimentMute:Boolean(document.getElementById('rvc-accompaniment-mute')?.checked),requestId:`chorus-${createRequestId()}`})}};
       await finishPending();
     }catch(e){failure(e,'转换未完成','Conversion incomplete');}finally{setProcessing(false);}
   }

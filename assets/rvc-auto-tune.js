@@ -1,5 +1,5 @@
 import {suggestVoiceParameters} from './rvc-auto-parameters.js?v=20261005-auto-4';
-import {chorusBase,fetchChorusJson} from './rvc-chorus.js?v=20261005-auto-4';
+import {chorusBase,fetchChorusJson,submitChorusJob} from './rvc-chorus.js?v=20261106-cloud-speed1';
 
 export function initRegularAutoParameters({state,getEndpoint,getModel,prepareFile,setBusy,isModernSpeech,createRequestId,
   request=fetchChorusJson,wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))}) {
@@ -40,27 +40,37 @@ export function initRegularAutoParameters({state,getEndpoint,getModel,prepareFil
     const file=state.audio.file,mode=state.audioMode;
     setBusy(true);refresh();
     try{
-      await references;
       if(cache?.file!==file || cache.mode!==mode){
         if(!pending || pending.file!==file || pending.mode!==mode){
-          text('正在分析人声声区；歌曲先分离伴奏，请稍候…','Analyzing vocal register; songs are separated from accompaniment first…');
+          text('正在分析人声声区；歌曲使用代表片段估计。','Analyzing vocal register using representative excerpts for songs.');
           const upload=await prepareFile(file),body=new FormData();body.set('audio',upload,upload.name);
           body.set('input_kind',mode==='song'?'mix':'vocals');body.set('analysis_only','true');body.set('request_id',createRequestId());
-          const base=chorusBase(getEndpoint());pending={base,file,mode,job:await request(`${base}/analyze`,{method:'POST',body})};
+          const base=chorusBase(getEndpoint());pending={base,file,mode,url:`${base}/analyze`,options:{method:'POST',body}};
         }
+        pending.job ??= await submitChorusJob(pending,request,wait);
         const until=Date.now()+3600000;let job=pending.job;
+        let interruptions=0;
         while(job.state!=='completed'){
           if(job.state==='failed')throw Object.assign(new Error(job.code||'RVC_ANALYSIS_FAILED'),{retryable:false});
           if(Date.now()>until)throw new Error('RVC_ANALYSIS_TIMEOUT');
-          await wait(4000);job=await request(`${pending.base}/${job.jobId}?token=${encodeURIComponent(job.downloadToken)}`);
+          try {
+            job=await request(`${pending.base}/${job.jobId}?token=${encodeURIComponent(job.downloadToken)}`,{},globalThis.fetch,15000);
+            interruptions=0;
+          }catch(error){
+            if(error.retryable!==true || ++interruptions>4)throw error;
+            await wait(Math.min(12000,interruptions*2500));
+            continue;
+          }
+          if(job.state!=='completed' && job.state!=='failed')await wait(1000);
         }
         if(job.analysisOnly!==true || job.tracks?.length!==1)throw Object.assign(new Error('RVC_ANALYSIS_INVALID'),{retryable:false});
         cache={file,mode,range:job.tracks[0].voiceRange||{}};pending=null;
       }
+      await references;
       if(state.audio?.file===file && state.audioMode===mode){active=true;apply();}
     }catch(error){
       if(error.retryable===false)pending=null;
-      text(pending?'分析未完成。可点击自动调参继续查询；现有参数保持不变。':'分析失败，可点击自动调参重新分析；现有参数保持不变。',
+      text(pending?'分析未完成。可点击自动调参继续原任务；现有参数保持不变。':'分析失败，可点击自动调参重新分析；现有参数保持不变。',
         pending?'Analysis incomplete. Select auto settings to resume; current parameters are unchanged.':'Analysis failed. Select auto settings to analyze again; current parameters are unchanged.');
     }
     finally{setBusy(false);refresh();}

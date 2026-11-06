@@ -69,11 +69,11 @@ function cloudHarness(mode) {
   return { run, state, audio, button, statuses, toasts, uploads: () => uploads };
 }
 
-test("303-second voice retries once then offers automatic fallback with intact audio and unlocked UI", async () => {
+test("303-second voice retries with backoff then offers automatic fallback with intact audio and unlocked UI", async () => {
   const h = cloudHarness("voice");
   const result = await h.run({ allowDeviceFallback: true });
   assert.equal(result.fallback, true);
-  assert.equal(h.uploads(), 2);
+  assert.equal(h.uploads(), 4);
   assert.equal(h.state.audio, h.audio);
   assert.equal(h.state.busy, false);
 });

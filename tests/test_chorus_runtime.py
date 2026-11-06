@@ -1,11 +1,41 @@
-import sys,unittest,tempfile,copy
+import sys,unittest,tempfile,copy,os,time
 from pathlib import Path
 import numpy as np
 import soundfile as sf
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'rvc-service'))
-from app.chorus_runtime import validate_tracks,mix_tracks,encode_mobile_mp3
+from app.chorus_runtime import validate_tracks,mix_tracks,encode_mobile_mp3,prune_orphan_sessions,sample_analysis_mix,voice_range
 
 class ChorusContracts(unittest.TestCase):
+ def test_expiry_removes_only_old_unindexed_job_folders(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp)
+   expired, retained, recent = [root/f'{i:08x}-0000-0000-0000-000000000001' for i in range(3)]
+   foreign=root/'unrelated'
+   for folder in (expired, retained, recent, foreign):
+    folder.mkdir()
+   old=time.time()-9000
+   for folder in (expired, retained, foreign):
+    os.utime(folder,(old,old))
+   prune_orphan_sessions(root,{retained.name},7200)
+   self.assertFalse(expired.exists())
+   self.assertTrue(all(folder.is_dir() for folder in (retained,recent,foreign)))
+ def test_sampled_song_covers_three_registers_without_resampling_away_channels(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);sr=24000
+   song=np.concatenate([.2*np.sin(2*np.pi*f*np.arange(8*sr)/sr) for f in (130,190,310)])
+   source=root/'source.wav'
+   sf.write(source,np.column_stack([song,song*.8]),sr,subtype='FLOAT')
+   sample=sample_analysis_mix(source,root/'analysis.wav',24)
+   pcm,rate=sf.read(sample,dtype='float32')
+   self.assertEqual(pcm.shape,(12*rate,2))
+   for i,expected in enumerate((130,190,310)):
+    x=pcm[i*4*rate:(i+1)*4*rate,0]
+    frequency=np.argmax(np.abs(np.fft.rfft(x)))*rate/len(x)
+    self.assertAlmostEqual(frequency,expected,delta=1)
+ def test_fast_range_keeps_voiced_pitch_and_leaves_silence_uncertain(self):
+  t=np.arange(2*24000)/24000
+  self.assertAlmostEqual(voice_range(.2*np.sin(2*np.pi*190*t))['medianHz'],190,delta=3)
+  self.assertEqual(voice_range(np.zeros_like(t))['confidence'],0)
  def tracks(self):return [{'trackId':i+1,'modelId':m} for i,m in enumerate(['hoshino','arona'])]
  def test_independent_defaults_and_four_track_limit(self):
   p=validate_tracks(self.tracks(),2)

@@ -146,10 +146,10 @@ def _separate_v3(source: Path, output_dir: Path, plan: dict, on_cache_miss=None)
     return SongStems(vocals, instrumental, sample_rate, False, "v3", stages)
 
 
-def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongStems:
+def separate_song(source: Path, output_dir: Path, on_cache_miss=None, *, register_preview=False) -> SongStems:
     plan = None
     try:
-        plan = _v3_plan()
+        plan = None if register_preview else _v3_plan()
     except Exception:  # never let the optional chain block conversion
         logging.getLogger(__name__).exception('v3 separation plan unavailable')
     if plan is not None:
@@ -167,6 +167,8 @@ def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongSte
     if separation_cache.cache_root() is not None:
         try:
             runtime = [SEPARATOR_MODEL, SEPARATOR_DEVICE]
+            if register_preview:
+                runtime.extend(["register-preview", 88200])
             for package in ('pymss', 'torch', 'torchaudio'):
                 runtime.append(importlib.metadata.version(package))
             key = separation_cache.cache_key(source, [
@@ -196,6 +198,11 @@ def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongSte
         "--device",
         SEPARATOR_DEVICE,
     ]
+    env = {**os.environ, 'PYTHONUTF8':'1', 'PYTHONIOENCODING':'utf-8'}
+    if register_preview:
+        # A short register estimate can use wider steps between 8 s windows.
+        # Never reuse these stems for a full-quality cover.
+        env['RVC_SEPARATOR_OVERLAP'] = '88200'
     try:
         result = subprocess.run(
             command,
@@ -205,7 +212,7 @@ def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongSte
             text=True,
             encoding='utf-8',
             errors='replace',
-            env={**os.environ, 'PYTHONUTF8':'1', 'PYTHONIOENCODING':'utf-8'},
+            env=env,
             timeout=SEPARATOR_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:

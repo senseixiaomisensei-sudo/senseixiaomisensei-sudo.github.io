@@ -16,9 +16,11 @@ from scipy.signal import resample_poly
 try:
     from app.chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment, refine_local_leakage
     from app.chorus_medley import candidate_available, load_candidate, prefer_candidate
+    from app.chorus_runtime import voice_range
 except ModuleNotFoundError:
     from chorus_quality import COUNT_POLICY_REVISION, pair_quality, accept_pair, merge_duplicate_leaves, source_agreement, reference_assignment, refine_local_leakage
     from chorus_medley import candidate_available, load_candidate, prefer_candidate
+    from chorus_runtime import voice_range
 
 REVISION = '8e750521b5942f4717656cac86a23cf0bd90dea5'
 RATE = 24000
@@ -144,25 +146,6 @@ def refine_pair_context(model, audio, pair, boundaries):
             'endSample':min(len(audio),b['endSample']-offset)} for b in trial_bounds
             if b['endSample']>offset and b['startSample']<len(audio)+offset]
     return (trial,trial_bounds,evidence) if selected else (pair,boundaries,evidence)
-
-
-def voice_range(audio: np.ndarray) -> dict:
-    """Bounded voiced-pitch evidence for parameter suggestions, not gender identity."""
-    import librosa
-    window=RATE*2
-    segments=[audio[i:i+window] for i in range(0,len(audio),window) if len(audio[i:i+window])>=RATE//2]
-    segments=sorted(segments,key=lambda x:float(np.mean(x.astype(np.float64)**2)),reverse=True)[:4]
-    pitches=[];confidences=[]
-    for segment in segments:
-        if np.sqrt(np.mean(segment.astype(np.float64)**2))<1e-4:continue
-        f0,voiced,probability=librosa.pyin(segment,sr=RATE,fmin=65,fmax=900,frame_length=1024,hop_length=240)
-        valid=voiced&np.isfinite(f0)&(probability>=.6)
-        pitches.extend(f0[valid].tolist());confidences.extend(probability[valid].tolist())
-    if len(pitches)<20:return {'classification':'uncertain','confidence':0,'method':'pyin-bounded-v1'}
-    median=float(np.median(pitches))
-    return {'medianHz':median,'p10Hz':float(np.percentile(pitches,10)),'p90Hz':float(np.percentile(pitches,90)),
-        'classification':'low' if median<165 else 'high' if median>220 else 'middle',
-        'confidence':float(np.mean(confidences)),'method':'pyin-bounded-v1','voicedFrames':len(pitches)}
 
 
 def main():

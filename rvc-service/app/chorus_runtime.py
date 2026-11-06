@@ -6,6 +6,8 @@ import os
 import re
 import subprocess
 import sys
+import shutil
+import time
 from pathlib import Path
 import numpy as np
 import soundfile as sf
@@ -13,6 +15,67 @@ from scipy.signal import resample_poly
 
 ENGINE_ROOT = Path(os.getenv('RVC_CHORUS_ENGINE_ROOT',
     'E:/大肥鱼/合唱与堆叠升级/20261003/分离引擎')).resolve()
+
+
+def prune_orphan_sessions(root: Path, retained: set[str], max_age: int) -> None:
+    """Collect expired server-generated folders omitted from the job index."""
+    if not root.is_dir() or root.is_symlink() or getattr(root, 'is_junction', lambda: False)():
+        return
+    root = root.resolve()
+    cutoff = time.time() - max_age
+    for entry in root.iterdir():
+        if (entry.name in retained or not re.fullmatch(r'[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}', entry.name)
+                or not entry.is_dir() or entry.is_symlink()
+                or getattr(entry, 'is_junction', lambda: False)() or entry.resolve().parent != root):
+            continue
+        try:
+            if entry.stat().st_mtime <= cutoff:
+                shutil.rmtree(entry)
+        except OSError:
+            continue
+
+
+def sample_analysis_mix(source: Path, target: Path, duration: float) -> Path:
+    """Use beginning, middle and ending excerpts for register suggestions."""
+    if duration <= 12:
+        return source
+    starts = (0, (duration - 4) / 2, duration - 4)
+    filters = ';'.join(f'[0:a:0]atrim=start={start:.6f}:duration=4,asetpts=PTS-STARTPTS[a{i}]'
+                       for i, start in enumerate(starts))
+    subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-y', '-i', str(source),
+                    '-filter_complex', filters+';[a0][a1][a2]concat=n=3:v=0:a=1[out]',
+                    '-map', '[out]', '-ar', '44100', '-c:a', 'pcm_f32le', str(target)],
+                   check=True, timeout=45)
+    return target
+
+
+def voice_range(audio: np.ndarray) -> dict:
+    """Measure stable voiced frames for suggestions; never infer singer identity."""
+    import parselmouth
+
+    rate = 24000
+    window = 2 * rate
+    samples = np.asarray(audio, dtype=np.float32)
+    segments = (samples[i:i+window] for i in range(0, len(samples), window))
+    ranked = sorted((x for x in segments if len(x) >= rate//2),
+                    key=lambda x: float(np.mean(np.square(x, dtype=np.float64))), reverse=True)[:4]
+    pitches, strengths = [], []
+    for segment in ranked:
+        if not np.isfinite(segment).all() or np.mean(np.square(segment, dtype=np.float64)) < 1e-8:
+            continue
+        pitch = parselmouth.Sound(segment.astype(np.float64), sampling_frequency=rate).to_pitch_ac(
+            time_step=.01, pitch_floor=65, pitch_ceiling=900, voicing_threshold=.55, octave_cost=.04)
+        f0, strength = pitch.selected_array['frequency'], pitch.selected_array['strength']
+        valid = np.isfinite(f0) & np.isfinite(strength) & (f0 > 0) & (strength >= .65)
+        pitches.extend(f0[valid])
+        strengths.extend(strength[valid])
+    method = 'praat-ac-bounded-v1'
+    if len(pitches) < 20:
+        return {'classification':'uncertain','confidence':0,'method':method}
+    low, median, high = map(float, np.percentile(pitches, [10, 50, 90]))
+    return {'medianHz':median,'p10Hz':low,'p90Hz':high,
+            'classification':'low' if median<165 else 'high' if median>220 else 'middle',
+            'confidence':float(np.mean(strengths)),'method':method,'voicedFrames':len(pitches)}
 
 
 def chorus_status():
