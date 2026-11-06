@@ -1,6 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {initChorus,readChorusTracks,fetchChorusJson,chorusSuggestedParams,publishChorusResult,chorusAgreementWarning} from '../assets/rvc-chorus.js';
+import {initChorus,readChorusTracks,fetchChorusJson,chorusSuggestedParams,publishChorusResult,chorusAgreementWarning,submitChorusJob} from '../assets/rvc-chorus.js';
+
+test('a lost acknowledgement through a 16-second tunnel outage reuses the original submission',async()=>{
+  const body=new FormData();
+  body.set('request_id','chorus-test-reconnect');
+  let elapsed=0,attempts=0;
+  const job=await submitChorusJob({url:'/rvc-api/chorus/analyze',options:{method:'POST',body}},
+    async (_url,options)=>{
+      assert.equal(options.body,body);
+      attempts++;
+      if(elapsed<16000)throw Object.assign(new Error('upstream unavailable'),{retryable:true,status:502});
+      return {jobId:'accepted-before-disconnect'};
+    },async ms=>{elapsed+=ms;});
+  assert.equal(attempts,4);
+  assert.equal(job.jobId,'accepted-before-disconnect');
+});
 import {chorusRoleMatches,createChorusRolePicker} from '../assets/rvc-chorus-picker.js';
 
 // Controller contracts, not a substitute for browser rendering or real audio.

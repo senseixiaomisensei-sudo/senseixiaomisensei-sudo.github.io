@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 from fastapi import File, Form, Request, UploadFile
 from fastapi.responses import FileResponse
-from app.chorus_runtime import chorus_status, separate_singers, validate_tracks, mix_tracks, encode_mobile_mp3
+from app.chorus_runtime import chorus_status, separate_singers, validate_tracks, mix_tracks, encode_mobile_mp3, sample_analysis_mix, voice_range
 
 
 def install_chorus_routes(app, core):
@@ -27,14 +27,21 @@ def install_chorus_routes(app, core):
 
     async def enforce_storage(work):
         async with storage_lock:
-            used=sum(p.stat().st_size for p in root.rglob('*') if p.is_file())
-            current=sum(p.stat().st_size for p in work.rglob('*') if p.is_file())
+            def size(path):
+                return sum(p.stat().st_size for p in path.rglob('*') if p.is_file())
+            used,current=await asyncio.to_thread(lambda: (size(root),size(work)))
             if current > core.MAX_REMIX_STEM_JOB_BYTES or used > core.MAX_REMIX_STEM_TOTAL_BYTES:
                 raise ValueError('CHORUS_STORAGE_LIMIT')
 
     def folder(job_id):
         if not core.re_full_uuid(job_id): raise core.RvcServiceError(404,'CHORUS_NOT_FOUND')
         return root / job_id
+
+    def remove_failed_workspace(job_id):
+        work=folder(job_id)
+        if (not work.is_symlink() and not getattr(work,'is_junction',lambda:False)()
+                and work.resolve().parent==root.resolve()):
+            shutil.rmtree(work,ignore_errors=True)
 
     def metadata(job_id):
         try: return json.loads((folder(job_id)/'session.json').read_text(encoding='utf-8'))
@@ -76,12 +83,43 @@ def install_chorus_routes(app, core):
             code=getattr(error,'code',str(error))
             record.error_code = code if code.startswith(('CHORUS_','RVC_SEPARATION_','RVC_SEPARATOR_')) else 'CHORUS_PROCESSING_FAILED'
             core.persist_output_records()
+            await asyncio.to_thread(record.path.unlink,missing_ok=True)
+            await asyncio.to_thread(remove_failed_workspace,job_id)
         core.logger.exception('chorus task failed job_id=%s',job_id)
 
-    async def analyze_job(job_id, input_path, count, kind, analysis_only=False):
+    async def analyze_register(job_id, input_path, kind, duration):
+        import soundfile as sf
+        record,work=core.outputs[job_id],folder(job_id)
+        source=input_path
+        record.state='processing'
+        if kind=='mix':
+            record.stage='separating'
+            sample=await asyncio.to_thread(sample_analysis_mix,input_path,work/'analysis-sample.wav',duration)
+            async with core.inference_lock:
+                stems=await asyncio.to_thread(core.separate_song,sample,work/'accompaniment-separation',core.release_cached_models)
+            source=stems.vocals
+        record.stage='analyzing-register'
+        decoded=work/'vocals-24k.wav'
+        await asyncio.to_thread(subprocess.run,['ffmpeg','-nostdin','-v','error','-y','-i',str(source),
+            '-vn','-ac','1','-ar','24000','-c:a','pcm_f32le',str(decoded)],check=True,timeout=90)
+        def measure():
+            audio,_=sf.read(decoded,dtype='float32')
+            return voice_range(audio)
+        voice=await asyncio.to_thread(measure)
+        for temporary in (input_path,decoded,work/'analysis-sample.wav',work/'accompaniment-separation'):
+            await asyncio.to_thread(discard_temporary,work,temporary)
+        save(job_id,{'analysisOnly':True,'estimatedCount':1,'tracks':[{'trackId':1,'voiceRange':voice}],
+            'backendBuildSha':core.BACKEND_BUILD_SHA,'pipelineRevision':core.PIPELINE_REVISION})
+        record.state=record.stage='completed'
+        core.persist_output_records()
+
+    async def analyze_job(job_id, input_path, count, kind, duration, analysis_only=False):
         record = core.outputs[job_id]
         work = folder(job_id)
         try:
+            if analysis_only:
+                await analyze_register(job_id,input_path,kind,duration)
+                return
             record.state='processing'; record.stage='separating'
             async with core.inference_lock:
                 if kind == 'mix':
@@ -99,21 +137,8 @@ def install_chorus_routes(app, core):
                     x,sr=await asyncio.to_thread(sf.read,decoded,dtype='float32',always_2d=True)
                     await asyncio.to_thread(sf.write,accompaniment,np.zeros_like(x),sr,subtype='FLOAT')
                 record.stage='identifying-singers'
-                if analysis_only:
-                    # Parameter analysis uses the actual vocal source and never invokes
-                    # multi-singer separation or infers how many singers the song has.
-                    from app.chorus_worker import voice_range
-                    import soundfile as sf
-                    x,_=await asyncio.to_thread(sf.read,decoded,dtype='float32')
-                    voice=await asyncio.to_thread(voice_range,x)
-                    destination=work/'singers'/'singer-1.wav'; destination.parent.mkdir()
-                    await asyncio.to_thread(shutil.copyfile,decoded,destination)
-                    analysis={'requestedCount':'analysis','estimatedCount':1,'countNeedsReview':False,
-                        'experimentalRecursive':False,'modelRevision':'source-voice-range-v1','modelSha256':'',
-                        'adaptedCodeSha256':'','tracks':[str(destination)],'voiceRanges':[voice],'frames':len(x)}
-                else:
-                    analysis=await asyncio.to_thread(separate_singers,decoded,work/'singers',count)
-            duration=core.probe_duration(decoded)
+                analysis=await asyncio.to_thread(separate_singers,decoded,work/'singers',count)
+            duration=analysis['frames']/24000
             await asyncio.to_thread(discard_temporary,work,decoded)
             if kind=='mix': await asyncio.to_thread(discard_temporary,work,source)
             info={k:analysis[k] for k in ('requestedCount','estimatedCount','countNeedsReview','experimentalRecursive','modelRevision','modelSha256','adaptedCodeSha256')}
@@ -168,7 +193,7 @@ def install_chorus_routes(app, core):
             if core.active_training_job_id: raise core.RvcServiceError(503,'RVC_TRAINING_ACTIVE')
             await core.cleanup_expired_outputs()
             fingerprint=hashlib.sha256(json.dumps([singer_count,input_kind,analysis_only,audio.filename,audio.content_type,core.PIPELINE_REVISION]).encode()).hexdigest()
-            job_id,record,created=await core.reserve_conversion_job(request_id,fingerprint,'wav','chorus-analysis')
+            job_id,record,created=await core.reserve_conversion_job(request_id,fingerprint,'wav','chorus-parameters' if analysis_only else 'chorus-analysis')
             if not created: return response(job_id,record)
             try:
                 path=folder(job_id)/f'input.{extension}'
@@ -178,11 +203,11 @@ def install_chorus_routes(app, core):
                 if not core.MIN_AUDIO_SECONDS <= seconds <= core.MAX_AUDIO_SECONDS:
                     raise core.RvcServiceError(400,'RVC_AUDIO_TOO_LONG' if seconds>core.MAX_AUDIO_SECONDS else 'RVC_AUDIO_TOO_SHORT')
                 record.state=record.stage='queued'; core.persist_output_records()
-                await track_task(asyncio.create_task(analyze_job(job_id,path,singer_count,input_kind,analysis_only)))
+                await track_task(asyncio.create_task(analyze_job(job_id,path,singer_count,input_kind,seconds,analysis_only)))
                 return response(job_id,record)
             except BaseException:
                 await core.release_preparing_job(job_id,request_id)
-                shutil.rmtree(folder(job_id),ignore_errors=True)
+                await asyncio.to_thread(remove_failed_workspace,job_id)
                 raise
         finally: await audio.close()
 

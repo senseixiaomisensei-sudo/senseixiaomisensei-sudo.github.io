@@ -166,7 +166,7 @@ def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongSte
     key = None
     if separation_cache.cache_root() is not None:
         try:
-            runtime = [SEPARATOR_MODEL, SEPARATOR_DEVICE]
+            runtime = [SEPARATOR_MODEL, SEPARATOR_DEVICE, str(SEPARATOR_OVERLAP)]
             for package in ('pymss', 'torch', 'torchaudio'):
                 runtime.append(importlib.metadata.version(package))
             key = separation_cache.cache_key(source, [
@@ -182,6 +182,40 @@ def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongSte
             key = None
     if on_cache_miss is not None:
         on_cache_miss()
+    payload = None
+    if os.getenv('RVC_SEPARATOR_REUSE') == '1' and SEPARATOR_DEVICE == 'cuda':
+        try:
+            from app.separation_worker import separate_file
+            revision = tuple(separation_cache.resource_digest(SEPARATOR_MODELS_DIR / name)
+                             for name in (SEPARATOR_MODEL_RELATIVE, SEPARATOR_CONFIG_RELATIVE))
+            payload = separate_file(source, output_dir, SEPARATOR_MODELS_DIR, SEPARATOR_MODEL, SEPARATOR_DEVICE,
+                                    (SEPARATOR_MODEL, SEPARATOR_OVERLAP, *revision))
+        except Exception:
+            logging.getLogger(__name__).exception('Resident separation failed; retrying in the isolated worker')
+    if payload is None:
+        payload = _separate_isolated(source, output_dir, worker)
+    try:
+        vocals = Path(payload["vocals"]).resolve()
+        instrumental = Path(payload["instrumental"]).resolve()
+        sample_rate = int(payload["sampleRate"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise SeparationRuntimeError("RVC_SEPARATION_FAILED") from error
+    if (
+        output_dir.resolve() not in vocals.parents
+        or output_dir.resolve() not in instrumental.parents
+        or not vocals.is_file()
+        or not instrumental.is_file()
+    ):
+        raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
+    if key is not None:
+        try:
+            separation_cache.store(key, vocals, instrumental, sample_rate)
+        except OSError:
+            logging.getLogger(__name__).warning('Cannot retain separation cache; completed stems remain usable')
+    return SongStems(vocals=vocals, instrumental=instrumental, sample_rate=sample_rate)
+
+
+def _separate_isolated(source: Path, output_dir: Path, worker: Path) -> dict:
     command = [
         sys.executable,
         str(worker),
@@ -213,25 +247,9 @@ def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongSte
     if result.returncode != 0:
         raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
     try:
-        payload = json.loads(result.stdout.strip().splitlines()[-1])
-        vocals = Path(payload["vocals"]).resolve()
-        instrumental = Path(payload["instrumental"]).resolve()
-        sample_rate = int(payload["sampleRate"])
+        return json.loads(result.stdout.strip().splitlines()[-1])
     except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise SeparationRuntimeError("RVC_SEPARATION_FAILED") from error
-    if (
-        output_dir.resolve() not in vocals.parents
-        or output_dir.resolve() not in instrumental.parents
-        or not vocals.is_file()
-        or not instrumental.is_file()
-    ):
-        raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
-    if key is not None:
-        try:
-            separation_cache.store(key, vocals, instrumental, sample_rate)
-        except OSError:
-            logging.getLogger(__name__).warning('Cannot retain separation cache; completed stems remain usable')
-    return SongStems(vocals=vocals, instrumental=instrumental, sample_rate=sample_rate)
 
 
 def calibrate_song_vocals(source_vocals: Path, converted_vocals: Path,

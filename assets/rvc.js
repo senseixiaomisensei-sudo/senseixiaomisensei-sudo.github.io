@@ -4842,7 +4842,7 @@
   // receives one transferred ArrayBuffer, so scrolling the character gallery
   // during a download no longer competes with 20 MB copies, SHA-256 hashing,
   // IndexedDB serialisation and a 360 MB Blob build.
-  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261105-cloud-recovery1";
+  const MODEL_FETCH_WORKER_URL = "assets/rvc-engine/model-fetch.worker.js?v=20261106-cloud-speed1";
   const MODEL_FETCH = { progressMs: 250, probeMs: 7000, connectMs: 12000, inactivityMs: 15000, quietHintMs: 6000 };
   let modelFetchWorker = null;
   let modelFetchBroken = false;
@@ -6840,15 +6840,14 @@
     for (let index = 0; index < bases.length; index += 1) {
       const routes = officialRoutes(bases[index]);
       try {
-        let payload;
-        try {
-          payload = await upload(routes, 1);
-        } catch (error) {
-          if (!error?.retryable) throw error;
-          await onRetry(false, error);
-          payload = await upload(routes, 2);
+        for (let attempt = 1; ; attempt += 1) {
+          try {
+            return { payload: await upload(routes, attempt), routes };
+          } catch (error) {
+            if (attempt >= 4 || !error?.retryable) throw error;
+            await onRetry(false, error, attempt);
+          }
         }
-        return { payload, routes };
       } catch (error) {
         if (!isEndpointNetworkError(error) || index + 1 === bases.length) throw error;
         await onRetry(true, error);
@@ -8260,7 +8259,7 @@
       body.set("request_id", cloudRequestId);
       body.set("audio", uploadFile, uploadFile.name || `input.${extension}`);
 
-      // XMLHttpRequest gives upload progress on mobile browsers. Retry once
+      // XMLHttpRequest gives upload progress on mobile browsers. Retry with backoff
       // only for a connection-level drop or a transient gateway response;
       // after that, the caller explicitly handles on-device fallback.
       let ticker = null;
@@ -8340,10 +8339,10 @@
             error.code = errCode;
             error.requestId = String(xhr.getResponseHeader("X-PostPrep-Request-Id") || "").slice(0, 96);
             error.retryAfterSeconds = Math.max(0, parseInt(xhr.getResponseHeader("Retry-After") || "0", 10) || 0);
-            error.retryable = attempt < 2 && (
+            error.retryable = attempt < 4 && (
               errCode === "RVC_QUEUE_BUSY"
               ||
-              ["UPSTREAM_UNAVAILABLE", "RVC_BACKEND_UNAVAILABLE", "RATE_LIMITER_UNAVAILABLE", "RVC_NETWORK_INTERRUPTED"].includes(errCode)
+              ["UPSTREAM_UNAVAILABLE", "RVC_BACKEND_UNAVAILABLE", "RVC_RELAY_UNAVAILABLE", "RATE_LIMITER_UNAVAILABLE", "RVC_NETWORK_INTERRUPTED"].includes(errCode)
               || (!errCode && [502, 503, 520, 521, 522, 523, 524].includes(xhr.status))
             );
             error.httpStatus = xhr.status;
@@ -8358,11 +8357,11 @@
             reject(forcedError);
             return;
           }
-          const error = new Error(attempt < 2
+          const error = new Error(attempt < 4
             ? "网络连接暂时中断，准备自动重试"
-            : "网络连接连续两次中断");
+            : "网络连接反复中断");
           error.code = "RVC_NETWORK_INTERRUPTED";
-          error.retryable = attempt < 2;
+          error.retryable = attempt < 4;
           reject(error);
         };
         xhr.onerror = rejectNetworkFailure;
@@ -8382,12 +8381,13 @@
 
       // Reuse this FormData/request ID across entry retries. Once accepted,
       // polling and downloading stay on that job and never resubmit the audio.
-      const accepted = submission.accepted || await uploadWithRouteFallback(activeBases, uploadAndInfer, async (nextEntry, error) => {
+      const accepted = submission.accepted || await uploadWithRouteFallback(activeBases, uploadAndInfer, async (nextEntry, error, attempt) => {
         updateProgressBar(8);
         updateStatusDisplay(nextEntry
           ? " 当前云端入口不可达，正在尝试备用入口…"
-          : " 云端连接短暂中断，正在重新连接同一入口并自动重试一次…");
-        await waitFor(Math.min(15000, Math.max(1200, (error?.retryAfterSeconds || 0) * 1000)));
+          : " 云端连接短暂中断，正在恢复并重试同一个任务…");
+        const backoff = nextEntry ? 1200 : [1200, 5000, 12000][attempt - 1];
+        await waitFor(Math.min(15000, Math.max(backoff, (error?.retryAfterSeconds || 0) * 1000)));
       });
       const { payload, routes } = accepted;
       if (!payload || !payload.jobId || !payload.downloadToken) {
@@ -8991,7 +8991,9 @@
     let finished = false;
     let forcedTimer = 0;
     const supervisor = setInterval(() => {
-      if (finished || !state.busy) return;
+      // Chorus owns its own resumable polling deadline and does not update
+      // the single-conversion status bar.
+      if (finished || !state.busy || state.chorusProcessing) return;
       const limit = Math.max(RVC_STALL.globalNoProgressMs, state.conversionStallLimitMs || 0);
       const idle = Date.now() - (state.lastConversionActivityAt || 0);
       if (idle < limit) return;
@@ -9952,7 +9954,7 @@
   // freeze1: a tab left open (or a browser that keeps an old copy of the page)
   // keeps running an old rvc.js. Compare with the published build and reload
   // once onto a cache-busted URL; never while a conversion is running.
-  const RVC_BUILD = "20261105-cloud-recovery1";
+  const RVC_BUILD = "20261106-cloud-speed1";
   async function checkRvcBuild({ reason = "boot" } = {}) {
     let remote = "";
     try {
@@ -9991,7 +9993,7 @@
     loadCustomCollections();
     setupEventListeners();
     applyRvcLanguage();
-    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261006-source-agreement-2');
+    const { initChorus, publishChorusResult } = await import('./rvc-chorus.js?v=20261106-cloud-speed1');
     chorusController = initChorus({ state, getEndpoint: getOfficialEndpoint, prepareFile: fixUploadContainer,
       setMode: () => { setInferenceMode('official'); setAudioMode('song'); },
       createRequestId: createCloudRequestId,
@@ -10011,7 +10013,7 @@
         readOwnModel:getCachedItem,cacheKey:characterModelCacheKey,verifyBytes:verifyModelBytes,
         loadModel:(model,onProgress)=>loadModelAuto(model,characterModelCacheKey(model),voiceName(model),'application/onnx',onProgress)});
     } catch (error) { console.warn('ONNX export could not initialize', error); }
-    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261005-auto-4');
+    const {initRegularAutoParameters}=await import('./rvc-auto-tune.js?v=20261106-cloud-speed1');
     state.autoParameterController=initRegularAutoParameters({state,getEndpoint:getOfficialEndpoint,getModel:getSelectedModel,
       prepareFile:fixUploadContainer,isModernSpeech:useNewSpeechEngine,createRequestId:createCloudRequestId,
       setBusy:value=>{state.busy=value;updateStatusDisplay();syncMixControls();}});

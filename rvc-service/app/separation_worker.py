@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import threading
 from pathlib import Path
 
 import numpy as np
 import soundfile as sf
 import torch
 from pymss import create_separator, load_audio
+
+_lock = threading.Lock()
+_resident = None
 
 
 def channel_last(audio: np.ndarray) -> np.ndarray:
@@ -31,47 +36,62 @@ def find_stem(results: dict[str, np.ndarray], name: str) -> np.ndarray | None:
     return None
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", required=True)
-    parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--model-dir", required=True)
-    parser.add_argument("--model", required=True)
-    parser.add_argument("--device", default="cuda")
-    args = parser.parse_args()
-
-    source = Path(args.input).resolve()
-    output_dir = Path(args.output_dir).resolve()
-    model_dir = Path(args.model_dir).resolve()
+def separate_file(source: Path, output_dir: Path, model_dir: Path, model_name: str,
+                  device: str, revision: tuple | None = None) -> dict:
+    global _resident
+    source, output_dir, model_dir = source.resolve(), output_dir.resolve(), model_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     if not source.is_file() or not model_dir.is_dir():
         raise FileNotFoundError("Separation input or model directory is missing")
 
-    device = args.device
     if device == "cuda" and not torch.cuda.is_available():
         device = "cpu"
     mix, sample_rate = load_audio(str(source), sr=44100, mono=False)
-    with create_separator(
-        args.model,
-        model_dir=str(model_dir),
-        device=device,
-        device_ids=[0],
-        output_format="wav",
-        use_tta=False,
-        store_dirs=str(output_dir),
-        save_as_folder=False,
-        inference_params={
-            "batch_size": 1,
-            "chunk_size": 352800,
-            # Production keeps the validated 264600 overlap; the CPU bench
-            # may lower it via RVC_SEPARATOR_OVERLAP for both chains alike.
-            "overlap_size": int(__import__("os").getenv("RVC_SEPARATOR_OVERLAP", "264600") or 264600),
-            "standardize": False,
-            "normalize": False,
-            "use_amp": device == "cuda",
-        },
-    ) as separator:
-        results = separator.separate(mix, pbar=False)
+
+    def create():
+        return create_separator(
+            model_name,
+            model_dir=str(model_dir),
+            device=device,
+            device_ids=[0],
+            output_format="wav",
+            use_tta=False,
+            store_dirs=str(output_dir),
+            save_as_folder=False,
+            inference_params={
+                "batch_size": 1,
+                "chunk_size": 352800,
+                "overlap_size": int(os.getenv("RVC_SEPARATOR_OVERLAP", "264600") or 264600),
+                "standardize": False,
+                "normalize": False,
+                "use_amp": device == "cuda",
+            },
+        )
+    if revision is None or device != 'cuda':
+        with create() as separator:
+            results = separator.separate(mix, pbar=False)
+    else:
+        # Keep one model in system RAM between requests. The GPU is shared
+        # with RVC and speech, so no separator weights stay on it when idle.
+        with _lock:
+            if _resident is None or _resident[0] != revision:
+                if _resident is not None:
+                    _resident[1].close()
+                    _resident = None
+                _resident = (revision, create())
+            separator = _resident[1]
+            try:
+                separator.model.to(device)
+                results = separator.separate(mix, pbar=False)
+            finally:
+                try:
+                    separator.model.to('cpu')
+                except Exception:
+                    _resident = None
+                    separator.close()
+                    raise
+                finally:
+                    torch.cuda.empty_cache()
 
     vocals = find_stem(results, "vocals")
     instrumental = find_stem(results, "instrumental")
@@ -90,14 +110,23 @@ def main() -> None:
     sf.write(instrumental_path, channel_last(instrumental), sample_rate, format="WAV", subtype="FLOAT")
     if vocals_path.stat().st_size <= 44 or instrumental_path.stat().st_size <= 44:
         raise RuntimeError("PyMSS returned an empty stem")
-    print(json.dumps({
+    return {
         "vocals": str(vocals_path),
         "instrumental": str(instrumental_path),
         "sampleRate": sample_rate,
         "device": device,
-    # Parent parses UTF-8 even when Windows stdout uses a legacy code page.
-    # ASCII-escaped JSON keeps actual Unicode filesystem paths lossless.
-    }, ensure_ascii=True))
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--model-dir", type=Path, required=True)
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--device", default="cuda")
+    args = parser.parse_args()
+    print(json.dumps(separate_file(args.input,args.output_dir,args.model_dir,args.model,args.device),ensure_ascii=True))
 
 
 if __name__ == "__main__":

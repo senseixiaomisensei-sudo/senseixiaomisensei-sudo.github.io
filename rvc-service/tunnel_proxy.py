@@ -15,6 +15,7 @@ import os
 import re
 import sys
 import threading
+import time
 from urllib.parse import parse_qs, urlsplit
 
 
@@ -211,6 +212,8 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             headers["Range"] = self.headers["Range"]
 
         connection = http.client.HTTPConnection(UPSTREAM_HOST, UPSTREAM_PORT, timeout=190)
+        started = time.monotonic()
+        response_started = False
         try:
             connection.request(self.command, target, body=body if self.command == "POST" else None, headers=headers)
             response = connection.getresponse()
@@ -225,14 +228,21 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
                 self.send_header("Content-Length", content_length)
             self.send_header("Connection", "close")
             self.end_headers()
+            response_started = True
             while True:
                 chunk = response.read(64 * 1024)
                 if not chunk:
                     break
                 self.wfile.write(chunk)
-        except (OSError, http.client.HTTPException):
-            if not self.wfile.closed:
-                self._json_error(502, "UPSTREAM_UNAVAILABLE")
+        except (OSError, http.client.HTTPException) as error:
+            trace = request_id if re.fullmatch(r"[A-Za-z0-9_-]{1,96}",request_id) else "-"
+            self.log_message("forward failed id=%s method=%s path=%s error=%s seconds=%.2f",
+                             trace,self.command,urlsplit(target).path,type(error).__name__,time.monotonic()-started)
+            if not response_started and not self.wfile.closed:
+                try:
+                    self._json_error(502, "UPSTREAM_UNAVAILABLE")
+                except OSError:
+                    pass
         finally:
             connection.close()
 

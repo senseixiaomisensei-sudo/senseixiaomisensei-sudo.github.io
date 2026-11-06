@@ -610,7 +610,10 @@ def load_output_records() -> None:
         if expires_at <= now:
             continue
         path = OUTPUT_ROOT / str(entry.get("file", ""))
-        state = "completed" if path.is_file() else "failed"
+        analysis_saved = (entry.get("audio_mode") == "chorus-parameters"
+                          and re_full_uuid(job_id)
+                          and (OUTPUT_ROOT / "chorus" / job_id / "session.json").is_file())
+        state = "completed" if entry.get("state") == "completed" and (path.is_file() or analysis_saved) else "failed"
         outputs[job_id] = OutputRecord(
             path=path,
             token=str(entry.get("token", "")),
@@ -660,6 +663,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.exception("v3 model fetch could not start")
     load_training_records()
     load_output_records()
+    from app.chorus_runtime import prune_orphan_sessions
+    await asyncio.to_thread(prune_orphan_sessions, OUTPUT_ROOT / 'chorus', set(outputs), OUTPUT_RETENTION_SECONDS)
     loop = asyncio.get_running_loop()
     async def validate_tts_model(callback):
         async with inference_lock:
@@ -2247,7 +2252,6 @@ async def process_conversion_job(
     started_at: float,
     audio_mode: str,
     duration_seconds: float,
-    input_profile: AudioProfile,
     diagnostic: bool = False,
     selected_engine: str = "rvc",
     selected_profile: dict | None = None,
@@ -2359,6 +2363,17 @@ async def process_conversion_job(
                 record = outputs.get(job_id)
                 if record:
                     record.state = "processing"
+                    record.stage = "preparing"
+            input_profile = AudioProfile()
+            if selected_engine == SPEECH_ENGINE:
+                await asyncio.to_thread(subprocess.run,
+                    ["ffmpeg", "-nostdin", "-v", "error", "-i", str(input_raw), "-vn", "-ac", "1",
+                     "-ar", "22050", "-c:a", "pcm_f32le", str(input_wav)], check=True, timeout=120)
+            else:
+                input_profile = await asyncio.to_thread(normalize_audio, input_raw, input_wav)
+            mark_stage("vocalNormalization")
+            async with outputs_lock:
+                if record:
                     record.stage = "converting"
             if selected_engine == SPEECH_ENGINE:
                 async with inference_lock:
@@ -2695,14 +2710,6 @@ async def create_job(
             raise RvcServiceError(400, "RVC_AUDIO_TOO_SHORT")
         if duration_seconds > MAX_AUDIO_SECONDS:
             raise RvcServiceError(400, "RVC_AUDIO_TOO_LONG")
-        input_profile = AudioProfile()
-        if audio_mode == "voice":
-            if selected_engine == SPEECH_ENGINE:
-                await asyncio.to_thread(subprocess.run,
-                    ["ffmpeg", "-nostdin", "-v", "error", "-i", str(input_raw), "-vn", "-ac", "1",
-                     "-ar", "22050", "-c:a", "pcm_f32le", str(input_wav)], check=True, timeout=120)
-            else:
-                input_profile = await asyncio.to_thread(normalize_audio, input_raw, input_wav)
         async with outputs_lock:
             record.state = "queued"
             record.stage = "queued"
@@ -2732,7 +2739,6 @@ async def create_job(
             started_at=started_at,
             audio_mode=audio_mode,
             duration_seconds=duration_seconds,
-            input_profile=input_profile,
             diagnostic=diagnostic,
             selected_engine=selected_engine,
             selected_profile=profile,

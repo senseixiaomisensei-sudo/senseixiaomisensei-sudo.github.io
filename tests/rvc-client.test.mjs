@@ -55,7 +55,7 @@ test("rvc page has a three-step beginner flow and no default upload path", async
   assert.match(client, /xhr\.status === 0/u);
   assert.match(client, /xhr\.onabort = rejectNetworkFailure/u);
   assert.match(client, /RVC_NETWORK_INTERRUPTED/u);
-  assert.match(client, /error\.retryable = attempt < 2/u);
+  assert.match(client, /error\.retryable = attempt < 4/u);
   assert.match(client, /body\.set\("model_id", selectedModel\.id\)/u);
   assert.match(client, /body\.set\("index_rate"/u);
   assert.match(client, /body\.set\("f0_method", f0Method\)/u);

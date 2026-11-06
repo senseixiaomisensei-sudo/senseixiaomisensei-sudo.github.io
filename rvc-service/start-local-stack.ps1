@@ -73,6 +73,7 @@ if (-not $healthy) {
   $env:RVC_SEPARATOR_MODELS_DIR = "D:\数据\rvc-runtime\pymss-models"
   $env:RVC_SEPARATOR_MODEL = "model_bs_roformer_ep_368_sdr_12.9628.ckpt"
   $env:RVC_SEPARATOR_DEVICE = "cuda"
+  if (-not (Test-Path Env:RVC_SEPARATOR_REUSE)) { $env:RVC_SEPARATOR_REUSE = "1" }
   $env:RVC_MAX_CONCURRENCY = "1"
   # Keep the deployed process on the validated shared frame/phase clock.
   # Operators can explicitly set either flag to 0 for a controlled rollback.
