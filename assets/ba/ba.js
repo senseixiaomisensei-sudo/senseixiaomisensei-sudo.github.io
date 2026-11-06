@@ -1,8 +1,8 @@
 /*! PostPrep · Blue Archive theme pack — runtime (no dependencies, CSP-safe: external file, no eval)
  *  - Adds data-ui="ba" as the fourth option of the existing .style-toggle
  *    (glass → classic → rococo → ba → glass), persisted under the same key "postprep-ui-style".
- *  - Second-level switch html[data-ba="koyuki|hoshino|momoi|kei"], persisted under "postprep-ba",
- *    driven by a header radiogroup of four avatar buttons and by window.PostPrepBA.set(name).
+ *  - Second-level switch html[data-ba="koyuki|hoshino|momoi|kei|shiroko"], persisted under "postprep-ba",
+ *    driven by a header radiogroup of five avatar buttons and by window.PostPrepBA.set(name).
  *  - Everything it builds is decoration (aria-hidden, pointer-events:none) except the avatar
  *    switcher and the corner chibi, which are real buttons. Never touches ids, data-* hooks,
  *    forms or listeners of the app. Motion: transform/opacity; honours prefers-reduced-motion.
@@ -10,7 +10,7 @@
 (function () {
   "use strict";
   var KEY = "postprep-ui-style", SUB_KEY = "postprep-ba", TIME_KEY = "postprep-ba-time";
-  var NAMES = ["koyuki", "hoshino", "momoi", "kei"];
+  var NAMES = ["koyuki", "hoshino", "momoi", "kei", "shiroko"];
   var root = document.documentElement;
   var reduced = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
   var darkMQ = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : { matches: false };
@@ -21,13 +21,13 @@
 
   /* ---------- 1 · boot: runs synchronously in <head>, after liquid-ui.js (and rococo.js) ---------- */
   if (get(KEY) === "ba") root.dataset.ui = "ba";
-  var urlSub = (location.search.match(/[?&]ba=(koyuki|hoshino|momoi|kei)\b/) || [])[1];
+  var urlSub = (location.search.match(/[?&]ba=(koyuki|hoshino|momoi|kei|shiroko)\b/) || [])[1];
   if (urlSub) put(SUB_KEY, urlSub);
   root.dataset.ba = valid(urlSub) ? urlSub : valid(get(SUB_KEY)) ? get(SUB_KEY) : "koyuki";
 
   var themeMeta = document.querySelector('meta[name="theme-color"]');
   var themeOriginal = themeMeta && (themeMeta.getAttribute("data-postprep-original") || themeMeta.getAttribute("content"));
-  var TINT = { koyuki: ["#fbf3fb", "#1a1230"], hoshino: ["#eef7fb", "#081a30"], momoi: ["#fff3f8", "#1d0f1f"], kei: ["#eef5ff", "#050f1f"] };
+  var TINT = { koyuki: ["#fbf3fb", "#1a1230"], hoshino: ["#eef7fb", "#081a30"], momoi: ["#fff3f8", "#1d0f1f"], kei: ["#eef5ff", "#050f1f"], shiroko: ["#eff5f8", "#0a1520"] };
   function night() {
     var o = (location.search.match(/[?&]ba-time=(day|night)\b/) || [])[1] || get(TIME_KEY);
     if (o === "day" || o === "night") return o === "night";
@@ -57,7 +57,10 @@
                linesEn: ["PRESS START! A new quest begins!", "I could beat this level blindfolded!", "Save first! Save first!", "Combo ×99!"] },
     kei:     { zh: "柯伊", en: "Kei",     ja: "ケイ",   school: "Millennium", schoolZh: "千年科学学园", club: "Game Development Dept.", clubZh: "游戏开发部", no: "04",
                lines: ["系统在线。等待指令。", "数据同步率 100%。", "……这个，叫做“开心”吗？", "正在解析声纹。"],
-               linesEn: ["System online. Awaiting input.", "Sync rate 100%.", "…Is this what they call 'fun'?", "Analysing voiceprint."] }
+               linesEn: ["System online. Awaiting input.", "Sync rate 100%.", "…Is this what they call 'fun'?", "Analysing voiceprint."] },
+    shiroko: { zh: "白子", full: "砂狼白子", en: "Shiroko", ja: "シロコ", school: "Abydos", schoolZh: "阿拜多斯高中", club: "Foreclosure Task Force", clubZh: "对策委员会", no: "05",
+               lines: ["嗯。今早骑了四十公里。", "老师，一起去兜风吗？", "……抢银行？开玩笑的。", "为了阿拜多斯，我会加油。"],
+               linesEn: ["Mm. Forty kilometres this morning.", "Sensei, want to go for a ride?", "…Rob a bank? Just kidding.", "For Abydos, I'll do my best."] }
   };
   var PAGES = {
     home: ["LOBBY", "大厅"], length: ["TASK 01", "长度检查"], hashtags: ["TASK 02", "标签整理"], formatter: ["TASK 03", "排版整理"],
@@ -66,7 +69,8 @@
   };
   var CONSOLE = {
     koyuki: ["VAULT · SEMINAR", "金库密码锁"], hoshino: ["SONAR · ABYDOS", "深海声呐"],
-    momoi: ["GAME CONSOLE · G.D.D.", "游戏主机"], kei: ["HOLO TERMINAL · K-4", "全息终端"]
+    momoi: ["GAME CONSOLE · G.D.D.", "游戏主机"], kei: ["HOLO TERMINAL · K-4", "全息终端"],
+    shiroko: ["ROUTE · ABYDOS", "骑行路线"]
   };
   var page = function () { return (document.body && document.body.dataset.page) || "home"; };
   var isEn = function () { return (root.lang || "").indexOf("en") === 0; };
@@ -191,7 +195,7 @@
       var n = b.dataset.baPick, on = n === root.dataset.ba, c = CHAR[n];
       b.setAttribute("aria-checked", String(on));
       b.tabIndex = on ? 0 : -1;
-      var label = isEn() ? c.en + " · " + c.school + " " + c.club : c.zh + " · " + c.schoolZh + c.clubZh;
+      var label = isEn() ? c.en + " · " + c.school + " " + c.club : (c.full || c.zh) + " · " + c.schoolZh + c.clubZh;
       b.setAttribute("aria-label", label); b.title = label;
       txt(b, ".ba-pick-tip", isEn() ? c.en : c.zh);
     });
@@ -207,28 +211,48 @@
     syncSwitch();
   }
 
-  /* ---------- 4 · background stage (all four decor sets; CSS shows the active one) ---------- */
+  /* ---------- 4 · background stage (all five decor sets; CSS shows the active one) ---------- */
   function rep(n, f) { var s = ""; for (var i = 0; i < n; i++) s += f(i); return s; }
-  // per-item custom properties (CSS calc() has no modulo): index, i mod 2/3/4 and two scattered offsets
-  function vars(i) { return 'style="--i:' + i + ";--m2:" + i % 2 + ";--m3:" + i % 3 + ";--m4:" + i % 4 + ";--r1:" + (i * 37) % 70 + ";--r2:" + (i * 53) % 78 + '"'; }
-  var KEYPAD = '<svg viewBox="0 0 120 150"><rect x="4" y="4" width="112" height="142" rx="10"/><rect class="scr" x="16" y="14" width="88" height="24" rx="4"/><text x="60" y="32">* * * *</text>' +
-    rep(12, function (i) { var x = 16 + (i % 3) * 32, y = 48 + Math.floor(i / 3) * 24; return '<rect x="' + x + '" y="' + y + '" width="24" height="18" rx="4"/><text class="k" x="' + (x + 12) + '" y="' + (y + 13) + '">' + "123456789*0#".charAt(i) + "</text>"; }) + "</svg>";
-  var WHALE = '<svg viewBox="0 0 160 90"><path d="M10 52c0-22 26-38 62-38 34 0 58 16 66 34l14-14c3-3 8-1 7 3l-6 22 8 10c2 3-1 7-5 5l-14-6c-10 12-36 18-62 16C34 82 10 72 10 52z"/><circle cx="44" cy="46" r="4" class="e"/><path class="e" d="M30 60c8 6 22 6 30 0" fill="none"/></svg>';
-  var PAD = '<svg viewBox="0 0 200 110"><rect x="6" y="14" width="188" height="82" rx="41"/><path class="d" d="M46 38h14v14h14v14H60v14H46V66H32V52h14z"/><circle class="b1" cx="150" cy="44" r="9"/><circle class="b2" cx="168" cy="60" r="9"/><circle class="b3" cx="132" cy="60" r="9"/><circle class="b4" cx="150" cy="76" r="9"/></svg>';
-  var CIRCUIT = '<svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice"><path d="M0 60h120l30 30h90l20-20h140M0 180h60l40 40h120l30-30h150M40 400V300l40-40h90l30 30v110M260 0v70l30 30v80l-30 30v60M330 400V310l30-30h40"/>' +
-    '<circle cx="150" cy="90" r="5"/><circle cx="260" cy="70" r="5"/><circle cx="100" cy="220" r="5"/><circle cx="290" cy="100" r="5"/><circle cx="170" cy="260" r="5"/><circle cx="360" cy="280" r="5"/></svg>';
+  // polish 2026-11: one line-art motif per student, all drawn in the same 600×600 box with the same stroke and
+  // opacity scale (.m-s structure 1px, .m-a accent 1.5px, .m-f tiny fills). Static SVG; motion lives on HTML wrappers.
+  function f1(n) { return n.toFixed(1); }
+  function polar(r, a) { return [f1(300 + r * Math.cos(a)), f1(300 + r * Math.sin(a))]; }
+  // koyuki · vault combination dial: fixed bezel + a turning number ring
+  var M_DIAL_BEZEL = '<svg viewBox="0 0 600 600"><g class="m-s"><circle cx="300" cy="300" r="292"/><circle cx="300" cy="300" r="282"/><circle cx="300" cy="300" r="120"/><circle cx="300" cy="300" r="64"/></g>' +
+    '<path class="m-a" d="M291 0h18l-9 14z"/><g class="m-s">' + rep(8, function (i) { var a = i * Math.PI / 4 + Math.PI / 8, p = polar(64, a), q = polar(120, a); return '<path d="M' + p[0] + ' ' + p[1] + 'L' + q[0] + ' ' + q[1] + '"/>'; }) + '</g></svg>';
+  var M_DIAL_RING = '<svg viewBox="0 0 600 600"><g class="m-s"><circle cx="300" cy="300" r="262"/><circle cx="300" cy="300" r="170"/>' +
+    rep(100, function (i) { var a = i * Math.PI / 50 - Math.PI / 2, l = i % 10 ? 10 : 22, p = polar(262, a), q = polar(262 - l, a); return '<path d="M' + p[0] + ' ' + p[1] + 'L' + q[0] + ' ' + q[1] + '"/>'; }) + '</g>' +
+    '<path class="m-a" d="M' + polar(170, -Math.PI / 2 - .5).join(' ') + 'A170 170 0 0 1 ' + polar(170, -Math.PI / 2 + .5).join(' ') + '"/></svg>';
+  // hoshino · sonar: range rings, bearing ticks; the sweep is a separate rotating layer
+  var M_SONAR = '<svg viewBox="0 0 600 600"><g class="m-s">' + [72, 144, 216, 288].map(function (r) { return '<circle cx="300" cy="300" r="' + r + '"/>'; }).join("") +
+    '<path d="M300 0V600M0 300H600"/>' + rep(72, function (i) { var a = i * Math.PI / 36, l = i % 6 ? 6 : 14, p = polar(288, a), q = polar(288 - l, a); return '<path d="M' + p[0] + ' ' + p[1] + 'L' + q[0] + ' ' + q[1] + '"/>'; }) + '</g>' +
+    '<circle class="m-a" cx="300" cy="300" r="144" stroke-dasharray="2 7"/><circle class="m-f" cx="' + polar(180, -2.2).join('" cy="') + '" r="3"/></svg>';
+  // momoi · ordered-dither (Bayer 4×4) pixel field fading out of the corner + one 1UP heart
+  var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  var M_PIXEL = '<svg viewBox="0 0 600 600" shape-rendering="crispEdges"><g class="m-px">' + rep(30 * 30, function (k) {
+      var x = k % 30, y = Math.floor(k / 30), d = Math.hypot(29 - x, 29 - y) / 29, v = 1 - d * .92;
+      return (BAYER[(y % 4) * 4 + x % 4] + .5) / 16 < v ? '<rect x="' + (x * 20 + 4) + '" y="' + (y * 20 + 4) + '" width="12" height="12"/>' : ""; }) + '</g></svg>';
+  var M_HEART = '<svg viewBox="0 0 7 6" shape-rendering="crispEdges"><path d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/></svg>';
+  // kei · circuit traces converging on a core (orthogonal + 45°), nodes pulse in sequence
+  var M_TRACES = "M600 120H470l-40 40v110M600 210H520l-30 30v40M600 400H500M120 600V520l40-40h110M210 600V540l30-30h40M400 600V500M30 330H200l40 40h30M330 30V200l40 40v30M600 470H530l-30-30H400M470 600V530l-30-30V400";
+  var M_NODES = [[470, 120], [520, 210], [600, 400], [120, 520], [210, 540], [400, 600], [200, 330], [330, 200], [530, 470], [470, 530]];
+  var M_CIRCUIT = '<svg viewBox="0 0 600 600"><g class="m-s"><path d="' + M_TRACES + '"/><rect x="340" y="340" width="120" height="120"/></g>' +
+    '<path class="m-a" d="M330 330h140v140H330z M352 352h96v96h-96z"/>' + M_NODES.map(function (n, i) { return '<circle class="m-n" style="--i:' + i + '" cx="' + n[0] + '" cy="' + n[1] + '" r="3.5"/>'; }).join("") + '</svg>';
+  // shiroko · route map: contour lines, the Abydos → Schale route, checkpoints
+  var M_ROUTE_D = "M60 430 C120 415 130 360 190 352 S290 370 315 310 S350 210 410 205 S470 190 480 130";
+  var M_ROUTE = '<svg viewBox="0 0 600 600"><g class="m-s"><path d="M0 500C120 450 200 500 300 450S470 410 600 360M0 410C110 370 180 400 270 350S430 300 600 260M0 320C100 280 170 300 250 250S410 190 600 160" stroke-dasharray="1 5"/>' +
+    '<path d="' + M_ROUTE_D + '" stroke-dasharray="6 6"/></g><path class="m-a" d="M60 430 C120 415 130 360 190 352 S290 370 315 310"/>' +
+    '<g class="m-cp"><circle cx="60" cy="430" r="5"/><circle cx="190" cy="352" r="5"/><circle cx="315" cy="310" r="5"/></g><circle class="m-f" cx="480" cy="130" r="5"/>' +
+    '<text class="m-l" x="60" y="458">ABYDOS</text><text class="m-l e" x="480" y="106">SCHALE</text></svg>';
   function buildStage() {
     var st = el("div", "ba-deco ba-stage");
     st.innerHTML =
-      '<i class="ba-grid"></i><i class="ba-shard s1"></i><i class="ba-shard s2"></i><i class="ba-shard s3"></i><i class="ba-sweep"></i>' +
-      '<div class="ba-set" data-set="koyuki">' + rep(9, function (i) { return '<i class="star" ' + vars(i) + '></i>'; }) + rep(4, function (i) { return '<i class="coin" ' + vars(i) + '></i>'; }) +
-        '<span class="keypad">' + KEYPAD + '</span><span class="pw">PASSWORD · ****</span><span class="pw p2">1 2 ? 4</span></div>' +
-      '<div class="ba-set" data-set="hoshino"><i class="sea"></i><i class="wave w1"></i><i class="wave w2"></i><i class="sand"></i>' + rep(10, function (i) { return '<i class="bub" ' + vars(i) + '></i>'; }) +
-        '<span class="whale">' + WHALE + '</span><span class="tag">ABYDOS · 对策委员会</span></div>' +
-      '<div class="ba-set" data-set="momoi">' + rep(10, function (i) { return '<i class="px" ' + vars(i) + '></i>'; }) + rep(3, function (i) { return '<i class="heart" ' + vars(i) + '></i>'; }) +
-        '<span class="pad">' + PAD + '</span><span class="start">PRESS START</span><span class="score">1UP 000990 · HI 999999</span></div>' +
-      '<div class="ba-set" data-set="kei"><span class="circuit">' + CIRCUIT + '</span><i class="scan"></i>' + rep(6, function (i) { return '<i class="stream" ' + vars(i) + ' data-s="' + ["0x4B 0x45 0x49", "01001011", "SYNC 100%", "AL-1S", "0xFF 0x00", "10110100"][i] + '"></i>'; }) +
-        '<i class="ring r1"></i><i class="ring r2"></i></div>';
+      '<i class="ba-grid"></i><i class="ba-plane"></i>' +
+      '<div class="ba-set" data-set="koyuki"><span class="ba-motif"><span class="m-layer">' + M_DIAL_BEZEL + '</span><span class="m-layer m-turn">' + M_DIAL_RING + '</span></span></div>' +
+      '<div class="ba-set" data-set="hoshino"><span class="ba-motif"><span class="m-layer">' + M_SONAR + '</span><i class="m-sweep"></i></span></div>' +
+      '<div class="ba-set" data-set="momoi"><span class="ba-motif"><span class="m-layer">' + M_PIXEL + '</span><span class="m-heart">' + M_HEART + '</span></span></div>' +
+      '<div class="ba-set" data-set="kei"><span class="ba-motif"><span class="m-layer">' + M_CIRCUIT + '</span></span></div>' +
+      '<div class="ba-set" data-set="shiroko"><span class="ba-motif"><span class="m-layer">' + M_ROUTE + '</span><i class="m-beacon"></i></span></div>';
     document.body.appendChild(st);
   }
 
@@ -258,7 +282,7 @@
     else if (p === "rvc") host = document.querySelector(".rvc-page-heading");
     if (!host) return;
     heroArt = el("div", "ba-deco ba-art ba-art-" + p,
-      '<i class="ba-art-stripes"></i><i class="ba-art-tri t1"></i><i class="ba-art-tri t2"></i><span class="ba-art-halo"></span><span class="ba-art-portrait"></span>' +
+      '<i class="ba-art-stripes"></i><span class="ba-art-halo"></span><span class="ba-art-portrait"></span>' +
       '<span class="ba-art-plate"><b class="n"></b><i class="ja"></i><em class="s"></em></span>');
     if (getComputedStyle(host).position === "static") host.classList.add("ba-rel");
     host.insertBefore(heroArt, host.firstChild);
@@ -271,13 +295,12 @@
     var studio = document.getElementById("v3-studio"); if (!studio) return;
     consoleDeco = el("div", "ba-deco ba-console",
       '<span class="ba-con-plate"><b></b><i></i></span><span class="ba-con-led"></span>' +
-      '<div class="ba-con-set" data-set="koyuki"><span class="keypad">' + KEYPAD + '</span><i class="bolt b1"></i><i class="bolt b2"></i><i class="bolt b3"></i><i class="bolt b4"></i><span class="dial"></span><span class="lcd">LOCKED · 0000</span></div>' +
-      '<div class="ba-con-set" data-set="hoshino"><span class="sonar"><i></i></span>' + rep(6, function (i) { return '<i class="bub" ' + vars(i) + '></i>'; }) + '<span class="depth">DEPTH 0420 m</span><span class="whale">' + WHALE + '</span></div>' +
-      '<div class="ba-con-set" data-set="momoi"><span class="pad">' + PAD + '</span><span class="start">PRESS START</span><span class="hp"><b>HP</b><i></i></span><span class="lv">LV.99</span></div>' +
-      '<div class="ba-con-set" data-set="kei"><span class="circuit">' + CIRCUIT + '</span><i class="scan"></i><span class="brk tl"></span><span class="brk tr"></span><span class="brk bl"></span><span class="brk br"></span><span class="data"></span></div>');
+      '<div class="ba-con-set" data-set="koyuki"><span class="lcd">LOCKED · 0000</span></div>' +
+      '<div class="ba-con-set" data-set="hoshino"><span class="lcd">DEPTH 0420 m</span></div>' +
+      '<div class="ba-con-set" data-set="momoi"><span class="lcd">PRESS START</span></div>' +
+      '<div class="ba-con-set" data-set="kei"><span class="brk tl"></span><span class="brk tr"></span><span class="brk bl"></span><span class="brk br"></span><span class="lcd">AL-1S · LINK</span></div>' +
+      '<div class="ba-con-set" data-set="shiroko"><span class="lcd">41.6 km · ▲ 128 m</span></div>');
     studio.appendChild(consoleDeco);
-    var data = consoleDeco.querySelector(".data");
-    if (data) data.textContent = rep(18, function (i) { return ((i * 7919) % 65536).toString(16).toUpperCase().padStart(4, "0") + " "; });
   }
 
   /* ---------- 8 · corner chibi: idles, reacts on click / Enter ---------- */
@@ -338,7 +361,7 @@
   });
 
   /* ---------- 10b · studio voice follows the character (RVC page only) ---------- */
-  var VOICE = { koyuki: "koyuki", hoshino: "hoshino", momoi: "momoi", kei: "key" };
+  var VOICE = { koyuki: "koyuki", hoshino: "hoshino", momoi: "momoi", kei: "key", shiroko: "shiroko" };
   var userPicked = false, voiceRevision = 0;
   function voiceCard(name) { return document.querySelector('#rvc-model-gallery [data-model-id="' + VOICE[name] + '"]'); }
   function syncVoice(force) {
@@ -384,6 +407,7 @@
     applyTime();
     if (!isBA()) return;
     mountSwitch();
+    if (page() === "rvc") syncVoice(false);
     if (built) return;
     built = true;
     buildStage(); buildHead(); buildArt(); buildConsole(); buildChibi(); tapFx(); fxPress(); fxToast();
