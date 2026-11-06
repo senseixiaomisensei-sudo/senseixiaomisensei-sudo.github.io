@@ -96,7 +96,8 @@ def install_chorus_routes(app, core):
             record.stage='separating'
             sample=await asyncio.to_thread(sample_analysis_mix,input_path,work/'analysis-sample.wav',duration)
             async with core.inference_lock:
-                stems=await asyncio.to_thread(core.separate_song,sample,work/'accompaniment-separation',core.release_cached_models)
+                stems=await asyncio.to_thread(core.separate_song,sample,work/'accompaniment-separation',
+                    core.release_cached_models,register_preview=sample!=input_path)
             source=stems.vocals
         record.stage='analyzing-register'
         decoded=work/'vocals-24k.wav'

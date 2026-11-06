@@ -146,10 +146,10 @@ def _separate_v3(source: Path, output_dir: Path, plan: dict, on_cache_miss=None)
     return SongStems(vocals, instrumental, sample_rate, False, "v3", stages)
 
 
-def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongStems:
+def separate_song(source: Path, output_dir: Path, on_cache_miss=None, *, register_preview=False) -> SongStems:
     plan = None
     try:
-        plan = _v3_plan()
+        plan = None if register_preview else _v3_plan()
     except Exception:  # never let the optional chain block conversion
         logging.getLogger(__name__).exception('v3 separation plan unavailable')
     if plan is not None:
@@ -166,7 +166,9 @@ def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongSte
     key = None
     if separation_cache.cache_root() is not None:
         try:
-            runtime = [SEPARATOR_MODEL, SEPARATOR_DEVICE, str(SEPARATOR_OVERLAP)]
+            runtime = [SEPARATOR_MODEL, SEPARATOR_DEVICE]
+            if register_preview:
+                runtime.extend(["register-preview", 88200])
             for package in ('pymss', 'torch', 'torchaudio'):
                 runtime.append(importlib.metadata.version(package))
             key = separation_cache.cache_key(source, [
@@ -182,40 +184,6 @@ def separate_song(source: Path, output_dir: Path, on_cache_miss=None) -> SongSte
             key = None
     if on_cache_miss is not None:
         on_cache_miss()
-    payload = None
-    if os.getenv('RVC_SEPARATOR_REUSE') == '1' and SEPARATOR_DEVICE == 'cuda':
-        try:
-            from app.separation_worker import separate_file
-            revision = tuple(separation_cache.resource_digest(SEPARATOR_MODELS_DIR / name)
-                             for name in (SEPARATOR_MODEL_RELATIVE, SEPARATOR_CONFIG_RELATIVE))
-            payload = separate_file(source, output_dir, SEPARATOR_MODELS_DIR, SEPARATOR_MODEL, SEPARATOR_DEVICE,
-                                    (SEPARATOR_MODEL, SEPARATOR_OVERLAP, *revision))
-        except Exception:
-            logging.getLogger(__name__).exception('Resident separation failed; retrying in the isolated worker')
-    if payload is None:
-        payload = _separate_isolated(source, output_dir, worker)
-    try:
-        vocals = Path(payload["vocals"]).resolve()
-        instrumental = Path(payload["instrumental"]).resolve()
-        sample_rate = int(payload["sampleRate"])
-    except (KeyError, TypeError, ValueError) as error:
-        raise SeparationRuntimeError("RVC_SEPARATION_FAILED") from error
-    if (
-        output_dir.resolve() not in vocals.parents
-        or output_dir.resolve() not in instrumental.parents
-        or not vocals.is_file()
-        or not instrumental.is_file()
-    ):
-        raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
-    if key is not None:
-        try:
-            separation_cache.store(key, vocals, instrumental, sample_rate)
-        except OSError:
-            logging.getLogger(__name__).warning('Cannot retain separation cache; completed stems remain usable')
-    return SongStems(vocals=vocals, instrumental=instrumental, sample_rate=sample_rate)
-
-
-def _separate_isolated(source: Path, output_dir: Path, worker: Path) -> dict:
     command = [
         sys.executable,
         str(worker),
@@ -230,6 +198,11 @@ def _separate_isolated(source: Path, output_dir: Path, worker: Path) -> dict:
         "--device",
         SEPARATOR_DEVICE,
     ]
+    env = {**os.environ, 'PYTHONUTF8':'1', 'PYTHONIOENCODING':'utf-8'}
+    if register_preview:
+        # A short register estimate can use wider steps between 8 s windows.
+        # Never reuse these stems for a full-quality cover.
+        env['RVC_SEPARATOR_OVERLAP'] = '88200'
     try:
         result = subprocess.run(
             command,
@@ -239,7 +212,7 @@ def _separate_isolated(source: Path, output_dir: Path, worker: Path) -> dict:
             text=True,
             encoding='utf-8',
             errors='replace',
-            env={**os.environ, 'PYTHONUTF8':'1', 'PYTHONIOENCODING':'utf-8'},
+            env=env,
             timeout=SEPARATOR_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as error:
@@ -247,9 +220,25 @@ def _separate_isolated(source: Path, output_dir: Path, worker: Path) -> dict:
     if result.returncode != 0:
         raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
     try:
-        return json.loads(result.stdout.strip().splitlines()[-1])
+        payload = json.loads(result.stdout.strip().splitlines()[-1])
+        vocals = Path(payload["vocals"]).resolve()
+        instrumental = Path(payload["instrumental"]).resolve()
+        sample_rate = int(payload["sampleRate"])
     except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise SeparationRuntimeError("RVC_SEPARATION_FAILED") from error
+    if (
+        output_dir.resolve() not in vocals.parents
+        or output_dir.resolve() not in instrumental.parents
+        or not vocals.is_file()
+        or not instrumental.is_file()
+    ):
+        raise SeparationRuntimeError("RVC_SEPARATION_FAILED")
+    if key is not None:
+        try:
+            separation_cache.store(key, vocals, instrumental, sample_rate)
+        except OSError:
+            logging.getLogger(__name__).warning('Cannot retain separation cache; completed stems remain usable')
+    return SongStems(vocals=vocals, instrumental=instrumental, sample_rate=sample_rate)
 
 
 def calibrate_song_vocals(source_vocals: Path, converted_vocals: Path,
