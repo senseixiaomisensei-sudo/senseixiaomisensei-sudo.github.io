@@ -1,0 +1,297 @@
+/* ==========================================================================
+   95 · Apple pass for PostPrep's own skins: GLASS (default) and CLASSIC (APPLE_SPEC.md).
+   Never touches [data-ui="rococo"] or [data-ui="ba"]; those packs carry their own pass.
+   Scopes: $G = html.v3s.v3s (glass everywhere, classic on home/404 which are v3-only);
+           html[data-ui="classic"]:not(.v3s) = classic RVC and tool pages (Tailwind + classic-glass.css).
+   Neutral #f5f5f7 / #fff / #1d1d1f, one accent (glass #0071e3, classic teal #0f766e), system type,
+   44 px nav, pill buttons, flat 18 px cards, filled inputs, one-shot reveals, no looping decoration.
+   Generated from apple/rgc/skeleton.css; phones keep the freeze2 budget (no blur on the nav).
+   ========================================================================== */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]), html[data-ui="classic"]:not(.v3s) {
+  --ap-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
+  --ap-ease: cubic-bezier(.28, .11, .32, 1);
+  --ap-bg: #f5f5f7; --ap-bg-2: #fff; --ap-ink: #1d1d1f; --ap-ink-2: #6e6e73; --ap-ink-3: #86868b;
+  --ap-hair: rgb(0 0 0 / .08); --ap-nav: rgb(251 251 253 / .8); --ap-nav-solid: rgb(251 251 253 / .97);
+  --ap-float: 0 4px 24px rgb(0 0 0 / .08); --ap-radius: 18px; --ap-accent-ink: #fff;
+}
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) {
+  --v3-font: var(--ap-font);
+  --v3-bg: #f5f5f7; --v3-bg-rgb: 245 245 247; --v3-paper: #fff; --v3-paper-rgb: 255 255 255; --v3-well: #f5f5f7;
+  --v3-ink: #1d1d1f; --v3-ink-rgb: 29 29 31; --v3-ink-2: #6e6e73; --v3-ink-3: #86868b;
+  --v3-line: rgb(0 0 0 / .08); --v3-line-2: rgb(0 0 0 / .12);
+  --v3-accent: #0071e3; --v3-accent-rgb: 0 113 227; --v3-accent-ink: #0066cc;
+  --v3-radius: 18px; --v3-radius-sm: 12px; --v3-ease: var(--ap-ease); --v3-out: var(--ap-ease);
+  --v3-shadow: none; --card-drop: none; --card-lift: none; --g-drop: none; --m-orange: var(--v3-accent);
+}
+$G:not([data-ui="rococo"]):not([data-ui="ba"])[data-ui="classic"] { --v3-accent: #0f766e; --v3-accent-rgb: 15 118 110; --v3-accent-ink: #0f766e; --m-orange: #0f766e; }
+html[data-ui="classic"]:not(.v3s) {
+  --v3-ink-rgb: 29 29 31; --v3-accent: #0f766e; --v3-accent-rgb: 15 118 110; --v3-accent-ink: #0f766e;
+  --classic-ink: #1d1d1f; --classic-surface: #fff; scroll-padding-top: 64px;
+}
+@media (prefers-color-scheme: dark) {
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) { --ap-bg: #000; --ap-bg-2: #1d1d1f; --ap-ink: #f5f5f7; --ap-ink-2: #a1a1a6; --ap-hair: rgb(255 255 255 / .12); --ap-nav: rgb(22 22 23 / .8); --ap-nav-solid: rgb(22 22 23 / .97);
+    --v3-bg: #000; --v3-bg-rgb: 0 0 0; --v3-paper: #1d1d1f; --v3-paper-rgb: 29 29 31; --v3-well: #2c2c2e;
+    --v3-ink: #f5f5f7; --v3-ink-rgb: 245 245 247; --v3-ink-2: #a1a1a6; --v3-ink-3: #86868b;
+    --v3-line: rgb(255 255 255 / .12); --v3-accent: #2997ff; --v3-accent-rgb: 41 151 255; --v3-accent-ink: #2997ff; }
+  $G:not([data-ui="rococo"]):not([data-ui="ba"])[data-ui="classic"] { --v3-accent: #2dd4bf; --v3-accent-rgb: 45 212 191; --v3-accent-ink: #2dd4bf; --ap-accent-ink: #002e2a; }
+}
+/* classic on the v3-only home / 404: classic-glass.css frames sections with strokes, gradients and offset shadows */
+html[data-ui="classic"].v3s :is(main > section, main > div > section, main article, main aside > section) { border: 0 !important; box-shadow: none !important; background-image: none !important; background-color: transparent; border-radius: 0; }
+html[data-ui="classic"].v3s body::before { display: none !important; }
+
+/* ======== glass + classic (v3 pages) ======== */
+/* ---------- canvas + type ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) body { font-family: var(--ap-font) !important; background: var(--ap-bg) !important; color: var(--ap-ink); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) ::selection { background: rgb(var(--v3-accent-rgb) / .2); color: inherit; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-display, .v3-h2, .v3-h3, h1, h2, h3) { font-family: var(--ap-display, var(--ap-font)); color: var(--ap-ink); text-shadow: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-display, .h-hero .v3-display, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child h1, body:not([data-page="home"]):not([data-page="404"]) main h1:first-of-type) {
+  font-size: 56px !important; line-height: 1.07 !important; font-weight: 700 !important; letter-spacing: -.005em !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-hero .v3-display > span { color: var(--ap-ink) !important; font-weight: 700 !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-h2, :is(.h-flow-head, .h-tools-head, .h-studio-head) .v3-h2) { font-size: 40px !important; line-height: 1.1 !important; font-weight: 700 !important; letter-spacing: -.003em !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"])[lang^="zh"] :is(.v3-display, .v3-h2, main h1) { letter-spacing: 0 !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-lead, .h-hero .v3-lead, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:last-child) {
+  font-size: 21px !important; line-height: 1.38 !important; font-weight: 400 !important; letter-spacing: .011em; color: var(--ap-ink-2) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .v3-body { font-size: 17px; line-height: 1.47; }
+/* the one eyebrow above a headline: plain, sentence case, secondary ink */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-eyebrow, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:first-child) {
+  font-size: 14px !important; line-height: 1.3 !important; font-weight: 600 !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--ap-ink-2) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-eyebrow, .h-studio-head)::before { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main [class*="uppercase"][class*="tracking"] { text-transform: none !important; letter-spacing: 0 !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--v3-accent) !important; outline-offset: 2px !important; }
+
+/* ---------- nav: one 44 px translucent bar, full width ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header { padding: 0 !important; margin: 0 !important; top: 0 !important; min-height: 44px !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header > header {
+  max-width: none !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--ap-nav) !important; box-shadow: 0 1px 0 var(--ap-hair) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(20px) !important; backdrop-filter: saturate(180%) blur(20px) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header > header::before, $G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header > header::after { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header > header > div { min-height: 44px !important; max-width: 1200px !important; margin: 0 auto !important; padding-block: 0 !important; padding-inline: 22px !important; gap: 8px !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header header > div > a { gap: 8px !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header header > div > a > span:first-child { width: 24px !important; height: 24px !important; border-radius: 7px !important; box-shadow: none !important; transform: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header header > div > a > span:first-child :is(i, svg) { font-size: 11px !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header header > div > a > span:first-child::before { font-size: 13px !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header header > div > a > span:last-child > span:first-child { font: 600 15px/1.2 var(--ap-font) !important; letter-spacing: -.01em !important; color: var(--ap-ink) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header header > div > a > span:last-child > span:last-child { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header nav[aria-label="Primary navigation"] { gap: 0 !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header nav[aria-label="Primary navigation"] a { height: 44px; display: inline-flex !important; align-items: center; padding: 0 10px !important; border: 0 !important; border-radius: 0 !important; background: none !important;
+  font: 400 12px/1 var(--ap-font) !important; letter-spacing: -.01em !important; color: rgb(var(--v3-ink-rgb) / .8) !important; box-shadow: none !important; transition: color .24s var(--ap-ease) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header nav[aria-label="Primary navigation"] a:hover, $G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header nav[aria-label="Primary navigation"] a[aria-current] { color: var(--ap-ink) !important; background: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header nav[aria-label="Primary navigation"] a[aria-current] { font-weight: 600 !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header nav a::before, $G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header nav a::after, $G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header nav .v3-pill { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header :is(button, .style-toggle) { min-height: 32px !important; min-width: 32px !important; height: 32px !important; padding-inline: 8px !important; border-radius: 8px !important; background: none !important; box-shadow: none !important; border: 0 !important; color: rgb(var(--v3-ink-rgb) / .8) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header :is(button, .style-toggle):hover { background: rgb(var(--v3-ink-rgb) / .06) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header :is(button, .style-toggle) i { font-size: 13px !important; color: rgb(var(--v3-ink-rgb) / .8) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header [data-language-toggle] span { font: 400 12px/1 var(--ap-font) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #mobile-navigation { background: var(--ap-bg-2) !important; border: 0 !important; border-top: 1px solid var(--ap-hair) !important; border-radius: 0 !important; box-shadow: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #mobile-navigation a { font: 400 17px/1.3 var(--ap-font) !important; color: var(--ap-ink) !important; background: none !important; border-radius: 0 !important; border-bottom: 1px solid var(--ap-hair); padding: 12px 6px !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #mobile-navigation a[aria-current] { font-weight: 600 !important; }
+
+/* ---------- buttons: pills, flat, one accent ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-btn-primary, :is(button, a):is([class*="bg-brand"]:not([class*="bg-brandSoft"])):not([role="tab"]):not([aria-pressed="true"]):not([data-model-id])) {
+  border-radius: 980px !important; background: var(--v3-accent) !important; background-image: none !important; color: var(--ap-accent-ink, #fff) !important; box-shadow: none !important; border: 0 !important;
+  font-weight: 400 !important; font-size: 17px !important; letter-spacing: -.01em !important; padding: 12px 22px !important; min-height: 44px; transform: none !important;
+  transition: background-color .24s var(--ap-ease), opacity .24s var(--ap-ease) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-btn-primary, :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"])) :is(i, span) { color: inherit !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-btn-primary, :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"])):not([disabled]):hover { background: color-mix(in srgb, var(--v3-accent) 92%, #fff) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .v3-btn-line { border-radius: 980px !important; box-shadow: none !important; background: transparent !important; color: var(--v3-accent) !important; border: 1px solid var(--v3-accent) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .v3-btn-plain { color: var(--v3-accent-ink) !important; font-size: 17px; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .v3-btn-plain:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- surfaces: flat 18 px cards, separated by background ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-amb, $G:not([data-ui="rococo"]):not([data-ui="ba"]) body:not([data-page="home"]):not([data-page="404"]) main::before, $G:not([data-ui="rococo"]):not([data-ui="ba"]) .v3-404::before, $G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-floor, $G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-obj::after { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-obj { transform: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-ruler { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.h-obj .h-device, .h-device) { border-radius: 28px !important; box-shadow: 0 30px 60px -30px rgb(0 0 0 / .18), 0 0 0 1px var(--ap-hair) !important; background: var(--ap-bg-2) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) body:not([data-page="home"]) main :is(section, aside, article, details):is(.bg-surface, .bg-white, .rounded-2xl, .rounded-xl):is(.border, [class*="shadow"]):not([data-model-id]):not(.rvc-notice) {
+  border-radius: var(--ap-radius) !important; box-shadow: none !important; border-color: transparent !important; background-color: var(--ap-bg-2) !important; background-image: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) body:not([data-page="home"]) main :is(section, aside, article) :is(div, p, section, details, label):is(.border):is(.rounded-lg, .rounded-xl, .rounded-2xl):not([data-model-id]):not(input):not(textarea):not(select) {
+  border-color: transparent !important; box-shadow: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool { border-radius: var(--ap-radius) !important; box-shadow: none !important; background: var(--ap-bg-2) !important; transition: opacity .24s var(--ap-ease) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool::before, $G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool::after { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool:hover { transform: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-privacy .h-wrap { background: var(--ap-bg-2) !important; box-shadow: none !important; border-radius: var(--ap-radius) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-verb b { color: var(--ap-ink) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) body[data-page] main > header:first-child::before { box-shadow: none !important; background: var(--m, var(--v3-accent)) !important; border-radius: 14px !important; }
+
+/* ---------- inputs: 12 px, filled, no border, accent ring ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main :is(input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(.sr-only), textarea, select) {
+  border-radius: 12px !important; border-color: transparent !important; background-color: var(--ap-bg) !important; box-shadow: none !important; color: var(--ap-ink) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main :is(input, textarea, select):focus-visible { outline: 0 !important; box-shadow: 0 0 0 1px var(--v3-accent), 0 0 0 4px rgb(var(--v3-accent-rgb) / .16) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main :is(input, textarea)::placeholder { color: var(--ap-ink-3) !important; }
+
+/* ---------- studio: keep the device, drop the HUD labels ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #v3-studio .v3-kicker { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) #v3-studio :is(.v3-scope-labels, .v3-readouts dt) { font-family: var(--ap-font) !important; letter-spacing: 0 !important; text-transform: none !important; }
+
+/* ---------- motion: one-shot reveals, Apple easing, no loops ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) [data-reveal] { transition-timing-function: var(--ap-ease) !important; transition-duration: .8s !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-mirror .m-caret { animation: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .v3-studio-state[data-state="running"] i { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { $G:not([data-ui="rococo"]):not([data-ui="ba"]) [data-reveal] { transition: opacity .2s linear !important; transform: none !important; } }
+
+/* ---------- tablet / phone scale ---------- */
+@media (max-width: 1068px) {
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-display, .h-hero .v3-display, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child h1, body:not([data-page="home"]):not([data-page="404"]) main h1:first-of-type) { font-size: 48px !important; }
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-h2, :is(.h-flow-head, .h-tools-head, .h-studio-head) .v3-h2) { font-size: 32px !important; }
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-lead, .h-hero .v3-lead, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:last-child) { font-size: 19px !important; }
+}
+@media (max-width: 1023px) { $G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header > header > div { min-height: 48px !important; padding-inline: 16px !important; } }
+@media (max-width: 734px) {
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-display, .h-hero .v3-display, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child h1, body:not([data-page="home"]):not([data-page="404"]) main h1:first-of-type) { font-size: 40px !important; line-height: 1.1 !important; }
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-h2, :is(.h-flow-head, .h-tools-head, .h-studio-head) .v3-h2) { font-size: 28px !important; }
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.v3-eyebrow, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:first-child) { font-size: 12px !important; }
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) main :is(input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) { font-size: 16px !important; }
+}
+/* phones: no blur on the nav (freeze2 budget) */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header > header, $G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header > header * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  $G:not([data-ui="rococo"]):not([data-ui="ba"]) #site-header > header { background: var(--ap-nav-solid) !important; }
+}
+
+/* ---------- glass / v3 extras: no decoration props, no sheen, no gradient chrome ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-ruler, $G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-scan::after, $G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool::before { display: none !important; animation: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-hero .v3-display, $G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-hero .v3-display * { background: none !important; -webkit-text-fill-color: currentColor; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-tool-ic { background: var(--m, var(--v3-accent)) !important; box-shadow: none !important; transform: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool:hover .h-tool-ic { transform: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) :is(.pv-pass > b) { transform: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) .h-tool-no { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool.c-rvc { color: var(--ap-ink) !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool.c-rvc .h-tool-d { color: var(--ap-ink-2) !important; } $G:not([data-ui="rococo"]):not([data-ui="ba"]) a.h-tool.c-rvc .h-tool-go { color: var(--ap-ink-3) !important; }
+
+/* ---------- both: no pseudo-tech kickers, quiet labels, segmented pills ---------- */
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main p[class*="uppercase"][class*="tracking-[0.18em]"], $G:not([data-ui="rococo"]):not([data-ui="ba"]) [data-rvc-i18n="workflowEyebrow"] { display: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main p[class*="uppercase"][class*="tracking"] { font: 600 13px/1.3 var(--ap-font) !important; color: var(--ap-ink-2) !important; text-transform: none !important; letter-spacing: 0 !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main button[aria-pressed][class*="rounded-lg"][class*="border"] { border-radius: 980px !important; border-color: transparent !important; background: var(--ap-bg) !important; color: var(--ap-ink) !important; font-weight: 400 !important; box-shadow: none !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main button[aria-pressed="true"][class*="rounded-lg"][class*="border"] { background: var(--v3-accent) !important; color: #fff !important; }
+$G:not([data-ui="rococo"]):not([data-ui="ba"]) main button[aria-pressed][class*="rounded-lg"][class*="border"] :is(i, span) { color: inherit !important; }
+
+
+/* ======== classic, non-v3 pages (RVC, tools) ======== */
+/* ---------- canvas + type ---------- */
+html[data-ui="classic"]:not(.v3s) body { font-family: var(--ap-font) !important; background: var(--ap-bg) !important; color: var(--ap-ink); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+html[data-ui="classic"]:not(.v3s) ::selection { background: rgb(var(--v3-accent-rgb) / .2); color: inherit; }
+html[data-ui="classic"]:not(.v3s) :is(.v3-display, .v3-h2, .v3-h3, h1, h2, h3) { font-family: var(--ap-display, var(--ap-font)); color: var(--ap-ink); text-shadow: none !important; }
+html[data-ui="classic"]:not(.v3s) :is(.v3-display, .h-hero .v3-display, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child h1, body:not([data-page="home"]):not([data-page="404"]) main h1:first-of-type) {
+  font-size: 56px !important; line-height: 1.07 !important; font-weight: 700 !important; letter-spacing: -.005em !important; }
+html[data-ui="classic"]:not(.v3s) .h-hero .v3-display > span { color: var(--ap-ink) !important; font-weight: 700 !important; }
+html[data-ui="classic"]:not(.v3s) :is(.v3-h2, :is(.h-flow-head, .h-tools-head, .h-studio-head) .v3-h2) { font-size: 40px !important; line-height: 1.1 !important; font-weight: 700 !important; letter-spacing: -.003em !important; }
+html[data-ui="classic"]:not(.v3s)[lang^="zh"] :is(.v3-display, .v3-h2, main h1) { letter-spacing: 0 !important; }
+html[data-ui="classic"]:not(.v3s) :is(.v3-lead, .h-hero .v3-lead, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:last-child) {
+  font-size: 21px !important; line-height: 1.38 !important; font-weight: 400 !important; letter-spacing: .011em; color: var(--ap-ink-2) !important; }
+html[data-ui="classic"]:not(.v3s) .v3-body { font-size: 17px; line-height: 1.47; }
+/* the one eyebrow above a headline: plain, sentence case, secondary ink */
+html[data-ui="classic"]:not(.v3s) :is(.v3-eyebrow, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:first-child) {
+  font-size: 14px !important; line-height: 1.3 !important; font-weight: 600 !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--ap-ink-2) !important; }
+html[data-ui="classic"]:not(.v3s) :is(.v3-eyebrow, .h-studio-head)::before { display: none !important; }
+html[data-ui="classic"]:not(.v3s) main [class*="uppercase"][class*="tracking"] { text-transform: none !important; letter-spacing: 0 !important; }
+html[data-ui="classic"]:not(.v3s) :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--v3-accent) !important; outline-offset: 2px !important; }
+
+/* ---------- nav: one 44 px translucent bar, full width ---------- */
+html[data-ui="classic"]:not(.v3s) #site-header { padding: 0 !important; margin: 0 !important; top: 0 !important; min-height: 44px !important; }
+html[data-ui="classic"]:not(.v3s) #site-header > header {
+  max-width: none !important; margin: 0 !important; border: 0 !important; border-radius: 0 !important;
+  background: var(--ap-nav) !important; box-shadow: 0 1px 0 var(--ap-hair) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(20px) !important; backdrop-filter: saturate(180%) blur(20px) !important; }
+html[data-ui="classic"]:not(.v3s) #site-header > header::before, html[data-ui="classic"]:not(.v3s) #site-header > header::after { display: none !important; }
+html[data-ui="classic"]:not(.v3s) #site-header > header > div { min-height: 44px !important; max-width: 1200px !important; margin: 0 auto !important; padding-block: 0 !important; padding-inline: 22px !important; gap: 8px !important; }
+html[data-ui="classic"]:not(.v3s) #site-header header > div > a { gap: 8px !important; }
+html[data-ui="classic"]:not(.v3s) #site-header header > div > a > span:first-child { width: 24px !important; height: 24px !important; border-radius: 7px !important; box-shadow: none !important; transform: none !important; }
+html[data-ui="classic"]:not(.v3s) #site-header header > div > a > span:first-child :is(i, svg) { font-size: 11px !important; }
+html[data-ui="classic"]:not(.v3s) #site-header header > div > a > span:first-child::before { font-size: 13px !important; }
+html[data-ui="classic"]:not(.v3s) #site-header header > div > a > span:last-child > span:first-child { font: 600 15px/1.2 var(--ap-font) !important; letter-spacing: -.01em !important; color: var(--ap-ink) !important; }
+html[data-ui="classic"]:not(.v3s) #site-header header > div > a > span:last-child > span:last-child { display: none !important; }
+html[data-ui="classic"]:not(.v3s) #site-header nav[aria-label="Primary navigation"] { gap: 0 !important; }
+html[data-ui="classic"]:not(.v3s) #site-header nav[aria-label="Primary navigation"] a { height: 44px; display: inline-flex !important; align-items: center; padding: 0 10px !important; border: 0 !important; border-radius: 0 !important; background: none !important;
+  font: 400 12px/1 var(--ap-font) !important; letter-spacing: -.01em !important; color: rgb(var(--v3-ink-rgb) / .8) !important; box-shadow: none !important; transition: color .24s var(--ap-ease) !important; }
+html[data-ui="classic"]:not(.v3s) #site-header nav[aria-label="Primary navigation"] a:hover, html[data-ui="classic"]:not(.v3s) #site-header nav[aria-label="Primary navigation"] a[aria-current] { color: var(--ap-ink) !important; background: none !important; }
+html[data-ui="classic"]:not(.v3s) #site-header nav[aria-label="Primary navigation"] a[aria-current] { font-weight: 600 !important; }
+html[data-ui="classic"]:not(.v3s) #site-header nav a::before, html[data-ui="classic"]:not(.v3s) #site-header nav a::after, html[data-ui="classic"]:not(.v3s) #site-header nav .v3-pill { display: none !important; }
+html[data-ui="classic"]:not(.v3s) #site-header :is(button, .style-toggle) { min-height: 32px !important; min-width: 32px !important; height: 32px !important; padding-inline: 8px !important; border-radius: 8px !important; background: none !important; box-shadow: none !important; border: 0 !important; color: rgb(var(--v3-ink-rgb) / .8) !important; }
+html[data-ui="classic"]:not(.v3s) #site-header :is(button, .style-toggle):hover { background: rgb(var(--v3-ink-rgb) / .06) !important; }
+html[data-ui="classic"]:not(.v3s) #site-header :is(button, .style-toggle) i { font-size: 13px !important; color: rgb(var(--v3-ink-rgb) / .8) !important; }
+html[data-ui="classic"]:not(.v3s) #site-header [data-language-toggle] span { font: 400 12px/1 var(--ap-font) !important; }
+html[data-ui="classic"]:not(.v3s) #mobile-navigation { background: var(--ap-bg-2) !important; border: 0 !important; border-top: 1px solid var(--ap-hair) !important; border-radius: 0 !important; box-shadow: none !important; }
+html[data-ui="classic"]:not(.v3s) #mobile-navigation a { font: 400 17px/1.3 var(--ap-font) !important; color: var(--ap-ink) !important; background: none !important; border-radius: 0 !important; border-bottom: 1px solid var(--ap-hair); padding: 12px 6px !important; }
+html[data-ui="classic"]:not(.v3s) #mobile-navigation a[aria-current] { font-weight: 600 !important; }
+
+/* ---------- buttons: pills, flat, one accent ---------- */
+html[data-ui="classic"]:not(.v3s) :is(.v3-btn-primary, :is(button, a):is([class*="bg-brand"]:not([class*="bg-brandSoft"])):not([role="tab"]):not([aria-pressed="true"]):not([data-model-id])) {
+  border-radius: 980px !important; background: var(--v3-accent) !important; background-image: none !important; color: var(--ap-accent-ink, #fff) !important; box-shadow: none !important; border: 0 !important;
+  font-weight: 400 !important; font-size: 17px !important; letter-spacing: -.01em !important; padding: 12px 22px !important; min-height: 44px; transform: none !important;
+  transition: background-color .24s var(--ap-ease), opacity .24s var(--ap-ease) !important; }
+html[data-ui="classic"]:not(.v3s) :is(.v3-btn-primary, :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"])) :is(i, span) { color: inherit !important; }
+html[data-ui="classic"]:not(.v3s) :is(.v3-btn-primary, :is(button, a)[class*="bg-brand"]:not([class*="bg-brandSoft"])):not([disabled]):hover { background: color-mix(in srgb, var(--v3-accent) 92%, #fff) !important; }
+html[data-ui="classic"]:not(.v3s) .v3-btn-line { border-radius: 980px !important; box-shadow: none !important; background: transparent !important; color: var(--v3-accent) !important; border: 1px solid var(--v3-accent) !important; }
+html[data-ui="classic"]:not(.v3s) .v3-btn-plain { color: var(--v3-accent-ink) !important; font-size: 17px; }
+html[data-ui="classic"]:not(.v3s) .v3-btn-plain:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- surfaces: flat 18 px cards, separated by background ---------- */
+html[data-ui="classic"]:not(.v3s) .h-amb, html[data-ui="classic"]:not(.v3s) body:not([data-page="home"]):not([data-page="404"]) main::before, html[data-ui="classic"]:not(.v3s) .v3-404::before, html[data-ui="classic"]:not(.v3s) .h-floor, html[data-ui="classic"]:not(.v3s) .h-obj::after { display: none !important; }
+html[data-ui="classic"]:not(.v3s) .h-obj { transform: none !important; }
+html[data-ui="classic"]:not(.v3s) .h-ruler { display: none !important; }
+html[data-ui="classic"]:not(.v3s) :is(.h-obj .h-device, .h-device) { border-radius: 28px !important; box-shadow: 0 30px 60px -30px rgb(0 0 0 / .18), 0 0 0 1px var(--ap-hair) !important; background: var(--ap-bg-2) !important; }
+html[data-ui="classic"]:not(.v3s) body:not([data-page="home"]) main :is(section, aside, article, details):is(.bg-surface, .bg-white, .rounded-2xl, .rounded-xl):is(.border, [class*="shadow"]):not([data-model-id]):not(.rvc-notice) {
+  border-radius: var(--ap-radius) !important; box-shadow: none !important; border-color: transparent !important; background-color: var(--ap-bg-2) !important; background-image: none !important; }
+html[data-ui="classic"]:not(.v3s) body:not([data-page="home"]) main :is(section, aside, article) :is(div, p, section, details, label):is(.border):is(.rounded-lg, .rounded-xl, .rounded-2xl):not([data-model-id]):not(input):not(textarea):not(select) {
+  border-color: transparent !important; box-shadow: none !important; }
+html[data-ui="classic"]:not(.v3s) a.h-tool { border-radius: var(--ap-radius) !important; box-shadow: none !important; background: var(--ap-bg-2) !important; transition: opacity .24s var(--ap-ease) !important; }
+html[data-ui="classic"]:not(.v3s) a.h-tool::before, html[data-ui="classic"]:not(.v3s) a.h-tool::after { display: none !important; }
+html[data-ui="classic"]:not(.v3s) a.h-tool:hover { transform: none !important; }
+html[data-ui="classic"]:not(.v3s) .h-privacy .h-wrap { background: var(--ap-bg-2) !important; box-shadow: none !important; border-radius: var(--ap-radius) !important; }
+html[data-ui="classic"]:not(.v3s) .h-verb b { color: var(--ap-ink) !important; }
+html[data-ui="classic"]:not(.v3s) body[data-page] main > header:first-child::before { box-shadow: none !important; background: var(--m, var(--v3-accent)) !important; border-radius: 14px !important; }
+
+/* ---------- inputs: 12 px, filled, no border, accent ring ---------- */
+html[data-ui="classic"]:not(.v3s) main :is(input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(.sr-only), textarea, select) {
+  border-radius: 12px !important; border-color: transparent !important; background-color: var(--ap-bg) !important; box-shadow: none !important; color: var(--ap-ink) !important; }
+html[data-ui="classic"]:not(.v3s) main :is(input, textarea, select):focus-visible { outline: 0 !important; box-shadow: 0 0 0 1px var(--v3-accent), 0 0 0 4px rgb(var(--v3-accent-rgb) / .16) !important; }
+html[data-ui="classic"]:not(.v3s) main :is(input, textarea)::placeholder { color: var(--ap-ink-3) !important; }
+
+/* ---------- studio: keep the device, drop the HUD labels ---------- */
+html[data-ui="classic"]:not(.v3s) #v3-studio .v3-kicker { display: none !important; }
+html[data-ui="classic"]:not(.v3s) #v3-studio :is(.v3-scope-labels, .v3-readouts dt) { font-family: var(--ap-font) !important; letter-spacing: 0 !important; text-transform: none !important; }
+
+/* ---------- motion: one-shot reveals, Apple easing, no loops ---------- */
+html[data-ui="classic"]:not(.v3s) [data-reveal] { transition-timing-function: var(--ap-ease) !important; transition-duration: .8s !important; }
+html[data-ui="classic"]:not(.v3s) .h-mirror .m-caret { animation: none !important; }
+html[data-ui="classic"]:not(.v3s) .v3-studio-state[data-state="running"] i { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { html[data-ui="classic"]:not(.v3s) [data-reveal] { transition: opacity .2s linear !important; transform: none !important; } }
+
+/* ---------- tablet / phone scale ---------- */
+@media (max-width: 1068px) {
+  html[data-ui="classic"]:not(.v3s) :is(.v3-display, .h-hero .v3-display, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child h1, body:not([data-page="home"]):not([data-page="404"]) main h1:first-of-type) { font-size: 48px !important; }
+  html[data-ui="classic"]:not(.v3s) :is(.v3-h2, :is(.h-flow-head, .h-tools-head, .h-studio-head) .v3-h2) { font-size: 32px !important; }
+  html[data-ui="classic"]:not(.v3s) :is(.v3-lead, .h-hero .v3-lead, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:last-child) { font-size: 19px !important; }
+}
+@media (max-width: 1023px) { html[data-ui="classic"]:not(.v3s) #site-header > header > div { min-height: 48px !important; padding-inline: 16px !important; } }
+@media (max-width: 734px) {
+  html[data-ui="classic"]:not(.v3s) :is(.v3-display, .h-hero .v3-display, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child h1, body:not([data-page="home"]):not([data-page="404"]) main h1:first-of-type) { font-size: 40px !important; line-height: 1.1 !important; }
+  html[data-ui="classic"]:not(.v3s) :is(.v3-h2, :is(.h-flow-head, .h-tools-head, .h-studio-head) .v3-h2) { font-size: 28px !important; }
+  html[data-ui="classic"]:not(.v3s) :is(.v3-eyebrow, body:not([data-page="home"]):not([data-page="404"]) main > header:first-child > p:first-child) { font-size: 12px !important; }
+  html[data-ui="classic"]:not(.v3s) main :is(input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) { font-size: 16px !important; }
+}
+/* phones: no blur on the nav (freeze2 budget) */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  html[data-ui="classic"]:not(.v3s) #site-header > header, html[data-ui="classic"]:not(.v3s) #site-header > header * { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  html[data-ui="classic"]:not(.v3s) #site-header > header { background: var(--ap-nav-solid) !important; }
+}
+/* ---------- both: no pseudo-tech kickers, quiet labels, segmented pills ---------- */
+html[data-ui="classic"]:not(.v3s) main p[class*="uppercase"][class*="tracking-[0.18em]"], html[data-ui="classic"]:not(.v3s) [data-rvc-i18n="workflowEyebrow"] { display: none !important; }
+html[data-ui="classic"]:not(.v3s) main p[class*="uppercase"][class*="tracking"] { font: 600 13px/1.3 var(--ap-font) !important; color: var(--ap-ink-2) !important; text-transform: none !important; letter-spacing: 0 !important; }
+html[data-ui="classic"]:not(.v3s) main button[aria-pressed][class*="rounded-lg"][class*="border"] { border-radius: 980px !important; border-color: transparent !important; background: var(--ap-bg) !important; color: var(--ap-ink) !important; font-weight: 400 !important; box-shadow: none !important; }
+html[data-ui="classic"]:not(.v3s) main button[aria-pressed="true"][class*="rounded-lg"][class*="border"] { background: var(--v3-accent) !important; color: #fff !important; }
+html[data-ui="classic"]:not(.v3s) main button[aria-pressed][class*="rounded-lg"][class*="border"] :is(i, span) { color: inherit !important; }
+
+/* ---------- classic RVC / tool pages (not v3): the same skeleton plus the classic-glass cleanup ---------- */
+html[data-ui="classic"]:not(.v3s) body::before, html[data-ui="classic"]:not(.v3s) body::after { display: none !important; background: none !important; }
+html[data-ui="classic"]:not(.v3s) #site-header { position: sticky !important; z-index: 80; }
+html[data-ui="classic"]:not(.v3s) main h1 { color: var(--ap-ink) !important; background: none !important; -webkit-text-fill-color: currentColor; }
+html[data-ui="classic"]:not(.v3s) main h1 *, html[data-ui="classic"]:not(.v3s) main h1::after, html[data-ui="classic"]:not(.v3s) main h1::before { background: none !important; box-shadow: none !important; }
+html[data-ui="classic"]:not(.v3s) main :is(h2, h3) { color: var(--ap-ink) !important; letter-spacing: 0; }
+html[data-ui="classic"]:not(.v3s) main :is(.text-slate-500, .text-slate-600, .text-muted, .text-gray-500) { color: var(--ap-ink-2) !important; }
+html[data-ui="classic"]:not(.v3s) main [class*="shadow"]:not(input):not(textarea):not(select) { box-shadow: none !important; }
+html[data-ui="classic"]:not(.v3s) main :is(section, aside, article):is(.border, .rounded-2xl, .rounded-xl, [class*="shadow"]) { border-color: transparent !important; border-radius: var(--ap-radius) !important; background-color: var(--ap-bg-2) !important; background-image: none !important; }
+html[data-ui="classic"]:not(.v3s) main :is(button, [role="tab"]):not([class*="bg-brand"]):is(.border, .rounded-lg, .rounded-xl, .rounded-full) { border-color: transparent !important; box-shadow: none !important; }
+html[data-ui="classic"]:not(.v3s) main :is(.font-black, .font-extrabold, .font-bold) { font-weight: 600 !important; }
+html[data-ui="classic"]:not(.v3s) main article:hover, html[data-ui="classic"]:not(.v3s) [data-model-id]:hover { transform: none !important; }

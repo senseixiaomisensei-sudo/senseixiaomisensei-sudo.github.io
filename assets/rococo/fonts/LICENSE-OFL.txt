@@ -4,7 +4,7 @@ Sources: https://github.com/google/fonts (ofl/pinyonscript, ofl/cormorantgaramon
 
  - PinyonScript.woff2            — Pinyon Script
  - CormorantGaramond(.|-Italic).woff2 — Cormorant Garamond (variable wght)
- - PostPrepDisplay.woff2         — renamed subset of Playfair Display (variable wght)
+ - PlayfairDisplay.woff2         — Playfair Display (variable wght)
  - DMMono.woff2                  — DM Mono
  - NotoSerifSC-500/700.woff2     — Noto Serif SC (static instances at wght 500/700)
 

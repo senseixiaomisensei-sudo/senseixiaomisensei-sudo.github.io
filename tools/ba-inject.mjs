@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const VER = '20261106-ba3';
+const VER = '20261107-ba-apple1';
 const PAGES = ['index.html', 'caption-formatter.html', 'hashtag-cleaner.html', 'idea-generator.html',
   'length-checker.html', 'publish-trust.html', 'skills.html', 'skill-passport.html', 'rvc.html',
   'privacy.html', '404.html'];
