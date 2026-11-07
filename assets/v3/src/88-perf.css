@@ -137,3 +137,16 @@ $G .h-screen-tabs em, $G .h-s-title mark, $G .h-s-check i, $G .h-screen-tabs::af
   $G .h-studio { content-visibility: auto; contain-intrinsic-size: auto 836px; }
 }
 @media (prefers-reduced-motion: reduce) { $G .h-flow-pin { content-visibility: visible; } }
+
+/* Keep the bundled mobile studio paint budget. */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+:root.v3.v3.v3.v3[data-ui] :is(#v3-studio, #v3-studio *, .studio-monitor, .studio-monitor *, .studio-dock, .studio-dock *, #rvc-progress-bar-wrap, #rvc-progress-bar-wrap *) {
+-webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+:root.v3.v3.v3.v3[data-ui] .studio-dock { background-color: rgb(var(--v3-paper-rgb, 255 255 255) / .97) !important; }
+html.v3 #v3-studio { contain: layout style; }
+html.v3 body[data-page="rvc"] .rvc-inspector > section:not(#rvc-result):not(.studio-monitor) { content-visibility: auto; contain-intrinsic-size: auto 420px; }
+}
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+html.v3 #rvc-progress-bar, html.v3 #v3-studio .v3-ring .val { transition: none !important; }
+html.v3 #v3-studio .v3-studio-state i, html.v3 #rvc-convert[aria-busy="true"] { animation: none !important; }
+}

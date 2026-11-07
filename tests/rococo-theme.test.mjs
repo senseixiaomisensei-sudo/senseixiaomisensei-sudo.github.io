@@ -1,4 +1,4 @@
-// Rococo theme pack — guards: injected once per page, scoped CSS, local-only assets, no hook changes.
+// Rococo theme pack (Apple-skeleton edition) — guards: injected once per page, scoped CSS, local-only assets, no hook changes, no decoration.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
@@ -24,29 +24,28 @@ test('all rococo rules are scoped to html[data-ui="rococo"]', () => {
     for (const ch of sel) { if (ch === '(') depth++; if (ch === ')') depth--; if (ch === ',' && !depth) { out.push(cur); cur = ''; } else cur += ch; }
     out.push(cur); return out.map(x => x.trim()).filter(Boolean); };
   while ((m = re.exec(body))) selectors.push(...split(m[1]));
-  const allowed = s => s.startsWith('html[data-ui="rococo"]') || /^\.rc-(deco|layer|foil|seal-fx)$/.test(s) || s.startsWith('html.rc-hidden');
+  const allowed = s => s.startsWith('html[data-ui="rococo"]');
   const bad = selectors.filter(s => !allowed(s) && !/^(from|to|\d+%)$/.test(s));
   assert.deepEqual(bad, []);
 });
 
-test('assets are local and within budget', () => {
+test('assets are local, fonts only, and within budget', () => {
   assert.doesNotMatch(css, /url\((["']?)https?:/);
   assert.doesNotMatch(js, /https?:\/\/(?!www\.w3\.org)/);
   for (const m of css.matchAll(/url\((?!["']?data:)["']?([^)"']+)/g)) assert.ok(existsSync('assets/rococo/' + m[1]), 'missing ' + m[1]);
-  const total = ['img', 'fonts'].flatMap(d => readdirSync('assets/rococo/' + d).map(f => statSync(`assets/rococo/${d}/${f}`).size)).reduce((a, b) => a + b, 0);
-  assert.ok(total < 3.2 * 1024 * 1024, `pack assets ${total} bytes`);
+  // the Apple pass ships no raster or sticker art: ornament is CSS / inline SVG hairline only
+  assert.ok(!existsSync('assets/rococo/img') || readdirSync('assets/rococo/img').length === 0, 'assets/rococo/img should be gone');
+  const fonts = readdirSync('assets/rococo/fonts').filter(f => f.endsWith('.woff2'));
+  for (const f of fonts) assert.ok(css.includes('fonts/' + f), 'unused font ' + f);
+  const total = fonts.map(f => statSync(`assets/rococo/fonts/${f}`).size).reduce((a, b) => a + b, 0);
+  assert.ok(total < 1.2 * 1024 * 1024, `pack fonts ${total} bytes`);
 });
 
-test('runtime never rewrites ids, data hooks or listeners of the app', () => {
+test('runtime never rewrites ids, data hooks or listeners of the app, and adds no decoration', () => {
   assert.doesNotMatch(js, /\.id\s*=|removeAttribute\("(id|name|for|data-(?!rc-))/);
-  // the only nodes ever removed are the transient wax-seal stamps the runtime created itself
-  assert.equal((js.match(/\.remove\(\)/g) || []).length, (js.match(/\bs\.remove\(\)/g) || []).length);
-  assert.match(js, /aria-hidden/);
+  // Apple pass: no decorative layers, no node insertion or removal, no timers or animation loops
+  assert.doesNotMatch(js, /createElement|appendChild|insertBefore|\.remove\(\)|innerHTML/);
+  assert.doesNotMatch(js, /setInterval|requestAnimationFrame|pointermove|deviceorientation/);
+  assert.doesNotMatch(js, /stopImmediatePropagation|\.style-toggle/);
   assert.doesNotMatch(js, /\beval\(|new Function/);
-});
-
-
-test('the standalone theme is excluded from the Tailwind utility scan', () => {
-  const config = readFileSync('tailwind.config.js', 'utf8');
-  assert.match(config, /!\.\/assets\/rococo\/\*\*\/\*\.js/);
 });
